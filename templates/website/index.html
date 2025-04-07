@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse dance workshops by various categories including all workshops, artists, and studios">
+    <meta name="theme-color" content="#f8f9fa">
+    <title>Dance Workshops - Browse By Category</title>
+    
+    <!-- Critical CSS -->
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --transition-speed: 0.2s;
+            --border-radius: 10px;
+            --spacing-unit: 20px;
+        }
+
+        /* Base styles */
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: var(--spacing-unit);
+            line-height: 1.5;
+        }
+
+        /* Typography */
+        h1 {
+            text-align: center;
+            margin-bottom: var(--spacing-unit);
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        /* Layout */
+        .carousel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-unit);
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 var(--spacing-unit);
+        }
+
+        /* Card Component */
+        .carousel-item {
+            position: relative;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px var(--shadow-color);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform var(--transition-speed);
+        }
+
+        .carousel-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .carousel-item:focus-within {
+            outline: 3px solid var(--primary-color);
+        }
+
+        .carousel-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .carousel-item p {
+            margin: 0;
+            padding: var(--spacing-unit);
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin: 15px 0;
+            }
+
+            .carousel {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin: 20px auto;
+                padding: 0 10px;
+            }
+
+            .carousel-item {
+                margin-bottom: 10px;
+            }
+
+            .carousel-item img {
+                height: 180px;
+            }
+
+            .carousel-item p {
+                padding: 15px;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) {
+            .carousel-item:hover {
+                transform: none;
+            }
+
+            .carousel-item:active {
+                transform: scale(0.98);
+            }
+
+            .carousel-item {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+            }
+            .carousel-item {
+                break-inside: avoid;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Browse Dance Workshops</h1>
+    </header>
+
+    <main>
+        <nav class="carousel" role="navigation" aria-label="Browse categories">
+            <a href="/all_workshops" class="carousel-item" role="button">
+                <img src="/static/assets/workshops/workshops.png" alt="Dance workshop in progress" width="300" height="200">
+                <p>All Workshops</p>
+                <span class="sr-only">Browse all available workshops</span>
+            </a>
+            
+            <a href="/browse_by_artists" class="carousel-item" role="button">
+                <img src="/static/assets/artists/artists.png" alt="Featured dance artist" width="300" height="200">
+                <p>Artists</p>
+                <span class="sr-only">Browse workshops by dance artists</span>
+            </a>
+            
+            <a href="/browse_by_studios" class="carousel-item" role="button">
+                <img src="/static/assets/studios/studios.png" alt="Dance studio space" width="300" height="200">
+                <p>Studios</p>
+                <span class="sr-only">Browse workshops by dance studios</span>
+            </a>
+        </nav>
+    </main>
+
+    <!-- JavaScript -->
+    <script type="module">
+        /**
+         * Environment configurations for different deployment scenarios.
+         * @type {Object.<string, ApiConfig>}
+         */
+        const ENV_CONFIGS = {
+            development: {
+                version: 'v2',
+                baseUrl: '',
+                endpoints: {
+                    workshops: 'api/workshops',
+                    artists: 'api/artists',
+                    workshopsByArtist: 'api/workshops_by_artist',
+                    workshopsByStudio: 'api/workshops_by_studio'
+                }
+            },
+            production: {
+                version: 'v2',
+                baseUrl: '',
+                endpoints: {
+                    workshops: 'api/workshops',
+                    artists: 'api/artists',
+                    workshopsByArtist: 'api/workshops_by_artist',
+                    workshopsByStudio: 'api/workshops_by_studio'
+                }
+            }
+        };
+
+        /**
+         * Current environment configuration.
+         * @type {ApiConfig}
+         */
+        const API_CONFIG = ENV_CONFIGS['development']; // Default to development environment
+
+        /**
+         * Constructs a complete API URL for the given endpoint.
+         * @param {string} endpoint - The endpoint name defined in API_CONFIG.endpoints
+         * @param {Object} [params={}] - Optional query parameters
+         * @returns {string} Complete API URL with endpoint and query parameters
+         * @throws {Error} If the endpoint is not defined in the configuration
+         */
+        function getApiUrl(endpoint, params = {}) {
+            if (!API_CONFIG.endpoints[endpoint]) {
+                throw new Error(`Unknown endpoint: ${endpoint}`);
+            }
+
+            const queryParams = new URLSearchParams({
+                version: API_CONFIG.version,
+                ...params
+            }).toString();
+
+            return `${API_CONFIG.baseUrl}/${API_CONFIG.endpoints[endpoint]}?${queryParams}`;
+        }
+
+        /**
+         * Makes an API request with proper error handling.
+         * @param {string} endpoint - The endpoint name defined in API_CONFIG.endpoints
+         * @param {Object} [options={}] - Fetch options
+         * @param {Object} [params={}] - Query parameters
+         * @returns {Promise<Object>} Parsed JSON response
+         * @throws {Error} If the request fails or returns non-OK status
+         */
+        async function apiRequest(endpoint, options = {}, params = {}) {
+            try {
+                const response = await fetch(getApiUrl(endpoint, params), {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    ...options
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error(`API request failed for endpoint ${endpoint}:`, error);
+                throw error;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add intersection observer for lazy loading
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            observer.unobserve(img);
+                        }
+                    });
+                },
+                { rootMargin: '50px' }
+            );
+
+            // Observe all images
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                observer.observe(img);
+            });
+        });
+
+        // Handle errors
+        window.addEventListener('error', (event) => {
+            console.error('Page error:', event.error);
+            // You might want to show a user-friendly error message
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# macOS system files
+.DS_Store
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs and temp files
+*.log
+*.pem
+*.png
+# Allow PNGs in static/assets
+!/static/assets/*/*.png

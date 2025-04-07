@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    restart: always
+    ports:
+      - "27017:27017" # Map MongoDB's default port to your host
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin # Set the admin username
+      MONGO_INITDB_ROOT_PASSWORD: admin # Set the admin password
+    volumes:
+      - mongodb_data:/data/db # Persist data across container restarts
+      - mongodb_config:/data/configdb # Store config database
+
+volumes:
+  mongodb_data:
+  mongodb_config:

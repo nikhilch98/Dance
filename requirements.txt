@@ -1,0 +1,12 @@
+pymongo[srv]
+requests
+openai
+beautifulsoup4
+selenium
+webdriver-manager
+Pillow
+tqdm
+fastapi
+uvicorn
+motor
+jinja2

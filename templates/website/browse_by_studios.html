@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse dance workshops by studios">
+    <title>Browse by Studios</title>
+    
+</head>
+<body>
+    <a href="/" class="nav-back">← Back to Categories</a>
+    <h1>Dance Studios</h1>
+
+    <div id="loading" class="loading">Loading studios...</div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div class="studio-grid" id="studio-grid"></div>
+
+    <!-- Modal -->
+    <div class="modal" id="studio-modal" role="dialog" aria-labelledby="studio-name">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()" aria-label="Close">×</button>
+            <h2 id="studio-name"></h2>
+            <div id="workshops-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            studios: [],
+            loading: false,
+            error: null
+        };
+
+        // API functions
+        async function fetchStudios() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            
+            if (!loadingEl || !errorEl) {
+                console.error('Required DOM elements not found');
+                return;
+            }
+
+            try {
+                state.loading = true;
+                loadingEl.style.display = 'block';
+                errorEl.style.display = 'none';
+                
+                const response = await fetch('/api/studios?version=v2');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                state.studios = await response.json();
+                state.error = null;
+            } catch (error) {
+                console.error("Error fetching studios:", error);
+                state.error = "Failed to load studios. Please try again later.";
+                if (errorEl) {
+                    errorEl.textContent = state.error;
+                    errorEl.style.display = 'block';
+                }
+            } finally {
+                state.loading = false;
+                if (loadingEl) {
+                    loadingEl.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize the page
+        async function init() {
+            await fetchStudios();
+            renderStudios();
+            setupEventListeners();
+        }
+
+        // Rendering
+        function renderStudios() {
+            const grid = document.getElementById("studio-grid");
+            
+            if (state.error) {
+                return;
+            }
+
+            const defaultImage = 'data:image/svg+xml,%3Csvg width="300" height="200" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="100%" height="100%" fill="%23007bff"/%3E%3Ctext x="50%" y="50%" font-family="Arial" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle"%3EDance Studio%3C/text%3E%3C/svg%3E';
+            
+            grid.innerHTML = state.studios.map(studio => `
+                <article class="studio-card"
+                         onclick="openModal('${studio.id}', '${studio.name}')"
+                         role="button"
+                         tabindex="0">
+                    <img src="${studio.image_url ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` : defaultImage}"
+                         alt="${studio.name}"
+                         onerror="this.src='${defaultImage}'">
+                    <h3>${studio.name}</h3>
+                    <a href="${studio.instagram_link}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="instagram-link"
+                       onclick="event.stopPropagation()">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.897 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.897-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z'/%3E%3C/svg%3E"
+                             alt="Instagram">
+                    </a>
+                </article>
+            `).join('');
+        }
+
+        // Modal management
+        async function openModal(studioId, studioName) {
+            document.getElementById('studio-name').textContent = studioName;
+            document.getElementById('studio-modal').style.display = 'flex';
+            
+            try {
+                const response = await fetch(`/api/workshops_by_studio/${studioId}?version=v2`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const workshopsByDay = await response.json();
+                displayWorkshops(workshopsByDay);
+            } catch (error) {
+                console.error("Error fetching workshops:", error);
+                document.getElementById('workshops-container').innerHTML = "<p>Failed to load workshops</p>";
+            }
+        }
+
+        function displayWorkshops(workshopsByDay) {
+            const container = document.getElementById('workshops-container');
+            
+            if (!workshopsByDay.length) {
+                container.innerHTML = '<p>No upcoming workshops found.</p>';
+                return;
+            }
+
+            container.innerHTML = workshopsByDay.map(dayData => `
+                <section class="day-section">
+                    <h3 class="day-title">${dayData.day}</h3>
+                    ${dayData.workshops.map(workshop => `
+                        <article class="workshop-item">
+                            <p><strong>${workshop.date}</strong> - ${workshop.time}</p>
+                            <p>Artist: ${workshop.artist}</p>
+                            <p>Song: ${workshop.song || 'Not specified'}</p>
+                            <p>Pricing: ${workshop.pricing_info || 'Contact studio'}</p>
+                            <p><a href="${workshop.payment_link}" 
+                                  target="_blank" 
+                                  rel="noopener" 
+                                  class="register-link">Register</a></p>
+                        </article>
+                    `).join('')}
+                </section>
+            `).join('');
+        }
+
+        // UI helpers
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            document.getElementById('studio-modal').addEventListener('click', (event) => {
+                if (event.target === event.currentTarget) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Initialize
+        init();
+
+        // Export functions for global access
+        window.openModal = openModal;
+        window.closeModal = () => {
+            document.getElementById('studio-modal').style.display = 'none';
+        };
+    </script>
+    
+    <!-- Critical CSS -->
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-background: #fff;
+            --text-color: #212529;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-color: #28a745;
+            --transition-speed: 0.3s;
+            --border-radius: 10px;
+            --spacing-unit: 20px;
+        }
+
+        /* Base styles */
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: var(--spacing-unit);
+            line-height: 1.5;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-bottom: var(--spacing-unit);
+        }
+
+        /* Navigation */
+        .nav-back {
+            display: inline-block;
+            margin-bottom: var(--spacing-unit);
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-back:hover {
+            text-decoration: underline;
+        }
+
+        /* Studio Grid */
+        .studio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-unit);
+            padding: var(--spacing-unit);
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        /* Studio Card */
+        .studio-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px var(--shadow-color);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform var(--transition-speed);
+            position: relative;
+        }
+
+        .instagram-link {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color var(--transition-speed);
+            z-index: 1;
+        }
+
+        .instagram-link:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .instagram-link img {
+            width: 24px !important;
+            height: 24px !important;
+            margin: 0 !important;
+        }
+
+        .studio-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .studio-card:focus-within {
+            outline: 3px solid var(--primary-color);
+        }
+
+        .studio-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            background: var(--secondary-color);
+        }
+
+        .studio-card h3 {
+            padding: 15px;
+            margin: 0;
+            text-align: center;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            padding: var(--spacing-unit);
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 1000px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Workshop Sections */
+        .day-section {
+            margin-bottom: 30px;
+        }
+
+        .day-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--border-radius);
+        }
+
+        .workshop-item {
+            background: var(--background-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .register-link {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color var(--transition-speed);
+        }
+
+        .register-link:hover {
+            background: #218838;
+        }
+
+        /* Loading and Error States */
+        .loading,
+        .error {
+            text-align: center;
+            padding: var(--spacing-unit);
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .studio-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 15px;
+                padding: 10px;
+            }
+
+            .studio-card {
+                margin-bottom: 15px;
+            }
+
+            .studio-card h3 {
+                font-size: 1.1rem;
+                padding: 12px 8px;
+            }
+
+            .instagram-link {
+                padding: 10px;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+                padding: 15px;
+                max-height: 90vh;
+            }
+
+            .close-btn {
+                padding: 8px 12px;
+                font-size: 1.2rem;
+            }
+
+            .day-title {
+                font-size: 1.2rem;
+                padding: 8px 12px;
+            }
+
+            .workshop-item {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+
+            .register-link {
+                display: block;
+                text-align: center;
+                padding: 12px;
+                margin-top: 10px;
+            }
+
+            .nav-back {
+                font-size: 1.1rem;
+                padding: 10px 0;
+                display: block;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                margin: 15px 0;
+            }
+
+            h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) {
+            .studio-card:hover {
+                transform: none;
+            }
+
+            .studio-card:active {
+                transform: scale(0.98);
+            }
+
+            .register-link {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .register-link:active {
+                background: #218838;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .studio-card {
+                break-inside: avoid;
+                box-shadow: none;
+            }
+            .modal {
+                position: static;
+                display: block;
+                background: none;
+            }
+            .close-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="nav-back">← Back to Categories</a>
+    <h1>Dance Studios</h1>
+
+    <div id="loading" class="loading">Loading studios...</div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div class="studio-grid" id="studio-grid"></div>
+
+    <!-- Modal -->
+    <div class="modal" id="studio-modal" role="dialog" aria-labelledby="studio-name">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()" aria-label="Close">×</button>
+            <h2 id="studio-name"></h2>
+            <div id="workshops-container"></div>
+        </div>
+    </div>
+</body>
+</html>
