@@ -5,7 +5,7 @@ artists, and studios. It includes features for workshop discovery, artist
 profiles, and studio schedules.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from typing import List, Dict, Optional
 from collections import defaultdict
 from fastapi import FastAPI, HTTPException, Query, Response, Depends, Request
@@ -66,8 +66,8 @@ class WorkshopSession(BaseModel):
     time: str
     song: Optional[str]
     studio_id: Optional[str]
-    artist: Optional[str]  # Artist name
-    artist_id: Optional[str]  # Make artist_id optional since some workshops don't have it
+    artist: Optional[str]
+    artist_id: Optional[str]
     payment_link: HttpUrl
     pricing_info: Optional[str]
     timestamp_epoch: int
@@ -76,6 +76,11 @@ class DaySchedule(BaseModel):
     """Schedule of workshops for a specific day."""
     day: str
     workshops: List[WorkshopSession]
+
+class CategorizedWorkshopResponse(BaseModel):
+    """Response structure for workshops categorized by week."""
+    this_week: List[DaySchedule]
+    post_this_week: List[WorkshopSession]
 
 # API Configuration
 class APIConfig:
@@ -276,44 +281,152 @@ class DatabaseOperations:
         return sorted(workshops, key=lambda x: x["timestamp_epoch"])
 
     @staticmethod
-    def get_workshops_by_studio(studio_id: str) -> List[DaySchedule]:
-        """Fetch workshops for a specific studio grouped by day.
+    def get_workshops_by_studio(studio_id: str) -> CategorizedWorkshopResponse:
+        """Fetch workshops for a specific studio grouped by this week (daily) and post this week.
         
         Args:
             studio_id: Unique identifier for the studio
         
         Returns:
-            List of daily schedules with workshop sessions
+            Object containing 'this_week' (list of daily schedules) and 'post_this_week' workshops.
         """
         client = get_mongo_client()
-        workshops = defaultdict(list)
+        temp_this_week = []
+        temp_post_this_week = []
+
+        # Calculate current week boundaries (Monday to Sunday)
+        today = datetime.now().date()
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
         
         for workshop in client["discovery"]["workshops_v2"].find({"studio_id": studio_id}):
             for session in workshop["workshop_details"]:
-                weekday = get_formatted_date_with_day(session['time_details'])[1]
-                
-                workshops[weekday].append({
+                # Prepare workshop session data (shared part)
+                session_data = {
                     "date": get_formatted_date(session['time_details']),
                     "time": get_formatted_time(session['time_details']),
-                    "song": session["song"],
+                    "song": session.get("song"),
                     "studio_id": studio_id,
-                    "artist": session["by"],
-                    "artist_id": session.get("artist_id", None),  # Include artist_id if available
-                    "pricing_info": session["pricing_info"],
+                    "artist": session.get("by"),
+                    "artist_id": session.get("artist_id"),
+                    "pricing_info": session.get("pricing_info"),
                     "payment_link": workshop["payment_link"],
-                    "timestamp_epoch": session["timestamp_epoch"]
-                })
+                    "timestamp_epoch": session["timestamp_epoch"],
+                    "time_details": session['time_details'] # Keep original details for weekday calculation
+                }
+
+                # Categorize by week using time_details
+                try:
+                    session_date = datetime(
+                        year=session['time_details']['year'],
+                        month=session['time_details']['month'],
+                        day=session['time_details']['day']
+                    ).date()
+                except KeyError as e:
+                    print(f"Skipping session due to incomplete time_details: {e} in {session}")
+                    continue 
+                
+                if start_of_week <= session_date <= end_of_week:
+                    temp_this_week.append(session_data)
+                elif session_date > end_of_week:
+                    temp_post_this_week.append(session_data)
         
-        result = []
-        print(workshops.keys())
-        for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
-            if workshops[day]:
-                result.append({
-                    "day": day,
-                    "workshops": sorted(workshops[day], key=lambda x: x["timestamp_epoch"])
-                })
-        
-        return result
+        # Define a helper function for robust datetime creation
+        def create_datetime_from_details(details):
+            # Assumes start_time is 'HH:MM'
+            hour, minute = map(int, details['start_time'].split(':'))
+            return datetime(
+                year=details['year'],
+                month=details['month'],
+                day=details['day'],
+                hour=hour,
+                minute=minute
+            )
+
+        # Process 'this_week' workshops into daily structure
+        this_week_by_day = defaultdict(list)
+        for session in temp_this_week:
+            weekday = get_formatted_date_with_day(session['time_details'])[1]
+            this_week_by_day[weekday].append(session)
+
+        final_this_week = []
+        days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        for day in days_order:
+            if this_week_by_day[day]:
+                try:
+                    # Sort within day by time (using full datetime for robustness)
+                    sorted_workshops_raw = sorted(
+                        this_week_by_day[day],
+                        key=lambda x: create_datetime_from_details(x['time_details'])
+                    )
+                    sorted_workshops_cleaned = [
+                        {k: v for k, v in session.items() if k != 'time_details'}
+                        for session in sorted_workshops_raw
+                    ]
+                    final_this_week.append({"day": day, "workshops": sorted_workshops_cleaned})
+                except (KeyError, ValueError, TypeError) as e:
+                     print(f"Warning: Could not sort workshops for {day} due to invalid time_details: {e}. Appending unsorted.")
+                     unsorted_cleaned = [ {k: v for k, v in session.items() if k != 'time_details'} for session in this_week_by_day[day] ]
+                     final_this_week.append({"day": day, "workshops": unsorted_cleaned })
+
+
+        # Sort 'post_this_week' workshops chronologically using separate date and time keys
+        try:
+            print("\nAttempting to sort post_this_week...") # DEBUG
+            # Sort the raw list containing time_details
+            sorted_post_this_week_raw = sorted(
+                temp_post_this_week,
+                key=lambda x: (
+                    # Key 1: Date object
+                    datetime(
+                        year=int(x['time_details']['year']), # Ensure conversion to int
+                        month=int(x['time_details']['month']),
+                        day=int(x['time_details']['day'])
+                    ).date(),
+                    # Key 2: Time object - TRY PARSING WITH AM/PM
+                    # Adjust the format string based on your ACTUAL stored data
+                    # Option 1: If stored like "11:00 AM" or "5:00 PM"
+                    datetime.strptime(str(x['time_details']['start_time']).strip(), '%I:%M %p').time()
+                    # Option 2: If stored consistently as "HH:MM" (24-hour)
+                    # datetime.strptime(str(x['time_details']['start_time']).strip(), '%H:%M').time()
+                    # Option 3: Add more formats if needed...
+                )
+            )
+            print("Sorting successful.") # DEBUG
+            # Clean the sorted list (remove time_details if needed)
+            final_post_this_week = [
+                {k: v for k, v in session.items() if k != 'time_details'}
+                for session in sorted_post_this_week_raw
+            ]
+        except (KeyError, ValueError, TypeError) as e: # Catch potential errors during creation/sorting
+            print(f"\nERROR: Could not sort post_this_week workshops due to invalid time_details: {e}.") # DEBUG
+            print("Problematic time_details sample (if available):") # DEBUG
+            if temp_post_this_week:
+                 # Find potential problematic entry based on common errors
+                 problem_sample = None
+                 for i, item in enumerate(temp_post_this_week):
+                    try:
+                         # Attempt the conversion that failed
+                         _date = datetime(int(item['time_details']['year']), int(item['time_details']['month']), int(item['time_details']['day'])).date()
+                         _time = datetime.strptime(str(item['time_details']['start_time']).strip(), '%I:%M %p').time() # Use the format you're testing
+                    except Exception as inner_e:
+                         print(f"  - Error on item {i}: {inner_e}")
+                         problem_sample = item.get('time_details', 'Missing time_details')
+                         break # Show the first one that fails
+                 if problem_sample:
+                     print(f"  - Sample data: {problem_sample}")
+                 else:
+                     print("  - Could not pinpoint specific problematic entry, check data consistency.")
+
+            print("Returning unsorted post_this_week list.") # DEBUG
+            # Return unsorted but cleaned data as a fallback
+            final_post_this_week = [ {k: v for k, v in session.items() if k != 'time_details'} for session in temp_post_this_week ]
+
+
+        return CategorizedWorkshopResponse(
+            this_week=final_this_week, # Ensure this_week is also sorted correctly
+            post_this_week=final_post_this_week
+        )
 
 # Web Routes
 @app.get("/")
@@ -406,25 +519,26 @@ async def get_workshops_by_artist(
         print(f"Database error: {str(e)}")
         return []
 
-@app.get("/api/workshops_by_studio/{studio_id}", response_model=List[DaySchedule])
+@app.get("/api/workshops_by_studio/{studio_id}", response_model=CategorizedWorkshopResponse)
 async def get_workshops_by_studio(
     studio_id: str,
     version: str = Depends(validate_version)
 ):
-    """Get workshops for a specific studio.
-    
-    Args:
-        studio_id: Studio's unique identifier
-        version: API version
-    
-    Returns:
-        List of daily schedules
-    """
+    """Fetch workshops for a specific studio, categorized by current week (daily) and future."""
     try:
-        return DatabaseOperations.get_workshops_by_studio(studio_id)
+        # The method now returns the Pydantic model instance directly or raises an error
+        workshops_data = DatabaseOperations.get_workshops_by_studio(studio_id)
+        # The check for emptiness might need adjustment based on the new structure
+        if not workshops_data.this_week and not workshops_data.post_this_week:
+            # Return the categorized structure even if empty
+            return CategorizedWorkshopResponse(this_week=[], post_this_week=[])
+        return workshops_data
     except Exception as e:
-        print(f"Database error: {str(e)}")
-        return []
+        print(f"Error fetching workshops for studio {studio_id}: {e}")
+        # Consider more specific error logging if possible
+        import traceback
+        traceback.print_exc() 
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/proxy-image/")
 async def proxy_image(url: HttpUrl):
