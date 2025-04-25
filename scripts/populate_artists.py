@@ -74,7 +74,7 @@ class ArtistManager:
     def __init__(self):
         """Initialize the artist manager."""
         self.client = DatabaseManager.get_mongo_client()
-        self.collection = self.client["discovery"]["artists_v3"]
+        self.collection = self.client["discovery"]["artists_v2"]
 
     def update_artist(self, artist: Artist) -> None:
         """Update or insert artist information in database.
@@ -121,6 +121,13 @@ def get_artists_list() -> List[Artist]:
     """
     return [
         Artist("Aadil Khan", "aadilkhann"),
+        Artist("Mohit Solanki", "mohitsolanki11"),
+        Artist("Enette D'souza","enettedsouzadance"),
+        Artist("Prakhar Saini","saini.prakhar"),
+        Artist("Jainil Mehta","jainil_dreamtodance"),
+        Artist("Rajat Bansal","thatsilverdancinggirl"),
+        Artist("Prakhar Shrivastava","_.prakhar8"),
+        Artist("Palak Shettiwar","palak_shettiwar"),
         Artist("Aditya Tripathi", "adityatripathiii__"),
         Artist("Ajay Lama", "aka.lamaboi"),
         Artist("Ashish Dubey", "aashish.dubeyy"),
@@ -134,7 +141,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Nanak Singh", "nanaksingh1030"),
         Artist("Niraj Pardeshi", "nirajpardeshi"),
         Artist("Noel Alexander", "alexander_noel_janam"),
-        Artist("Pravin Ganesh", "pravinganeshagawane"),
+        Artist("Pravin Agawane Ganesh", "pravinganeshagawane"),
         Artist("Sagar Tiruwa", "sagar_tiruwa"),
         Artist("Sarang Lokhande", "saranglokhande__"),
         Artist("Simran Jat", "simranjat_"),
@@ -146,12 +153,16 @@ def get_artists_list() -> List[Artist]:
         Artist("Shazek Sheik", "shazebsheikh"),
         Artist("Sagar Chand", "sagar_chand78"),
         Artist("Siddhartha Dayani", "siddharthadayani"),
+        Artist("Shehzaan Khan","isshehzaannkhan"),
+        Artist("Monjit Rajbongshi","monjit_rajbongshiii"),
+        Artist("Sagar Thakur","sagar_thakur107"),
+        Artist("Kunal Pal","_kunaal_04"),
         Artist("Harsh Bhagchandani", "harshbhagchandani_"),
         Artist("Abhi Badarshahi", "abhi_badarshahi"),
-        Artist("Prakhar Saini", "saini.prakhar"),
         Artist("Harsh Kumar", "harshkumarofficiall"),
         Artist("Wehzan","wehzan"),
-        Artist("Yahvi","yahvichavan")
+        Artist("Yahvi","yahvichavan"),
+        Artist("Dev Narayan Gupta","gurudev.ng")
     ]
 
 def main():

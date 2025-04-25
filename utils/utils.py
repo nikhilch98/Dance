@@ -171,6 +171,27 @@ class DateTimeFormatter:
         suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
 
         return date_obj.strftime(f"%d{suffix} %b (%a)")
+    
+    @staticmethod
+    def get_formatted_date_with_day(time_details: Dict) -> str:
+        """Format date using datetime module.
+
+        Args:
+            time_details: Dictionary with day, month, and year.
+
+        Returns:
+            Formatted date string (e.g., "07th Feb Thu").
+        """
+        date_obj = datetime(
+            year=int(time_details['year']),
+            month=int(time_details['month']),
+            day=int(time_details['day'])
+        )
+
+        day = date_obj.day
+        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+
+        return [date_obj.strftime(f"%d{suffix} %b (%a)"), date_obj.strftime(f"%A")]
 
     @staticmethod
     def get_formatted_time(time_details: Dict) -> str:
@@ -382,6 +403,7 @@ def is_image_downloadable(url: Optional[str]) -> bool:
 # Convenience functions
 get_mongo_client = DatabaseManager.get_mongo_client
 get_formatted_date = DateTimeFormatter.get_formatted_date
+get_formatted_date_with_day = DateTimeFormatter.get_formatted_date_with_day
 get_formatted_time = DateTimeFormatter.get_formatted_time
 get_current_timestamp = DateTimeFormatter.get_current_timestamp
 fetch_url = URLManager.fetch_url

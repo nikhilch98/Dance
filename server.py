@@ -16,7 +16,7 @@ from pydantic import BaseModel, HttpUrl
 import requests
 import uvicorn
 
-from utils.utils import get_mongo_client, get_formatted_date, get_formatted_time
+from utils.utils import get_mongo_client, get_formatted_date, get_formatted_date_with_day, get_formatted_time
 
 # API Models
 class TimeDetails(BaseModel):
@@ -290,9 +290,7 @@ class DatabaseOperations:
         
         for workshop in client["discovery"]["workshops_v2"].find({"studio_id": studio_id}):
             for session in workshop["workshop_details"]:
-                weekday = datetime.utcfromtimestamp(
-                    session["timestamp_epoch"]
-                ).strftime('%A')
+                weekday = get_formatted_date_with_day(session['time_details'])[1]
                 
                 workshops[weekday].append({
                     "date": get_formatted_date(session['time_details']),
@@ -307,6 +305,7 @@ class DatabaseOperations:
                 })
         
         result = []
+        print(workshops.keys())
         for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
             if workshops[day]:
                 result.append({

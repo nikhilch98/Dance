@@ -113,7 +113,7 @@ class WorkshopProcessor:
             Formatted system prompt for GPT
         """
         artists = ", ".join([f"{artist.get('artist_name')} (ID: {artist.get('artist_id')})" for artist in artists_data])
-        current_date = datetime.date.today().strftime("%B %d, %Y")
+        current_date = date.today().strftime("%B %d, %Y")
         
         return (
             "You are given data about an event (potentially a dance workshop). "
@@ -124,7 +124,7 @@ class WorkshopProcessor:
             
             f"Current Date for reference : {current_date}\n\n"
             
-            "1. If it is NOT a dance workshop in Bangalore, set `is_workshop` to `false` "
+            "1. If it is NOT a dance workshop in Bangalore, or it is a regular weekly or monthly classes,  set `is_workshop` to `false` "
             "   and provide an empty list for `workshop_details`.\n"
             "2. If it IS a Bangalore-based dance workshop, set `is_workshop` to `true` and "
             "   return a list of one or more workshop objects under `workshop_details` with the "
@@ -271,7 +271,8 @@ class StudioProcessor:
         try:
             links = set(x.lower() for x in studio.scrape_links())
             workshop_updates = []
-            
+            ignored_links = []
+            missing_artists = []
             with tqdm(
                 total=len(links),
                 desc=f"Processing {studio.config.studio_id}",
@@ -285,6 +286,10 @@ class StudioProcessor:
                     
                     if workshop_data:
                         workshop_updates.append(workshop_data)
+                        if None in [workshop["artist_id"] for workshop in workshop_data["workshop_details"]]:
+                            missing_artists.append(link)
+                    else:
+                        ignored_links.append(link)
                     
                     pbar.update(1)
             
@@ -298,9 +303,10 @@ class StudioProcessor:
                 # Insert new workshops for this studio
                 insert_result = self.mongo_client["discovery"]["workshops_v2"].insert_many(workshop_updates)
                 
-                print(f"Deleted {delete_result.deleted_count} existing workshops for {studio.config.studio_id}")
+                print(f"\nDeleted {delete_result.deleted_count} existing workshops for {studio.config.studio_id}")
                 print(f"Inserted {len(insert_result.inserted_ids)} new workshops for {studio.config.studio_id}")
-        
+                print(f"Ignored Links : {ignored_links}")
+                print(f"Missing artists links : {missing_artists}")
         except Exception as e:
             print(f"Error processing studio {studio.config.studio_id}: {str(e)}")
 
@@ -343,7 +349,7 @@ def main():
     env = args.env
 
     # Parse environment configuration
-    cfg = config.parse_args(sys.argv[0])
+    cfg = config.Config(env=args.env)
 
     # Initialize clients
     artists = get_artists_data(cfg)

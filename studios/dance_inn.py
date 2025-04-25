@@ -52,4 +52,4 @@ class DanceInnStudio(BaseStudio):
 
         soup = BeautifulSoup(response, "html.parser")
         links = [a_tag["href"] for a_tag in soup.find_all('a', href=True)]
-        return set(self._filter_workshop_links(links))
+        return self._filter_workshop_links(links)

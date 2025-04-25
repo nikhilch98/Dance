@@ -117,11 +117,11 @@ class BaseStudio(ABC):
             List of URLs that match the workshop link pattern
         """
         
-        return [
-            link for link in successful_links
+        return list(set([
+            link.lower() for link in successful_links
             if link.startswith(self.config.regex_match_link)
-        ]
-
+        ])
+)
     @abstractmethod
     def scrape_links(self) -> List[str]:
         """Scrape workshop links from the studio website.
