@@ -383,43 +383,82 @@
 
     .workshop-table th,
     .workshop-table td {
-      padding: 22px 20px;
+      padding: 16px 12px;
       text-align: left;
       border-bottom: none;
       vertical-align: middle;
       color: rgba(255, 255, 255, 0.95);
       border-right: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
     }
     
     .workshop-table th:last-child,
     .workshop-table td:last-child {
       border-right: none;
+      padding: 10px;
     }
 
     .workshop-table th:nth-child(1),
     .workshop-table td:nth-child(1) {
-      min-width: 120px; /* Date column */
-      white-space: nowrap;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 1);
+      width: auto;  /* Date - content-based width */
+      min-width: 100px;
     }
 
     .workshop-table th:nth-child(2),
     .workshop-table td:nth-child(2) {
-      min-width: 120px; /* Time column */
-      white-space: nowrap;
-      color: rgba(255, 255, 255, 0.95);
+      width: auto;  /* Time - content-based width */
+      min-width: 100px;
     }
 
     .workshop-table th:nth-child(3),
     .workshop-table td:nth-child(3) {
-      min-width: 150px; /* Instructor column */
-      padding-right: 20px;
+      width: 20%;  /* Instructor */
+      padding-right: 25px;
       word-break: break-word;
       white-space: normal;
-      max-width: 200px;
+      max-height: 50px;
+      line-height: 1.4;
+    }
+
+    .workshop-instructor-link {
       color: #4d9eff;
-      font-weight: 500;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 95%;
+    }
+    
+    .instructor-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 30px);
+    }
+    
+    .instructor-instagram {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      margin-left: 8px;
+    }
+    
+    .instructor-instagram:hover {
+      background: rgba(0, 123, 255, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    .instructor-instagram img {
+      width: 14px;
+      height: 14px;
+      filter: brightness(1);
     }
 
     .workshop-table th:nth-child(4),
@@ -464,12 +503,17 @@
       font-weight: 500;
       color: rgba(66, 214, 96, 1);
       min-width: 80px;
-      white-space: nowrap;
+      max-width: 150px;
+      white-space: normal;
+      word-wrap: break-word;
+      word-break: break-all;
+      line-height: 1.4;
     }
 
     /* Add a subtle highlight for registration options */
+    .workshop-table th:nth-child(7),
     .workshop-table td:nth-child(7) {
-      min-width: 100px;
+      min-width: 120px;
       white-space: nowrap;
       text-align: center;
       border-left: none;
@@ -477,25 +521,29 @@
     }
 
     .workshop-table .register-link {
-      background: rgba(0, 123, 255, 0.25);
+      background: rgba(0, 123, 255, 0.5);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 2px 10px rgba(0, 123, 255, 0.25);
-      border: 1px solid rgba(0, 123, 255, 0.3);
+      box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
+      border: 1px solid rgba(0, 123, 255, 0.5);
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.4px;
-      display: inline-block;
+      display: block;
       transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
       border-radius: 8px;
-      padding: 8px 16px;
+      padding: 8px 12px;
       color: rgba(255, 255, 255, 1);
+      transform: scale(1);
+      width: 90%;
+      margin: 0 auto;
+      text-decoration: none;
     }
 
     .workshop-table .register-link:hover {
-      background: rgba(0, 123, 255, 0.4);
-      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
-      transform: translateY(-2px);
+      background: rgba(0, 123, 255, 0.7);
+      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.5);
+      transform: translateY(-3px) scale(1.05);
     }
 
     /* Loading and Error */
@@ -536,7 +584,7 @@
     /* Responsive Design */
     @media (max-width: 768px) {
       body {
-        padding: 16px;
+        padding: 12px;
       }
 
       h1 {
@@ -553,39 +601,151 @@
 
       .tabs button {
         font-size: 1rem;
-        padding: 10px 16px;
+        padding: 8px 14px;
         white-space: nowrap;
       }
 
       .cards-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 16px;
       }
 
-      .card h3 {
-        font-size: 1.15rem;
+      .card {
+        height: 220px;
       }
 
+      .card img {
+        height: 150px;
+      }
+
+      .card h3 {
+        font-size: 1rem;
+      }
+      
+      /* Mobile-specific table design */
       .workshop-table {
         display: block;
         overflow-x: auto;
-        font-size: 0.9rem;
+        white-space: nowrap;
+        font-size: 0.85rem;
+        border-radius: 12px;
       }
-
-      .workshop-table th,
+      
+      /* Hide table headers on mobile for more space */
+      .workshop-table thead {
+        display: none;
+      }
+      
+      /* Display table as cards on mobile */
+      .workshop-table tbody, 
+      .workshop-table tr {
+        display: block;
+        width: 100%;
+      }
+      
+      .workshop-table tr {
+        margin-bottom: 15px;
+        padding: 15px;
+        background: rgba(30, 40, 58, 0.8);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        position: relative;
+      }
+      
       .workshop-table td {
-        padding: 10px;
-        min-width: 110px;
+        display: block;
+        text-align: left;
+        padding: 8px 0;
+        border: none;
+        position: relative;
+        padding-left: 40%;
+        white-space: normal;
+        overflow: visible;
+      }
+      
+      .workshop-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 35%;
+        padding-right: 10px;
+        font-weight: 600;
+        color: #4d9eff;
+        text-align: left;
+      }
+      
+      .workshop-table td:nth-child(1):before { content: "Date"; }
+      .workshop-table td:nth-child(2):before { content: "Time"; }
+      .workshop-table td:nth-child(3):before { content: "Instructor"; }
+      .workshop-table td:nth-child(4):before { content: "Song"; }
+      .workshop-table td:nth-child(5):before { content: "Pricing"; }
+      .workshop-table td:nth-child(6):before { content: "Studio"; }
+      .workshop-table td:nth-child(7):before { content: ""; }
+      
+      .workshop-table td:nth-child(7) {
+        text-align: center;
+        padding: 15px 0 5px 0;
+        margin-top: 5px;
+      }
+      
+      .workshop-table .register-link {
+        width: 100%;
+        max-width: 200px;
+        padding: 10px 20px;
+      }
+      
+      .instructor-name {
+        white-space: normal;
+        max-width: 100%;
+      }
+      
+      .workshop-instructor-link {
+        max-width: 100%;
       }
 
       .modal-content {
         width: 95%;
-        padding: 16px;
+        padding: 15px;
+        max-height: 85vh;
       }
-
-      .workshop-table tbody tr:hover {
-        transform: none;
-        box-shadow: none;
+      
+      .section-heading {
+        font-size: 1.2rem;
+        padding: 12px 15px;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .controls .btn {
+        margin-bottom: 10px;
+      }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .workshop-table td {
+        padding-left: 35%;
+        font-size: 0.9rem;
+      }
+      
+      .workshop-table td:before {
+        width: 30%;
       }
     }
 
@@ -781,11 +941,134 @@
       height: 20px !important;
       filter: brightness(1);
     }
+
+    /* Add styling for the section headings and no-workshops message */
+    .section-heading {
+      color: #4d9eff;
+      font-size: 1.5rem;
+      margin: 0;
+      padding: 15px 20px;
+      border-radius: 10px 10px 0 0;
+      background: rgba(18, 28, 46, 0.9);
+      border-left: 4px solid #4d9eff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    
+    .workshop-section {
+      margin-bottom: 40px;
+      background: rgba(20, 30, 48, 0.5);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .workshop-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-divider {
+      height: 4px;
+      background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(77,158,255,0.5) 50%, rgba(0,0,0,0) 100%);
+      margin: 30px 0;
+      border-radius: 2px;
+    }
+    
+    .workshop-items-container {
+      padding: 15px;
+    }
+    
+    .no-workshops {
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+      padding: 20px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+      margin: 15px;
+      border-radius: 8px;
+    }
+
+    /* Coming soon text styling */
+    .coming-soon {
+      color: rgba(255, 255, 255, 0.6);
+      font-style: italic;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+
+    /* Cell content styling specific to All Workshops section */
+    .workshop-table {
+      table-layout: fixed;
+      width: 100%;
+      border-spacing: 0;
+      border-collapse: separate;
+      padding: 0;
+      margin: 0;
+    }
+    
+    /* Common cell styling for all cells to prevent overflow */
+    .workshop-table td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 14px 10px;
+    }
+    
+    .workshop-table th:nth-child(1),
+    .workshop-table td:nth-child(1) {
+      width: auto;  /* Date - content-based width */
+      min-width: 100px;
+    }
+    
+    .workshop-table th:nth-child(2),
+    .workshop-table td:nth-child(2) {
+      width: auto;  /* Time - content-based width */
+      min-width: 100px;
+    }
+    
+    .workshop-table th:nth-child(3),
+    .workshop-table td:nth-child(3) {
+      width: 20%;  /* Instructor */
+      padding-right: 25px;
+      word-break: break-word;
+      white-space: normal;
+      max-height: 50px;
+      line-height: 1.4;
+    }
+    
+    .workshop-table th:nth-child(4),
+    .workshop-table td:nth-child(4) {
+      width: 14%;  /* Song */
+      white-space: normal;
+      line-height: 1.3;
+    }
+    
+    .workshop-table th:nth-child(5),
+    .workshop-table td:nth-child(5) {
+      width: 10%;  /* Pricing */
+      white-space: normal;
+      line-height: 1.3;
+    }
+    
+    .workshop-table th:nth-child(6),
+    .workshop-table td:nth-child(6) {
+      width: 16%;  /* Studio */
+    }
+    
+    .workshop-table th:nth-child(7),
+    .workshop-table td:nth-child(7) {
+      width: 16%;  /* Register */
+      padding: 8px;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Dance Workshops Hub</h1>
+    <h1>Dance Workshops</h1>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Main Sections">
@@ -959,42 +1242,113 @@
           if (type === 'studio') {
             // Handle CategorizedWorkshopResponse for studios
             const allWorkshops = [];
+            let hasThisWeekWorkshops = false;
+            let hasPostThisWeekWorkshops = false;
+            
+            workshopContainer.innerHTML = '';
+            
+            // Create section for "This Weekend"
+            const thisWeekendSection = document.createElement('div');
+            thisWeekendSection.className = 'workshop-section';
+            
+            // Add heading for "This Weekend" section
+            const weekendHeading = document.createElement('h3');
+            weekendHeading.textContent = 'This Weekend';
+            weekendHeading.className = 'section-heading';
+            thisWeekendSection.appendChild(weekendHeading);
+            
+            // Create container for workshop items
+            const thisWeekendItems = document.createElement('div');
+            thisWeekendItems.className = 'workshop-items-container';
+            thisWeekendSection.appendChild(thisWeekendItems);
             
             // Process this_week workshops
             if (data.this_week && data.this_week.length > 0) {
               data.this_week.forEach(day => {
                 if (day.workshops && day.workshops.length > 0) {
                   day.workshops.forEach(workshop => {
-                    allWorkshops.push(workshop);
+                    hasThisWeekWorkshops = true;
+                    const workshopItem = document.createElement('div');
+                    workshopItem.className = 'workshop-item';
+                    workshopItem.innerHTML = `
+                      <p><strong>${workshop.date} at ${workshop.time}</strong></p>
+                      <p>Instructor: ${workshop.artist || 'TBA'}</p>
+                      <p>Song: ${workshop.song || 'TBA'}</p>
+                      <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
+                      ${workshop.payment_link ? 
+                        `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
+                        ''}
+                    `;
+                    thisWeekendItems.appendChild(workshopItem);
                   });
                 }
               });
             }
             
+            // Add message if no workshops this weekend
+            if (!hasThisWeekWorkshops) {
+              const noWorkshops = document.createElement('p');
+              noWorkshops.className = 'no-workshops';
+              noWorkshops.textContent = 'No workshops scheduled for this weekend.';
+              thisWeekendItems.appendChild(noWorkshops);
+            }
+            
+            // Add "This Weekend" section to container
+            workshopContainer.appendChild(thisWeekendSection);
+            
+            // Add a visual divider between sections
+            const divider = document.createElement('div');
+            divider.className = 'section-divider';
+            workshopContainer.appendChild(divider);
+            
+            // Create section for "Upcoming Workshops"
+            const upcomingSection = document.createElement('div');
+            upcomingSection.className = 'workshop-section';
+            
+            // Add heading for "Upcoming Workshops" section
+            const upcomingHeading = document.createElement('h3');
+            upcomingHeading.textContent = 'Upcoming Workshops';
+            upcomingHeading.className = 'section-heading';
+            upcomingSection.appendChild(upcomingHeading);
+            
+            // Create container for upcoming workshop items
+            const upcomingItems = document.createElement('div');
+            upcomingItems.className = 'workshop-items-container';
+            upcomingSection.appendChild(upcomingItems);
+            
             // Process post_this_week workshops
             if (data.post_this_week && data.post_this_week.length > 0) {
               data.post_this_week.forEach(workshop => {
-                allWorkshops.push(workshop);
+                hasPostThisWeekWorkshops = true;
+                const workshopItem = document.createElement('div');
+                workshopItem.className = 'workshop-item';
+                workshopItem.innerHTML = `
+                  <p><strong>${workshop.date} at ${workshop.time}</strong></p>
+                  <p>Instructor: ${workshop.artist || 'TBA'}</p>
+                  <p>Song: ${workshop.song || 'TBA'}</p>
+                  <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
+                  ${workshop.payment_link ? 
+                    `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
+                    ''}
+                `;
+                upcomingItems.appendChild(workshopItem);
               });
             }
             
-            if (allWorkshops.length > 0) {
-              workshopContainer.innerHTML = '';
-              allWorkshops.forEach(workshop => {
-                workshopContainer.innerHTML += `
-                  <div class="workshop-item">
-                    <p><strong>${workshop.date} at ${workshop.time}</strong></p>
-                    <p>Instructor: ${workshop.artist || 'TBA'}</p>
-                    <p>Song: ${workshop.song || 'TBA'}</p>
-                    <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
-                    ${workshop.payment_link ? 
-                      `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
-                      ''}
-                  </div>
-                `;
-              });
-            } else {
-              workshopContainer.innerHTML = `<p>No upcoming workshops found.</p>`;
+            // Add message if no upcoming workshops
+            if (!hasPostThisWeekWorkshops) {
+              const noWorkshops = document.createElement('p');
+              noWorkshops.className = 'no-workshops';
+              noWorkshops.textContent = 'No upcoming workshops scheduled at this time.';
+              upcomingItems.appendChild(noWorkshops);
+            }
+            
+            // Add "Upcoming Workshops" section to container
+            workshopContainer.appendChild(upcomingSection);
+            
+            // Empty state handling if no workshops at all
+            if (!hasThisWeekWorkshops && !hasPostThisWeekWorkshops) {
+              workshopContainer.innerHTML = `<p class="no-workshops">No workshops currently scheduled.</p>`;
             }
           } else if (type === 'artist') {
             // Handle List<WorkshopSession> for artists
@@ -1186,10 +1540,11 @@
                   date: detail.date,
                   time: detail.time,
                   instructor: detail.by || 'TBA',
+                  instructor_instagram: detail.instagram_link || null,
                   song: detail.song || 'TBA',
                   pricing: detail.pricing_info || 'TBA',
                   studio: workshop.studio_id || 'TBA',
-                  registration_link: workshop.payment_link
+                  registration_link: workshop.payment_link || detail.payment_link || null
                 });
               });
             }
@@ -1263,17 +1618,28 @@
         const formattedDate = workshop.date || 'TBA';
         
         const row = document.createElement('tr');
+        
+        // Format instructor content with Instagram link if available
+        const instructorContent = workshop.instructor_instagram ? 
+          `<a href="${workshop.instructor_instagram}" class="workshop-instructor-link" target="_blank">
+             <span class="instructor-name">${workshop.instructor}</span>
+             <span class="instructor-instagram">
+               <img src="/static/assets/instagram-icon.png" alt="Instagram">
+             </span>
+           </a>` : 
+          `<span class="instructor-name">${workshop.instructor}</span>`;
+        
         row.innerHTML = `
-          <td>${formattedDate}</td>
-          <td>${workshop.time}</td>
-          <td>${workshop.instructor || 'TBA'}</td>
-          <td>${workshop.song || 'TBA'}</td>
-          <td>${workshop.pricing}</td>
-          <td>${workshop.studio || 'TBA'}</td>
+          <td data-label="Date">${formattedDate}</td>
+          <td data-label="Time">${workshop.time}</td>
+          <td data-label="Instructor">${instructorContent}</td>
+          <td data-label="Song">${workshop.song || 'TBA'}</td>
+          <td data-label="Pricing">${workshop.pricing}</td>
+          <td data-label="Studio">${workshop.studio || 'TBA'}</td>
           <td>
             ${workshop.registration_link ? 
               `<a href="${workshop.registration_link}" target="_blank" class="register-link">Register</a>` : 
-              'Coming soon'}
+              '<span class="coming-soon">Coming soon</span>'}
           </td>
         `;
         
