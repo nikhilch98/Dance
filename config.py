@@ -5,10 +5,12 @@ import sys
 # Production MongoDB connection string
 PROD_MONGODB_URI = "mongodb+srv://admin:admin@cluster0.8czn7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
+DEFAULT_ENV = "prod"
+
 class Config:
     """Configuration management for development and production environments."""
     
-    def __init__(self, env='dev'):
+    def __init__(self, env=DEFAULT_ENV):
         """Initialize configuration based on environment."""
         if env == 'dev':
             self.host = "localhost"

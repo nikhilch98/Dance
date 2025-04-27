@@ -122,7 +122,7 @@ class DatabaseManager:
     """Database connection and operation management."""
 
     @staticmethod
-    def get_mongo_client(env=None) -> MongoClient:
+    def get_mongo_client(env=config.DEFAULT_ENV) -> MongoClient:
         """Get a MongoDB client instance.
 
         Args:
