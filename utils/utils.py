@@ -206,6 +206,55 @@ class DateTimeFormatter:
         return f"{time_details['start_time']} - {time_details['end_time']}"
 
     @staticmethod
+    def get_timestamp_epoch(time_details: Dict) -> int:
+        """Calculate Unix timestamp (epoch) from time details.
+        
+        Args:
+            time_details: Dictionary with day, month, year, and start_time
+            
+        Returns:
+            Unix timestamp (seconds since epoch)
+        """
+        # Extract date components
+        year = int(time_details['year'])
+        month = int(time_details['month'])
+        day = int(time_details['day'])
+        
+        # Parse start_time or default to midnight (12:00 AM)
+        start_time = time_details.get('start_time')
+        if not start_time:
+            hour, minute = 0, 0  # 12:00 AM as default
+        else:
+            try:
+                # Normalize the time string first to handle variations
+                time_str = start_time.strip()
+                
+                # Try to parse time in 12-hour format with or without leading zeros
+                # Example formats: "1:00 PM", "01:00 PM", "11:00 AM"
+                if 'AM' in time_str or 'PM' in time_str:
+                    # Convert to standard format with leading zeros if needed
+                    time_parts = time_str.replace('AM', '').replace('PM', '').strip().split(':')
+                    if len(time_parts[0]) == 1:
+                        # Add leading zero if hour is single digit
+                        time_str = f"0{time_str}"
+                    
+                    # Now parse with standard 12-hour format
+                    time_obj = datetime.strptime(time_str, '%I:%M %p')
+                    hour, minute = time_obj.hour, time_obj.minute
+                # Try 24-hour format (e.g., "18:00")
+                else:
+                    time_obj = datetime.strptime(time_str, '%H:%M')
+                    hour, minute = time_obj.hour, time_obj.minute
+            except ValueError as e:
+                print(f"Warning: Could not parse time '{start_time}': {e}. Using midnight.")
+                # If all parsing fails, default to midnight
+                hour, minute = 0, 0
+        
+        # Create datetime object and convert to timestamp
+        dt = datetime(year, month, day, hour, minute)
+        return int(dt.timestamp())
+
+    @staticmethod
     def get_current_timestamp() -> float:
         """Get current timestamp.
 
@@ -405,6 +454,7 @@ get_mongo_client = DatabaseManager.get_mongo_client
 get_formatted_date = DateTimeFormatter.get_formatted_date
 get_formatted_date_with_day = DateTimeFormatter.get_formatted_date_with_day
 get_formatted_time = DateTimeFormatter.get_formatted_time
+get_timestamp_epoch = DateTimeFormatter.get_timestamp_epoch
 get_current_timestamp = DateTimeFormatter.get_current_timestamp
 fetch_url = URLManager.fetch_url
 extract_links = URLManager.extract_links

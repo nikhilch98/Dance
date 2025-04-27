@@ -138,8 +138,8 @@ class WorkshopProcessor:
             "     * **`year`**: 4-digit year.\n"
             "       - If no year is specified but the event date is clearly in the future, "
             "         choose the earliest valid future year.\n"
-            "     * **`start_time`**: string, 12-hour format \"HH:MM AM/PM\"\n"
-            "     * **`end_time`**: string, 12-hour format \"HH:MM AM/PM\"\n\n"
+            "     * **`start_time`**: string, 12-hour format. It should have trailing zeros if the time is less than 10, Ex: 01:00 AM/PM , 05:00 AM/PM. \"HH:MM AM/PM\"\n"
+            "     * **`end_time`**: string, 12-hour format. It should have trailing zeros if the time is less than 10, Ex: 01:00 AM/PM , 05:00 AM/PM. \"HH:MM AM/PM\"\n\n"
             
             "   - **`by`**: string with the instructor's name(s). If multiple, use ' x ' to separate.\n"
             "   - **`song`**: string with the routine/song name if available, else null.\n"

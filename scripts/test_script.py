@@ -184,4 +184,22 @@ if __name__ == "__main__":
     # )
     # url = "https://danceinn.studio/workshops/upcoming-workshops/"
     
+
+    time_1 = utils.get_timestamp_epoch({
+        "day": 2,
+        "month": 5,
+        "year": 2025,
+        "start_time": "12:00 PM",
+        "end_time": None
+    })
+    time_2 = utils.get_timestamp_epoch({
+        "day": 25,
+        "month": 5,
+        "year": 2025,
+        "start_time": "07:00 PM",
+        "end_time": "09:00 PM",
+    })
+    print(time_1, time_2)
+    print(time_1 < time_2)
+
     pass

@@ -1669,8 +1669,13 @@
                   `;
                   thisWeekendItems.appendChild(dayHeader);
                   
+                  // Sort day's workshops by timestamp_epoch before adding them
+                  const sortedDayWorkshops = [...day.workshops].sort((a, b) => {
+                    return (a.timestamp_epoch || 0) - (b.timestamp_epoch || 0);
+                  });
+                  
                   // Add workshops for this day
-                  day.workshops.forEach(workshop => {
+                  sortedDayWorkshops.forEach(workshop => {
                     const workshopItem = document.createElement('div');
                     workshopItem.className = 'workshop-item';
                     workshopItem.innerHTML = `
@@ -1724,6 +1729,7 @@
             
             // Process post_this_week workshops
             if (data.post_this_week && data.post_this_week.length > 0) {
+              // Post this weekend workshops sorted by timestamp
               data.post_this_week.forEach(workshop => {
                 hasPostThisWeekWorkshops = true;
                 
@@ -1763,8 +1769,13 @@
                 `;
                 upcomingItems.appendChild(dayHeader);
                 
+                // Sort workshops for this date by timestamp_epoch
+                const sortedWorkshops = upcomingWorkshopsByDate[dateStr].sort((a, b) => {
+                  return (a.timestamp_epoch || 0) - (b.timestamp_epoch || 0);
+                });
+                
                 // Add workshops for this date
-                upcomingWorkshopsByDate[dateStr].forEach(workshop => {
+                sortedWorkshops.forEach(workshop => {
                   const workshopItem = document.createElement('div');
                   workshopItem.className = 'workshop-item';
                   workshopItem.innerHTML = `
@@ -1799,8 +1810,13 @@
           } else if (type === 'artist') {
             // Handle List<WorkshopSession> for artists
             if (data.length > 0) {
+              // Sort by timestamp_epoch
+              const sortedWorkshops = [...data].sort((a, b) => {
+                return (a.timestamp_epoch || 0) - (b.timestamp_epoch || 0);
+              });
+              
               workshopContainer.innerHTML = '';
-              data.forEach(workshop => {
+              sortedWorkshops.forEach(workshop => {
                 workshopContainer.innerHTML += `
                   <div class="workshop-item">
                     <p><strong>${workshop.date} at ${workshop.time}</strong></p>
@@ -2042,14 +2058,15 @@
             if (workshop.workshop_details && workshop.workshop_details.length > 0) {
               workshop.workshop_details.forEach(detail => {
                 workshopData.push({
-              date: detail.date,
-              time: detail.time,
+                  date: detail.date,
+                  time: detail.time,
                   instructor: detail.by || 'TBA',
                   instructor_instagram: detail.instagram_link || null,
                   song: detail.song || 'TBA',
                   pricing: detail.pricing_info || 'TBA',
                   studio: workshop.studio_id || 'TBA',
-                  registration_link: workshop.payment_link || detail.payment_link || null
+                  registration_link: workshop.payment_link || detail.payment_link || null,
+                  timestamp_epoch: detail.timestamp_epoch || 0
                 });
               });
             }
@@ -2315,12 +2332,25 @@
         
         switch (currentSort.column) {
           case 'date':
-            valueA = new Date(a.date).getTime();
-            valueB = new Date(b.date).getTime();
+            // Use timestamp_epoch for date-based sorting
+            valueA = a.timestamp_epoch || 0;
+            valueB = b.timestamp_epoch || 0;
             break;
           case 'time':
-            valueA = a.time;
-            valueB = b.time;
+            // For time sorting, first group by date, then sort by time within same date
+            // Extract date parts from the formatted date strings
+            const dateA = a.date ? new Date(a.date.replace(/(\d+)(st|nd|rd|th)/, '$1')) : new Date(0);
+            const dateB = b.date ? new Date(b.date.replace(/(\d+)(st|nd|rd|th)/, '$1')) : new Date(0);
+            
+            // If dates are different, sort by date first
+            if (dateA.getTime() !== dateB.getTime()) {
+              valueA = dateA.getTime();
+              valueB = dateB.getTime();
+            } else {
+              // If same date, sort by timestamp_epoch (which includes time)
+              valueA = a.timestamp_epoch || 0;
+              valueB = b.timestamp_epoch || 0;
+            }
             break;
           case 'by':
             valueA = a.instructor?.toLowerCase() || '';
@@ -2335,11 +2365,19 @@
             valueB = b.studio?.toLowerCase() || '';
             break;
           default:
-            valueA = new Date(a.date).getTime();
-            valueB = new Date(b.date).getTime();
+            // Default sorting also uses timestamp_epoch
+            valueA = a.timestamp_epoch || 0;
+            valueB = b.timestamp_epoch || 0;
         }
         
         const direction = currentSort.direction === 'asc' ? 1 : -1;
+        
+        // Special handling for numeric timestamp values
+        if (currentSort.column === 'date' || currentSort.column === 'time') {
+          return (valueA - valueB) * direction;
+        }
+        
+        // String comparison for other columns
         return (valueA > valueB ? 1 : -1) * direction;
       });
       
