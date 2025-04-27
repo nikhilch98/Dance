@@ -173,6 +173,27 @@ class DateTimeFormatter:
         return date_obj.strftime(f"%d{suffix} %b (%a)")
     
     @staticmethod
+    def get_formatted_date_without_day(time_details: Dict) -> str:
+        """Format date using datetime module.
+
+        Args:
+            time_details: Dictionary with day, month, and year.
+
+        Returns:
+            Formatted date string (e.g., "07th Feb Thu").
+        """
+        date_obj = datetime(
+            year=int(time_details['year']),
+            month=int(time_details['month']),
+            day=int(time_details['day'])
+        )
+
+        day = date_obj.day
+        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+
+        return date_obj.strftime(f"%d{suffix} %b")
+    
+    @staticmethod
     def get_formatted_date_with_day(time_details: Dict) -> str:
         """Format date using datetime module.
 
@@ -203,7 +224,28 @@ class DateTimeFormatter:
         Returns:
             Formatted time range string (e.g., "6:00 PM - 7:30 PM")
         """
-        return f"{time_details['start_time']} - {time_details['end_time']}"
+        start_time = time_details['start_time']
+        end_time = time_details['end_time']
+        if start_time is None:
+            return "TBA"
+
+        start_time, start_format = start_time.split(' ')
+        start_time_hour = start_time.split(':')[0].lstrip('0')
+        start_time_minute = start_time.split(':')[1].lstrip('0')
+        start_time_str = f"{start_time_hour}:{start_time_minute}" if start_time_minute else start_time_hour
+
+        if end_time is None:
+            return f"{start_time_str} {start_format}"
+
+        end_time, end_format = end_time.split(' ')
+        end_time_hour = end_time.split(':')[0].lstrip('0')
+        end_time_minute = end_time.split(':')[1].lstrip('0')
+        end_time_str = f"{end_time_hour}:{end_time_minute}" if end_time_minute else end_time_hour
+
+        if start_format == end_format:
+            return f"{start_time_str}-{end_time_str} {start_format}"
+        else:
+            return f"{start_time_str} {start_format} - {end_time_str} {end_format}"
 
     @staticmethod
     def get_timestamp_epoch(time_details: Dict) -> int:
@@ -453,6 +495,7 @@ def is_image_downloadable(url: Optional[str]) -> bool:
 get_mongo_client = DatabaseManager.get_mongo_client
 get_formatted_date = DateTimeFormatter.get_formatted_date
 get_formatted_date_with_day = DateTimeFormatter.get_formatted_date_with_day
+get_formatted_date_without_day = DateTimeFormatter.get_formatted_date_without_day
 get_formatted_time = DateTimeFormatter.get_formatted_time
 get_timestamp_epoch = DateTimeFormatter.get_timestamp_epoch
 get_current_timestamp = DateTimeFormatter.get_current_timestamp

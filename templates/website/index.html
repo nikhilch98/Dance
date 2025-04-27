@@ -330,7 +330,7 @@
     .workshop-table {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 0;
+      border-spacing: 0 0; /* Add horizontal spacing between cells */
       background-color: rgba(30, 40, 58, 0.6);
       backdrop-filter: blur(30px);
       -webkit-backdrop-filter: blur(30px);
@@ -342,6 +342,81 @@
       transform: translateY(0);
       transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
       margin: 20px 0;
+      table-layout: fixed; /* Use fixed layout for better column control */
+    }
+    
+    /* Add global cell styling */
+    .workshop-table td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      padding: 16px 10px; /* Add padding to all cells */
+    }
+    
+    /* Add more spacing between columns */
+    .workshop-table th,
+    .workshop-table td {
+      border-right: 3px solid rgba(18, 28, 46, 0.9); /* Add visual separator */
+    }
+    
+    /* Remove border from last column */
+    .workshop-table th:last-child,
+    .workshop-table td:last-child {
+      border-right: none;
+    }
+    
+    /* Date column */
+    .workshop-table th:nth-child(1),
+    .workshop-table td:nth-child(1) {
+      width: 160px;
+    }
+    
+    /* Time column */
+    .workshop-table th:nth-child(2),
+    .workshop-table td:nth-child(2) {
+      width: 120px;
+    }
+    
+    /* Instructor column */
+    .workshop-table th:nth-child(3),
+    .workshop-table td:nth-child(3) {
+      width: 18%;
+    }
+    
+    /* Song column */
+    .workshop-table th:nth-child(4),
+    .workshop-table td:nth-child(4) {
+      width: 16%;
+      white-space: normal; /* Allow text wrapping */
+    }
+    
+    /* Pricing column - needs more space */
+    .workshop-table th:nth-child(5),
+    .workshop-table td:nth-child(5) {
+      width: 20%;
+      white-space: normal; /* Allow text wrapping */
+      word-break: normal;
+      line-height: 1.2;
+    }
+    
+    /* Studio column */
+    .workshop-table th:nth-child(6),
+    .workshop-table td:nth-child(6) {
+      width: 16%;
+    }
+    
+    /* Register column */
+    .workshop-table th:nth-child(7),
+    .workshop-table td:nth-child(7) {
+      width: 110px;
+      text-align: center;
+    }
+    
+    /* Workshop table container to enable horizontal scrolling if needed */
+    .workshop-table-container {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 5px; /* Add some padding to avoid scrollbar covering content */
     }
 
     /* Floating effect on page load */
@@ -401,13 +476,15 @@
     .workshop-table th:nth-child(1),
     .workshop-table td:nth-child(1) {
       width: auto;  /* Date - content-based width */
-      min-width: 100px;
+      min-width: 150px;  /* Increase from 100px to 150px */
+      white-space: nowrap;
     }
 
     .workshop-table th:nth-child(2),
     .workshop-table td:nth-child(2) {
       width: auto;  /* Time - content-based width */
-      min-width: 100px;
+      min-width: 150px;  /* Increase from 100px to 150px */
+      white-space: nowrap;
     }
 
     .workshop-table th:nth-child(3),
@@ -500,14 +577,10 @@
 
     /* Cell content styling */
     .workshop-table td:nth-child(5) {
+      overflow: visible;
+      white-space: normal;
       font-weight: 500;
       color: rgba(66, 214, 96, 1);
-      min-width: 300px;
-      max-width: 350px;
-      white-space: normal;
-      word-wrap: break-word;
-      word-break: break-all;
-      line-height: 1.4;
     }
 
     /* Add a subtle highlight for registration options */
@@ -521,29 +594,11 @@
     }
 
     .workshop-table .register-link {
-      background: rgba(0, 123, 255, 0.5);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
-      border: 1px solid rgba(0, 123, 255, 0.5);
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-      display: block;
-      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: rgba(255, 255, 255, 1);
-      transform: scale(1);
+      display: inline-block;
       width: 90%;
+      text-align: center;
+      padding: 8px 5px;
       margin: 0 auto;
-      text-decoration: none;
-    }
-
-    .workshop-table .register-link:hover {
-      background: rgba(0, 123, 255, 0.7);
-      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.5);
-      transform: translateY(-3px) scale(1.05);
     }
 
     /* Loading and Error */
@@ -591,7 +646,7 @@
       .workshop-table, 
       .workshop-table tbody, 
       .workshop-table tr,
-      .workshop-table td {
+    .workshop-table td {
         display: block !important;
         width: 100% !important;
       }
@@ -629,6 +684,8 @@
         text-align: left !important;
         position: relative !important;
         color: #ffffff !important;
+        overflow: visible !important; /* Ensure content isn't cut off */
+        white-space: normal !important; /* Allow text to wrap */
       }
       
       /* Clear label styling */
@@ -655,14 +712,16 @@
       .workshop-table td[data-label="Date"] {
         padding-top: 0 !important;
         font-weight: 600 !important;
+        font-size: 1.05rem !important; /* Slightly larger font for better visibility */
       }
       
       .workshop-table td[data-label="Time"] {
         padding-top: 0 !important;
+        font-size: 1.05rem !important; /* Slightly larger font for better visibility */
       }
       
       /* Fix Register button */
-      .workshop-table td:last-child {
+    .workshop-table td:last-child {
         padding-top: 15px !important;
         margin-top: 5px !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -1023,13 +1082,15 @@
     .workshop-table th:nth-child(1),
     .workshop-table td:nth-child(1) {
       width: auto;  /* Date - content-based width */
-      min-width: 100px;
+      min-width: 150px;  /* Increase from 100px to 150px */
+      white-space: nowrap;
     }
     
     .workshop-table th:nth-child(2),
     .workshop-table td:nth-child(2) {
       width: auto;  /* Time - content-based width */
-      min-width: 100px;
+      min-width: 150px;  /* Increase from 100px to 150px */
+      white-space: nowrap;
     }
     
     .workshop-table th:nth-child(3),
@@ -1432,7 +1493,7 @@
           
           <div class="filters-summary" id="filters-summary"></div>
         </div>
-        <div style="overflow-x:auto;">
+        <div class="workshop-table-container">
           <table id="workshop-table" class="workshop-table" role="grid" aria-describedby="workshops-desc">
             <thead>
               <tr>
@@ -2393,6 +2454,22 @@
         // Use the date directly from the API as it's already formatted
         const formattedDate = workshop.date || 'TBA';
         
+        // Format time more compactly if it contains a dash
+        let displayTime = workshop.time || 'TBA';
+        if (displayTime.includes('-')) {
+          // Convert "7:00 PM - 8:30 PM" to "7-8:30 PM"
+          displayTime = displayTime.replace(/(\d+):(\d+)\s+(AM|PM)\s+-\s+(\d+):(\d+)\s+(AM|PM)/g, 
+            (match, h1, m1, ampm1, h2, m2, ampm2) => {
+              // If both times are in the same AM/PM period
+              if (ampm1 === ampm2) {
+                return `${h1}${m1 !== '00' ? ':'+m1 : ''}-${h2}${m2 !== '00' ? ':'+m2 : ''} ${ampm1}`;
+              }
+              // If times span AM/PM
+              return `${h1}${m1 !== '00' ? ':'+m1 : ''} ${ampm1}-${h2}${m2 !== '00' ? ':'+m2 : ''} ${ampm2}`;
+            }
+          );
+        }
+        
         const row = document.createElement('tr');
         
         // Format instructor content with Instagram link if available
@@ -2407,7 +2484,7 @@
         
         row.innerHTML = `
           <td data-label="Date">${formattedDate}</td>
-          <td data-label="Time">${workshop.time}</td>
+          <td data-label="Time">${displayTime}</td>
           <td data-label="Instructor">${instructorContent}</td>
           <td data-label="Song">${workshop.song || 'TBA'}</td>
           <td data-label="Pricing">${workshop.pricing}</td>

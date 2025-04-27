@@ -21,6 +21,8 @@
       --transition-speed: 0.3s;
       --border-radius: 8px;
       --spacing-unit: 24px;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --shadow: 0 8px 16px var(--shadow-color);
     }
 
     /* Base styles and typography */
@@ -29,16 +31,13 @@
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: var(--background-color);
+      font-family: var(--font-family);
+      max-width: 95%;
+      margin: 0 auto;
+      padding: 20px;
       color: var(--text-color);
-      margin: 0;
-      padding: var(--spacing-unit);
-      min-height: 100vh;
       line-height: 1.6;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background-color: var(--background-color);
     }
 
     h1 {
@@ -99,29 +98,71 @@
 
     .workshop-table {
       width: 100%;
-      border-collapse: collapse;
-      background-color: white;
-      box-shadow: 0 8px 16px var(--shadow-color);
-      border-radius: var(--border-radius);
+      border-collapse: separate;
+      border-spacing: 0;
+      background-color: var(--background-color);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
       overflow: hidden;
-      font-size: 1rem;
+      margin-bottom: 40px;
+      table-layout: fixed;
+      max-width: 1300px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .workshop-table thead {
-      background-color: #f8f9fa;
-      box-shadow: inset 0 -1px 0 #ccc;
+    .workshop-table th {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
       position: sticky;
       top: 0;
-      z-index: 10;
+    }
+
+    .workshop-table th.name-column {
+      width: 18%;
+    }
+
+    .workshop-table th.date-column {
+      width: 15%;
+    }
+
+    .workshop-table th.time-column {
+      width: 12%;
+    }
+
+    .workshop-table th.instructor-column {
+      width: 20%;
+    }
+
+    .workshop-table th.studio-column {
+      width: 18%;
+    }
+
+    .workshop-table th.level-column {
+      width: 10%;
+    }
+
+    .workshop-table th.register-column {
+      width: 7%;
     }
 
     .workshop-table th,
     .workshop-table td {
-      padding: 14px 16px;
+      padding: 12px 15px;
       text-align: left;
       border-bottom: 1px solid var(--border-color);
-      vertical-align: middle;
-      user-select: none;
+    }
+
+    .workshop-table th:first-child, .workshop-table td:first-child {
+      padding-left: 20px;
+    }
+
+    .workshop-table th:last-child, .workshop-table td:last-child {
+      padding-right: 20px;
     }
 
     .workshop-table th {
@@ -305,6 +346,12 @@
         border: 1px solid #aaa;
       }
     }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
@@ -322,36 +369,36 @@
     <table class="workshop-table" id="workshop-table" role="grid" aria-describedby="workshops-desc" aria-live="polite" aria-atomic="true">
       <thead>
         <tr>
-          <th scope="col">
+          <th scope="col" class="date-column">
             Date
             <button class="sort-btn" onclick="sortColumn(event, 'date')" aria-label="Sort by date" tabindex="0"></button>
             <button class="filter-btn" onclick="toggleFilterMenu(event, 'date')" aria-label="Filter by date" tabindex="0"></button>
             <div class="filter-menu" id="filter-date" role="region" aria-label="Filter by date"></div>
           </th>
-          <th scope="col">
+          <th scope="col" class="time-column">
             Time
             <button class="sort-btn" onclick="sortColumn(event, 'time')" aria-label="Sort by time" tabindex="0"></button>
           </th>
-          <th scope="col">
+          <th scope="col" class="instructor-column">
             Instructor
             <button class="sort-btn" onclick="sortColumn(event, 'by')" aria-label="Sort by instructor" tabindex="0"></button>
             <button class="filter-btn" onclick="toggleFilterMenu(event, 'by')" aria-label="Filter by instructor" tabindex="0"></button>
             <div class="filter-menu" id="filter-by" role="region" aria-label="Filter by instructor"></div>
           </th>
-          <th scope="col">
+          <th scope="col" class="name-column">
             Song
             <button class="sort-btn" onclick="sortColumn(event, 'song')" aria-label="Sort by song" tabindex="0"></button>
             <button class="filter-btn" onclick="toggleFilterMenu(event, 'song')" aria-label="Filter by song" tabindex="0"></button>
             <div class="filter-menu" id="filter-song" role="region" aria-label="Filter by song"></div>
           </th>
-          <th scope="col">Pricing</th>
-          <th scope="col">
+          <th scope="col" class="level-column">Pricing</th>
+          <th scope="col" class="studio-column">
             Studio
             <button class="sort-btn" onclick="sortColumn(event, 'studio_id')" aria-label="Sort by studio" tabindex="0"></button>
             <button class="filter-btn" onclick="toggleFilterMenu(event, 'studio_id')" aria-label="Filter by studio" tabindex="0"></button>
             <div class="filter-menu" id="filter-studio_id" role="region" aria-label="Filter by studio"></div>
           </th>
-          <th scope="col">Register</th>
+          <th scope="col" class="register-column">Register</th>
         </tr>
       </thead>
       <tbody></tbody>

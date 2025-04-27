@@ -16,7 +16,7 @@ from pydantic import BaseModel, HttpUrl
 import requests
 import uvicorn
 
-from utils.utils import get_mongo_client, get_formatted_date, get_formatted_date_with_day, get_formatted_time, get_timestamp_epoch
+from utils.utils import get_mongo_client, get_formatted_date, get_formatted_date_with_day, get_formatted_time, get_timestamp_epoch, get_formatted_date_without_day
 
 # API Models
 class TimeDetails(BaseModel):
@@ -168,7 +168,7 @@ class DatabaseOperations:
                     "pricing_info": detail.get("pricing_info", ""),
                     "timestamp_epoch": get_timestamp_epoch(detail['time_details']),
                     "artist_id": detail.get("artist_id", ""),
-                    "date": get_formatted_date(detail['time_details']),
+                    "date": get_formatted_date_without_day(detail['time_details']),
                     "time": get_formatted_time(detail['time_details']),
                 }
                 for detail in workshop["workshop_details"]
