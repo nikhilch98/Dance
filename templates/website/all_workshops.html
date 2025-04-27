@@ -1,415 +1,484 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="View and filter all available dance workshops">
-    <title>All Dance Workshops</title>
-    
-    <script>
-        let originalData = [];
-        let filteredData = [];
-        let currentSortOrder = {}; // Track the sort order for each column
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="View and filter all available dance workshops" />
+  <title>All Dance Workshops</title>
 
-        // Function to fetch data from the API
-        const fetchWorkshopData = async () => {
-            try {
-                const response = await fetch("/api/workshops?version=v2");
-                const workshops = await response.json();
+  <!-- Enhanced Critical CSS -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-                originalData = workshops.flatMap(workshop =>
-                    workshop.workshop_details.map(detail => ({
-                        date: detail.date,
-                        time: detail.time,
-                        by: detail.by || '',
-                        song: detail.song || '',
-                        studio_id: workshop.studio_id,
-                        payment_link: workshop.payment_link,
-                        pricing_info: detail.pricing_info || 'Contact studio'
-                    }))
-                );
+    :root {
+      --primary-color: #007bff;
+      --accent-color: #0056b3;
+      --success-color: #28a745;
+      --background-color: #f0f4f8;
+      --border-color: #dddddd;
+      --text-color: #212529;
+      --shadow-color: rgba(0, 0, 0, 0.12);
+      --transition-speed: 0.3s;
+      --border-radius: 8px;
+      --spacing-unit: 24px;
+    }
 
-                filteredData = [...originalData];
-                renderTable(filteredData);
-                populateFilters();
-            } catch (error) {
-                console.error("Error fetching workshop data:", error);
-                document.getElementById('error').textContent = "Failed to load workshops. Please try again later.";
-                document.getElementById('error').style.display = 'block';
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-            }
-        };
-    </script>
-    
-    <!-- Critical CSS -->
-    <style>
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --background-color: #f8f9fa;
-            --border-color: #ddd;
-            --text-color: #212529;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --transition-speed: 0.2s;
-            --border-radius: 4px;
-            --spacing-unit: 20px;
-        }
+    /* Base styles and typography */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-        /* Base styles */
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: var(--spacing-unit);
-            line-height: 1.5;
-        }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: var(--spacing-unit);
+      min-height: 100vh;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-        /* Table styles */
-        .workshop-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: var(--spacing-unit) 0;
-            background: white;
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
+    h1 {
+      font-weight: 600;
+      font-size: 2.25rem;
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-unit);
+      text-align: center;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
 
-        .workshop-table th,
-        .workshop-table td {
-            padding: 12px;
-            text-align: left;
-            border: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
+    .nav-back {
+      display: inline-block;
+      margin-bottom: var(--spacing-unit);
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color var(--transition-speed);
+    }
 
-        .workshop-table th {
-            background-color: #f4f4f4;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+    .nav-back:hover,
+    .nav-back:focus-visible {
+      color: var(--accent-color);
+      text-decoration: underline;
+      outline: none;
+    }
 
-        /* Button styles */
-        .btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color var(--transition-speed);
-        }
+    #workshops {
+      width: 100%;
+      max-width: 1200px;
+    }
 
-        .btn-reset {
-            background-color: var(--success-color);
-            color: white;
-        }
+    .controls {
+      display: flex;
+      justify-content: flex-start;
+      gap: var(--spacing-unit);
+      flex-wrap: wrap;
+      margin-bottom: var(--spacing-unit);
+    }
 
-        .btn-reset:hover {
-            background-color: #218838;
-        }
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      background-color: var(--success-color);
+      color: white;
+      transition: background-color var(--transition-speed);
+    }
 
-        /* Filter and sort controls */
-        .controls {
-            display: flex;
-            gap: var(--spacing-unit);
-            margin-bottom: var(--spacing-unit);
-            flex-wrap: wrap;
-        }
+    .btn:hover,
+    .btn:focus-visible {
+      background-color: #218838;
+      outline: none;
+    }
 
-        .sort-btn,
-        .filter-btn {
-            background: none;
-            border: none;
-            padding: 4px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            color: var(--primary-color);
-        }
+    .workshop-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 8px 16px var(--shadow-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      font-size: 1rem;
+    }
 
-        .sort-btn::after {
-            content: '↑';
-            margin-left: 4px;
-            transition: transform var(--transition-speed);
-        }
+    .workshop-table thead {
+      background-color: #f8f9fa;
+      box-shadow: inset 0 -1px 0 #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
-        .sort-btn.desc::after {
-            transform: rotate(180deg);
-        }
+    .workshop-table th,
+    .workshop-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      user-select: none;
+    }
 
-        .filter-menu {
-            position: absolute;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 6px var(--shadow-color);
-            padding: var(--spacing-unit);
-            z-index: 20;
-            max-height: 300px;
-            overflow-y: auto;
-            min-width: 200px;
-            display: none;
-        }
+    .workshop-table th {
+      font-weight: 700;
+      color: var(--primary-color);
+      position: relative;
+    }
 
-        .filter-menu.active {
-            display: block;
-        }
+    .sort-btn,
+    .filter-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-color);
+      padding: 0 4px;
+      font-size: 1rem;
+      user-select: none;
+      transition: color var(--transition-speed);
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
 
-        .filter-menu label {
-            display: block;
-            margin-bottom: 8px;
-        }
+    .sort-btn:hover,
+    .filter-btn:hover,
+    .sort-btn:focus-visible,
+    .filter-btn:focus-visible {
+      color: var(--accent-color);
+      outline: none;
+    }
 
-        /* Loading state */
-        .loading {
-            text-align: center;
-            padding: var(--spacing-unit);
-        }
+    .sort-btn::after {
+      content: "▲";
+      font-size: 0.8rem;
+      margin-left: 4px;
+      transition: transform var(--transition-speed);
+      display: inline-block;
+      line-height: 1;
+    }
 
-        /* Error state */
-        .error {
-            color: #dc3545;
-            padding: var(--spacing-unit);
-            text-align: center;
-        }
+    .sort-btn.desc::after {
+      transform: rotate(180deg);
+    }
 
-        /* Navigation */
-        .nav-back {
-            display: inline-block;
-            margin-bottom: var(--spacing-unit);
-            color: var(--primary-color);
-            text-decoration: none;
-        }
+    .filter-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+      padding: var(--spacing-unit);
+      z-index: 20;
+      max-height: 280px;
+      overflow-y: auto;
+      min-width: 220px;
+      display: none;
+      user-select: none;
+    }
 
-        .nav-back:hover {
-            text-decoration: underline;
-        }
+    .filter-menu.active {
+      display: block;
+    }
 
-        /* Responsive design */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
+    .filter-menu label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
 
-            .controls {
-                flex-direction: column;
-                gap: 10px;
-            }
+    .filter-menu label:last-child {
+      margin-bottom: 0;
+    }
 
-            .btn {
-                width: 100%;
-                padding: 12px;
-                font-size: 1rem;
-            }
+    .filter-menu input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
 
-            .workshop-table {
-                display: block;
-                overflow-x: auto;
-                font-size: 0.9rem;
-            }
+    .loading, .error {
+      text-align: center;
+      padding: var(--spacing-unit);
+      font-size: 1.1rem;
+    }
 
-            .workshop-table th,
-            .workshop-table td {
-                padding: 8px;
-                min-width: 100px;
-            }
+    .error {
+      color: #dc3545;
+    }
 
-            .workshop-table th {
-                white-space: nowrap;
-            }
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
 
-            .filter-menu {
-                position: fixed;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                width: 90%;
-                max-width: 300px;
-                max-height: 80vh;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
+      h1 {
+        font-size: 1.75rem;
+        margin-bottom: 16px;
+      }
 
-            .filter-menu label {
-                padding: 12px 8px;
-                margin: 0;
-                border-bottom: 1px solid var(--border-color);
-            }
+      .workshop-table {
+        display: block;
+        overflow-x: auto;
+        font-size: 0.9rem;
+        border-radius: var(--border-radius);
+      }
 
-            .filter-menu label:last-child {
-                border-bottom: none;
-            }
+      .workshop-table th,
+      .workshop-table td {
+        padding: 10px;
+        min-width: 110px;
+      }
 
-            .filter-menu input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                margin-right: 10px;
-                vertical-align: middle;
-            }
+      .filter-menu {
+        position: fixed !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%);
+        width: 90% !important;
+        max-width: 320px !important;
+        max-height: 80vh !important;
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      }
 
-            .sort-btn,
-            .filter-btn {
-                padding: 8px;
-                margin: 0 4px;
-            }
+      .filter-menu label {
+        padding: 12px 8px;
+        margin: 0;
+        border-bottom: 1px solid var(--border-color);
+      }
 
-            .nav-back {
-                display: block;
-                padding: 10px 0;
-                font-size: 1.1rem;
-            }
-        }
-    </style>
+      .filter-menu label:last-child {
+        border-bottom: none;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 14px;
+      }
+
+      .nav-back {
+        display: block;
+        font-size: 1.1rem;
+        padding: 10px 0;
+      }
+    }
+
+    /* Touch device optimizations */
+    @media (hover: none) {
+      .sort-btn:hover,
+      .filter-btn:hover,
+      .sort-btn:focus-visible,
+      .filter-btn:focus-visible {
+        color: var(--primary-color);
+        outline: none;
+      }
+
+      .filter-menu label:hover,
+      .filter-menu label:focus-visible {
+        background-color: #f0faff;
+        outline: none;
+      }
+
+      .btn {
+        -webkit-tap-highlight-color: transparent;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      .workshop-table {
+        box-shadow: none;
+        border-radius: 0;
+        border: none;
+      }
+      .workshop-table th,
+      .workshop-table td {
+        border: 1px solid #aaa;
+      }
+    }
+  </style>
 </head>
 <body>
-    <a href="/" class="nav-back">← Back to Categories</a>
+  <a href="/" class="nav-back" tabindex="0">← Back to Categories</a>
+  <h1>All Workshop Sessions</h1>
 
-    <div id="workshops">
-        <div class="controls">
-            <button class="btn btn-reset" onclick="resetFilters()">Reset Filters</button>
-        </div>
-
-        <div class="loading" id="loading">Loading workshops...</div>
-        <div class="error" id="error" style="display: none;"></div>
-
-        <table class="workshop-table" id="workshop-table">
-            <thead>
-                <tr>
-                    <th>
-                        Date
-                        <button class="sort-btn" onclick="sortColumn(event, 'date')" aria-label="Sort by date"></button>
-                        <button class="filter-btn" onclick="toggleFilterMenu(event, 'date')" aria-label="Filter by date"></button>
-                        <div class="filter-menu" id="filter-date"></div>
-                    </th>
-                    <th>
-                        Time
-                        <button class="sort-btn" onclick="sortColumn(event, 'time')" aria-label="Sort by time"></button>
-                    </th>
-                    <th>
-                        Instructor
-                        <button class="sort-btn" onclick="sortColumn(event, 'by')" aria-label="Sort by instructor"></button>
-                        <button class="filter-btn" onclick="toggleFilterMenu(event, 'by')" aria-label="Filter by instructor"></button>
-                        <div class="filter-menu" id="filter-by"></div>
-                    </th>
-                    <th>
-                        Song
-                        <button class="sort-btn" onclick="sortColumn(event, 'song')" aria-label="Sort by song"></button>
-                        <button class="filter-btn" onclick="toggleFilterMenu(event, 'song')" aria-label="Filter by song"></button>
-                        <div class="filter-menu" id="filter-song"></div>
-                    </th>
-                    <th>
-                        Pricing
-                    </th>
-                    <th>Studio
-                        <button class="sort-btn" onclick="sortColumn(event, 'studio_id')" aria-label="Sort by studio"></button>
-                        <button class="filter-btn" onclick="toggleFilterMenu(event, 'studio_id')" aria-label="Filter by studio"></button>
-                        <div class="filter-menu" id="filter-studio_id"></div>
-                    </th>
-                    <th>Register</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  <div id="workshops">
+    <div class="controls">
+      <button class="btn" type="button" onclick="resetFilters()" aria-label="Reset all filters">Reset Filters</button>
     </div>
 
-    <script>
-        // Render table rows
-        const renderTable = (data) => {
-            const tbody = document.querySelector("#workshop-table tbody");
-            tbody.innerHTML = "";
+    <div class="loading" id="loading">Loading workshops...</div>
+    <div class="error" id="error" style="display:none;"></div>
 
-            data.forEach(session => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${session.date}</td>
-                    <td>${session.time}</td>
-                    <td>${session.by}</td>
-                    <td>${session.song}</td>
-                    <td>${session.pricing_info}</td>
-                    <td>${session.studio_id}</td>
-                    <td class="payment-link"><a href="${session.payment_link}" target="_blank">Register</a></td>
-                `;
-                tbody.appendChild(row);
-            });
-        };
+    <table class="workshop-table" id="workshop-table" role="grid" aria-describedby="workshops-desc" aria-live="polite" aria-atomic="true">
+      <thead>
+        <tr>
+          <th scope="col">
+            Date
+            <button class="sort-btn" onclick="sortColumn(event, 'date')" aria-label="Sort by date" tabindex="0"></button>
+            <button class="filter-btn" onclick="toggleFilterMenu(event, 'date')" aria-label="Filter by date" tabindex="0"></button>
+            <div class="filter-menu" id="filter-date" role="region" aria-label="Filter by date"></div>
+          </th>
+          <th scope="col">
+            Time
+            <button class="sort-btn" onclick="sortColumn(event, 'time')" aria-label="Sort by time" tabindex="0"></button>
+          </th>
+          <th scope="col">
+            Instructor
+            <button class="sort-btn" onclick="sortColumn(event, 'by')" aria-label="Sort by instructor" tabindex="0"></button>
+            <button class="filter-btn" onclick="toggleFilterMenu(event, 'by')" aria-label="Filter by instructor" tabindex="0"></button>
+            <div class="filter-menu" id="filter-by" role="region" aria-label="Filter by instructor"></div>
+          </th>
+          <th scope="col">
+            Song
+            <button class="sort-btn" onclick="sortColumn(event, 'song')" aria-label="Sort by song" tabindex="0"></button>
+            <button class="filter-btn" onclick="toggleFilterMenu(event, 'song')" aria-label="Filter by song" tabindex="0"></button>
+            <div class="filter-menu" id="filter-song" role="region" aria-label="Filter by song"></div>
+          </th>
+          <th scope="col">Pricing</th>
+          <th scope="col">
+            Studio
+            <button class="sort-btn" onclick="sortColumn(event, 'studio_id')" aria-label="Sort by studio" tabindex="0"></button>
+            <button class="filter-btn" onclick="toggleFilterMenu(event, 'studio_id')" aria-label="Filter by studio" tabindex="0"></button>
+            <div class="filter-menu" id="filter-studio_id" role="region" aria-label="Filter by studio"></div>
+          </th>
+          <th scope="col">Register</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-        // Populate filter menus with unique values
-        const populateFilters = () => {
-            const filterColumns = ['date', 'by', 'song', 'studio_id'];
-            filterColumns.forEach(column => {
-                const uniqueValues = [...new Set(originalData.map(item => item[column]))].sort((a, b) => a.localeCompare(b));
-                const filterMenu = document.getElementById(`filter-${column}`);
+  <script>
+    let originalData = [];
+    let filteredData = [];
+    let currentSortOrder = {}; // Track the sort order for each column
 
-                filterMenu.innerHTML = uniqueValues.map(value => `
-                    <label>
-                        <input type="checkbox" value="${value}" onchange="applyFilters('${column}')"> ${value}
-                    </label>
-                `).join('');
-            });
-        };
+    const fetchWorkshopData = async () => {
+      try {
+        const response = await fetch("/api/workshops?version=v2");
+        const workshops = await response.json();
 
-        // Toggle filter menu visibility
-        const toggleFilterMenu = (event, column) => {
-            event.stopPropagation();
-            const filterMenu = document.getElementById(`filter-${column}`);
-            const isCurrentlyVisible = filterMenu.style.display === 'block';
+        originalData = workshops.flatMap(workshop =>
+          workshop.workshop_details.map(detail => ({
+            date: detail.date,
+            time: detail.time,
+            by: detail.by || '',
+            song: detail.song || '',
+            studio_id: workshop.studio_id,
+            payment_link: workshop.payment_link,
+            pricing_info: detail.pricing_info || 'Contact studio'
+          }))
+        );
 
-            // Hide all filter menus before toggling the clicked one
-            document.querySelectorAll('.filter-menu').forEach(menu => {
-                menu.style.display = 'none';
-            });
+        filteredData = [...originalData];
+        renderTable(filteredData);
+        populateFilters();
+      } catch (error) {
+        console.error("Error fetching workshop data:", error);
+        document.getElementById('error').textContent = "Failed to load workshops. Please try again later.";
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    };
 
-            // Toggle the visibility of the clicked filter menu
-            filterMenu.style.display = isCurrentlyVisible ? 'none' : 'block';
+    const renderTable = (data) => {
+      const tbody = document.querySelector("#workshop-table tbody");
+      tbody.innerHTML = "";
 
-            // Close filter menu if clicked outside
-            document.addEventListener('click', () => {
-                filterMenu.style.display = 'none';
-            }, { once: true });
-        };
+      data.forEach(session => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${session.date}</td>
+          <td>${session.time}</td>
+          <td>${session.by}</td>
+          <td>${session.song}</td>
+          <td>${session.pricing_info}</td>
+          <td>${session.studio_id}</td>
+          <td class="payment-link"><a href="${session.payment_link}" target="_blank" rel="noopener noreferrer">Register</a></td>
+        `;
+        tbody.appendChild(row);
+      });
+    };
 
-        // Apply filters
-        const applyFilters = (column) => {
-            const filterMenu = document.getElementById(`filter-${column}`);
-            const selectedValues = Array.from(filterMenu.querySelectorAll('input:checked')).map(input => input.value);
+    const populateFilters = () => {
+      const filterColumns = ['date', 'by', 'song', 'studio_id'];
+      filterColumns.forEach(column => {
+        const uniqueValues = [...new Set(originalData.map(item => item[column]))].sort((a, b) => a.localeCompare(b));
+        const filterMenu = document.getElementById(`filter-${column}`);
 
-            filteredData = originalData.filter(item => {
-                return selectedValues.length === 0 || selectedValues.includes(item[column]);
-            });
+        filterMenu.innerHTML = uniqueValues.map(value => `
+          <label>
+            <input type="checkbox" value="${value}" onchange="applyFilters('${column}')"> ${value}
+          </label>
+        `).join('');
+      });
+    };
 
-            renderTable(filteredData);
-        };
+    const toggleFilterMenu = (event, column) => {
+      event.stopPropagation();
+      const filterMenu = document.getElementById(`filter-${column}`);
+      const isCurrentlyVisible = filterMenu.style.display === 'block';
 
-        // Sort column
-        const sortColumn = (event, column) => {
-            const header = event.target;
-            const currentSort = currentSortOrder[column] || 'asc';
-            const newSort = currentSort === 'asc' ? 'desc' : 'asc';
+      // Hide all filter menus before toggling the clicked one
+      document.querySelectorAll('.filter-menu').forEach(menu => {
+        menu.style.display = 'none';
+      });
 
-            currentSortOrder[column] = newSort;
-            header.classList.toggle('desc', newSort === 'desc');
+      // Toggle the visibility of the clicked filter menu
+      filterMenu.style.display = isCurrentlyVisible ? 'none' : 'block';
 
-            filteredData.sort((a, b) => {
-                if (a[column] < b[column]) return newSort === 'asc' ? -1 : 1;
-                if (a[column] > b[column]) return newSort === 'asc' ? 1 : -1;
-                return 0;
-            });
+      // Close filter menu if clicked outside
+      document.addEventListener('click', () => {
+        filterMenu.style.display = 'none';
+      }, { once: true });
+    };
 
-            renderTable(filteredData);
-        };
+    const applyFilters = (column) => {
+      const filterMenu = document.getElementById(`filter-${column}`);
+      const selectedValues = Array.from(filterMenu.querySelectorAll('input:checked')).map(input => input.value);
 
-        // Reset filters
-        const resetFilters = () => {
-            filteredData = [...originalData];
-            document.querySelectorAll('.filter-menu input').forEach(input => input.checked = false);
-            renderTable(filteredData);
-        };
+      filteredData = originalData.filter(item => {
+        return selectedValues.length === 0 || selectedValues.includes(item[column]);
+      });
 
-        // Fetch and render the data when the page loads
-        fetchWorkshopData();
-    </script>
+      renderTable(filteredData);
+    };
+
+    const sortColumn = (event, column) => {
+      const header = event.target;
+      const currentSort = currentSortOrder[column] || 'asc';
+      const newSort = currentSort === 'asc' ? 'desc' : 'asc';
+
+      currentSortOrder[column] = newSort;
+      header.classList.toggle('desc', newSort === 'desc');
+
+      filteredData.sort((a, b) => {
+        if (a[column] < b[column]) return newSort === 'asc' ? -1 : 1;
+        if (a[column] > b[column]) return newSort === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      renderTable(filteredData);
+    };
+
+    const resetFilters = () => {
+      filteredData = [...originalData];
+      document.querySelectorAll('.filter-menu input').forEach(input => input.checked = false);
+      renderTable(filteredData);
+    };
+
+    fetchWorkshopData();
+  </script>
 </body>
 </html>

@@ -75,7 +75,7 @@ class StudioManager:
     def __init__(self):
         """Initialize the artist manager."""
         self.client = DatabaseManager.get_mongo_client()
-        self.collection = self.client["discovery"]["studios_v2"]
+        self.collection = self.client["discovery"]["studios"]
 
     def update_studio(self, studio: Studio) -> None:
         """Update or insert studio information in database.
@@ -168,9 +168,9 @@ def main():
     
     with tqdm(studios, desc="Updating Studios", leave=False) as pbar:
         for studio in pbar:
-            # Skip if image already exists
-            if is_image_downloadable(manager.get_existing_image(studio.instagram_id)):
-                continue
+            # # Skip if image already exists
+            # if is_image_downloadable(manager.get_existing_image(studio.instagram_id)):
+            #     continue
                 
             # Fetch new profile picture
             pic_url = InstagramAPI.fetch_profile_picture_hd(studio.instagram_id)

@@ -1,298 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Browse dance workshops by various categories including all workshops, artists, and studios">
-    <meta name="theme-color" content="#f8f9fa">
-    <title>Dance Workshops - Browse By Category</title>
-    
-    <!-- Critical CSS -->
-    <style>
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --background-color: #f8f9fa;
-            --card-background: #ffffff;
-            --text-color: #212529;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --transition-speed: 0.2s;
-            --border-radius: 10px;
-            --spacing-unit: 20px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Browse dance workshops by various categories including all workshops, artists, and studios" />
+  <meta name="theme-color" content="#f8f9fa" />
+  <title>Dance Workshops - Browse By Category</title>
 
-        /* Base styles */
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: var(--spacing-unit);
-            line-height: 1.5;
-        }
+  <!-- Enhanced Critical CSS -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-        /* Typography */
-        h1 {
-            text-align: center;
-            margin-bottom: var(--spacing-unit);
-            font-size: 2rem;
-            font-weight: 600;
-        }
+    :root {
+      --primary-color: #007bff;
+      --accent-color: #0056b3;
+      --secondary-color: #6c757d;
+      --background-color: #f0f4f8;
+      --card-background: #ffffff;
+      --text-color: #212529;
+      --shadow-color: rgba(0, 0, 0, 0.12);
+      --transition-speed: 0.3s;
+      --border-radius: 12px;
+      --spacing-unit: 24px;
+    }
 
-        /* Layout */
-        .carousel {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--spacing-unit);
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 var(--spacing-unit);
-        }
+    /* Base reset & typography */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-        /* Card Component */
-        .carousel-item {
-            position: relative;
-            background-color: var(--card-background);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 6px var(--shadow-color);
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform var(--transition-speed);
-        }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: var(--spacing-unit);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-        .carousel-item:hover {
-            transform: translateY(-5px);
-        }
+    header {
+      margin-bottom: var(--spacing-unit);
+      text-align: center;
+    }
 
-        .carousel-item:focus-within {
-            outline: 3px solid var(--primary-color);
-        }
+    h1 {
+      font-weight: 600;
+      font-size: 2.25rem;
+      color: var(--primary-color);
+      margin: 0;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
 
-        .carousel-item img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            display: block;
-        }
+    main {
+      flex-grow: 1;
+      width: 100%;
+      max-width: 1200px;
+    }
 
-        .carousel-item p {
-            margin: 0;
-            padding: var(--spacing-unit);
-            font-size: 1.2rem;
-            font-weight: 500;
-            text-align: center;
-        }
+    /* Grid carousel */
+    .carousel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--spacing-unit);
+      padding: 0 var(--spacing-unit);
+    }
 
-        /* Accessibility */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
+    /* Card Component */
+    .carousel-item {
+      position: relative;
+      background-color: var(--card-background);
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 16px var(--shadow-color);
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+      will-change: transform;
+      padding-bottom: 1.5em;
+    }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
+    .carousel-item:hover,
+    .carousel-item:focus-visible {
+      transform: translateY(-6px) scale(1.04);
+      box-shadow: 0 12px 24px rgba(0, 123, 255, 0.3);
+      outline: none;
+      z-index: 4;
+    }
 
-            h1 {
-                font-size: 1.5rem;
-                margin: 15px 0;
-            }
+    .carousel-item:focus-visible {
+      outline: 3px solid var(--accent-color);
+      outline-offset: 4px;
+      z-index: 5;
+    }
 
-            .carousel {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                margin: 20px auto;
-                padding: 0 10px;
-            }
+    .carousel-item img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-bottom-left-radius: var(--border-radius);
+      border-bottom-right-radius: var(--border-radius);
+      box-shadow: inset 0 -10px 20px -10px rgba(0,0,0,0.25);
+      transition: transform var(--transition-speed);
+      pointer-events: none;
+    }
 
-            .carousel-item {
-                margin-bottom: 10px;
-            }
+    .carousel-item p {
+      margin: 1rem 0 0 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--secondary-color);
+      transition: color var(--transition-speed);
+      user-select: text;
+    }
 
-            .carousel-item img {
-                height: 180px;
-            }
+    .carousel-item:hover p {
+      color: var(--primary-color);
+    }
 
-            .carousel-item p {
-                padding: 15px;
-                font-size: 1.1rem;
-            }
-        }
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
 
-        /* Touch device optimizations */
-        @media (hover: none) {
-            .carousel-item:hover {
-                transform: none;
-            }
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
 
-            .carousel-item:active {
-                transform: scale(0.98);
-            }
+      h1 {
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+      }
 
-            .carousel-item {
-                -webkit-tap-highlight-color: transparent;
-            }
-        }
+      .carousel {
+        grid-template-columns: 1fr;
+        padding: 0 12px;
+        gap: 1.5rem;
+      }
 
-        /* Print styles */
-        @media print {
-            body {
-                background: white;
-            }
-            .carousel-item {
-                break-inside: avoid;
-                box-shadow: none;
-            }
-        }
-    </style>
+      .carousel-item img {
+        height: 180px;
+      }
+
+      .carousel-item p {
+        font-size: 1.15rem;
+      }
+    }
+
+    /* Touch device optimizations */
+    @media (hover: none) {
+      .carousel-item:hover,
+      .carousel-item:focus-visible {
+        transform: none;
+        box-shadow: 0 8px 12px var(--shadow-color);
+        outline: none;
+      }
+
+      .carousel-item:active {
+        transform: scale(0.98);
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: white;
+      }
+      .carousel-item {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Browse Dance Workshops</h1>
-    </header>
+  <header>
+    <h1>Browse Dance Workshops</h1>
+  </header>
+  <main>
+    <nav class="carousel" role="navigation" aria-label="Browse categories">
+      <a href="/all_workshops" class="carousel-item" role="button" tabindex="0">
+        <img 
+          data-src="/static/assets/workshops/workshops.png" 
+          alt="Dance workshop in progress" 
+          width="300" 
+          height="200" 
+          loading="lazy" 
+          src="/static/assets/workshops/workshops.png" 
+        />
+        <p>All Workshops</p>
+        <span class="sr-only">Browse all available workshops</span>
+      </a>
 
-    <main>
-        <nav class="carousel" role="navigation" aria-label="Browse categories">
-            <a href="/all_workshops" class="carousel-item" role="button">
-                <img src="/static/assets/workshops/workshops.png" alt="Dance workshop in progress" width="300" height="200">
-                <p>All Workshops</p>
-                <span class="sr-only">Browse all available workshops</span>
-            </a>
-            
-            <a href="/browse_by_artists" class="carousel-item" role="button">
-                <img src="/static/assets/artists/artists.png" alt="Featured dance artist" width="300" height="200">
-                <p>Artists</p>
-                <span class="sr-only">Browse workshops by dance artists</span>
-            </a>
-            
-            <a href="/browse_by_studios" class="carousel-item" role="button">
-                <img src="/static/assets/studios/studios.png" alt="Dance studio space" width="300" height="200">
-                <p>Studios</p>
-                <span class="sr-only">Browse workshops by dance studios</span>
-            </a>
-        </nav>
-    </main>
+      <a href="/browse_by_artists" class="carousel-item" role="button" tabindex="0">
+        <img 
+          data-src="/static/assets/artists/artists.png" 
+          alt="Featured dance artist" 
+          width="300" 
+          height="200" 
+          loading="lazy" 
+          src="/static/assets/artists/artists.png" 
+        />
+        <p>Artists</p>
+        <span class="sr-only">Browse workshops by dance artists</span>
+      </a>
 
-    <!-- JavaScript -->
-    <script type="module">
-        /**
-         * Environment configurations for different deployment scenarios.
-         * @type {Object.<string, ApiConfig>}
-         */
-        const ENV_CONFIGS = {
-            development: {
-                version: 'v2',
-                baseUrl: '',
-                endpoints: {
-                    workshops: 'api/workshops',
-                    artists: 'api/artists',
-                    workshopsByArtist: 'api/workshops_by_artist',
-                    workshopsByStudio: 'api/workshops_by_studio'
-                }
-            },
-            production: {
-                version: 'v2',
-                baseUrl: '',
-                endpoints: {
-                    workshops: 'api/workshops',
-                    artists: 'api/artists',
-                    workshopsByArtist: 'api/workshops_by_artist',
-                    workshopsByStudio: 'api/workshops_by_studio'
-                }
+      <a href="/browse_by_studios" class="carousel-item" role="button" tabindex="0">
+        <img 
+          data-src="/static/assets/studios/studios.png" 
+          alt="Dance studio space" 
+          width="300" 
+          height="200" 
+          loading="lazy" 
+          src="/static/assets/studios/studios.png" 
+        />
+        <p>Studios</p>
+        <span class="sr-only">Browse workshops by dance studios</span>
+      </a>
+    </nav>
+  </main>
+
+  <!-- JavaScript -->
+  <script type="module">
+    // Lazy-load images using IntersectionObserver for performance
+    document.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver(
+        (entries, obs) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              if(img.dataset.src && img.src !== img.dataset.src){
+                img.src = img.dataset.src;
+              }
+              obs.unobserve(img);
             }
-        };
+          });
+        },
+        { rootMargin: '50px' }
+      );
 
-        /**
-         * Current environment configuration.
-         * @type {ApiConfig}
-         */
-        const API_CONFIG = ENV_CONFIGS['development']; // Default to development environment
+      document.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
+    });
 
-        /**
-         * Constructs a complete API URL for the given endpoint.
-         * @param {string} endpoint - The endpoint name defined in API_CONFIG.endpoints
-         * @param {Object} [params={}] - Optional query parameters
-         * @returns {string} Complete API URL with endpoint and query parameters
-         * @throws {Error} If the endpoint is not defined in the configuration
-         */
-        function getApiUrl(endpoint, params = {}) {
-            if (!API_CONFIG.endpoints[endpoint]) {
-                throw new Error(`Unknown endpoint: ${endpoint}`);
-            }
-
-            const queryParams = new URLSearchParams({
-                version: API_CONFIG.version,
-                ...params
-            }).toString();
-
-            return `${API_CONFIG.baseUrl}/${API_CONFIG.endpoints[endpoint]}?${queryParams}`;
-        }
-
-        /**
-         * Makes an API request with proper error handling.
-         * @param {string} endpoint - The endpoint name defined in API_CONFIG.endpoints
-         * @param {Object} [options={}] - Fetch options
-         * @param {Object} [params={}] - Query parameters
-         * @returns {Promise<Object>} Parsed JSON response
-         * @throws {Error} If the request fails or returns non-OK status
-         */
-        async function apiRequest(endpoint, options = {}, params = {}) {
-            try {
-                const response = await fetch(getApiUrl(endpoint, params), {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    ...options
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                return await response.json();
-            } catch (error) {
-                console.error(`API request failed for endpoint ${endpoint}:`, error);
-                throw error;
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            // Add intersection observer for lazy loading
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-                            img.src = img.dataset.src;
-                            observer.unobserve(img);
-                        }
-                    });
-                },
-                { rootMargin: '50px' }
-            );
-
-            // Observe all images
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                observer.observe(img);
-            });
-        });
-
-        // Handle errors
-        window.addEventListener('error', (event) => {
-            console.error('Page error:', event.error);
-            // You might want to show a user-friendly error message
-        });
-    </script>
+    // Global error handler with potential user notification
+    window.addEventListener('error', (event) => {
+      console.error('Page error:', event.error);
+      // Could implement user-friendly error notification here
+    });
+  </script>
 </body>
 </html>
