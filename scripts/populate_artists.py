@@ -5,6 +5,7 @@ and storing it in the database. It includes functionality for profile picture
 retrieval and data validation.
 """
 
+import argparse
 import json
 import os
 import sys
@@ -71,9 +72,9 @@ class InstagramAPI:
 class ArtistManager:
     """Artist data management system."""
     
-    def __init__(self):
+    def __init__(self, env):
         """Initialize the artist manager."""
-        self.client = DatabaseManager.get_mongo_client()
+        self.client = DatabaseManager.get_mongo_client(env)
         self.collection = self.client["discovery"]["artists_v2"]
 
     def update_artist(self, artist: Artist) -> None:
@@ -165,9 +166,26 @@ def get_artists_list() -> List[Artist]:
         Artist("Dev Narayan Gupta","gurudev.ng")
     ]
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Populate workshops data.")
+    
+    parser.add_argument(
+        "--env",
+        required=True,
+        choices=["prod", "dev"],
+        help="Set the environment (prod or dev)"
+    )
+    
+    return parser.parse_args()
+
 def main():
     """Main execution function."""
-    manager = ArtistManager()
+    # Parse command-line arguments
+    args = parse_arguments()
+
+    # Determine environment
+    env = args.env
+    manager = ArtistManager(env)
     artists = get_artists_list()
     
     with tqdm(artists, desc="Updating Artists", leave=False) as pbar:
