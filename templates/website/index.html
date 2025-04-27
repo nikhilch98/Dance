@@ -502,8 +502,8 @@
     .workshop-table td:nth-child(5) {
       font-weight: 500;
       color: rgba(66, 214, 96, 1);
-      min-width: 80px;
-      max-width: 150px;
+      min-width: 300px;
+      max-width: 350px;
       white-space: normal;
       word-wrap: break-word;
       word-break: break-all;
@@ -717,6 +717,7 @@
         padding-top: 10px !important;
         padding-bottom: 10px !important;
         flex-wrap: nowrap !important;
+        width: 100% !important;
       }
       
       .workshop-table td[data-label="Pricing"]:before {
@@ -729,11 +730,17 @@
       
       .workshop-table td[data-label="Pricing"] span {
         display: inline-block !important;
-        width: calc(100% - 90px) !important;
+        flex: 1 !important;
+        width: auto !important;
+        max-width: 85% !important;
         vertical-align: top !important;
-        word-break: break-word !important;
+        word-wrap: normal !important;
+        word-break: normal !important;
         white-space: normal !important;
         text-align: left !important;
+        line-height: 1.4 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: -0.2px !important;
       }
     }
 
@@ -1044,7 +1051,7 @@
     
     .workshop-table th:nth-child(5),
     .workshop-table td:nth-child(5) {
-      width: 10%;  /* Pricing */
+      width: 14%;  /* Pricing */
       white-space: normal;
       line-height: 1.3;
     }
@@ -1131,6 +1138,233 @@
         padding: 10px 15px;
       }
     }
+
+    /* Additional styles for filters */
+    .filter-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+      width: 100%;
+      align-items: flex-start;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+      flex: 1;
+    }
+    
+    .filter-label {
+      font-size: 0.9rem;
+      color: #4d9eff;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    .filter-select {
+      background: rgba(30, 40, 58, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      width: 100%;
+      font-size: 0.95rem;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+      height: 42px;
+      box-sizing: border-box;
+    }
+    
+    .filter-select:focus {
+      border-color: #4d9eff;
+      box-shadow: 0 0 0 2px rgba(77, 158, 255, 0.3);
+    }
+    
+    .filter-select option {
+      background-color: #1a2436;
+    }
+    
+    .multiselect-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    
+    .multiselect-dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: rgba(30, 40, 58, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      z-index: 100;
+      max-height: 250px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      margin-top: 5px;
+    }
+    
+    .multiselect-dropdown-list.active {
+      display: block;
+    }
+    
+    .multiselect-option {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .multiselect-option:hover {
+      background: rgba(77, 158, 255, 0.2);
+    }
+    
+    .multiselect-option input {
+      margin: 0;
+    }
+    
+    .multiselect-option label {
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .multiselect-trigger {
+      background: rgba(30, 40, 58, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      width: 100%;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 42px;
+      box-sizing: border-box;
+    }
+    
+    .multiselect-trigger:hover {
+      background: rgba(30, 40, 58, 0.9);
+    }
+    
+    .multiselect-trigger:after {
+      content: "▼";
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .filter-pill {
+      background: rgba(30, 40, 85, 0.7);
+      border: 1px solid rgba(77, 158, 255, 0.3);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .remove-filter {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      opacity: 0.7;
+    }
+    
+    .remove-filter:hover {
+      background: rgba(255, 255, 255, 0.2);
+      opacity: 1;
+    }
+    
+    .filters-summary {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 15px;
+      margin-bottom: 15px;
+      padding-left: 5px;
+    }
+    
+    .reset-filters-btn {
+      background: rgba(30, 40, 58, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      min-width: 140px;
+      justify-content: center;
+      height: 42px;
+      box-sizing: border-box;
+      align-self: flex-end;
+      margin-bottom: 0;
+    }
+    
+    .reset-filters-btn:hover {
+      background: rgba(255, 82, 82, 0.3);
+      border-color: rgba(255, 82, 82, 0.5);
+    }
+    
+    .reset-filters-btn:before {
+      content: "↺";
+      font-size: 1.1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .filter-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .filter-group, .filter-select, .multiselect-trigger {
+        max-width: 100%;
+        width: 100%;
+      }
+      
+      .multiselect-dropdown-list {
+        max-width: 100%;
+      }
+      
+      .reset-filters-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1163,7 +1397,40 @@
     <section id="workshops-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-workshops" tabindex="0" aria-hidden="true">
       <div id="workshops-section" aria-live="polite" aria-atomic="true">
         <div class="controls">
-          <button class="btn" id="reset-filters" type="button" aria-label="Reset all filters">Reset Filters</button>
+          <div class="filter-container">
+            <div class="filter-group">
+              <label class="filter-label">Date</label>
+              <select id="date-filter" class="filter-select" aria-label="Filter by date">
+                <option value="">All Dates</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label class="filter-label">Instructor</label>
+              <div class="multiselect-dropdown" id="instructor-filter">
+                <div class="multiselect-trigger" tabindex="0">Select Instructors</div>
+                <div class="multiselect-dropdown-list" id="instructor-options">
+                  <!-- Will be populated dynamically -->
+                </div>
+                <div class="active-filters" id="active-instructor-filters"></div>
+              </div>
+            </div>
+            
+            <div class="filter-group">
+              <label class="filter-label">Studio</label>
+              <div class="multiselect-dropdown" id="studio-filter">
+                <div class="multiselect-trigger" tabindex="0">Select Studios</div>
+                <div class="multiselect-dropdown-list" id="studio-options">
+                  <!-- Will be populated dynamically -->
+                </div>
+                <div class="active-filters" id="active-studio-filters"></div>
+              </div>
+            </div>
+          </div>
+          
+          <button class="reset-filters-btn" id="reset-filters" type="button" aria-label="Reset all filters">Reset Filters</button>
+          
+          <div class="filters-summary" id="filters-summary"></div>
         </div>
         <div style="overflow-x:auto;">
           <table id="workshop-table" class="workshop-table" role="grid" aria-describedby="workshops-desc">
@@ -1199,6 +1466,11 @@
     let artistData = [];
     let workshopData = [];
     let currentSort = { column: 'date', direction: 'asc' };
+    let activeFilters = {
+      date: '',
+      instructors: [],
+      studios: []
+    };
 
     // Tab switching functionality
     document.addEventListener('DOMContentLoaded', () => {
@@ -1267,9 +1539,35 @@
       });
       
       // Reset filters button
-      document.getElementById('reset-filters').addEventListener('click', () => {
+      document.getElementById('reset-filters').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Reset filter values
+        activeFilters = {
+          date: '',
+          instructors: [],
+          studios: []
+        };
+        
+        // Reset UI
+        document.getElementById('date-filter').value = '';
+        document.querySelectorAll('#instructor-options input[type="checkbox"], #studio-options input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        
+        document.getElementById('active-instructor-filters').innerHTML = '';
+        document.getElementById('active-studio-filters').innerHTML = '';
+        
+        // Reset sort
         currentSort = { column: 'date', direction: 'asc' };
+        
+        // Update UI
+        updateFiltersSummary();
         renderWorkshopsTable();
+        
+        // Update sort buttons
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+          btn.textContent = btn.dataset.column === 'date' ? '↑' : '▲';
+        });
       });
     });
     
@@ -1548,53 +1846,71 @@
       const studioCards = document.getElementById('studio-cards');
       studioCards.innerHTML = '<p class="loading">Loading studios...</p>';
       
-    fetch('/api/studios?version=v2')
+      fetch('/api/studios?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load studios');
           return response.json();
         })
-      .then(data => {
+        .then(data => {
           studioData = data || [];
           
           if (studioData.length > 0) {
-            studioCards.innerHTML = '';
-            studioData.forEach(studio => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.tabIndex = 0;
-          card.setAttribute('role', 'button');
-              card.setAttribute('aria-label', `${studio.name} studio details`);
-              
-              card.addEventListener('click', () => openModal('studio', studio.id));
-          card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openModal('studio', studio.id);
-                }
-              });
-              
-              // Use proxy-image if external image URL is provided
+            // Preload first few images for faster initial display
+            const imagesToPreload = studioData.slice(0, 6).map(studio => {
+              return studio.image_url 
+                ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
+                : '/static/assets/studios/placeholder.jpg';
+            });
+            
+            // Start preloading immediately
+            imagesToPreload.forEach(url => {
+              const img = new Image();
+              img.src = url;
+            });
+            
+            // Prepare all cards HTML first, then append at once for better performance
+            const cardsHTML = studioData.map((studio, index) => {
               const imageUrl = studio.image_url 
                 ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
                 : '/static/assets/studios/placeholder.jpg';
+                
+              const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';
               
-              card.innerHTML = `
-                <img src="${imageUrl}" 
-                     alt="${studio.name}" 
-                     loading="lazy">
-                <h3>${studio.name}</h3>
-                ${studio.instagram_link ? `
-                  <a href="${studio.instagram_link}" 
-                     target="_blank" 
-                     class="instagram-link"
-                     aria-label="Visit ${studio.name} on Instagram"
-                     onclick="event.stopPropagation()">
-                    <img src="/static/assets/instagram-icon.png" alt="Instagram">
-                  </a>
-                ` : ''}
+              return `
+                <div class="card" tabindex="0" role="button" 
+                     aria-label="${studio.name} studio details"
+                     data-studio-id="${studio.id}">
+                  <img src="${imageUrl}" 
+                       alt="${studio.name}" 
+                       ${fetchPriority}
+                       loading="lazy"
+                       onerror="this.src='/static/assets/studios/placeholder.jpg'">
+                  <h3>${studio.name}</h3>
+                  ${studio.instagram_link ? `
+                    <a href="${studio.instagram_link}" 
+                       target="_blank" 
+                       class="instagram-link"
+                       aria-label="Visit ${studio.name} on Instagram"
+                       onclick="event.stopPropagation()">
+                      <img src="/static/assets/instagram-icon.png" alt="Instagram">
+                    </a>
+                  ` : ''}
+                </div>
               `;
-              
-              studioCards.appendChild(card);
+            }).join('');
+            
+            studioCards.innerHTML = cardsHTML;
+            
+            // Add event listeners after HTML is inserted
+            document.querySelectorAll('#studio-cards .card').forEach(card => {
+              const studioId = card.dataset.studioId;
+              card.addEventListener('click', () => openModal('studio', studioId));
+              card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openModal('studio', studioId);
+                }
+              });
             });
           } else {
             studioCards.innerHTML = '<p class="error">No studios found.</p>';
@@ -1623,9 +1939,17 @@
           const searchInput = document.getElementById('artist-search');
           searchInput.addEventListener('input', () => {
             const searchTerm = searchInput.value.toLowerCase().trim();
-            const filteredArtists = artistData.filter(artist => 
-              artist.name.toLowerCase().includes(searchTerm)
-            );
+            const filteredArtists = artistData.filter(artist => {
+              if (!searchTerm) return true; // Show all artists when search is empty
+              
+              // Split artist name into words and check if any word starts with the search term
+              const words = artist.name.toLowerCase().split(/\s+/);
+              return words.some(word => word.startsWith(searchTerm)) || 
+                     // Also match multiple word searches
+                     searchTerm.split(/\s+/).every(term => 
+                       words.some(word => word.startsWith(term))
+                     );
+            });
             renderArtists(filteredArtists);
           });
         })
@@ -1639,44 +1963,62 @@
       const artistCards = document.getElementById('artist-cards');
       
       if (artists.length > 0) {
-        artistCards.innerHTML = '';
-        artists.forEach(artist => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.tabIndex = 0;
-          card.setAttribute('role', 'button');
-          card.setAttribute('aria-label', `${artist.name} artist details`);
-          
-          card.addEventListener('click', () => openModal('artist', artist.id));
-          card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openModal('artist', artist.id);
-            }
-          });
-
-          // Use proxy-image if external image URL is provided
+        // Preload first few images for faster initial display
+        const imagesToPreload = artists.slice(0, 6).map(artist => {
+          return artist.image_url 
+            ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
+            : '/static/assets/artists/placeholder.jpg';
+        });
+        
+        // Start preloading immediately
+        imagesToPreload.forEach(url => {
+          const img = new Image();
+          img.src = url;
+        });
+        
+        // Prepare all cards HTML first, then append at once for better performance
+        const cardsHTML = artists.map((artist, index) => {
           const imageUrl = artist.image_url 
             ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
             : '/static/assets/artists/placeholder.jpg';
           
-          card.innerHTML = `
-            <img src="${imageUrl}" 
-                 alt="${artist.name}" 
-                 loading="lazy">
-            <h3>${artist.name}</h3>
-            ${artist.instagram_link ? `
-              <a href="${artist.instagram_link}" 
-                 target="_blank" 
-                 class="instagram-link"
-                 aria-label="Visit ${artist.name} on Instagram"
-                 onclick="event.stopPropagation()">
-                <img src="/static/assets/instagram-icon.png" alt="Instagram">
-              </a>
-            ` : ''}
-          `;
+          const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';
           
-          artistCards.appendChild(card);
+          return `
+            <div class="card" tabindex="0" role="button" 
+                 aria-label="${artist.name} artist details"
+                 data-artist-id="${artist.id}">
+              <img src="${imageUrl}" 
+                   alt="${artist.name}" 
+                   ${fetchPriority}
+                   loading="lazy"
+                   onerror="this.src='/static/assets/artists/placeholder.jpg'">
+              <h3>${artist.name}</h3>
+              ${artist.instagram_link ? `
+                <a href="${artist.instagram_link}" 
+                   target="_blank" 
+                   class="instagram-link"
+                   aria-label="Visit ${artist.name} on Instagram"
+                   onclick="event.stopPropagation()">
+                  <img src="/static/assets/instagram-icon.png" alt="Instagram">
+                </a>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+        
+        artistCards.innerHTML = cardsHTML;
+        
+        // Add event listeners after HTML is inserted
+        document.querySelectorAll('#artist-cards .card').forEach(card => {
+          const artistId = card.dataset.artistId;
+          card.addEventListener('click', () => openModal('artist', artistId));
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openModal('artist', artistId);
+            }
+          });
         });
       } else {
         artistCards.innerHTML = '<p class="error">No artists found matching your search.</p>';
@@ -1713,6 +2055,9 @@
             }
           });
           
+          // Initialize filters once data is loaded
+          initializeFilters();
+          
           renderWorkshopsTable();
           
           // Update sort arrows
@@ -1730,6 +2075,210 @@
         });
     }
     
+    function initializeFilters() {
+      // Extract unique values for each filter
+      const dates = [...new Set(workshopData.map(w => w.date))].filter(d => d).sort();
+      const instructors = [...new Set(workshopData.map(w => w.instructor))].filter(i => i && i !== 'TBA').sort();
+      const studios = [...new Set(workshopData.map(w => w.studio))].filter(s => s && s !== 'TBA').sort();
+      
+      // Populate date filter
+      const dateFilter = document.getElementById('date-filter');
+      dates.forEach(date => {
+        const option = document.createElement('option');
+        option.value = date;
+        option.textContent = date;
+        dateFilter.appendChild(option);
+      });
+      
+      // Populate instructor filter
+      const instructorOptions = document.getElementById('instructor-options');
+      instructors.forEach(instructor => {
+        instructorOptions.innerHTML += `
+          <div class="multiselect-option">
+            <input type="checkbox" id="instructor-${instructor.replace(/\s+/g, '-')}" value="${instructor}">
+            <label for="instructor-${instructor.replace(/\s+/g, '-')}">${instructor}</label>
+          </div>
+        `;
+      });
+      
+      // Populate studio filter
+      const studioOptions = document.getElementById('studio-options');
+      studios.forEach(studio => {
+        studioOptions.innerHTML += `
+          <div class="multiselect-option">
+            <input type="checkbox" id="studio-${studio.replace(/\s+/g, '-')}" value="${studio}">
+            <label for="studio-${studio.replace(/\s+/g, '-')}">${studio}</label>
+          </div>
+        `;
+      });
+      
+      // Set up date filter event listener
+      dateFilter.addEventListener('change', function() {
+        activeFilters.date = this.value;
+        renderWorkshopsTable();
+        updateFiltersSummary();
+      });
+      
+      // Set up instructor multiselect
+      const instructorDropdown = document.getElementById('instructor-filter');
+      const instructorTrigger = instructorDropdown.querySelector('.multiselect-trigger');
+      
+      instructorTrigger.addEventListener('click', function() {
+        const dropdownList = instructorDropdown.querySelector('.multiselect-dropdown-list');
+        dropdownList.classList.toggle('active');
+        
+        // Close studio dropdown if open
+        document.getElementById('studio-options').classList.remove('active');
+      });
+      
+      // Set up studio multiselect
+      const studioDropdown = document.getElementById('studio-filter');
+      const studioTrigger = studioDropdown.querySelector('.multiselect-trigger');
+      
+      studioTrigger.addEventListener('click', function() {
+        const dropdownList = studioDropdown.querySelector('.multiselect-dropdown-list');
+        dropdownList.classList.toggle('active');
+        
+        // Close instructor dropdown if open
+        document.getElementById('instructor-options').classList.remove('active');
+      });
+      
+      // Instructor checkbox change events
+      instructorOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            activeFilters.instructors.push(this.value);
+          } else {
+            activeFilters.instructors = activeFilters.instructors.filter(i => i !== this.value);
+          }
+          renderWorkshopsTable();
+          updateActiveFilters('instructor');
+          updateFiltersSummary();
+        });
+      });
+      
+      // Studio checkbox change events
+      studioOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            activeFilters.studios.push(this.value);
+          } else {
+            activeFilters.studios = activeFilters.studios.filter(s => s !== this.value);
+          }
+          renderWorkshopsTable();
+          updateActiveFilters('studio');
+          updateFiltersSummary();
+        });
+      });
+      
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.multiselect-dropdown')) {
+          document.querySelectorAll('.multiselect-dropdown-list').forEach(list => {
+            list.classList.remove('active');
+          });
+        }
+      });
+    }
+    
+    function updateActiveFilters(type) {
+      if (type === 'instructor') {
+        const container = document.getElementById('active-instructor-filters');
+        container.innerHTML = '';
+        
+        activeFilters.instructors.forEach(instructor => {
+          const pill = document.createElement('div');
+          pill.className = 'filter-pill';
+          pill.innerHTML = `
+            ${instructor}
+            <button class="remove-filter" data-type="instructor" data-value="${instructor}" aria-label="Remove ${instructor} filter">×</button>
+          `;
+          container.appendChild(pill);
+        });
+        
+        // Update dropdown text
+        const trigger = document.querySelector('#instructor-filter .multiselect-trigger');
+        trigger.textContent = activeFilters.instructors.length > 0 ? 
+          `${activeFilters.instructors.length} Selected` : 'Select Instructors';
+      } else if (type === 'studio') {
+        const container = document.getElementById('active-studio-filters');
+        container.innerHTML = '';
+        
+        activeFilters.studios.forEach(studio => {
+          const pill = document.createElement('div');
+          pill.className = 'filter-pill';
+          pill.innerHTML = `
+            ${studio}
+            <button class="remove-filter" data-type="studio" data-value="${studio}" aria-label="Remove ${studio} filter">×</button>
+          `;
+          container.appendChild(pill);
+        });
+        
+        // Update dropdown text
+        const trigger = document.querySelector('#studio-filter .multiselect-trigger');
+        trigger.textContent = activeFilters.studios.length > 0 ? 
+          `${activeFilters.studios.length} Selected` : 'Select Studios';
+      }
+      
+      // Add event listeners to remove buttons
+      document.querySelectorAll('.remove-filter').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const type = this.dataset.type;
+          const value = this.dataset.value;
+          
+          if (type === 'instructor') {
+            activeFilters.instructors = activeFilters.instructors.filter(i => i !== value);
+            document.getElementById(`instructor-${value.replace(/\s+/g, '-')}`).checked = false;
+            updateActiveFilters('instructor');
+          } else if (type === 'studio') {
+            activeFilters.studios = activeFilters.studios.filter(s => s !== value);
+            document.getElementById(`studio-${value.replace(/\s+/g, '-')}`).checked = false;
+            updateActiveFilters('studio');
+          }
+          
+          renderWorkshopsTable();
+          updateFiltersSummary();
+        });
+      });
+    }
+    
+    function updateFiltersSummary() {
+      const summary = document.getElementById('filters-summary');
+      
+      const activeFilterCount = (activeFilters.date ? 1 : 0) + 
+                               activeFilters.instructors.length + 
+                               activeFilters.studios.length;
+      
+      if (activeFilterCount === 0) {
+        summary.textContent = 'No filters applied';
+        return;
+      }
+      
+      let summaryText = 'Showing workshops';
+      
+      if (activeFilters.date) {
+        summaryText += ` on ${activeFilters.date}`;
+      }
+      
+      if (activeFilters.instructors.length > 0) {
+        const instructorsText = activeFilters.instructors.length === 1 
+          ? activeFilters.instructors[0]
+          : `any of ${activeFilters.instructors.length} selected instructors`;
+        
+        summaryText += activeFilters.date ? ` with ${instructorsText}` : ` by ${instructorsText}`;
+      }
+      
+      if (activeFilters.studios.length > 0) {
+        const studiosText = activeFilters.studios.length === 1 
+          ? activeFilters.studios[0]
+          : `any of ${activeFilters.studios.length} selected studios`;
+        
+        summaryText += ` at ${studiosText}`;
+      }
+      
+      summary.textContent = summaryText;
+    }
+    
     function renderWorkshopsTable() {
       const tableBody = document.querySelector('#workshop-table tbody');
       const errorElem = document.getElementById('workshop-error');
@@ -1740,8 +2289,28 @@
         return;
       }
       
-      // Sort the data
-      const sortedData = [...workshopData].sort((a, b) => {
+      // Filter the data based on active filters
+      let filteredData = workshopData.filter(workshop => {
+        // Date filter
+        if (activeFilters.date && workshop.date !== activeFilters.date) {
+          return false;
+        }
+        
+        // Instructor filter
+        if (activeFilters.instructors.length > 0 && !activeFilters.instructors.includes(workshop.instructor)) {
+          return false;
+        }
+        
+        // Studio filter
+        if (activeFilters.studios.length > 0 && !activeFilters.studios.includes(workshop.studio)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Sort the filtered data
+      filteredData.sort((a, b) => {
         let valueA, valueB;
         
         switch (currentSort.column) {
@@ -1774,9 +2343,15 @@
         return (valueA > valueB ? 1 : -1) * direction;
       });
       
+      // Check if no results after filtering
+      if (filteredData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7"><p class="error">No workshops match your filter criteria.</p></td></tr>';
+        return;
+      }
+      
       tableBody.innerHTML = '';
       
-      sortedData.forEach(workshop => {
+      filteredData.forEach(workshop => {
         // Use the date directly from the API as it's already formatted
         const formattedDate = workshop.date || 'TBA';
         
