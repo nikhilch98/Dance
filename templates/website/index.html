@@ -584,151 +584,163 @@
     /* Responsive Design */
     @media (max-width: 768px) {
       body {
-        padding: 12px;
+        padding: 10px !important;
       }
 
-      h1 {
-        font-size: 1.75rem;
-        margin-bottom: 1rem;
-      }
-
-      .tabs {
-        gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 12px;
-        justify-content: flex-start;
-      }
-
-      .tabs button {
-        font-size: 1rem;
-        padding: 8px 14px;
-        white-space: nowrap;
-      }
-
-      .cards-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 16px;
-      }
-
-      .card {
-        height: 220px;
-      }
-
-      .card img {
-        height: 150px;
-      }
-
-      .card h3 {
-        font-size: 1rem;
-      }
-      
-      /* Mobile-specific table design */
-      .workshop-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        font-size: 0.85rem;
-        border-radius: 12px;
-      }
-      
-      /* Hide table headers on mobile for more space */
-      .workshop-table thead {
-        display: none;
-      }
-      
-      /* Display table as cards on mobile */
+      /* Complete mobile table redesign */
+      .workshop-table, 
       .workshop-table tbody, 
-      .workshop-table tr {
-        display: block;
-        width: 100%;
-      }
-      
-      .workshop-table tr {
-        margin-bottom: 20px;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        background: rgba(30, 40, 58, 0.8);
-        border-radius: 10px;
-      }
-      
+      .workshop-table tr,
       .workshop-table td {
-        display: flex;
-        padding: 8px 10px;
-        border: none;
-        position: relative;
-        overflow: visible;
-        white-space: normal;
-        align-items: center;
+        display: block !important;
+        width: 100% !important;
       }
       
+      .workshop-table {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      .workshop-table thead {
+        display: none !important;
+      }
+      
+      /* Individual workshop cards */
+      .workshop-table tr {
+        margin-bottom: 15px !important;
+        padding: 15px !important;
+        background: rgba(25, 35, 50, 0.9) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        position: relative !important;
+      }
+      
+      /* Force each field to display properly */
+      .workshop-table td {
+        display: block !important;
+        width: 100% !important;
+        padding: 7px 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        text-align: left !important;
+        position: relative !important;
+        color: #ffffff !important;
+      }
+      
+      /* Clear label styling */
       .workshop-table td:before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: #4d9eff;
-        min-width: 80px;
-        margin-right: 10px;
+        content: attr(data-label) !important;
+        width: 80px !important;
+        min-width: 80px !important;
+        display: inline-block !important;
+        font-weight: 600 !important;
+        color: #4d9eff !important;
+        margin-right: 10px !important;
       }
       
-      .workshop-table td:nth-child(7) {
-        justify-content: center;
-        padding-top: 15px;
-        margin-top: 5px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      /* Make sure content is visible */
+      .workshop-table td span,
+      .workshop-table td a:not(.register-link) {
+        display: inline-block !important;
+        width: calc(100% - 90px) !important;
+        vertical-align: top !important;
+        word-break: break-word !important;
       }
       
-      .workshop-table td:nth-child(7):before {
-        display: none;
+      /* Fix date/time display */
+      .workshop-table td[data-label="Date"] {
+        padding-top: 0 !important;
+        font-weight: 600 !important;
       }
       
+      .workshop-table td[data-label="Time"] {
+        padding-top: 0 !important;
+      }
+      
+      /* Fix Register button */
+      .workshop-table td:last-child {
+        padding-top: 15px !important;
+        margin-top: 5px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+      }
+      
+      .workshop-table td:last-child:before {
+        display: none !important;
+      }
+      
+      .workshop-table .register-link {
+        display: inline-block !important;
+        width: auto !important;
+        min-width: 120px !important;
+        padding: 10px 20px !important;
+        margin: 5px 0 !important;
+        background: rgba(0, 123, 255, 0.6) !important;
+        color: white !important;
+        text-align: center !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+      }
+      
+      /* Fix Instagram icon */
       .workshop-instructor-link {
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .modal-content {
-        width: 95%;
-        padding: 15px;
-        max-height: 85vh;
+        display: inline-block !important;
+        width: calc(100% - 90px) !important;
+        vertical-align: top !important;
       }
       
-      .section-heading {
-        font-size: 1.2rem;
-        padding: 12px 15px;
+      .instructor-name {
+        display: inline !important;
+        vertical-align: middle !important;
       }
       
-      .controls {
-        flex-direction: column;
-        align-items: stretch;
+      .instructor-instagram {
+        display: inline-block !important;
+        vertical-align: middle !important;
+        margin-left: 5px !important;
       }
       
-      .controls .btn {
-        margin-bottom: 10px;
+      /* Adjust card spacing for studios/artists */
+      .cards-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+      
+      /* Fix pricing display to be consistent with other fields */
+      .workshop-table td[data-label="Pricing"] {
+        display: flex !important;
+        align-items: flex-start !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        flex-wrap: nowrap !important;
+      }
+      
+      .workshop-table td[data-label="Pricing"]:before {
+        display: inline-block !important;
+        min-width: 80px !important;
+        width: 80px !important;
+        margin-right: 10px !important;
+        flex-shrink: 0 !important;
+      }
+      
+      .workshop-table td[data-label="Pricing"] span {
+        display: inline-block !important;
+        width: calc(100% - 90px) !important;
+        vertical-align: top !important;
+        word-break: break-word !important;
+        white-space: normal !important;
+        text-align: left !important;
       }
     }
-    
-    /* Extra small devices */
+
+    /* Extra small screens */
     @media (max-width: 480px) {
-      body {
-        padding: 10px;
-      }
-      
-      h1 {
-        font-size: 1.5rem;
-      }
-      
       .cards-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .workshop-table td {
-        padding-left: 35%;
-        font-size: 0.9rem;
-      }
-      
-      .workshop-table td:before {
-        width: 30%;
+        grid-template-columns: 1fr !important;
       }
     }
 
@@ -1085,6 +1097,40 @@
         padding: 0 10px;
       }
     }
+
+    /* Day header for studio workshops */
+    .day-header {
+      background: rgba(0, 123, 255, 0.2);
+      color: white;
+      padding: 12px 15px;
+      margin: 25px 0 15px 0;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      border-left: 3px solid #4d9eff;
+    }
+    
+    .day-header:first-of-type {
+      margin-top: 0;
+    }
+    
+    .day-date {
+      color: #4d9eff;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+      .day-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        padding: 10px 15px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1190,10 +1236,10 @@
             loadArtists();
           } else if (targetId === 'workshops-panel' && workshopData.length === 0) {
             loadWorkshops();
-          }
-        });
+        }
       });
-      
+    });
+
       // Initialize first tab data load
       loadStudios();
       
@@ -1229,7 +1275,7 @@
     
     // Modal functions
     function openModal(type, id) {
-      const modal = document.getElementById('detail-modal');
+    const modal = document.getElementById('detail-modal');
       const content = document.getElementById('detail-content');
       let title, endpoint;
       
@@ -1288,14 +1334,49 @@
             
             // Process this_week workshops
             if (data.this_week && data.this_week.length > 0) {
+              // Group workshops by day
+              const workshopsByDay = {};
+              
               data.this_week.forEach(day => {
                 if (day.workshops && day.workshops.length > 0) {
+                  hasThisWeekWorkshops = true;
+                  
+                  // Extract day name from the date (e.g., "27th Apr (Sun)" -> "Sunday")
+                  const dateStr = day.workshops[0].date;
+                  let dayName = "Day";
+                  
+                  // Try to extract day name from format like "27th Apr (Sun)"
+                  const dayMatch = dateStr.match(/\(([^)]+)\)/);
+                  if (dayMatch && dayMatch[1]) {
+                    const shortDay = dayMatch[1];
+                    // Convert abbreviated day to full name
+                    const dayMap = {
+                      'Mon': 'Monday',
+                      'Tue': 'Tuesday', 
+                      'Wed': 'Wednesday',
+                      'Thu': 'Thursday',
+                      'Fri': 'Friday',
+                      'Sat': 'Saturday',
+                      'Sun': 'Sunday'
+                    };
+                    dayName = dayMap[shortDay] || shortDay;
+                  }
+                  
+                  // Create day header
+                  const dayHeader = document.createElement('div');
+                  dayHeader.className = 'day-header';
+                  dayHeader.innerHTML = `
+                    <span>${dayName}</span>
+                    <span class="day-date">${dateStr}</span>
+                  `;
+                  thisWeekendItems.appendChild(dayHeader);
+                  
+                  // Add workshops for this day
                   day.workshops.forEach(workshop => {
-                    hasThisWeekWorkshops = true;
                     const workshopItem = document.createElement('div');
                     workshopItem.className = 'workshop-item';
                     workshopItem.innerHTML = `
-                      <p><strong>${workshop.date} at ${workshop.time}</strong></p>
+                      <p><strong>${workshop.time}</strong></p>
                       <p>Instructor: ${workshop.artist || 'TBA'}</p>
                       <p>Song: ${workshop.song || 'TBA'}</p>
                       <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
@@ -1340,22 +1421,65 @@
             upcomingItems.className = 'workshop-items-container';
             upcomingSection.appendChild(upcomingItems);
             
+            // Group post_this_week workshops by date
+            const upcomingWorkshopsByDate = {};
+            
             // Process post_this_week workshops
             if (data.post_this_week && data.post_this_week.length > 0) {
               data.post_this_week.forEach(workshop => {
                 hasPostThisWeekWorkshops = true;
-                const workshopItem = document.createElement('div');
-                workshopItem.className = 'workshop-item';
-                workshopItem.innerHTML = `
-                  <p><strong>${workshop.date} at ${workshop.time}</strong></p>
-                  <p>Instructor: ${workshop.artist || 'TBA'}</p>
-                  <p>Song: ${workshop.song || 'TBA'}</p>
-                  <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
-                  ${workshop.payment_link ? 
-                    `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
-                    ''}
+                
+                // Group by date
+                if (!upcomingWorkshopsByDate[workshop.date]) {
+                  upcomingWorkshopsByDate[workshop.date] = [];
+                }
+                upcomingWorkshopsByDate[workshop.date].push(workshop);
+              });
+              
+              // Display workshops grouped by date
+              Object.keys(upcomingWorkshopsByDate).forEach(dateStr => {
+                // Try to extract day name
+                let dayName = "Day";
+                const dayMatch = dateStr.match(/\(([^)]+)\)/);
+                if (dayMatch && dayMatch[1]) {
+                  const shortDay = dayMatch[1];
+                  // Convert abbreviated day to full name
+                  const dayMap = {
+                    'Mon': 'Monday',
+                    'Tue': 'Tuesday', 
+                    'Wed': 'Wednesday',
+                    'Thu': 'Thursday',
+                    'Fri': 'Friday',
+                    'Sat': 'Saturday',
+                    'Sun': 'Sunday'
+                  };
+                  dayName = dayMap[shortDay] || shortDay;
+                }
+                
+                // Create day header
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.innerHTML = `
+                  <span>${dayName}</span>
+                  <span class="day-date">${dateStr}</span>
                 `;
-                upcomingItems.appendChild(workshopItem);
+                upcomingItems.appendChild(dayHeader);
+                
+                // Add workshops for this date
+                upcomingWorkshopsByDate[dateStr].forEach(workshop => {
+                  const workshopItem = document.createElement('div');
+                  workshopItem.className = 'workshop-item';
+                  workshopItem.innerHTML = `
+                    <p><strong>${workshop.time}</strong></p>
+                    <p>Instructor: ${workshop.artist || 'TBA'}</p>
+                    <p>Song: ${workshop.song || 'TBA'}</p>
+                    <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
+                    ${workshop.payment_link ? 
+                      `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
+                      ''}
+                  `;
+                  upcomingItems.appendChild(workshopItem);
+                });
               });
             }
             
@@ -1424,26 +1548,26 @@
       const studioCards = document.getElementById('studio-cards');
       studioCards.innerHTML = '<p class="loading">Loading studios...</p>';
       
-      fetch('/api/studios?version=v2')
+    fetch('/api/studios?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load studios');
           return response.json();
         })
-        .then(data => {
+      .then(data => {
           studioData = data || [];
           
           if (studioData.length > 0) {
             studioCards.innerHTML = '';
             studioData.forEach(studio => {
-              const card = document.createElement('div');
-              card.className = 'card';
-              card.tabIndex = 0;
-              card.setAttribute('role', 'button');
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.tabIndex = 0;
+          card.setAttribute('role', 'button');
               card.setAttribute('aria-label', `${studio.name} studio details`);
               
               card.addEventListener('click', () => openModal('studio', studio.id));
-              card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   openModal('studio', studio.id);
                 }
@@ -1486,12 +1610,12 @@
       const artistCards = document.getElementById('artist-cards');
       artistCards.innerHTML = '<p class="loading">Loading artists...</p>';
       
-      fetch('/api/artists?version=v2')
+    fetch('/api/artists?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load artists');
           return response.json();
         })
-        .then(data => {
+      .then(data => {
           artistData = data || [];
           renderArtists(artistData);
           
@@ -1576,8 +1700,8 @@
             if (workshop.workshop_details && workshop.workshop_details.length > 0) {
               workshop.workshop_details.forEach(detail => {
                 workshopData.push({
-                  date: detail.date,
-                  time: detail.time,
+              date: detail.date,
+              time: detail.time,
                   instructor: detail.by || 'TBA',
                   instructor_instagram: detail.instagram_link || null,
                   song: detail.song || 'TBA',
