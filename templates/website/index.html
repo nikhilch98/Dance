@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Browse dance workshops by various categories including all workshops, artists, and studios" />
+  <meta name="description" content="Browse dance workshops by studios, artists, and more" />
   <meta name="theme-color" content="#f8f9fa" />
   <title>Dance Workshops - Browse By Category</title>
 
@@ -15,10 +15,10 @@
       --primary-color: #007bff;
       --accent-color: #0056b3;
       --secondary-color: #6c757d;
-      --background-color: #f0f4f8;
+      --background-color: #121824;
       --card-background: #ffffff;
-      --text-color: #212529;
-      --shadow-color: rgba(0, 0, 0, 0.12);
+      --text-color: #f0f4f8;
+      --shadow-color: rgba(0, 0, 0, 0.25);
       --transition-speed: 0.3s;
       --border-radius: 12px;
       --spacing-unit: 24px;
@@ -32,6 +32,7 @@
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background-color: var(--background-color);
+      background-image: linear-gradient(135deg, #121824 0%, #1a2436 50%, #121830 100%);
       color: var(--text-color);
       margin: 0;
       padding: var(--spacing-unit);
@@ -52,9 +53,9 @@
     h1 {
       font-weight: 600;
       font-size: 2.25rem;
-      color: var(--primary-color);
+      color: #ffffff;
       margin: 0;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      text-shadow: 0 2px 6px rgba(0, 123, 255, 0.2);
     }
 
     main {
@@ -63,17 +64,63 @@
       max-width: 1200px;
     }
 
-    /* Grid carousel */
-    .carousel {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: var(--spacing-unit);
-      padding: 0 var(--spacing-unit);
+    /* Tab Navigation */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: var(--spacing-unit);
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
     }
 
-    /* Card Component */
-    .carousel-item {
-      position: relative;
+    .tabs button {
+      padding: 12px 24px;
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      font-size: 1.125rem;
+      cursor: pointer;
+      color: var(--secondary-color);
+      border-bottom: 3px solid transparent;
+      transition: all var(--transition-speed);
+    }
+
+    .tabs button[aria-selected="true"],
+    .tabs button:hover {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .tabs button:focus-visible {
+      outline: 3px solid var(--accent-color);
+      outline-offset: 4px;
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: var(--spacing-unit);
+      width: 100%;
+    }
+
+    .card {
       background-color: var(--card-background);
       border-radius: var(--border-radius);
       box-shadow: 0 8px 16px var(--shadow-color);
@@ -87,46 +134,393 @@
       transition: transform var(--transition-speed), box-shadow var(--transition-speed);
       will-change: transform;
       padding-bottom: 1.5em;
+      position: relative;
     }
 
-    .carousel-item:hover,
-    .carousel-item:focus-visible {
+    .card:hover,
+    .card:focus-visible {
       transform: translateY(-6px) scale(1.04);
       box-shadow: 0 12px 24px rgba(0, 123, 255, 0.3);
       outline: none;
       z-index: 4;
     }
 
-    .carousel-item:focus-visible {
+    .card:focus-visible {
       outline: 3px solid var(--accent-color);
       outline-offset: 4px;
       z-index: 5;
     }
 
-    .carousel-item img {
+    .card img {
       width: 100%;
       height: 200px;
       object-fit: cover;
-      border-bottom-left-radius: var(--border-radius);
-      border-bottom-right-radius: var(--border-radius);
-      box-shadow: inset 0 -10px 20px -10px rgba(0,0,0,0.25);
-      transition: transform var(--transition-speed);
       pointer-events: none;
+      transition: transform var(--transition-speed);
     }
 
-    .carousel-item p {
-      margin: 1rem 0 0 0;
+    .card h3 {
+      margin: 12px 10px 0 10px;
       font-size: 1.25rem;
       font-weight: 600;
-      color: var(--secondary-color);
-      transition: color var(--transition-speed);
-      user-select: text;
-    }
-
-    .carousel-item:hover p {
       color: var(--primary-color);
     }
 
+    .instagram-link {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 50%;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-speed);
+      z-index: 5;
+    }
+
+    .instagram-link:hover,
+    .instagram-link:focus-visible {
+      background: rgba(0, 0, 0, 0.85);
+      outline: none;
+    }
+
+    .instagram-link img {
+      width: 24px !important;
+      height: 24px !important;
+      margin: 0 !important;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+      padding: var(--spacing-unit) 0;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--background-color);
+      padding: var(--spacing-unit);
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color var(--transition-speed);
+    }
+
+    .close-btn:hover,
+    .close-btn:focus-visible {
+      background: #a71d2a;
+      outline: none;
+    }
+
+    .workshop-container {
+      margin-top: 20px;
+    }
+
+    .workshop-item {
+      background: rgba(30, 40, 58, 0.8);
+      padding: 20px;
+      margin: 16px 0;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      font-size: 1.05rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .workshop-item p {
+      margin: 10px 0;
+      color: #f0f4f8;
+    }
+    
+    .modal-content h2 {
+      font-size: 2rem;
+      color: #4d9eff;
+      margin-bottom: 15px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 15px;
+      font-weight: 700;
+    }
+
+    .register-link {
+      display: inline-block;
+      background: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    }
+
+    .register-link:hover,
+    .register-link:focus-visible {
+      background: var(--accent-color);
+      outline: none;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Table container for Apple Vision Pro look */
+    #workshops-section {
+      padding: 20px;
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Controls button styling */
+    .controls .btn {
+      background: rgba(30, 40, 58, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      border-radius: 8px;
+      padding: 10px 20px;
+    }
+
+    .controls .btn:hover {
+      background: rgba(0, 123, 255, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+      border-color: rgba(0, 123, 255, 0.3);
+    }
+
+    /* Workshop table */
+    .workshop-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background-color: rgba(30, 40, 58, 0.6);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 0.95rem;
+      border: none;
+      transform: translateY(0);
+      transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      margin: 20px 0;
+    }
+
+    /* Floating effect on page load */
+    .workshop-table:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .workshop-table thead {
+      background-color: rgba(0, 123, 255, 0.2);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(0, 123, 255, 0.3);
+    }
+
+    .workshop-table tbody tr {
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .workshop-table tbody tr:hover {
+      background-color: rgba(0, 123, 255, 0.25) !important;
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      transform: scale(1.008);
+      box-shadow: 0 4px 20px rgba(0, 123, 255, 0.25);
+    }
+
+    .workshop-table tbody tr:nth-child(even) {
+      background-color: rgba(30, 40, 58, 0.8);
+    }
+
+    .workshop-table tbody tr:nth-child(odd) {
+      background-color: rgba(20, 30, 48, 0.8);
+    }
+
+    .workshop-table th,
+    .workshop-table td {
+      padding: 22px 20px;
+      text-align: left;
+      border-bottom: none;
+      vertical-align: middle;
+      color: rgba(255, 255, 255, 0.95);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .workshop-table th:last-child,
+    .workshop-table td:last-child {
+      border-right: none;
+    }
+
+    .workshop-table th:nth-child(1),
+    .workshop-table td:nth-child(1) {
+      min-width: 120px; /* Date column */
+      white-space: nowrap;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 1);
+    }
+
+    .workshop-table th:nth-child(2),
+    .workshop-table td:nth-child(2) {
+      min-width: 120px; /* Time column */
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .workshop-table th:nth-child(3),
+    .workshop-table td:nth-child(3) {
+      min-width: 150px; /* Instructor column */
+      padding-right: 20px;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 200px;
+      color: #4d9eff;
+      font-weight: 500;
+    }
+
+    .workshop-table th:nth-child(4),
+    .workshop-table td:nth-child(4) {
+      min-width: 150px; /* Song column */
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .workshop-table th {
+      font-weight: 600;
+      color: #4d9eff;
+      position: relative;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      padding-bottom: 20px;
+    }
+
+    .sort-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 0 4px;
+      font-size: 0.9rem;
+      user-select: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .sort-btn:hover,
+    .sort-btn:focus-visible {
+      color: #4d9eff;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    /* Cell content styling */
+    .workshop-table td:nth-child(5) {
+      font-weight: 500;
+      color: rgba(66, 214, 96, 1);
+      min-width: 80px;
+      white-space: nowrap;
+    }
+
+    /* Add a subtle highlight for registration options */
+    .workshop-table td:nth-child(7) {
+      min-width: 100px;
+      white-space: nowrap;
+      text-align: center;
+      border-left: none;
+      background: transparent;
+    }
+
+    .workshop-table .register-link {
+      background: rgba(0, 123, 255, 0.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 2px 10px rgba(0, 123, 255, 0.25);
+      border: 1px solid rgba(0, 123, 255, 0.3);
+      text-align: center;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+      display: inline-block;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: rgba(255, 255, 255, 1);
+    }
+
+    .workshop-table .register-link:hover {
+      background: rgba(0, 123, 255, 0.4);
+      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    /* Loading and Error */
+    .loading, .error {
+      text-align: center;
+      padding: var(--spacing-unit);
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.3px;
+    }
+
+    .error {
+      color: rgba(255, 82, 82, 0.9);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: flex-start;
+      gap: var(--spacing-unit);
+      flex-wrap: wrap;
+      margin-bottom: var(--spacing-unit);
+    }
+
+    /* Accessibility */
     .sr-only {
       position: absolute !important;
       width: 1px !important;
@@ -134,7 +528,7 @@
       padding: 0 !important;
       margin: -1px !important;
       overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
+      clip: rect(0,0,0,0) !important;
       white-space: nowrap !important;
       border: 0 !important;
     }
@@ -150,121 +544,765 @@
         margin-bottom: 1rem;
       }
 
-      .carousel {
+      .tabs {
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        justify-content: flex-start;
+      }
+
+      .tabs button {
+        font-size: 1rem;
+        padding: 10px 16px;
+        white-space: nowrap;
+      }
+
+      .cards-grid {
         grid-template-columns: 1fr;
-        padding: 0 12px;
-        gap: 1.5rem;
+        gap: 16px;
       }
 
-      .carousel-item img {
-        height: 180px;
-      }
-
-      .carousel-item p {
+      .card h3 {
         font-size: 1.15rem;
+      }
+
+      .workshop-table {
+        display: block;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+
+      .workshop-table th,
+      .workshop-table td {
+        padding: 10px;
+        min-width: 110px;
+      }
+
+      .modal-content {
+        width: 95%;
+        padding: 16px;
+      }
+
+      .workshop-table tbody tr:hover {
+        transform: none;
+        box-shadow: none;
       }
     }
 
     /* Touch device optimizations */
     @media (hover: none) {
-      .carousel-item:hover,
-      .carousel-item:focus-visible {
+      .card:hover {
         transform: none;
-        box-shadow: 0 8px 12px var(--shadow-color);
-        outline: none;
+        box-shadow: 0 8px 16px var(--shadow-color);
       }
 
-      .carousel-item:active {
+      .card:active {
         transform: scale(0.98);
       }
     }
 
     /* Print styles */
     @media print {
-      body {
-        background: white;
+      .tabs, .controls, .sort-btn, .close-btn {
+        display: none;
       }
-      .carousel-item {
+      
+      .card {
         break-inside: avoid;
         box-shadow: none;
       }
+      
+      .workshop-table {
+        box-shadow: none;
+      }
+      
+      .workshop-table th,
+      .workshop-table td {
+        border: 1px solid #aaa;
+      }
+    }
+
+    /* Studio Cards Specific Styling */
+    #studios-panel .cards-grid {
+      gap: 30px;
+      padding: 10px;
+    }
+    
+    #studios-panel .card {
+      background: rgba(30, 40, 58, 0.6);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+      height: 280px;
+      position: relative;
+    }
+    
+    #studios-panel .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 25px rgba(0, 123, 255, 0.3);
+      border-color: rgba(0, 123, 255, 0.3);
+    }
+    
+    #studios-panel .card img {
+      height: 200px;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+    
+    #studios-panel .card:hover img {
+      transform: scale(1.05);
+    }
+    
+    #studios-panel .card h3 {
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 12px;
+      padding: 0 15px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      transition: color 0.3s;
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      text-align: center;
+    }
+    
+    #studios-panel .card:hover h3 {
+      color: #4d9eff;
+    }
+    
+    #studios-panel .instagram-link {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s;
+      z-index: 10;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    #studios-panel .instagram-link:hover {
+      background: rgba(0, 123, 255, 0.6);
+      transform: translateY(-3px);
+    }
+    
+    #studios-panel .instagram-link img {
+      width: 20px !important;
+      height: 20px !important;
+      filter: brightness(1);
+    }
+
+    /* Artists Cards Specific Styling - matching studios styling */
+    #artists-panel .cards-grid {
+      gap: 30px;
+      padding: 10px;
+    }
+    
+    #artists-panel .card {
+      background: rgba(30, 40, 58, 0.6);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+      height: 280px;
+      position: relative;
+    }
+    
+    #artists-panel .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 25px rgba(0, 123, 255, 0.3);
+      border-color: rgba(0, 123, 255, 0.3);
+    }
+    
+    #artists-panel .card img {
+      height: 200px;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+    
+    #artists-panel .card:hover img {
+      transform: scale(1.05);
+    }
+    
+    #artists-panel .card h3 {
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 12px;
+      padding: 0 15px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      transition: color 0.3s;
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      text-align: center;
+    }
+    
+    #artists-panel .card:hover h3 {
+      color: #4d9eff;
+    }
+    
+    #artists-panel .instagram-link {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s;
+      z-index: 10;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    #artists-panel .instagram-link:hover {
+      background: rgba(0, 123, 255, 0.6);
+      transform: translateY(-3px);
+    }
+    
+    #artists-panel .instagram-link img {
+      width: 20px !important;
+      height: 20px !important;
+      filter: brightness(1);
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Browse Dance Workshops</h1>
+    <h1>Dance Workshops Hub</h1>
   </header>
+
+  <nav class="tabs" role="tablist" aria-label="Main Sections">
+    <button role="tab" aria-selected="true" aria-controls="studios-panel" id="tab-studios" tabindex="0">Studios</button>
+    <button role="tab" aria-selected="false" aria-controls="artists-panel" id="tab-artists" tabindex="-1">Artists</button>
+    <button role="tab" aria-selected="false" aria-controls="workshops-panel" id="tab-workshops" tabindex="-1">All Workshops</button>
+  </nav>
+
   <main>
-    <nav class="carousel" role="navigation" aria-label="Browse categories">
-      <a href="/all_workshops" class="carousel-item" role="button" tabindex="0">
-        <img 
-          data-src="/static/assets/workshops/workshops.png" 
-          alt="Dance workshop in progress" 
-          width="300" 
-          height="200" 
-          loading="lazy" 
-          src="/static/assets/workshops/workshops.png" 
-        />
-        <p>All Workshops</p>
-        <span class="sr-only">Browse all available workshops</span>
-      </a>
+    <section id="studios-panel" class="tab-panel active" role="tabpanel" aria-labelledby="tab-studios" tabindex="0" aria-hidden="false">
+      <div class="cards-grid" id="studio-cards" aria-live="polite" aria-atomic="true">
+        <p class="loading">Loading studios...</p>
+      </div>
+    </section>
 
-      <a href="/browse_by_artists" class="carousel-item" role="button" tabindex="0">
-        <img 
-          data-src="/static/assets/artists/artists.png" 
-          alt="Featured dance artist" 
-          width="300" 
-          height="200" 
-          loading="lazy" 
-          src="/static/assets/artists/artists.png" 
-        />
-        <p>Artists</p>
-        <span class="sr-only">Browse workshops by dance artists</span>
-      </a>
+    <section id="artists-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-artists" tabindex="0" aria-hidden="true">
+      <div class="cards-grid" id="artist-cards" aria-live="polite" aria-atomic="true">
+        <p class="loading">Loading artists...</p>
+      </div>
+    </section>
 
-      <a href="/browse_by_studios" class="carousel-item" role="button" tabindex="0">
-        <img 
-          data-src="/static/assets/studios/studios.png" 
-          alt="Dance studio space" 
-          width="300" 
-          height="200" 
-          loading="lazy" 
-          src="/static/assets/studios/studios.png" 
-        />
-        <p>Studios</p>
-        <span class="sr-only">Browse workshops by dance studios</span>
-      </a>
-    </nav>
+    <section id="workshops-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-workshops" tabindex="0" aria-hidden="true">
+      <div id="workshops-section" aria-live="polite" aria-atomic="true">
+        <div class="controls">
+          <button class="btn" id="reset-filters" type="button" aria-label="Reset all filters">Reset Filters</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="workshop-table" class="workshop-table" role="grid" aria-describedby="workshops-desc">
+            <thead>
+              <tr>
+                <th scope="col">Date <button class="sort-btn" data-column="date" aria-label="Sort by Date">▲</button></th>
+                <th scope="col">Time <button class="sort-btn" data-column="time" aria-label="Sort by Time">▲</button></th>
+                <th scope="col">Instructor <button class="sort-btn" data-column="by" aria-label="Sort by Instructor">▲</button></th>
+                <th scope="col">Song <button class="sort-btn" data-column="song" aria-label="Sort by Song">▲</button></th>
+                <th scope="col">Pricing</th>
+                <th scope="col">Studio <button class="sort-btn" data-column="studio_id" aria-label="Sort by Studio">▲</button></th>
+                <th scope="col">Register</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="workshop-error" class="error" style="display:none;"></div>
+      </div>
+    </section>
   </main>
 
-  <!-- JavaScript -->
-  <script type="module">
-    // Lazy-load images using IntersectionObserver for performance
+  <div class="modal" id="detail-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1">
+    <div class="modal-content">
+      <button class="close-btn" aria-label="Close modal">&times;</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let studioData = [];
+    let artistData = [];
+    let workshopData = [];
+    let currentSort = { column: 'date', direction: 'asc' };
+
+    // Tab switching functionality
     document.addEventListener('DOMContentLoaded', () => {
-      const observer = new IntersectionObserver(
-        (entries, obs) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const img = entry.target;
-              if(img.dataset.src && img.src !== img.dataset.src){
-                img.src = img.dataset.src;
-              }
-              obs.unobserve(img);
+      const tabButtons = document.querySelectorAll('nav.tabs button');
+      const sections = document.querySelectorAll('section.tab-panel');
+      
+      // Tab switching
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          // Update ARIA attributes
+          tabButtons.forEach(btn => {
+            btn.setAttribute('aria-selected', 'false');
+            btn.tabIndex = -1;
+          });
+          button.setAttribute('aria-selected', 'true');
+          button.tabIndex = 0;
+          
+          // Get target section id from aria-controls
+          const targetId = button.getAttribute('aria-controls');
+          
+          // Show the target section
+          sections.forEach(section => {
+            section.classList.remove('active');
+            section.setAttribute('aria-hidden', 'true');
+          });
+          
+          const targetSection = document.getElementById(targetId);
+          targetSection.classList.add('active');
+          targetSection.setAttribute('aria-hidden', 'false');
+          
+          // Load data if needed
+          if (targetId === 'studios-panel' && studioData.length === 0) {
+            loadStudios();
+          } else if (targetId === 'artists-panel' && artistData.length === 0) {
+            loadArtists();
+          } else if (targetId === 'workshops-panel' && workshopData.length === 0) {
+            loadWorkshops();
+          }
+        });
+      });
+      
+      // Initialize first tab data load
+      loadStudios();
+      
+      // Close modal when clicking the background
+      const modal = document.getElementById('detail-modal');
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+      
+      // Close modal with Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeModal();
+        }
+      });
+      
+      // Setup sort buttons
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const column = btn.dataset.column;
+          sortTable(column);
+        });
+      });
+      
+      // Reset filters button
+      document.getElementById('reset-filters').addEventListener('click', () => {
+        currentSort = { column: 'date', direction: 'asc' };
+        renderWorkshopsTable();
+      });
+    });
+    
+    // Modal functions
+    function openModal(type, id) {
+      const modal = document.getElementById('detail-modal');
+      const content = document.getElementById('detail-content');
+      let title, endpoint;
+      
+      if (type === 'studio') {
+        const studio = studioData.find(s => s.id === id);
+        if (!studio) return;
+        title = studio.name;
+        endpoint = `http://localhost:8001/api/workshops_by_studio/${id}?version=v2`;
+      } else if (type === 'artist') {
+        const artist = artistData.find(a => a.id === id);
+        if (!artist) return;
+        title = artist.name;
+        endpoint = `http://localhost:8001/api/workshops_by_artist/${id}?version=v2`;
+      } else {
+        return;
+      }
+      
+      content.innerHTML = `
+        <h2>${title}</h2>
+        <div class="workshop-container">
+          <p class="loading">Loading workshops...</p>
+        </div>
+      `;
+      
+      // Fetch workshops
+      fetch(endpoint)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load workshops');
+          return response.json();
+        })
+        .then(data => {
+          const workshopContainer = content.querySelector('.workshop-container');
+          
+          if (type === 'studio') {
+            // Handle CategorizedWorkshopResponse for studios
+            const allWorkshops = [];
+            
+            // Process this_week workshops
+            if (data.this_week && data.this_week.length > 0) {
+              data.this_week.forEach(day => {
+                if (day.workshops && day.workshops.length > 0) {
+                  day.workshops.forEach(workshop => {
+                    allWorkshops.push(workshop);
+                  });
+                }
+              });
+            }
+            
+            // Process post_this_week workshops
+            if (data.post_this_week && data.post_this_week.length > 0) {
+              data.post_this_week.forEach(workshop => {
+                allWorkshops.push(workshop);
+              });
+            }
+            
+            if (allWorkshops.length > 0) {
+              workshopContainer.innerHTML = '';
+              allWorkshops.forEach(workshop => {
+                workshopContainer.innerHTML += `
+                  <div class="workshop-item">
+                    <p><strong>${workshop.date} at ${workshop.time}</strong></p>
+                    <p>Instructor: ${workshop.artist || 'TBA'}</p>
+                    <p>Song: ${workshop.song || 'TBA'}</p>
+                    <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
+                    ${workshop.payment_link ? 
+                      `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
+                      ''}
+                  </div>
+                `;
+              });
+            } else {
+              workshopContainer.innerHTML = `<p>No upcoming workshops found.</p>`;
+            }
+          } else if (type === 'artist') {
+            // Handle List<WorkshopSession> for artists
+            if (data.length > 0) {
+              workshopContainer.innerHTML = '';
+              data.forEach(workshop => {
+                workshopContainer.innerHTML += `
+                  <div class="workshop-item">
+                    <p><strong>${workshop.date} at ${workshop.time}</strong></p>
+                    <p>Studio: ${workshop.studio_id || 'TBA'}</p>
+                    <p>Song: ${workshop.song || 'TBA'}</p>
+                    <p>Pricing: ${workshop.pricing_info || 'TBA'}</p>
+                    ${workshop.payment_link ? 
+                      `<a href="${workshop.payment_link}" target="_blank" class="register-link">Register</a>` : 
+                      ''}
+                  </div>
+                `;
+              });
+            } else {
+              workshopContainer.innerHTML = `<p>No upcoming workshops found.</p>`;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error loading workshops:', error);
+          content.querySelector('.workshop-container').innerHTML = 
+            '<div class="error">Failed to load workshops. Please try again later.</div>';
+        });
+      
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      
+      // Focus close button for accessibility
+      setTimeout(() => {
+        modal.querySelector('.close-btn').focus();
+      }, 100);
+    }
+    
+    function closeModal() {
+      const modal = document.getElementById('detail-modal');
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+    
+    // Data loading functions
+    function loadStudios() {
+      const studioCards = document.getElementById('studio-cards');
+      studioCards.innerHTML = '<p class="loading">Loading studios...</p>';
+      
+      fetch('http://localhost:8001/api/studios?version=v2')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load studios');
+          return response.json();
+        })
+        .then(data => {
+          studioData = data || [];
+          
+          if (studioData.length > 0) {
+            studioCards.innerHTML = '';
+            studioData.forEach(studio => {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.tabIndex = 0;
+              card.setAttribute('role', 'button');
+              card.setAttribute('aria-label', `${studio.name} studio details`);
+              
+              card.addEventListener('click', () => openModal('studio', studio.id));
+              card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openModal('studio', studio.id);
+                }
+              });
+              
+              // Use proxy-image if external image URL is provided
+              const imageUrl = studio.image_url 
+                ? `http://localhost:8001/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
+                : '/static/assets/studios/placeholder.jpg';
+              
+              card.innerHTML = `
+                <img src="${imageUrl}" 
+                     alt="${studio.name}" 
+                     loading="lazy">
+                <h3>${studio.name}</h3>
+                ${studio.instagram_link ? `
+                  <a href="${studio.instagram_link}" 
+                     target="_blank" 
+                     class="instagram-link"
+                     aria-label="Visit ${studio.name} on Instagram"
+                     onclick="event.stopPropagation()">
+                    <img src="/static/assets/instagram-icon.png" alt="Instagram">
+                  </a>
+                ` : ''}
+              `;
+              
+              studioCards.appendChild(card);
+            });
+          } else {
+            studioCards.innerHTML = '<p class="error">No studios found.</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading studios:', error);
+          studioCards.innerHTML = '<p class="error">Failed to load studios. Please try again later.</p>';
+        });
+    }
+    
+    function loadArtists() {
+      const artistCards = document.getElementById('artist-cards');
+      artistCards.innerHTML = '<p class="loading">Loading artists...</p>';
+      
+      fetch('http://localhost:8001/api/artists?version=v2')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load artists');
+          return response.json();
+        })
+        .then(data => {
+          artistData = data || [];
+          
+          if (artistData.length > 0) {
+            artistCards.innerHTML = '';
+            artistData.forEach(artist => {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.tabIndex = 0;
+              card.setAttribute('role', 'button');
+              card.setAttribute('aria-label', `${artist.name} artist details`);
+              
+              card.addEventListener('click', () => openModal('artist', artist.id));
+              card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openModal('artist', artist.id);
+                }
+              });
+
+              // Use proxy-image if external image URL is provided
+              const imageUrl = artist.image_url 
+                ? `http://localhost:8001/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
+                : '/static/assets/artists/placeholder.jpg';
+              
+              card.innerHTML = `
+                <img src="${imageUrl}" 
+                     alt="${artist.name}" 
+                     loading="lazy">
+                <h3>${artist.name}</h3>
+                ${artist.instagram_link ? `
+                  <a href="${artist.instagram_link}" 
+                     target="_blank" 
+                     class="instagram-link"
+                     aria-label="Visit ${artist.name} on Instagram"
+                     onclick="event.stopPropagation()">
+                    <img src="/static/assets/instagram-icon.png" alt="Instagram">
+                  </a>
+                ` : ''}
+              `;
+              
+              artistCards.appendChild(card);
+            });
+          } else {
+            artistCards.innerHTML = '<p class="error">No artists found.</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading artists:', error);
+          artistCards.innerHTML = '<p class="error">Failed to load artists. Please try again later.</p>';
+        });
+    }
+    
+    function loadWorkshops() {
+      const tableBody = document.querySelector('#workshop-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="7"><p class="loading">Loading workshops...</p></td></tr>';
+      
+      fetch('http://localhost:8001/api/workshops?version=v2')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load workshops');
+          return response.json();
+        })
+        .then(data => {
+          // Process workshops data - flatten workshop_details array
+          workshopData = [];
+          
+          data.forEach(workshop => {
+            if (workshop.workshop_details && workshop.workshop_details.length > 0) {
+              workshop.workshop_details.forEach(detail => {
+                workshopData.push({
+                  date: detail.date,
+                  time: detail.time,
+                  instructor: detail.by || 'TBA',
+                  song: detail.song || 'TBA',
+                  pricing: detail.pricing_info || 'TBA',
+                  studio: workshop.studio_id || 'TBA',
+                  registration_link: workshop.payment_link
+                });
+              });
             }
           });
-        },
-        { rootMargin: '50px' }
-      );
-
-      document.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
-    });
-
-    // Global error handler with potential user notification
-    window.addEventListener('error', (event) => {
-      console.error('Page error:', event.error);
-      // Could implement user-friendly error notification here
-    });
+          
+          renderWorkshopsTable();
+          
+          // Update sort arrows
+          document.querySelectorAll('.sort-btn').forEach(btn => {
+            const column = btn.dataset.column;
+            btn.textContent = column === currentSort.column ? 
+              (currentSort.direction === 'asc' ? '↑' : '↓') : '▲';
+          });
+        })
+        .catch(error => {
+          console.error('Error loading workshops:', error);
+          document.getElementById('workshop-error').textContent = 'Failed to load workshops. Please try again later.';
+          document.getElementById('workshop-error').style.display = 'block';
+          tableBody.innerHTML = '';
+        });
+    }
+    
+    function renderWorkshopsTable() {
+      const tableBody = document.querySelector('#workshop-table tbody');
+      const errorElem = document.getElementById('workshop-error');
+      errorElem.style.display = 'none';
+      
+      if (workshopData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7"><p class="error">No workshops found.</p></td></tr>';
+        return;
+      }
+      
+      // Sort the data
+      const sortedData = [...workshopData].sort((a, b) => {
+        let valueA, valueB;
+        
+        switch (currentSort.column) {
+          case 'date':
+            valueA = new Date(a.date).getTime();
+            valueB = new Date(b.date).getTime();
+            break;
+          case 'time':
+            valueA = a.time;
+            valueB = b.time;
+            break;
+          case 'by':
+            valueA = a.instructor?.toLowerCase() || '';
+            valueB = b.instructor?.toLowerCase() || '';
+            break;
+          case 'song':
+            valueA = a.song?.toLowerCase() || '';
+            valueB = b.song?.toLowerCase() || '';
+            break;
+          case 'studio_id':
+            valueA = a.studio?.toLowerCase() || '';
+            valueB = b.studio?.toLowerCase() || '';
+            break;
+          default:
+            valueA = new Date(a.date).getTime();
+            valueB = new Date(b.date).getTime();
+        }
+        
+        const direction = currentSort.direction === 'asc' ? 1 : -1;
+        return (valueA > valueB ? 1 : -1) * direction;
+      });
+      
+      tableBody.innerHTML = '';
+      
+      sortedData.forEach(workshop => {
+        // Use the date directly from the API as it's already formatted
+        const formattedDate = workshop.date || 'TBA';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${formattedDate}</td>
+          <td>${workshop.time}</td>
+          <td>${workshop.instructor || 'TBA'}</td>
+          <td>${workshop.song || 'TBA'}</td>
+          <td>${workshop.pricing}</td>
+          <td>${workshop.studio || 'TBA'}</td>
+          <td>
+            ${workshop.registration_link ? 
+              `<a href="${workshop.registration_link}" target="_blank" class="register-link">Register</a>` : 
+              'Coming soon'}
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+    
+    function sortTable(column) {
+      // Update button state
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.textContent = '▲';
+      });
+      
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+      }
+      
+      // Update current sort button
+      const currentButton = document.querySelector(`.sort-btn[data-column="${column}"]`);
+      currentButton.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+      
+      renderWorkshopsTable();
+    }
+    
+    // Close button for modal
+    document.querySelector('.close-btn').addEventListener('click', closeModal);
   </script>
 </body>
 </html>
