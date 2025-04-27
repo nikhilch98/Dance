@@ -16,7 +16,7 @@ from pydantic import BaseModel, HttpUrl
 import requests
 import uvicorn
 
-from utils.utils import get_mongo_client, get_formatted_date, get_formatted_date_with_day, get_formatted_time, get_timestamp_epoch, get_formatted_date_without_day
+from utils.utils import get_mongo_client, get_formatted_date, get_formatted_date_with_day, get_formatted_time, get_timestamp_epoch, get_formatted_date_without_day, cache_response
 
 # API Models
 class TimeDetails(BaseModel):
@@ -426,6 +426,7 @@ async def browse_by_studios(request: Request):
 
 # API Routes
 @app.get("/api/workshops", response_model=List[Workshop])
+@cache_response(expire=3600)
 async def get_workshops(version: str = Depends(validate_version)):
     """Get all workshops.
     
@@ -443,6 +444,7 @@ async def get_workshops(version: str = Depends(validate_version)):
         return []
 
 @app.get("/api/studios", response_model=List[Studio])
+@cache_response(expire=3600)
 async def get_studios(version: str = Depends(validate_version)):
     """Get all studios with active workshops.
     
@@ -459,6 +461,7 @@ async def get_studios(version: str = Depends(validate_version)):
         return []
 
 @app.get("/api/artists", response_model=List[Artist])
+@cache_response(expire=3600)
 async def get_artists(version: str = Depends(validate_version)):
     """Get all artists with active workshops.
     
@@ -475,6 +478,7 @@ async def get_artists(version: str = Depends(validate_version)):
         return []
 
 @app.get("/api/workshops_by_artist/{artist_id}", response_model=List[WorkshopSession])
+@cache_response(expire=3600)
 async def get_workshops_by_artist(
     artist_id: str,
     version: str = Depends(validate_version)
@@ -495,6 +499,7 @@ async def get_workshops_by_artist(
         return []
 
 @app.get("/api/workshops_by_studio/{studio_id}", response_model=CategorizedWorkshopResponse)
+@cache_response(expire=3600)
 async def get_workshops_by_studio(
     studio_id: str,
     version: str = Depends(validate_version)
@@ -515,7 +520,9 @@ async def get_workshops_by_studio(
         traceback.print_exc() 
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 @app.get("/proxy-image/")
+@cache_response(expire=86400)  # Cache images for 24 hours
 async def proxy_image(url: HttpUrl):
     """Proxy for fetching images to bypass CORS restrictions.
     
@@ -535,7 +542,7 @@ async def proxy_image(url: HttpUrl):
             "Chrome/91.0.4472.124 Safari/537.36"
         )
     }
-
+    
     try:
         response = requests.get(url, headers=headers, stream=True)
         response.raise_for_status()

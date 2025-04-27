@@ -19,11 +19,39 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-
+import functools
 import config
 import time
 import functools
 import sys 
+from fastapi import FastAPI, Request
+
+cache = {}
+
+def cache_response(expire: int = 3600):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Create a cache key that works even if request isn't available
+            request = kwargs.get('request')
+            if request:
+                cache_key = f"{func.__name__}-{request.url.path}-{request.query_params}"
+            else:
+                # Use args and kwargs values to create a cache key
+                args_str = '-'.join(str(arg) for arg in args)
+                kwargs_str = '-'.join(f"{k}:{v}" for k, v in kwargs.items())
+                cache_key = f"{func.__name__}-{args_str}-{kwargs_str}"
+            
+            # Check if we have a cached response
+            if cache_key in cache and (time.time() - cache[cache_key]["time"]) < expire:
+                return cache[cache_key]["data"]
+
+            # Execute the function if no cache hit
+            response = await func(*args, **kwargs)
+            cache[cache_key] = {"data": response, "time": time.time()}
+            return response
+        return wrapper
+    return decorator
 
 def retry(max_attempts=3, backoff_factor=1, exceptions=(Exception,)):
     """
