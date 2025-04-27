@@ -644,64 +644,47 @@
       }
       
       .workshop-table tr {
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         background: rgba(30, 40, 58, 0.8);
         border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        position: relative;
       }
       
       .workshop-table td {
-        display: block;
-        text-align: left;
-        padding: 8px 0;
+        display: flex;
+        padding: 8px 10px;
         border: none;
         position: relative;
-        padding-left: 40%;
-        white-space: normal;
         overflow: visible;
+        white-space: normal;
+        align-items: center;
       }
       
       .workshop-table td:before {
         content: attr(data-label);
-        position: absolute;
-        left: 0;
-        width: 35%;
-        padding-right: 10px;
         font-weight: 600;
         color: #4d9eff;
-        text-align: left;
+        min-width: 80px;
+        margin-right: 10px;
       }
-      
-      .workshop-table td:nth-child(1):before { content: "Date"; }
-      .workshop-table td:nth-child(2):before { content: "Time"; }
-      .workshop-table td:nth-child(3):before { content: "Instructor"; }
-      .workshop-table td:nth-child(4):before { content: "Song"; }
-      .workshop-table td:nth-child(5):before { content: "Pricing"; }
-      .workshop-table td:nth-child(6):before { content: "Studio"; }
-      .workshop-table td:nth-child(7):before { content: ""; }
       
       .workshop-table td:nth-child(7) {
-        text-align: center;
-        padding: 15px 0 5px 0;
+        justify-content: center;
+        padding-top: 15px;
         margin-top: 5px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
       
-      .workshop-table .register-link {
-        width: 100%;
-        max-width: 200px;
-        padding: 10px 20px;
-      }
-      
-      .instructor-name {
-        white-space: normal;
-        max-width: 100%;
+      .workshop-table td:nth-child(7):before {
+        display: none;
       }
       
       .workshop-instructor-link {
-        max-width: 100%;
+        display: inline-flex;
+        align-items: center;
       }
 
       .modal-content {
@@ -1064,6 +1047,44 @@
       width: 16%;  /* Register */
       padding: 8px;
     }
+
+    /* Search bar for artists */
+    .search-container {
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto 20px;
+    }
+    
+    .search-bar {
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 30px;
+      border: none;
+      background: rgba(30, 40, 58, 0.8);
+      color: #fff;
+      font-size: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .search-bar:focus {
+      outline: none;
+      box-shadow: 0 4px 20px rgba(0, 123, 255, 0.4);
+      border-color: rgba(0, 123, 255, 0.4);
+    }
+    
+    .search-bar::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    @media (max-width: 768px) {
+      .search-container {
+        max-width: 100%;
+        padding: 0 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1085,6 +1106,9 @@
     </section>
 
     <section id="artists-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-artists" tabindex="0" aria-hidden="true">
+      <div class="search-container">
+        <input type="text" id="artist-search" class="search-bar" placeholder="Search artists...">
+      </div>
       <div class="cards-grid" id="artist-cards" aria-live="polite" aria-atomic="true">
         <p class="loading">Loading artists...</p>
       </div>
@@ -1213,12 +1237,12 @@
         const studio = studioData.find(s => s.id === id);
         if (!studio) return;
         title = studio.name;
-        endpoint = `http://localhost:8001/api/workshops_by_studio/${id}?version=v2`;
+        endpoint = `/api/workshops_by_studio/${id}?version=v2`;
       } else if (type === 'artist') {
         const artist = artistData.find(a => a.id === id);
         if (!artist) return;
         title = artist.name;
-        endpoint = `http://localhost:8001/api/workshops_by_artist/${id}?version=v2`;
+        endpoint = `/api/workshops_by_artist/${id}?version=v2`;
       } else {
         return;
       }
@@ -1400,7 +1424,7 @@
       const studioCards = document.getElementById('studio-cards');
       studioCards.innerHTML = '<p class="loading">Loading studios...</p>';
       
-      fetch('http://localhost:8001/api/studios?version=v2')
+      fetch('/api/studios?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load studios');
           return response.json();
@@ -1427,7 +1451,7 @@
               
               // Use proxy-image if external image URL is provided
               const imageUrl = studio.image_url 
-                ? `http://localhost:8001/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
+                ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
                 : '/static/assets/studios/placeholder.jpg';
               
               card.innerHTML = `
@@ -1462,57 +1486,24 @@
       const artistCards = document.getElementById('artist-cards');
       artistCards.innerHTML = '<p class="loading">Loading artists...</p>';
       
-      fetch('http://localhost:8001/api/artists?version=v2')
+      fetch('/api/artists?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load artists');
           return response.json();
         })
         .then(data => {
           artistData = data || [];
+          renderArtists(artistData);
           
-          if (artistData.length > 0) {
-            artistCards.innerHTML = '';
-            artistData.forEach(artist => {
-              const card = document.createElement('div');
-              card.className = 'card';
-              card.tabIndex = 0;
-              card.setAttribute('role', 'button');
-              card.setAttribute('aria-label', `${artist.name} artist details`);
-              
-              card.addEventListener('click', () => openModal('artist', artist.id));
-              card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openModal('artist', artist.id);
-                }
-              });
-
-              // Use proxy-image if external image URL is provided
-              const imageUrl = artist.image_url 
-                ? `http://localhost:8001/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
-                : '/static/assets/artists/placeholder.jpg';
-              
-              card.innerHTML = `
-                <img src="${imageUrl}" 
-                     alt="${artist.name}" 
-                     loading="lazy">
-                <h3>${artist.name}</h3>
-                ${artist.instagram_link ? `
-                  <a href="${artist.instagram_link}" 
-                     target="_blank" 
-                     class="instagram-link"
-                     aria-label="Visit ${artist.name} on Instagram"
-                     onclick="event.stopPropagation()">
-                    <img src="/static/assets/instagram-icon.png" alt="Instagram">
-                  </a>
-                ` : ''}
-              `;
-              
-              artistCards.appendChild(card);
-            });
-          } else {
-            artistCards.innerHTML = '<p class="error">No artists found.</p>';
-          }
+          // Set up search functionality
+          const searchInput = document.getElementById('artist-search');
+          searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const filteredArtists = artistData.filter(artist => 
+              artist.name.toLowerCase().includes(searchTerm)
+            );
+            renderArtists(filteredArtists);
+          });
         })
         .catch(error => {
           console.error('Error loading artists:', error);
@@ -1520,11 +1511,59 @@
         });
     }
     
+    function renderArtists(artists) {
+      const artistCards = document.getElementById('artist-cards');
+      
+      if (artists.length > 0) {
+        artistCards.innerHTML = '';
+        artists.forEach(artist => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.tabIndex = 0;
+          card.setAttribute('role', 'button');
+          card.setAttribute('aria-label', `${artist.name} artist details`);
+          
+          card.addEventListener('click', () => openModal('artist', artist.id));
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openModal('artist', artist.id);
+            }
+          });
+
+          // Use proxy-image if external image URL is provided
+          const imageUrl = artist.image_url 
+            ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
+            : '/static/assets/artists/placeholder.jpg';
+          
+          card.innerHTML = `
+            <img src="${imageUrl}" 
+                 alt="${artist.name}" 
+                 loading="lazy">
+            <h3>${artist.name}</h3>
+            ${artist.instagram_link ? `
+              <a href="${artist.instagram_link}" 
+                 target="_blank" 
+                 class="instagram-link"
+                 aria-label="Visit ${artist.name} on Instagram"
+                 onclick="event.stopPropagation()">
+                <img src="/static/assets/instagram-icon.png" alt="Instagram">
+              </a>
+            ` : ''}
+          `;
+          
+          artistCards.appendChild(card);
+        });
+      } else {
+        artistCards.innerHTML = '<p class="error">No artists found matching your search.</p>';
+      }
+    }
+    
     function loadWorkshops() {
       const tableBody = document.querySelector('#workshop-table tbody');
       tableBody.innerHTML = '<tr><td colspan="7"><p class="loading">Loading workshops...</p></td></tr>';
       
-      fetch('http://localhost:8001/api/workshops?version=v2')
+      fetch('/api/workshops?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load workshops');
           return response.json();
