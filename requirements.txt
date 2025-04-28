@@ -11,3 +11,4 @@ uvicorn
 motor
 jinja2
 black
+python-multipart

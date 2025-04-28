@@ -8,13 +8,17 @@ profiles, and studio schedules.
 from datetime import datetime, timedelta, time
 from typing import List, Dict, Optional
 from collections import defaultdict
-from fastapi import FastAPI, HTTPException, Query, Response, Depends, Request
+from fastapi import FastAPI, HTTPException, Query, Response, Depends, Request, Cookie, Form, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, HttpUrl
 import requests
 import uvicorn
+import hashlib
+import base64
+import secrets
 
 from utils.utils import (
     get_mongo_client,
@@ -57,6 +61,7 @@ class Workshop(BaseModel):
     uuid: str
     payment_link: HttpUrl
     studio_id: str
+    studio_name: str
     updated_at: float
     workshop_details: List[WorkshopDetail]
 
@@ -172,23 +177,12 @@ class DatabaseOperations:
         client = get_mongo_client()
         workshops = []
 
+        # Build a mapping from studio_id to studio_name
+        studio_map = {s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()}
+
         for workshop in list(client["discovery"]["workshops_v2"].find()):
             formatted_details = [
                 {
-                    # "time_details": {
-                    # "day": 27,
-                    # "month": 4,
-                    # "year": 2025,
-                    # "start_time": "03:00 PM",
-                    # "end_time": "05:00 PM"
-                    # },
-                    # "by": "Mohit Solanki",
-                    # "song": "Ranjhana",
-                    # "pricing_info": "Single Class : 900/\nBoth Classes : 1500/",
-                    # "timestamp_epoch": 1745769000,
-                    # "artist_id": "mohitsolanki11",
-                    # "date": "27th Apr (Sun)",
-                    # "time": "03:00 PM - 05:00 PM"
                     "time_details": detail["time_details"],
                     "by": detail.get("by", ""),
                     "song": detail.get("song", ""),
@@ -207,6 +201,7 @@ class DatabaseOperations:
                     "uuid": workshop["uuid"],
                     "payment_link": workshop["payment_link"],
                     "studio_id": workshop["studio_id"],
+                    "studio_name": studio_map.get(workshop["studio_id"], ""),
                     "updated_at": workshop["updated_at"],
                     "workshop_details": formatted_details,
                 }
@@ -631,6 +626,82 @@ async def proxy_image(url: HttpUrl):
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
+
+# --- Studios CRUD ---
+@app.get("/admin/api/studios")
+def admin_list_studios():
+    client = get_mongo_client()
+    return list(client["discovery"]["studios"].find({}, {"_id": 0}))
+
+@app.post("/admin/api/studios")
+def admin_create_studio(studio: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["studios"].insert_one(studio)
+    return {"success": True}
+
+@app.put("/admin/api/studios/{studio_id}")
+def admin_update_studio(studio_id: str, studio: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["studios"].update_one({"studio_id": studio_id}, {"$set": studio})
+    return {"success": True}
+
+@app.delete("/admin/api/studios/{studio_id}")
+def admin_delete_studio(studio_id: str):
+    client = get_mongo_client()
+    client["discovery"]["studios"].delete_one({"studio_id": studio_id})
+    return {"success": True}
+
+# --- Artists CRUD ---
+@app.get("/admin/api/artists")
+def admin_list_artists():
+    client = get_mongo_client()
+    return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}))
+
+@app.post("/admin/api/artists")
+def admin_create_artist(artist: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["artists_v2"].insert_one(artist)
+    return {"success": True}
+
+@app.put("/admin/api/artists/{artist_id}")
+def admin_update_artist(artist_id: str, artist: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["artists_v2"].update_one({"artist_id": artist_id}, {"$set": artist})
+    return {"success": True}
+
+@app.delete("/admin/api/artists/{artist_id}")
+def admin_delete_artist(artist_id: str):
+    client = get_mongo_client()
+    client["discovery"]["artists_v2"].delete_one({"artist_id": artist_id})
+    return {"success": True}
+
+# --- Workshops CRUD ---
+@app.get("/admin/api/workshops")
+def admin_list_workshops():
+    client = get_mongo_client()
+    return list(client["discovery"]["workshops_v2"].find({}, {"_id": 0}))
+
+@app.post("/admin/api/workshops")
+def admin_create_workshop(workshop: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["workshops_v2"].insert_one(workshop)
+    return {"success": True}
+
+@app.put("/admin/api/workshops/{uuid}")
+def admin_update_workshop(uuid: str, workshop: dict = Body(...)):
+    client = get_mongo_client()
+    client["discovery"]["workshops_v2"].update_one({"uuid": uuid}, {"$set": workshop})
+    return {"success": True}
+
+@app.delete("/admin/api/workshops/{uuid}")
+def admin_delete_workshop(uuid: str):
+    client = get_mongo_client()
+    client["discovery"]["workshops_v2"].delete_one({"uuid": uuid})
+    return {"success": True}
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request):
+    return templates.TemplateResponse("website/admin_panel.html", {"request": request})
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8002, reload=True, workers=4)

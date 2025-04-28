@@ -1464,7 +1464,7 @@
               <select id="date-filter" class="filter-select" aria-label="Filter by date">
                 <option value="">All Dates</option>
               </select>
-            </div>
+        </div>
             
             <div class="filter-group">
               <label class="filter-label">Instructor</label>
@@ -1923,12 +1923,12 @@
       const studioCards = document.getElementById('studio-cards');
       studioCards.innerHTML = '<p class="loading">Loading studios...</p>';
       
-      fetch('/api/studios?version=v2')
+    fetch('/api/studios?version=v2')
         .then(response => {
           if (!response.ok) throw new Error('Failed to load studios');
           return response.json();
         })
-        .then(data => {
+      .then(data => {
           studioData = data || [];
           
           if (studioData.length > 0) {
@@ -1982,8 +1982,8 @@
             document.querySelectorAll('#studio-cards .card').forEach(card => {
               const studioId = card.dataset.studioId;
               card.addEventListener('click', () => openModal('studio', studioId));
-              card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   openModal('studio', studioId);
                 }
@@ -2028,8 +2028,8 @@
                      );
             });
             renderArtists(filteredArtists);
-          });
-        })
+        });
+      })
         .catch(error => {
           console.error('Error loading artists:', error);
           artistCards.innerHTML = '<p class="error">Failed to load artists. Please try again later.</p>';
@@ -2119,13 +2119,13 @@
             if (workshop.workshop_details && workshop.workshop_details.length > 0) {
               workshop.workshop_details.forEach(detail => {
                 workshopData.push({
-                  date: detail.date,
-                  time: detail.time,
+              date: detail.date,
+              time: detail.time,
                   instructor: detail.by || 'TBA',
                   instructor_instagram: detail.instagram_link || null,
                   song: detail.song || 'TBA',
                   pricing: detail.pricing_info || 'TBA',
-                  studio: workshop.studio_id || 'TBA',
+                  studio: workshop.studio_name || workshop.studio_id || 'TBA',
                   registration_link: workshop.payment_link || detail.payment_link || null,
                   timestamp_epoch: detail.timestamp_epoch || 0
                 });

@@ -23,6 +23,9 @@ from utils import utils
 from studios.dance_inn import DanceInnStudio
 from studios.vins import VinsStudio
 from studios.manifest import ManifestStudio
+from fastapi.responses import HTMLResponse
+from fastapi import Depends
+from utils import require_admin_session
 
 
 class WorkshopTimeDetails(BaseModel):
@@ -40,7 +43,7 @@ class WorkshopDetails(BaseModel):
     pricing_info: Optional[str]
     timestamp_epoch: Optional[
         int
-    ]  # The Unix epoch timestamp for the workshop’s start time
+    ]  # The Unix epoch timestamp for the workshop's start time
     artist_id: Optional[str]
 
 
@@ -79,13 +82,13 @@ def process_link_debug(link, studio_id, client, artists, mongo_client, version=0
             "assume the earliest valid future year.\n"
             '       * "start_time": string (12-hour format "HH:MM AM/PM")\n'
             '       * "end_time": string (12-hour format "HH:MM AM/PM")\n\n'
-            '   - "by": string containing the instructor’s name(s). If multiple instructors, '
+            '   - "by": string containing the instructor's name(s). If multiple instructors, '
             'use " x " to separate.\n'
             '   - "song": the routine name if specified; otherwise null.\n'
             '   - "pricing_info": a single string with the base price details. If more than '
             "one ticket type, split each price onto a new line. Exclude additional taxes or fees.\n"
             '   - "timestamp_epoch": integer representing the start date/time in Unix epoch.\n'
-            '   - "artist_id": string matching the instructor’s ID (if it matches any provided '
+            '   - "artist_id": string matching the instructor's ID (if it matches any provided '
             "in the artists list), otherwise null.\n\n"
             "4. Important details:\n"
             "   - Parse textual event dates into numeric day, month, year.\n"
@@ -173,9 +176,23 @@ def process_link_debug(link, studio_id, client, artists, mongo_client, version=0
         }
     )
 
+import secrets
+import hashlib
+import base64
+
+def hash_password(plain_password):
+    salt = secrets.token_bytes(16)
+    hash_bytes = hashlib.pbkdf2_hmac('sha256', plain_password.encode(), salt, 100_000)
+    return f"{base64.b64encode(salt).decode()}${base64.b64encode(hash_bytes).decode()}"
+
+
+
 
 # Example usage:
 if __name__ == "__main__":
+
+    print(hash_password("Vishal2002"))
+    pass
     # client = utils.get_mongo_client()
     # openai_client = OpenAI(api_key="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")
 
@@ -205,3 +222,32 @@ if __name__ == "__main__":
     print(time_1 < time_2)
 
     pass
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(user=Depends(require_admin_session)):
+    return f"""
+    <html>
+    <head>
+      <title>Admin Panel</title>
+      <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        .logout {{ position: absolute; top: 20px; right: 20px; }}
+        h2 {{ color: #007bff; }}
+      </style>
+    </head>
+    <body>
+      <a class="logout" href="/admin/logout">Logout</a>
+      <h2>Welcome to the Admin Panel</h2>
+      <p>You are logged in as: <b>{user['username']}</b></p>
+      <hr>
+      <h3>Sections (to be implemented):</h3>
+      <ul>
+        <li>List of Studios</li>
+        <li>List of Artists</li>
+        <li>List of Workshops</li>
+        <li>CRUD operations for all</li>
+      </ul>
+      <p>Start building your admin UI here!</p>
+    </body>
+    </html>
+    """

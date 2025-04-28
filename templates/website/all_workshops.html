@@ -362,7 +362,9 @@
     <div class="controls">
       <button class="btn" type="button" onclick="resetFilters()" aria-label="Reset all filters">Reset Filters</button>
     </div>
-
+    <div class="search-container">
+      <input type="text" id="workshop-search" class="search-bar" placeholder="Search by instructor, song, or studio..." />
+    </div>
     <div class="loading" id="loading">Loading workshops...</div>
     <div class="error" id="error" style="display:none;"></div>
 
@@ -393,9 +395,9 @@
           <th scope="col" class="level-column">Pricing</th>
           <th scope="col" class="studio-column">
             Studio
-            <button class="sort-btn" onclick="sortColumn(event, 'studio_id')" aria-label="Sort by studio" tabindex="0"></button>
-            <button class="filter-btn" onclick="toggleFilterMenu(event, 'studio_id')" aria-label="Filter by studio" tabindex="0"></button>
-            <div class="filter-menu" id="filter-studio_id" role="region" aria-label="Filter by studio"></div>
+            <button class="sort-btn" onclick="sortColumn(event, 'studio_name')" aria-label="Sort by studio" tabindex="0"></button>
+            <button class="filter-btn" onclick="toggleFilterMenu(event, 'studio_name')" aria-label="Filter by studio" tabindex="0"></button>
+            <div class="filter-menu" id="filter-studio_name" role="region" aria-label="Filter by studio"></div>
           </th>
           <th scope="col" class="register-column">Register</th>
         </tr>
@@ -408,6 +410,18 @@
     let originalData = [];
     let filteredData = [];
     let currentSortOrder = {}; // Track the sort order for each column
+    let searchTerm = '';
+
+    // Add event listener for search
+    window.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('workshop-search');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          searchTerm = e.target.value.toLowerCase();
+          renderTable(filteredData);
+        });
+      }
+    });
 
     const fetchWorkshopData = async () => {
       try {
@@ -420,7 +434,7 @@
             time: detail.time,
             by: detail.by || '',
             song: detail.song || '',
-            studio_id: workshop.studio_id,
+            studio_name: workshop.studio_name,
             payment_link: workshop.payment_link,
             pricing_info: detail.pricing_info || 'Contact studio'
           }))
@@ -442,7 +456,24 @@
       const tbody = document.querySelector("#workshop-table tbody");
       tbody.innerHTML = "";
 
-      data.forEach(session => {
+      // Apply search filter
+      let displayData = data;
+      if (searchTerm && searchTerm.trim() !== '') {
+        displayData = data.filter(session => {
+          return (
+            (session.by && session.by.toLowerCase().includes(searchTerm)) ||
+            (session.song && session.song.toLowerCase().includes(searchTerm)) ||
+            (session.studio_name && session.studio_name.toLowerCase().includes(searchTerm))
+          );
+        });
+      }
+
+      if (displayData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><p class="error">No workshops found.</p></td></tr>';
+        return;
+      }
+
+      displayData.forEach(session => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${session.date}</td>
@@ -450,7 +481,7 @@
           <td>${session.by}</td>
           <td>${session.song}</td>
           <td>${session.pricing_info}</td>
-          <td>${session.studio_id}</td>
+          <td>${session.studio_name || ''}</td>
           <td class="payment-link"><a href="${session.payment_link}" target="_blank" rel="noopener noreferrer">Register</a></td>
         `;
         tbody.appendChild(row);
@@ -458,10 +489,10 @@
     };
 
     const populateFilters = () => {
-      const filterColumns = ['date', 'by', 'song', 'studio_id'];
+      const filterColumns = ['date', 'by', 'song', 'studio_name'];
       filterColumns.forEach(column => {
         const uniqueValues = [...new Set(originalData.map(item => item[column]))].sort((a, b) => a.localeCompare(b));
-        const filterMenu = document.getElementById(`filter-${column}`);
+        const filterMenu = document.getElementById(`filter-${column === 'studio_name' ? 'studio_id' : column}`);
 
         filterMenu.innerHTML = uniqueValues.map(value => `
           <label>
@@ -491,10 +522,13 @@
     };
 
     const applyFilters = (column) => {
-      const filterMenu = document.getElementById(`filter-${column}`);
+      const filterMenu = document.getElementById(`filter-${column === 'studio_name' ? 'studio_id' : column}`);
       const selectedValues = Array.from(filterMenu.querySelectorAll('input:checked')).map(input => input.value);
 
       filteredData = originalData.filter(item => {
+        if (column === 'studio_name') {
+          return selectedValues.length === 0 || selectedValues.includes(item.studio_name);
+        }
         return selectedValues.length === 0 || selectedValues.includes(item[column]);
       });
 

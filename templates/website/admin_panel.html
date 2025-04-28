@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Dance Workshops</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px; }
+    h1 { text-align: center; color: #007bff; margin-bottom: 32px; }
+    h2 { color: #333; margin-top: 40px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; background: #fafbfc; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f0f4f8; color: #007bff; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .actions button { margin-right: 6px; }
+    .add-row { background: #eaf6ff; }
+    .btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .btn-edit { background: #ffc107; color: #222; }
+    .btn-save { background: #28a745; color: #fff; }
+    .btn-cancel { background: #6c757d; color: #fff; }
+    .btn-delete { background: #dc3545; color: #fff; }
+    .btn-add { background: #007bff; color: #fff; margin-bottom: 10px; }
+    .logout { float: right; margin-top: -40px; }
+    .error { color: #dc3545; font-size: 1rem; margin-bottom: 10px; }
+    @media (max-width: 900px) {
+      .container { padding: 10px; }
+      table, th, td { font-size: 0.95rem; }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 2px; }
+      table, th, td { font-size: 0.85rem; }
+      h1 { font-size: 1.3rem; }
+      h2 { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="logout btn btn-cancel" href="/admin/logout">Logout</a>
+    <h1>Admin Panel</h1>
+    <div id="error" class="error" style="display:none;"></div>
+
+    <!-- Studios Table -->
+    <h2>Studios</h2>
+    <button class="btn btn-add" onclick="addStudioRow()">Add Studio</button>
+    <table id="studios-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Instagram Link</th>
+          <th>Image URL</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Artists Table -->
+    <h2>Artists</h2>
+    <button class="btn btn-add" onclick="addArtistRow()">Add Artist</button>
+    <table id="artists-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Instagram Link</th>
+          <th>Image URL</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Workshops Table -->
+    <h2>Workshops</h2>
+    <button class="btn btn-add" onclick="addWorkshopRow()">Add Workshop</button>
+    <table id="workshops-table">
+      <thead>
+        <tr>
+          <th>UUID</th>
+          <th>Studio ID</th>
+          <th>Payment Link</th>
+          <th>Updated At</th>
+          <th>Workshop Details (JSON)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script>
+    // --- Helper: Get Auth Token from localStorage ---
+    function getToken() {
+      return localStorage.getItem('admin_token') || '';
+    }
+    function setError(msg) {
+      const err = document.getElementById('error');
+      err.textContent = msg;
+      err.style.display = msg ? 'block' : 'none';
+    }
+    function clearError() { setError(''); }
+
+    // --- Studios CRUD ---
+    async function fetchStudios() {
+      const res = await fetch('/admin/api/studios', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+      if (!res.ok) throw new Error('Failed to fetch studios');
+      return await res.json();
+    }
+    async function saveStudio(studio, isNew) {
+      const method = isNew ? 'POST' : 'PUT';
+      const url = isNew ? '/admin/api/studios' : `/admin/api/studios/${encodeURIComponent(studio.studio_id)}`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(studio)
+      });
+      if (!res.ok) throw new Error('Failed to save studio');
+    }
+    async function deleteStudio(studio_id) {
+      const res = await fetch(`/admin/api/studios/${encodeURIComponent(studio_id)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      if (!res.ok) throw new Error('Failed to delete studio');
+    }
+    function renderStudiosTable(studios) {
+      const tbody = document.querySelector('#studios-table tbody');
+      tbody.innerHTML = '';
+      studios.forEach(studio => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${studio.studio_id}</td>
+          <td>${studio.studio_name}</td>
+          <td><a href="${studio.instagram_link}" target="_blank">${studio.instagram_link}</a></td>
+          <td><a href="${studio.image_url || ''}" target="_blank">${studio.image_url || ''}</a></td>
+          <td class="actions">
+            <button class="btn btn-edit" onclick="editStudioRow(this)">Edit</button>
+            <button class="btn btn-delete" onclick="deleteStudioRow('${studio.studio_id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    function addStudioRow() {
+      const tbody = document.querySelector('#studios-table tbody');
+      const tr = document.createElement('tr');
+      tr.classList.add('add-row');
+      tr.innerHTML = `
+        <td><input type="text" placeholder="ID" /></td>
+        <td><input type="text" placeholder="Name" /></td>
+        <td><input type="text" placeholder="Instagram Link" /></td>
+        <td><input type="text" placeholder="Image URL" /></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveNewStudio(this)">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+      tbody.prepend(tr);
+    }
+    async function saveNewStudio(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const studio = {
+        studio_id: tds[0].querySelector('input').value.trim(),
+        studio_name: tds[1].querySelector('input').value.trim(),
+        instagram_link: tds[2].querySelector('input').value.trim(),
+        image_url: tds[3].querySelector('input').value.trim(),
+      };
+      try {
+        await saveStudio(studio, true);
+        await loadStudios();
+      } catch (e) { setError(e.message); }
+    }
+    function editStudioRow(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const [id, name, insta, img] = Array.from(tds).map(td => td.textContent.trim());
+      tr.innerHTML = `
+        <td><input type="text" value="${id}" disabled /></td>
+        <td><input type="text" value="${name}" /></td>
+        <td><input type="text" value="${insta}" /></td>
+        <td><input type="text" value="${img}" /></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveEditStudio(this, '${id}')">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+    }
+    async function saveEditStudio(btn, id) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const studio = {
+        studio_id: id,
+        studio_name: tds[1].querySelector('input').value.trim(),
+        instagram_link: tds[2].querySelector('input').value.trim(),
+        image_url: tds[3].querySelector('input').value.trim(),
+      };
+      try {
+        await saveStudio(studio, false);
+        await loadStudios();
+      } catch (e) { setError(e.message); }
+    }
+    async function deleteStudioRow(id) {
+      if (!confirm('Delete this studio?')) return;
+      clearError();
+      try {
+        await deleteStudio(id);
+        await loadStudios();
+      } catch (e) { setError(e.message); }
+    }
+
+    // --- Artists CRUD ---
+    async function fetchArtists() {
+      const res = await fetch('/admin/api/artists', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+      if (!res.ok) throw new Error('Failed to fetch artists');
+      return await res.json();
+    }
+    async function saveArtist(artist, isNew) {
+      const method = isNew ? 'POST' : 'PUT';
+      const url = isNew ? '/admin/api/artists' : `/admin/api/artists/${encodeURIComponent(artist.artist_id)}`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(artist)
+      });
+      if (!res.ok) throw new Error('Failed to save artist');
+    }
+    async function deleteArtist(artist_id) {
+      const res = await fetch(`/admin/api/artists/${encodeURIComponent(artist_id)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      if (!res.ok) throw new Error('Failed to delete artist');
+    }
+    function renderArtistsTable(artists) {
+      const tbody = document.querySelector('#artists-table tbody');
+      tbody.innerHTML = '';
+      artists.forEach(artist => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${artist.artist_id}</td>
+          <td>${artist.artist_name}</td>
+          <td><a href="${artist.instagram_link}" target="_blank">${artist.instagram_link}</a></td>
+          <td><a href="${artist.image_url || ''}" target="_blank">${artist.image_url || ''}</a></td>
+          <td class="actions">
+            <button class="btn btn-edit" onclick="editArtistRow(this)">Edit</button>
+            <button class="btn btn-delete" onclick="deleteArtistRow('${artist.artist_id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    function addArtistRow() {
+      const tbody = document.querySelector('#artists-table tbody');
+      const tr = document.createElement('tr');
+      tr.classList.add('add-row');
+      tr.innerHTML = `
+        <td><input type="text" placeholder="ID" /></td>
+        <td><input type="text" placeholder="Name" /></td>
+        <td><input type="text" placeholder="Instagram Link" /></td>
+        <td><input type="text" placeholder="Image URL" /></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveNewArtist(this)">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+      tbody.prepend(tr);
+    }
+    async function saveNewArtist(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const artist = {
+        artist_id: tds[0].querySelector('input').value.trim(),
+        artist_name: tds[1].querySelector('input').value.trim(),
+        instagram_link: tds[2].querySelector('input').value.trim(),
+        image_url: tds[3].querySelector('input').value.trim(),
+      };
+      try {
+        await saveArtist(artist, true);
+        await loadArtists();
+      } catch (e) { setError(e.message); }
+    }
+    function editArtistRow(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const [id, name, insta, img] = Array.from(tds).map(td => td.textContent.trim());
+      tr.innerHTML = `
+        <td><input type="text" value="${id}" disabled /></td>
+        <td><input type="text" value="${name}" /></td>
+        <td><input type="text" value="${insta}" /></td>
+        <td><input type="text" value="${img}" /></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveEditArtist(this, '${id}')">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+    }
+    async function saveEditArtist(btn, id) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const artist = {
+        artist_id: id,
+        artist_name: tds[1].querySelector('input').value.trim(),
+        instagram_link: tds[2].querySelector('input').value.trim(),
+        image_url: tds[3].querySelector('input').value.trim(),
+      };
+      try {
+        await saveArtist(artist, false);
+        await loadArtists();
+      } catch (e) { setError(e.message); }
+    }
+    async function deleteArtistRow(id) {
+      if (!confirm('Delete this artist?')) return;
+      clearError();
+      try {
+        await deleteArtist(id);
+        await loadArtists();
+      } catch (e) { setError(e.message); }
+    }
+
+    // --- Workshops CRUD ---
+    async function fetchWorkshops() {
+      const res = await fetch('/admin/api/workshops', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+      if (!res.ok) throw new Error('Failed to fetch workshops');
+      return await res.json();
+    }
+    async function saveWorkshop(workshop, isNew) {
+      const method = isNew ? 'POST' : 'PUT';
+      const url = isNew ? '/admin/api/workshops' : `/admin/api/workshops/${encodeURIComponent(workshop.uuid)}`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(workshop)
+      });
+      if (!res.ok) throw new Error('Failed to save workshop');
+    }
+    async function deleteWorkshop(uuid) {
+      const res = await fetch(`/admin/api/workshops/${encodeURIComponent(uuid)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      if (!res.ok) throw new Error('Failed to delete workshop');
+    }
+    function renderWorkshopsTable(workshops) {
+      const tbody = document.querySelector('#workshops-table tbody');
+      tbody.innerHTML = '';
+      workshops.forEach(workshop => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${workshop.uuid}</td>
+          <td>${workshop.studio_id}</td>
+          <td><a href="${workshop.payment_link}" target="_blank">${workshop.payment_link}</a></td>
+          <td>${new Date(workshop.updated_at * 1000).toLocaleString()}</td>
+          <td><pre style="white-space:pre-wrap;max-width:350px;overflow-x:auto;">${JSON.stringify(workshop.workshop_details, null, 2)}</pre></td>
+          <td class="actions">
+            <button class="btn btn-edit" onclick="editWorkshopRow(this)">Edit</button>
+            <button class="btn btn-delete" onclick="deleteWorkshopRow('${workshop.uuid}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    function addWorkshopRow() {
+      const tbody = document.querySelector('#workshops-table tbody');
+      const tr = document.createElement('tr');
+      tr.classList.add('add-row');
+      tr.innerHTML = `
+        <td><input type="text" placeholder="UUID" /></td>
+        <td><input type="text" placeholder="Studio ID" /></td>
+        <td><input type="text" placeholder="Payment Link" /></td>
+        <td><input type="number" placeholder="Updated At (epoch)" /></td>
+        <td><textarea placeholder="Workshop Details (JSON)" style="width:100%;height:60px;"></textarea></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveNewWorkshop(this)">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+      tbody.prepend(tr);
+    }
+    async function saveNewWorkshop(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      let details;
+      try { details = JSON.parse(tds[4].querySelector('textarea').value); } catch { setError('Invalid JSON for workshop details'); return; }
+      const workshop = {
+        uuid: tds[0].querySelector('input').value.trim(),
+        studio_id: tds[1].querySelector('input').value.trim(),
+        payment_link: tds[2].querySelector('input').value.trim(),
+        updated_at: parseFloat(tds[3].querySelector('input').value.trim()),
+        workshop_details: details,
+      };
+      try {
+        await saveWorkshop(workshop, true);
+        await loadWorkshops();
+      } catch (e) { setError(e.message); }
+    }
+    function editWorkshopRow(btn) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      const [uuid, studio_id, payment_link, updated_at, details] = Array.from(tds).map(td => td.textContent.trim());
+      tr.innerHTML = `
+        <td><input type="text" value="${uuid}" disabled /></td>
+        <td><input type="text" value="${studio_id}" /></td>
+        <td><input type="text" value="${payment_link}" /></td>
+        <td><input type="number" value="${Date.parse(updated_at)/1000}" /></td>
+        <td><textarea style="width:100%;height:60px;">${details}</textarea></td>
+        <td class="actions">
+          <button class="btn btn-save" onclick="saveEditWorkshop(this, '${uuid}')">Save</button>
+          <button class="btn btn-cancel" onclick="cancelRow(this)">Cancel</button>
+        </td>
+      `;
+    }
+    async function saveEditWorkshop(btn, uuid) {
+      clearError();
+      const tr = btn.closest('tr');
+      const tds = tr.querySelectorAll('td');
+      let details;
+      try { details = JSON.parse(tds[4].querySelector('textarea').value); } catch { setError('Invalid JSON for workshop details'); return; }
+      const workshop = {
+        uuid: uuid,
+        studio_id: tds[1].querySelector('input').value.trim(),
+        payment_link: tds[2].querySelector('input').value.trim(),
+        updated_at: parseFloat(tds[3].querySelector('input').value.trim()),
+        workshop_details: details,
+      };
+      try {
+        await saveWorkshop(workshop, false);
+        await loadWorkshops();
+      } catch (e) { setError(e.message); }
+    }
+    async function deleteWorkshopRow(uuid) {
+      if (!confirm('Delete this workshop?')) return;
+      clearError();
+      try {
+        await deleteWorkshop(uuid);
+        await loadWorkshops();
+      } catch (e) { setError(e.message); }
+    }
+
+    // --- Shared ---
+    function cancelRow(btn) { btn.closest('tr').remove(); }
+    async function loadStudios() { try { renderStudiosTable(await fetchStudios()); } catch (e) { setError(e.message); } }
+    async function loadArtists() { try { renderArtistsTable(await fetchArtists()); } catch (e) { setError(e.message); } }
+    async function loadWorkshops() { try { renderWorkshopsTable(await fetchWorkshops()); } catch (e) { setError(e.message); } }
+    window.addEventListener('DOMContentLoaded', () => { loadStudios(); loadArtists(); loadWorkshops(); });
+  </script>
+</body>
+</html> 

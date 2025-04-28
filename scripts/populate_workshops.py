@@ -218,7 +218,7 @@ class WorkshopProcessor:
 
             # Prepare GPT request
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o",
+                model="gpt-4o-2024-11-20",
                 messages=[
                     {
                         "role": "system",
