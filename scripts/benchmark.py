@@ -23,9 +23,11 @@ from studios.dance_inn import DanceInnStudio
 from studios.vins import VinsStudio
 from studios.manifest import ManifestStudio
 
+
 @dataclass
 class BenchmarkResult:
     """Container for benchmark results."""
+
     component: str
     operation: str
     iterations: int
@@ -64,42 +66,40 @@ class BenchmarkResult:
             "max_time": self.max_time,
             "std_dev": self.std_dev,
             "success_rate": self.success_rate,
-            "error_count": len(self.errors)
+            "error_count": len(self.errors),
         }
+
 
 class Benchmarker:
     """Benchmark runner and result analyzer."""
 
     def __init__(self, iterations: int = 5):
         """Initialize benchmarker.
-        
+
         Args:
             iterations: Number of times to run each benchmark
         """
         self.iterations = iterations
         self.results: List[BenchmarkResult] = []
 
-    def benchmark(
-        self,
-        component: str,
-        operation: str
-    ) -> Callable:
+    def benchmark(self, component: str, operation: str) -> Callable:
         """Decorator for benchmarking functions.
-        
+
         Args:
             component: Component name
             operation: Operation being benchmarked
-            
+
         Returns:
             Decorated function
         """
+
         def decorator(func: Callable) -> Callable:
             @wraps(func)
             def wrapper(*args, **kwargs) -> Any:
                 times = []
                 errors = []
                 successes = 0
-                
+
                 for _ in range(self.iterations):
                     try:
                         start = time.perf_counter()
@@ -109,7 +109,7 @@ class Benchmarker:
                         successes += 1
                     except Exception as e:
                         errors.append(str(e))
-                
+
                 self.results.append(
                     BenchmarkResult(
                         component=component,
@@ -117,34 +117,37 @@ class Benchmarker:
                         iterations=self.iterations,
                         times=times,
                         success_rate=successes / self.iterations,
-                        errors=errors
+                        errors=errors,
                     )
                 )
                 return result
+
             return wrapper
+
         return decorator
 
     def save_results(self, filename: str = None) -> None:
         """Save benchmark results to file.
-        
+
         Args:
             filename: Output filename (default: benchmark_results_{timestamp}.json)
         """
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"benchmark_results_{timestamp}.json"
-        
+
         results = [result.to_dict() for result in self.results]
-        
-        with open(filename, 'w') as f:
+
+        with open(filename, "w") as f:
             json.dump(results, f, indent=2)
+
 
 class ComponentBenchmarks:
     """Benchmark implementations for different components."""
 
     def __init__(self, benchmarker: Benchmarker):
         """Initialize component benchmarks.
-        
+
         Args:
             benchmarker: Benchmarker instance
         """
@@ -164,23 +167,23 @@ class ComponentBenchmarks:
     def run_artist_benchmarks(self) -> None:
         """Run benchmarks for artist-related operations."""
         print("\nRunning Artist Component Benchmarks...")
-        
+
         # Instagram API
         self.benchmark_instagram_profile()
-        
+
         # Artist Manager
         self.benchmark_artist_operations()
 
     def run_workshop_benchmarks(self) -> None:
         """Run benchmarks for workshop-related operations."""
         print("\nRunning Workshop Component Benchmarks...")
-        
+
         # Screenshot operations
         self.benchmark_screenshot_operations()
-        
+
         # Workshop processing
         self.benchmark_workshop_operations()
-        
+
         # Studio operations
         self.benchmark_studio_operations()
 
@@ -196,7 +199,7 @@ class ComponentBenchmarks:
         """Benchmark artist database operations."""
         test_artist = Artist("Test Artist", "test_handle")
         manager = self.artist_manager
-        
+
         # Test various operations
         manager.get_existing_image(test_artist.instagram_id)
         manager.update_artist(test_artist)
@@ -206,7 +209,7 @@ class ComponentBenchmarks:
         """Benchmark screenshot operations."""
         test_url = "https://www.example.com"
         test_path = "test_screenshot.png"
-        
+
         ScreenshotManager.capture_screenshot(test_url, test_path)
         if os.path.exists(test_path):
             ScreenshotManager.upload_screenshot(test_path)
@@ -216,16 +219,14 @@ class ComponentBenchmarks:
     def benchmark_workshop_operations(self) -> None:
         """Benchmark workshop processing operations."""
         processor = WorkshopProcessor(
-            client=None,  # Mock for benchmark
-            artists=[],
-            mongo_client=self.db
+            client=None, artists=[], mongo_client=self.db  # Mock for benchmark
         )
-        
+
         test_links = [
             "https://www.example.com/workshop1",
-            "https://www.example.com/workshop2"
+            "https://www.example.com/workshop2",
         ]
-        
+
         for link in test_links:
             processor.process_link(link, Mock())
 
@@ -237,34 +238,35 @@ class ComponentBenchmarks:
                 "https://www.example.com",
                 "test_studio",
                 "https://www.example.com/events/",
-                max_depth=1
+                max_depth=1,
             ),
             DanceInnStudio(
                 "https://www.example.com",
                 "test_studio",
                 "https://www.example.com/events/",
-                max_depth=1
-            )
+                max_depth=1,
+            ),
         ]
-        
+
         for studio in studios:
             studio.scrape_links()
+
 
 def main():
     """Main benchmark execution function."""
     print("Starting Performance Benchmarks...")
-    
+
     # Initialize benchmarker
     benchmarker = Benchmarker(iterations=5)
     component_benchmarks = ComponentBenchmarks(benchmarker)
-    
+
     # Run benchmarks
     component_benchmarks.run_artist_benchmarks()
     component_benchmarks.run_workshop_benchmarks()
-    
+
     # Save results
     benchmarker.save_results()
-    
+
     print("\nBenchmark Results Summary:")
     for result in benchmarker.results:
         print(f"\nComponent: {result.component}")
@@ -275,6 +277,7 @@ def main():
         print(f"Success Rate: {result.success_rate * 100:.1f}%")
         if result.errors:
             print(f"Errors: {len(result.errors)}")
+
 
 if __name__ == "__main__":
     main()

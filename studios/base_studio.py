@@ -17,6 +17,7 @@ from tqdm import tqdm
 from utils.utils import fetch_url, extract_links
 from utils.utils import retry
 
+
 @dataclass
 class StudioConfig:
     """Configuration for a dance studio website crawler.
@@ -28,6 +29,7 @@ class StudioConfig:
         max_depth: Maximum depth for crawling (default: 3)
         max_workers: Maximum number of concurrent workers (default: 5)
     """
+
     start_url: str
     studio_id: str
     regex_match_link: str
@@ -51,6 +53,7 @@ class StudioConfig:
         if self.max_workers < 1:
             raise ValueError("max_workers must be at least 1")
 
+
 class BaseStudio(ABC):
     """Abstract base class for dance studio website crawlers.
 
@@ -64,7 +67,7 @@ class BaseStudio(ABC):
 
         Args:
             config: Configuration parameters for the crawler
-        
+
         Raises:
             ValueError: If the configuration is invalid
         """
@@ -72,8 +75,9 @@ class BaseStudio(ABC):
         self.config = config
         self._domain = urlparse(config.start_url).netloc
 
-    def _process_html_response(self, html: str, url: str, depth: int,
-                             visited: Set[str], queue: deque) -> None:
+    def _process_html_response(
+        self, html: str, url: str, depth: int, visited: Set[str], queue: deque
+    ) -> None:
         """Process HTML response and extract new links to crawl.
 
         Args:
@@ -90,8 +94,9 @@ class BaseStudio(ABC):
                     visited.add(link)
                     queue.append((link, depth + 1))
 
-    def _create_futures(self, queue: deque, size: int,
-                       executor: ThreadPoolExecutor) -> Dict:
+    def _create_futures(
+        self, queue: deque, size: int, executor: ThreadPoolExecutor
+    ) -> Dict:
         """Create futures for concurrent URL fetching.
 
         Args:
@@ -116,12 +121,17 @@ class BaseStudio(ABC):
         Returns:
             List of URLs that match the workshop link pattern
         """
-        
-        return list(set([
-            link.lower() for link in successful_links
-            if link.startswith(self.config.regex_match_link)
-        ])
-)
+
+        return list(
+            set(
+                [
+                    link.lower()
+                    for link in successful_links
+                    if link.startswith(self.config.regex_match_link)
+                ]
+            )
+        )
+
     @abstractmethod
     def scrape_links(self) -> List[str]:
         """Scrape workshop links from the studio website.
@@ -145,18 +155,20 @@ class BaseStudio(ABC):
                 current_level_size = len(queue)
                 current_depth = queue[0][1]
 
-                with ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
+                with ThreadPoolExecutor(
+                    max_workers=self.config.max_workers
+                ) as executor:
                     futures = self._create_futures(queue, current_level_size, executor)
 
                     with tqdm(
                         total=current_level_size,
                         desc=f"{self.config.studio_id} | Depth {current_depth}",
-                        leave=False
+                        leave=False,
                     ) as pbar:
                         for future in as_completed(futures):
                             url, depth = futures[future]
                             queue.popleft()
-                            
+
                             try:
                                 result = future.result()
                                 if result and result[1]:  # Check if HTML content exists

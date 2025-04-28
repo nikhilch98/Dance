@@ -23,25 +23,26 @@ import functools
 import config
 import time
 import functools
-import sys 
+import sys
 from fastapi import FastAPI, Request
 
 cache = {}
+
 
 def cache_response(expire: int = 3600):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Create a cache key that works even if request isn't available
-            request = kwargs.get('request')
+            request = kwargs.get("request")
             if request:
                 cache_key = f"{func.__name__}-{request.url.path}-{request.query_params}"
             else:
                 # Use args and kwargs values to create a cache key
-                args_str = '-'.join(str(arg) for arg in args)
-                kwargs_str = '-'.join(f"{k}:{v}" for k, v in kwargs.items())
+                args_str = "-".join(str(arg) for arg in args)
+                kwargs_str = "-".join(f"{k}:{v}" for k, v in kwargs.items())
                 cache_key = f"{func.__name__}-{args_str}-{kwargs_str}"
-            
+
             # Check if we have a cached response
             if cache_key in cache and (time.time() - cache[cache_key]["time"]) < expire:
                 return cache[cache_key]["data"]
@@ -50,8 +51,11 @@ def cache_response(expire: int = 3600):
             response = await func(*args, **kwargs)
             cache[cache_key] = {"data": response, "time": time.time()}
             return response
+
         return wrapper
+
     return decorator
+
 
 def retry(max_attempts=3, backoff_factor=1, exceptions=(Exception,)):
     """
@@ -62,6 +66,7 @@ def retry(max_attempts=3, backoff_factor=1, exceptions=(Exception,)):
                            multiplied by 2 after each failed attempt.
     :param exceptions: A tuple of exception types to catch and retry upon.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -76,46 +81,59 @@ def retry(max_attempts=3, backoff_factor=1, exceptions=(Exception,)):
                     if attempt >= max_attempts:
                         # Re-raise the last caught exception if we've hit the max attempts
                         raise
-                    print(f"Attempt {attempt} failed with {e!r}. "
-                          f"Retrying in {wait_time} seconds...")
+                    print(
+                        f"Attempt {attempt} failed with {e!r}. "
+                        f"Retrying in {wait_time} seconds..."
+                    )
                     time.sleep(wait_time)
                     # Exponential backoff
                     wait_time *= 2
+
         return wrapper
+
     return decorator
+
 
 # Constants
 class ImageConfig:
     """Configuration for image handling."""
-    MAGIC_API_KEY = 'cm6fgbo9y0001ib03xkjneiil'
-    UPLOAD_ENDPOINT = 'https://api.magicapi.dev/api/v1/magicapi/image-upload/upload'
-    ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
+
+    MAGIC_API_KEY = "cm6fgbo9y0001ib03xkjneiil"
+    UPLOAD_ENDPOINT = "https://api.magicapi.dev/api/v1/magicapi/image-upload/upload"
+    ALLOWED_MIME_TYPES = {"image/png", "image/jpeg", "image/gif"}
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
 
 class BrowserConfig:
     """Configuration for browser automation."""
+
     WINDOW_WIDTH = 1920
     WINDOW_HEIGHT = 1080
     PAGE_LOAD_TIMEOUT = 10
     CHROME_OPTIONS = [
-        '--headless',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-software-rasterizer'
+        "--headless",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
     ]
+
 
 class DatabaseConfig:
     """Configuration for database connections."""
+
     TIMEOUT_MS = 5000
     RETRY_WRITES = True
-    W_CONCERN = 'majority'
+    W_CONCERN = "majority"
+
 
 class DateTimeFormats:
     """Date and time format strings."""
+
     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
     READABLE_FORMAT = "%-d %b %Y %-I:%M%p"
     TIME_FORMAT = "%I:%M %p"
+
 
 # Database Operations
 class DatabaseManager:
@@ -145,13 +163,11 @@ class DatabaseManager:
                 cfg = config.Config(env)
 
             # Use the MongoDB URI from the configuration
-            client = MongoClient(
-                cfg.mongodb_uri,
-                server_api=ServerApi('1')
-            )
+            client = MongoClient(cfg.mongodb_uri, server_api=ServerApi("1"))
             return client
         except Exception as e:
             raise Exception(f"Failed to connect to MongoDB: {str(e)}")
+
 
 # Date and Time Operations
 class DateTimeFormatter:
@@ -170,13 +186,13 @@ class DateTimeFormatter:
         date_str = str(datetime.fromtimestamp(timestamp))
         dt = datetime.strptime(date_str, DateTimeFormats.DATE_FORMAT)
         readable_format = dt.strftime(DateTimeFormats.READABLE_FORMAT)
-        
+
         day = dt.day
         if 4 <= day <= 20 or 24 <= day <= 30:
             suffix = "th"
         else:
             suffix = ["st", "nd", "rd"][day % 10 - 1]
-        
+
         return f"{day}{suffix} {readable_format[2:]}"
 
     @staticmethod
@@ -190,16 +206,18 @@ class DateTimeFormatter:
             Formatted date string (e.g., "07th Feb Thu").
         """
         date_obj = datetime(
-            year=int(time_details['year']),
-            month=int(time_details['month']),
-            day=int(time_details['day'])
+            year=int(time_details["year"]),
+            month=int(time_details["month"]),
+            day=int(time_details["day"]),
         )
 
         day = date_obj.day
-        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        suffix = (
+            "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        )
 
         return date_obj.strftime(f"%d{suffix} %b (%a)")
-    
+
     @staticmethod
     def get_formatted_date_without_day(time_details: Dict) -> str:
         """Format date using datetime module.
@@ -211,16 +229,18 @@ class DateTimeFormatter:
             Formatted date string (e.g., "07th Feb Thu").
         """
         date_obj = datetime(
-            year=int(time_details['year']),
-            month=int(time_details['month']),
-            day=int(time_details['day'])
+            year=int(time_details["year"]),
+            month=int(time_details["month"]),
+            day=int(time_details["day"]),
         )
 
         day = date_obj.day
-        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        suffix = (
+            "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        )
 
         return date_obj.strftime(f"%d{suffix} %b")
-    
+
     @staticmethod
     def get_formatted_date_with_day(time_details: Dict) -> str:
         """Format date using datetime module.
@@ -232,13 +252,15 @@ class DateTimeFormatter:
             Formatted date string (e.g., "07th Feb Thu").
         """
         date_obj = datetime(
-            year=int(time_details['year']),
-            month=int(time_details['month']),
-            day=int(time_details['day'])
+            year=int(time_details["year"]),
+            month=int(time_details["month"]),
+            day=int(time_details["day"]),
         )
 
         day = date_obj.day
-        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        suffix = (
+            "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        )
 
         return [date_obj.strftime(f"%d{suffix} %b (%a)"), date_obj.strftime(f"%A")]
 
@@ -252,23 +274,29 @@ class DateTimeFormatter:
         Returns:
             Formatted time range string (e.g., "6:00 PM - 7:30 PM")
         """
-        start_time = time_details['start_time']
-        end_time = time_details['end_time']
+        start_time = time_details["start_time"]
+        end_time = time_details["end_time"]
         if start_time is None:
             return "TBA"
 
-        start_time, start_format = start_time.split(' ')
-        start_time_hour = start_time.split(':')[0].lstrip('0')
-        start_time_minute = start_time.split(':')[1].lstrip('0')
-        start_time_str = f"{start_time_hour}:{start_time_minute}" if start_time_minute else start_time_hour
+        start_time, start_format = start_time.split(" ")
+        start_time_hour = start_time.split(":")[0].lstrip("0")
+        start_time_minute = start_time.split(":")[1].lstrip("0")
+        start_time_str = (
+            f"{start_time_hour}:{start_time_minute}"
+            if start_time_minute
+            else start_time_hour
+        )
 
         if end_time is None:
             return f"{start_time_str} {start_format}"
 
-        end_time, end_format = end_time.split(' ')
-        end_time_hour = end_time.split(':')[0].lstrip('0')
-        end_time_minute = end_time.split(':')[1].lstrip('0')
-        end_time_str = f"{end_time_hour}:{end_time_minute}" if end_time_minute else end_time_hour
+        end_time, end_format = end_time.split(" ")
+        end_time_hour = end_time.split(":")[0].lstrip("0")
+        end_time_minute = end_time.split(":")[1].lstrip("0")
+        end_time_str = (
+            f"{end_time_hour}:{end_time_minute}" if end_time_minute else end_time_hour
+        )
 
         if start_format == end_format:
             return f"{start_time_str}-{end_time_str} {start_format}"
@@ -278,48 +306,52 @@ class DateTimeFormatter:
     @staticmethod
     def get_timestamp_epoch(time_details: Dict) -> int:
         """Calculate Unix timestamp (epoch) from time details.
-        
+
         Args:
             time_details: Dictionary with day, month, year, and start_time
-            
+
         Returns:
             Unix timestamp (seconds since epoch)
         """
         # Extract date components
-        year = int(time_details['year'])
-        month = int(time_details['month'])
-        day = int(time_details['day'])
-        
+        year = int(time_details["year"])
+        month = int(time_details["month"])
+        day = int(time_details["day"])
+
         # Parse start_time or default to midnight (12:00 AM)
-        start_time = time_details.get('start_time')
+        start_time = time_details.get("start_time")
         if not start_time:
             hour, minute = 0, 0  # 12:00 AM as default
         else:
             try:
                 # Normalize the time string first to handle variations
                 time_str = start_time.strip()
-                
+
                 # Try to parse time in 12-hour format with or without leading zeros
                 # Example formats: "1:00 PM", "01:00 PM", "11:00 AM"
-                if 'AM' in time_str or 'PM' in time_str:
+                if "AM" in time_str or "PM" in time_str:
                     # Convert to standard format with leading zeros if needed
-                    time_parts = time_str.replace('AM', '').replace('PM', '').strip().split(':')
+                    time_parts = (
+                        time_str.replace("AM", "").replace("PM", "").strip().split(":")
+                    )
                     if len(time_parts[0]) == 1:
                         # Add leading zero if hour is single digit
                         time_str = f"0{time_str}"
-                    
+
                     # Now parse with standard 12-hour format
-                    time_obj = datetime.strptime(time_str, '%I:%M %p')
+                    time_obj = datetime.strptime(time_str, "%I:%M %p")
                     hour, minute = time_obj.hour, time_obj.minute
                 # Try 24-hour format (e.g., "18:00")
                 else:
-                    time_obj = datetime.strptime(time_str, '%H:%M')
+                    time_obj = datetime.strptime(time_str, "%H:%M")
                     hour, minute = time_obj.hour, time_obj.minute
             except ValueError as e:
-                print(f"Warning: Could not parse time '{start_time}': {e}. Using midnight.")
+                print(
+                    f"Warning: Could not parse time '{start_time}': {e}. Using midnight."
+                )
                 # If all parsing fails, default to midnight
                 hour, minute = 0, 0
-        
+
         # Create datetime object and convert to timestamp
         dt = datetime(year, month, day, hour, minute)
         return int(dt.timestamp())
@@ -332,6 +364,7 @@ class DateTimeFormatter:
             Current Unix timestamp
         """
         return datetime.now().timestamp()
+
 
 # Screenshot and Image Operations
 class ScreenshotManager:
@@ -351,7 +384,7 @@ class ScreenshotManager:
         """
         service = Service(ChromeDriverManager().install())
         chrome_options = webdriver.ChromeOptions()
-        
+
         for option in BrowserConfig.CHROME_OPTIONS:
             chrome_options.add_argument(option)
 
@@ -367,7 +400,7 @@ class ScreenshotManager:
             total_width = driver.execute_script("return document.body.scrollWidth")
             total_height = driver.execute_script("return document.body.scrollHeight")
             driver.set_window_size(total_width, total_height)
-            
+
             driver.save_screenshot(output_file)
             success = True
         except Exception as e:
@@ -391,24 +424,21 @@ class ScreenshotManager:
             Exception: If upload fails
         """
         headers = {
-            'accept': 'application/json',
-            'x-magicapi-key': ImageConfig.MAGIC_API_KEY
+            "accept": "application/json",
+            "x-magicapi-key": ImageConfig.MAGIC_API_KEY,
         }
 
         try:
-            with open(screenshot_path, 'rb') as file:
-                files = {
-                    'filename': (screenshot_path, file, 'image/png')
-                }
+            with open(screenshot_path, "rb") as file:
+                files = {"filename": (screenshot_path, file, "image/png")}
                 response = requests.post(
-                    ImageConfig.UPLOAD_ENDPOINT,
-                    headers=headers,
-                    files=files
+                    ImageConfig.UPLOAD_ENDPOINT, headers=headers, files=files
                 )
                 response.raise_for_status()
                 return response.json()
         except Exception as e:
             raise Exception(f"Screenshot upload failed: {str(e)}")
+
 
 # URL Operations
 class URLManager:
@@ -442,82 +472,84 @@ class URLManager:
         try:
             soup = BeautifulSoup(html, "html.parser")
             links = set()
-            
+
             for a_tag in soup.find_all("a", href=True):
                 try:
                     href = a_tag["href"].strip()
-                    
+
                     # Skip empty links, javascript, mailto, tel
-                    if not href or href.startswith(('javascript:', 'mailto:', 'tel:', '#')):
+                    if not href or href.startswith(
+                        ("javascript:", "mailto:", "tel:", "#")
+                    ):
                         continue
 
                     # Handle protocol-relative URLs (//example.com)
-                    if href.startswith('//'):
-                        href = f'https:{href}'
+                    if href.startswith("//"):
+                        href = f"https:{href}"
 
                     absolute_url = urljoin(base_url, href)
                     parsed_url = urlparse(absolute_url)
 
                     # Skip non-HTTP(S) protocols
-                    if parsed_url.scheme not in ('http', 'https'):
+                    if parsed_url.scheme not in ("http", "https"):
                         continue
 
                     # Normalize URL
                     normalized_url = parsed_url._replace(
-                        fragment='',  # Remove fragments
-                        params='',    # Remove params
-                        query=''      # Remove query strings if needed
+                        fragment="",  # Remove fragments
+                        params="",  # Remove params
+                        query="",  # Remove query strings if needed
                     ).geturl()
 
                     if parsed_url.netloc == domain:
                         links.add(normalized_url)
-                        
+
                 except Exception as e:
                     # Log error and continue with next link
                     continue
-                    
+
             return links
-            
+
         except Exception as e:
             # Handle BeautifulSoup parsing errors
             return set()
 
 
-
 # Image Utility Functions
 def is_image_downloadable(url: Optional[str]) -> bool:
     """Check if an image URL is downloadable.
-    
+
     Args:
         url: URL of the image to check
-        
+
     Returns:
         Boolean indicating if the image is downloadable
     """
     if not url:
         return False
-    
+
     try:
         # Send a HEAD request to check the image without downloading the full content
         response = requests.head(url, timeout=10, allow_redirects=True)
-        
+
         # Check if the request was successful
         if response.status_code != 200:
             return False
-        
+
         # Check content type to ensure it's an image
-        content_type = response.headers.get('Content-Type', '').lower()
-        if not content_type.startswith('image/'):
+        content_type = response.headers.get("Content-Type", "").lower()
+        if not content_type.startswith("image/"):
             return False
-        
+
         # Optionally check content length if needed
-        content_length = response.headers.get('Content-Length')
+        content_length = response.headers.get("Content-Length")
         if content_length and int(content_length) == 0:
             return False
-        
+
         return True
     except Exception:
         return False
+
 
 # Convenience functions
 get_mongo_client = DatabaseManager.get_mongo_client

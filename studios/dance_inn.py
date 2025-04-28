@@ -12,15 +12,22 @@ from .base_studio import BaseStudio, StudioConfig
 
 from bs4 import BeautifulSoup
 
+
 class DanceInnStudio(BaseStudio):
     """Dance Inn studio crawler implementation.
-    
+
     This class uses the default scraping behavior from BaseStudio as the
     standard crawling approach works well for the Dance Inn website structure.
     """
 
-    def __init__(self, start_url: str, studio_id: str, regex_match_link: str,
-                 max_depth: int = 3, max_workers: int = 5):
+    def __init__(
+        self,
+        start_url: str,
+        studio_id: str,
+        regex_match_link: str,
+        max_depth: int = 3,
+        max_workers: int = 5,
+    ):
         """Initialize the Dance Inn studio crawler.
 
         Args:
@@ -35,7 +42,7 @@ class DanceInnStudio(BaseStudio):
             studio_id=studio_id,
             regex_match_link=regex_match_link,
             max_depth=max_depth,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         super().__init__(config)
 
@@ -51,5 +58,5 @@ class DanceInnStudio(BaseStudio):
             return []
 
         soup = BeautifulSoup(response, "html.parser")
-        links = [a_tag["href"] for a_tag in soup.find_all('a', href=True)]
+        links = [a_tag["href"] for a_tag in soup.find_all("a", href=True)]
         return self._filter_workshop_links(links)

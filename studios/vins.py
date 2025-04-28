@@ -8,15 +8,22 @@ from typing import List
 
 from .base_studio import BaseStudio, StudioConfig
 
+
 class VinsStudio(BaseStudio):
     """Vins Dance Co studio crawler implementation.
-    
+
     This class uses the default scraping behavior from BaseStudio as the
     standard crawling approach works well for the Vins Dance Co website structure.
     """
 
-    def __init__(self, start_url: str, studio_id: str, regex_match_link: str,
-                 max_depth: int = 3, max_workers: int = 5):
+    def __init__(
+        self,
+        start_url: str,
+        studio_id: str,
+        regex_match_link: str,
+        max_depth: int = 3,
+        max_workers: int = 5,
+    ):
         """Initialize the Vins Dance Co studio crawler.
 
         Args:
@@ -31,7 +38,7 @@ class VinsStudio(BaseStudio):
             studio_id=studio_id,
             regex_match_link=regex_match_link,
             max_depth=max_depth,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         super().__init__(config)
 

@@ -10,3 +10,4 @@ fastapi
 uvicorn
 motor
 jinja2
+black

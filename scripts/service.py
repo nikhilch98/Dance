@@ -1,5 +1,6 @@
 from typing import Any, List
 from studios.base_studio import BaseStudio
+
 # from studios.base_studio import BaseStudio
 from studios.dance_inn import DanceInnStudio
 from studios.dna import DnaStudio
@@ -7,9 +8,10 @@ from studios.manifest import ManifestStudio
 from studios.vins import VinsStudio
 from utils.utils import DatabaseManager, ScreenshotManager, retry
 
+
 def get_studio_list() -> List[BaseStudio]:
     """Get list of all available studios.
-    
+
     Returns:
         List of studio instances
     """
@@ -39,6 +41,7 @@ def get_studio_list() -> List[BaseStudio]:
         ),
     ]
 
+
 @retry(max_attempts=5, backoff_factor=1)
 def capture_screenshot(url: str, output_file: str) -> bool:
     """Capture full page screenshot of a URL.
@@ -52,7 +55,7 @@ def capture_screenshot(url: str, output_file: str) -> bool:
     """
     service = Service(ChromeDriverManager().install())
     chrome_options = webdriver.ChromeOptions()
-    
+
     for option in BrowserConfig.CHROME_OPTIONS:
         chrome_options.add_argument(option)
 
@@ -68,7 +71,7 @@ def capture_screenshot(url: str, output_file: str) -> bool:
         total_width = driver.execute_script("return document.body.scrollWidth")
         total_height = driver.execute_script("return document.body.scrollHeight")
         driver.set_window_size(total_width, total_height)
-        
+
         driver.save_screenshot(output_file)
         success = True
     except Exception as e:

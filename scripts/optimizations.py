@@ -19,9 +19,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from utils.utils import DatabaseManager, ScreenshotManager
 
+
 @dataclass
 class OptimizationConfig:
     """Configuration for optimization settings."""
+
     max_concurrent_requests: int = 10
     connection_timeout: int = 30
     max_retries: int = 3
@@ -29,12 +31,13 @@ class OptimizationConfig:
     process_pool_size: int = 4
     thread_pool_size: int = 8
 
+
 class AsyncInstagramAPI:
     """Asynchronous Instagram API client."""
 
     def __init__(self, config: OptimizationConfig):
         """Initialize async Instagram client.
-        
+
         Args:
             config: Optimization configuration
         """
@@ -49,14 +52,14 @@ class AsyncInstagramAPI:
             ),
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
-            "Accept": "*/*"
+            "Accept": "*/*",
         }
 
     async def __aenter__(self):
         """Create aiohttp session."""
         self.session = aiohttp.ClientSession(
             headers=self.headers,
-            timeout=aiohttp.ClientTimeout(total=self.config.connection_timeout)
+            timeout=aiohttp.ClientTimeout(total=self.config.connection_timeout),
         )
         return self
 
@@ -67,15 +70,15 @@ class AsyncInstagramAPI:
 
     async def fetch_profile_picture_hd(self, username: str) -> Optional[str]:
         """Fetch HD profile picture URL asynchronously.
-        
+
         Args:
             username: Instagram username
-            
+
         Returns:
             HD profile picture URL or None if fetch fails
         """
         url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}"
-        
+
         for attempt in range(self.config.max_retries):
             try:
                 async with self.session.get(url) as response:
@@ -84,16 +87,19 @@ class AsyncInstagramAPI:
                         return data["data"]["user"]["profile_pic_url_hd"]
             except Exception as e:
                 if attempt == self.config.max_retries - 1:
-                    print(f"Failed to fetch data for {username} after {self.config.max_retries} attempts: {str(e)}")
+                    print(
+                        f"Failed to fetch data for {username} after {self.config.max_retries} attempts: {str(e)}"
+                    )
             await asyncio.sleep(1)  # Rate limiting
         return None
+
 
 class AsyncDatabaseManager:
     """Asynchronous database operations manager."""
 
     def __init__(self, config: OptimizationConfig):
         """Initialize async database manager.
-        
+
         Args:
             config: Optimization configuration
         """
@@ -103,7 +109,7 @@ class AsyncDatabaseManager:
 
     async def bulk_update_artists(self, artists: List[Dict]) -> None:
         """Perform bulk artist updates asynchronously.
-        
+
         Args:
             artists: List of artist data to update
         """
@@ -112,20 +118,20 @@ class AsyncDatabaseManager:
                 "update_one": {
                     "filter": {"artist_id": artist["artist_id"]},
                     "update": {"$set": artist},
-                    "upsert": True
+                    "upsert": True,
                 }
             }
             for artist in artists
         ]
-        
+
         # Process in chunks for better performance
         for i in range(0, len(operations), self.config.chunk_size):
-            chunk = operations[i:i + self.config.chunk_size]
+            chunk = operations[i : i + self.config.chunk_size]
             await self.db.artists_v2.bulk_write(chunk, ordered=False)
 
     async def bulk_update_workshops(self, workshops: List[Dict]) -> None:
         """Perform bulk workshop updates asynchronously.
-        
+
         Args:
             workshops: List of workshop data to update
         """
@@ -134,55 +140,54 @@ class AsyncDatabaseManager:
                 "update_one": {
                     "filter": {"uuid": workshop["uuid"]},
                     "update": {"$set": workshop},
-                    "upsert": True
+                    "upsert": True,
                 }
             }
             for workshop in workshops
         ]
-        
+
         for i in range(0, len(operations), self.config.chunk_size):
-            chunk = operations[i:i + self.config.chunk_size]
+            chunk = operations[i : i + self.config.chunk_size]
             await self.db.workshops_v2.bulk_write(chunk, ordered=False)
+
 
 class ParallelScreenshotManager:
     """Parallel screenshot capture and management."""
 
     def __init__(self, config: OptimizationConfig):
         """Initialize parallel screenshot manager.
-        
+
         Args:
             config: Optimization configuration
         """
         self.config = config
         self.chrome_options = Options()
         for option in [
-            '--headless',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-software-rasterizer'
+            "--headless",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
         ]:
             self.chrome_options.add_argument(option)
 
     def capture_screenshots_parallel(self, urls: List[str]) -> Dict[str, str]:
         """Capture multiple screenshots in parallel.
-        
+
         Args:
             urls: List of URLs to capture
-            
+
         Returns:
             Dictionary mapping URLs to screenshot paths
         """
         with ProcessPoolExecutor(max_workers=self.config.process_pool_size) as executor:
             futures = {
                 executor.submit(
-                    self._capture_single_screenshot,
-                    url,
-                    f"screenshots/{hash(url)}.png"
+                    self._capture_single_screenshot, url, f"screenshots/{hash(url)}.png"
                 ): url
                 for url in urls
             }
-            
+
             results = {}
             for future in futures:
                 url = futures[future]
@@ -192,16 +197,16 @@ class ParallelScreenshotManager:
                         results[url] = screenshot_path
                 except Exception as e:
                     print(f"Failed to capture screenshot for {url}: {str(e)}")
-            
+
             return results
 
     def _capture_single_screenshot(self, url: str, output_path: str) -> Optional[str]:
         """Capture single screenshot with optimized settings.
-        
+
         Args:
             url: URL to capture
             output_path: Path to save screenshot
-            
+
         Returns:
             Screenshot path if successful, None otherwise
         """
@@ -210,17 +215,17 @@ class ParallelScreenshotManager:
             driver = webdriver.Chrome(options=self.chrome_options)
             driver.set_window_size(1920, 1080)
             driver.get(url)
-            
+
             # Wait for page load with timeout
             WebDriverWait(driver, 10).until(
                 lambda d: d.execute_script("return document.readyState") == "complete"
             )
-            
+
             # Capture full page
             total_height = driver.execute_script("return document.body.scrollHeight")
             driver.set_window_size(1920, total_height)
             driver.save_screenshot(output_path)
-            
+
             return output_path
         except Exception as e:
             print(f"Screenshot capture failed: {str(e)}")
@@ -229,6 +234,7 @@ class ParallelScreenshotManager:
             if driver:
                 driver.quit()
 
+
 class AsyncWorkshopProcessor:
     """Asynchronous workshop processing system."""
 
@@ -236,10 +242,10 @@ class AsyncWorkshopProcessor:
         self,
         config: OptimizationConfig,
         db_manager: AsyncDatabaseManager,
-        screenshot_manager: ParallelScreenshotManager
+        screenshot_manager: ParallelScreenshotManager,
     ):
         """Initialize async workshop processor.
-        
+
         Args:
             config: Optimization configuration
             db_manager: Async database manager
@@ -251,27 +257,22 @@ class AsyncWorkshopProcessor:
 
     async def process_workshops_batch(self, links: Set[str], studio_id: str) -> None:
         """Process multiple workshops in parallel.
-        
+
         Args:
             links: Set of workshop links to process
             studio_id: Studio identifier
         """
         # Capture screenshots in parallel
         screenshot_paths = self.screenshot_manager.capture_screenshots_parallel(links)
-        
+
         # Process screenshots in parallel
         with ThreadPoolExecutor(max_workers=self.config.thread_pool_size) as executor:
             futures = []
             for url, path in screenshot_paths.items():
                 futures.append(
-                    executor.submit(
-                        self._process_single_workshop,
-                        url,
-                        path,
-                        studio_id
-                    )
+                    executor.submit(self._process_single_workshop, url, path, studio_id)
                 )
-            
+
             # Collect results
             workshops = []
             for future in futures:
@@ -281,24 +282,21 @@ class AsyncWorkshopProcessor:
                         workshops.append(result)
                 except Exception as e:
                     print(f"Workshop processing failed: {str(e)}")
-            
+
             # Bulk update database
             if workshops:
                 await self.db_manager.bulk_update_workshops(workshops)
 
     def _process_single_workshop(
-        self,
-        url: str,
-        screenshot_path: str,
-        studio_id: str
+        self, url: str, screenshot_path: str, studio_id: str
     ) -> Optional[Dict]:
         """Process single workshop with optimized settings.
-        
+
         Args:
             url: Workshop URL
             screenshot_path: Path to workshop screenshot
             studio_id: Studio identifier
-            
+
         Returns:
             Workshop data if successful, None otherwise
         """
@@ -307,20 +305,21 @@ class AsyncWorkshopProcessor:
             upload_result = ScreenshotManager.upload_screenshot(screenshot_path)
             if not upload_result or "url" not in upload_result:
                 return None
-            
+
             # Process with GPT (implementation depends on OpenAI client)
             # This would need to be adapted based on the specific GPT client being used
-            
+
             return {
                 "uuid": f"{studio_id}/{hash(url)}",
                 "payment_link": url,
                 "studio_id": studio_id,
                 # Additional workshop details would be added here
-                "updated_at": time.time()
+                "updated_at": time.time(),
             }
         except Exception as e:
             print(f"Workshop processing failed: {str(e)}")
             return None
+
 
 # Usage example:
 """

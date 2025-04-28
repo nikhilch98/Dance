@@ -19,21 +19,24 @@ from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.utils import DatabaseManager, is_image_downloadable
 
+
 @dataclass
 class Artist:
     """Artist information container."""
+
     name: str
     instagram_id: str
     image_url: Optional[str] = None
-    
+
     @property
     def instagram_link(self) -> str:
         """Get artist's Instagram profile link."""
         return f"https://www.instagram.com/{self.instagram_id}/"
 
+
 class InstagramAPI:
     """Instagram API interaction handler."""
-    
+
     HEADERS = {
         "x-ig-app-id": "936619743392459",
         "User-Agent": (
@@ -43,16 +46,16 @@ class InstagramAPI:
         ),
         "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
-        "Accept": "*/*"
+        "Accept": "*/*",
     }
-    
+
     @classmethod
     def fetch_profile_picture_hd(cls, username: str) -> Optional[str]:
         """Fetch HD profile picture URL from Instagram.
-        
+
         Args:
             username: Instagram username
-            
+
         Returns:
             HD profile picture URL or None if fetch fails
         """
@@ -60,7 +63,7 @@ class InstagramAPI:
             response = requests.get(
                 f"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}",
                 headers=cls.HEADERS,
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
             data = response.json()
@@ -69,9 +72,10 @@ class InstagramAPI:
             print(f"Failed to fetch data for {username}. Error: {str(e)}")
             return None
 
+
 class ArtistManager:
     """Artist data management system."""
-    
+
     def __init__(self, env):
         """Initialize the artist manager."""
         self.client = DatabaseManager.get_mongo_client(env)
@@ -79,7 +83,7 @@ class ArtistManager:
 
     def update_artist(self, artist: Artist) -> None:
         """Update or insert artist information in database.
-        
+
         Args:
             artist: Artist information to update
         """
@@ -88,47 +92,43 @@ class ArtistManager:
             "artist_name": artist.name,
             "instagram_link": artist.instagram_link,
         }
-        
+
         # Only update image if we have a new one
         if artist.image_url:
             data["image_url"] = artist.image_url
-            
+
         self.collection.update_one(
-            {"artist_id": artist.instagram_id},
-            {"$set": data},
-            upsert=True
+            {"artist_id": artist.instagram_id}, {"$set": data}, upsert=True
         )
 
     def get_existing_image(self, artist_id: str) -> Optional[str]:
         """Get existing image URL for artist if any.
-        
+
         Args:
             artist_id: Artist's Instagram ID
-            
+
         Returns:
             Existing image URL or None
         """
-        result = self.collection.find_one(
-            {"artist_id": artist_id},
-            {"image_url": 1}
-        )
+        result = self.collection.find_one({"artist_id": artist_id}, {"image_url": 1})
         return result.get("image_url") if result else None
+
 
 def get_artists_list() -> List[Artist]:
     """Get list of artists to process.
-    
+
     Returns:
         List of Artist objects with name and Instagram ID
     """
     return [
         Artist("Aadil Khan", "aadilkhann"),
         Artist("Mohit Solanki", "mohitsolanki11"),
-        Artist("Enette D'souza","enettedsouzadance"),
-        Artist("Prakhar Saini","saini.prakhar"),
-        Artist("Jainil Mehta","jainil_dreamtodance"),
-        Artist("Rajat Bansal","thatsilverdancinggirl"),
-        Artist("Prakhar Shrivastava","_.prakhar8"),
-        Artist("Palak Shettiwar","palak_shettiwar"),
+        Artist("Enette D'souza", "enettedsouzadance"),
+        Artist("Prakhar Saini", "saini.prakhar"),
+        Artist("Jainil Mehta", "jainil_dreamtodance"),
+        Artist("Rajat Bansal", "thatsilverdancinggirl"),
+        Artist("Prakhar Shrivastava", "_.prakhar8"),
+        Artist("Palak Shettiwar", "palak_shettiwar"),
         Artist("Aditya Tripathi", "adityatripathiii__"),
         Artist("Ajay Lama", "aka.lamaboi"),
         Artist("Ashish Dubey", "aashish.dubeyy"),
@@ -154,29 +154,31 @@ def get_artists_list() -> List[Artist]:
         Artist("Shazek Sheik", "shazebsheikh"),
         Artist("Sagar Chand", "sagar_chand78"),
         Artist("Siddhartha Dayani", "siddharthadayani"),
-        Artist("Shehzaan Khan","isshehzaannkhan"),
-        Artist("Monjit Rajbongshi","monjit_rajbongshiii"),
-        Artist("Sagar Thakur","sagar_thakur107"),
-        Artist("Kunal Pal","_kunaal_04"),
+        Artist("Shehzaan Khan", "isshehzaannkhan"),
+        Artist("Monjit Rajbongshi", "monjit_rajbongshiii"),
+        Artist("Sagar Thakur", "sagar_thakur107"),
+        Artist("Kunal Pal", "_kunaal_04"),
         Artist("Harsh Bhagchandani", "harshbhagchandani_"),
         Artist("Abhi Badarshahi", "abhi_badarshahi"),
         Artist("Harsh Kumar", "harshkumarofficiall"),
-        Artist("Wehzan","wehzan"),
-        Artist("Yahvi","yahvichavan"),
-        Artist("Dev Narayan Gupta","gurudev.ng")
+        Artist("Wehzan", "wehzan"),
+        Artist("Yahvi", "yahvichavan"),
+        Artist("Dev Narayan Gupta", "gurudev.ng"),
     ]
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Populate workshops data.")
-    
+
     parser.add_argument(
         "--env",
         required=True,
         choices=["prod", "dev"],
-        help="Set the environment (prod or dev)"
+        help="Set the environment (prod or dev)",
     )
-    
+
     return parser.parse_args()
+
 
 def main():
     """Main execution function."""
@@ -187,25 +189,26 @@ def main():
     env = args.env
     manager = ArtistManager(env)
     artists = get_artists_list()
-    
+
     with tqdm(artists, desc="Updating Artists", leave=False) as pbar:
         for artist in pbar:
             # Skip if image already exists
             if is_image_downloadable(manager.get_existing_image(artist.instagram_id)):
                 continue
-                
+
             # Fetch new profile picture
             pic_url = InstagramAPI.fetch_profile_picture_hd(artist.instagram_id)
-            
+
             # Check if the image is downloadable before updating
             if pic_url:
                 artist.image_url = pic_url
-                
+
             # Update database
             manager.update_artist(artist)
-            
+
             # Rate limiting
             time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
