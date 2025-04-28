@@ -25,6 +25,7 @@ import time
 import functools
 import sys
 from fastapi import FastAPI, Request
+import threading
 
 cache = {}
 
@@ -564,3 +565,29 @@ extract_links = URLManager.extract_links
 capture_screenshot = ScreenshotManager.capture_screenshot
 upload_screenshot = ScreenshotManager.upload_screenshot
 is_image_downloadable = is_image_downloadable
+
+# --- Change Stream Cache Invalidation ---
+def start_cache_invalidation_watcher():
+    from pymongo import MongoClient
+    import config
+
+    client = MongoClient(config.Config().mongodb_uri)
+    db = client["discovery"]
+
+    def watch_collection(collection):
+        pipeline = [{'$match': {'operationType': {'$in': ['insert', 'update', 'replace', 'delete']}}}]
+        try:
+            with collection.watch(pipeline=pipeline, full_document='updateLookup') as stream:
+                for change in stream:
+                    print(f"Change detected in {collection.name}: {change['operationType']}")
+                    cache.clear()
+        except Exception as e:
+            print(f"Change stream watcher error for {collection.name}: {e}")
+
+    def watch_changes():
+        collections = ["studios", "artists_v2", "workshops_v2"]
+        for coll_name in collections:
+            coll = db[coll_name]
+            threading.Thread(target=watch_collection, args=(coll,), daemon=True).start()
+
+    threading.Thread(target=watch_changes, daemon=True).start()

@@ -28,6 +28,7 @@ from utils.utils import (
     get_timestamp_epoch,
     get_formatted_date_without_day,
     cache_response,
+    start_cache_invalidation_watcher,
 )
 
 
@@ -702,6 +703,9 @@ def admin_delete_workshop(uuid: str):
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
     return templates.TemplateResponse("website/admin_panel.html", {"request": request})
+
+# Start MongoDB change stream watcher for cache invalidation
+start_cache_invalidation_watcher()
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8002, reload=True, workers=4)
