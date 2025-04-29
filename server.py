@@ -265,33 +265,6 @@ class DatabaseOperations:
                 }
             },
         ]
-        print(
-            list(
-                client["discovery"]["artists_v2"].aggregate(
-                    [
-                        {
-                            "$lookup": {
-                                "from": "workshops_v2",
-                                "let": {"artistId": "$artist_id"},
-                                "pipeline": [
-                                    {
-                                        "$match": {
-                                            "$expr": {
-                                                "$in": [
-                                                    "$$artistId",
-                                                    "$workshop_details.artist_id",
-                                                ]
-                                            }
-                                        }
-                                    }
-                                ],
-                                "as": "matchingWorkshops",
-                            }
-                        }
-                    ]
-                )
-            )
-        )
         return [
             {
                 "id": artist["artist_id"],
