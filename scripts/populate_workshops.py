@@ -243,7 +243,7 @@ class WorkshopProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-
+            time.sleep(0.1)
             # Convert to WorkshopSummary
             return WorkshopSummary(
                 is_workshop=analyzed_data.get("is_workshop", False),
