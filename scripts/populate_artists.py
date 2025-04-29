@@ -131,7 +131,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Palak Shettiwar", "palak_shettiwar"),
         Artist("Aditya Tripathi", "adityatripathiii__"),
         Artist("Ajay Lama", "aka.lamaboi"),
-        Artist("Ashish Dubey", "iam_ashishdubey"),
+        Artist("Ashish Dubey", "aashish.dubeyy"),
         Artist("Chiraj Gupta", "chirag_guptaaaa"),
         Artist("Deepak Tulsyan", "deepaktulsyan"),
         Artist("Jay Sharma", "jaysharma_ruh"),
@@ -169,7 +169,8 @@ def get_artists_list() -> List[Artist]:
         Artist("Ankit Sati","ankitsati"),
         Artist("Surya H","surya_from_k_town_"),
         Artist("Prabhat Patro","prabhat.patro"),
-        Artist("Dherya kandari","dheryakandari")
+        Artist("Dherya kandari","dheryakandari"),
+        Artist("Thangaat Garba","thangaatgarba"),
     ]
 
 
