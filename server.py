@@ -471,31 +471,6 @@ async def home(request: Request):
     """Serve the home page."""
     return templates.TemplateResponse("website/index.html", {"request": request})
 
-
-@app.get("/all_workshops")
-async def all_workshops(request: Request):
-    """Serve the all workshops page."""
-    return templates.TemplateResponse(
-        "website/all_workshops.html", {"request": request}
-    )
-
-
-@app.get("/browse_by_artists")
-async def browse_by_artists(request: Request):
-    """Serve the browse by artists page."""
-    return templates.TemplateResponse(
-        "website/browse_by_artists.html", {"request": request}
-    )
-
-
-@app.get("/browse_by_studios")
-async def browse_by_studios(request: Request):
-    """Serve the browse by studios page."""
-    return templates.TemplateResponse(
-        "website/browse_by_studios.html", {"request": request}
-    )
-
-
 # API Routes
 @app.get("/api/workshops", response_model=List[Workshop])
 @cache_response(expire=3600)
