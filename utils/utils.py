@@ -26,8 +26,13 @@ import functools
 import sys
 from fastapi import FastAPI, Request
 import threading
+import queue
 
+# Global variables for cache management
 cache = {}
+hot_reload_queue = queue.Queue()
+hot_reload_lock = threading.Lock()
+is_hot_reload_running = False
 
 
 def cache_response(expire: int = 3600):
@@ -576,33 +581,51 @@ def start_cache_invalidation_watcher():
     client = MongoClient(config.Config().mongodb_uri)
     db = client["discovery"]
 
-    def hot_reload_cache():
-        # Call internal API endpoints to repopulate cache
-        artist_ids = list(set(db["artists_v2"].distinct("artist_id")))
-        studio_ids = list(set(db["studios"].distinct("studio_id")))
-        try:
-            # Call internal api /api/workshops_by_studio/dance.inn.bangalore?version=v2
-            # Call internal api /api/workshops_by_artist/saini.prakhar?version=v2
-            endpoints = [
-                "http://localhost:8002/api/studios?version=v2",
-                "http://localhost:8002/api/workshops?version=v2",
-                "http://localhost:8002/api/artists?version=v2",
-                # Add more endpoints as needed
-            ]
-            for studio_id in studio_ids:
-                endpoints.append(f"http://localhost:8002/api/workshops_by_studio/{studio_id}?version=v2")
-            for artist_id in artist_ids:
-                endpoints.append(f"http://localhost:8002/api/workshops_by_artist/{artist_id}?version=v2")
+    def process_hot_reload_queue():
+        global is_hot_reload_running
+        while True:
+            try:
+                # Wait for items in the queue
+                hot_reload_queue.get()
+                
+                # If there are more items, clear them and just keep one
+                while not hot_reload_queue.empty():
+                    hot_reload_queue.get()
+                
+                with hot_reload_lock:
+                    is_hot_reload_running = True
+                    try:
+                        # Call internal API endpoints to repopulate cache
+                        artist_ids = list(set(db["artists_v2"].distinct("artist_id")))
+                        studio_ids = list(set(db["studios"].distinct("studio_id")))
+                        
+                        # Call internal api endpoints
+                        endpoints = [
+                            "http://localhost:8002/api/studios?version=v2",
+                            "http://localhost:8002/api/workshops?version=v2",
+                            "http://localhost:8002/api/artists?version=v2",
+                        ]
+                        
+                        for studio_id in studio_ids:
+                            endpoints.append(f"http://localhost:8002/api/workshops_by_studio/{studio_id}?version=v2")
+                        for artist_id in artist_ids:
+                            endpoints.append(f"http://localhost:8002/api/workshops_by_artist/{artist_id}?version=v2")
 
-            # Optionally, you can dynamically get all studio_ids and artist_ids for full coverage
-            for url in endpoints:
-                try:
-                    requests.get(url, timeout=10)
-                except Exception as e:
-                    print(f"Cache hot reload failed for {url}: {e}")
-        except Exception as e:
-            print(f"Hot reload cache error: {e}")
-        print("Cache hot reload completed")
+                        for url in endpoints:
+                            try:
+                                requests.get(url, timeout=10)
+                            except Exception as e:
+                                print(f"Cache hot reload failed for {url}: {e}")
+                                
+                        print("Cache hot reload completed")
+                    except Exception as e:
+                        print(f"Hot reload cache error: {e}")
+                    finally:
+                        is_hot_reload_running = False
+                        
+            except Exception as e:
+                print(f"Error in process_hot_reload_queue: {e}")
+                is_hot_reload_running = False
 
     def watch_collection(collection):
         pipeline = [{'$match': {'operationType': {'$in': ['insert', 'update', 'replace', 'delete']}}}]
@@ -611,7 +634,8 @@ def start_cache_invalidation_watcher():
                 for change in stream:
                     print(f"Change detected in {collection.name}: {change['operationType']}")
                     cache.clear()
-                    threading.Thread(target=hot_reload_cache, daemon=True).start()
+                    # Add hot reload request to queue instead of starting immediately
+                    hot_reload_queue.put(True)
         except Exception as e:
             print(f"Change stream watcher error for {collection.name}: {e}")
 
@@ -621,6 +645,11 @@ def start_cache_invalidation_watcher():
             coll = db[coll_name]
             threading.Thread(target=watch_collection, args=(coll,), daemon=True).start()
 
+    # Start the queue processor thread
+    threading.Thread(target=process_hot_reload_queue, daemon=True).start()
+    
+    # Start the change watcher threads
     threading.Thread(target=watch_changes, daemon=True).start()
-    # Only call hot_reload_cache ONCE for initial warmup
-    threading.Thread(target=hot_reload_cache, daemon=True).start()
+    
+    # Initial cache warmup
+    hot_reload_queue.put(True)
