@@ -1461,10 +1461,14 @@
           <div class="filter-container">
             <div class="filter-group">
               <label class="filter-label">Date</label>
-              <select id="date-filter" class="filter-select" aria-label="Filter by date">
-                <option value="">All Dates</option>
-              </select>
-        </div>
+              <div class="multiselect-dropdown" id="date-filter">
+                <div class="multiselect-trigger" tabindex="0">Select Dates</div>
+                <div class="multiselect-dropdown-list" id="date-options">
+                  <!-- Will be populated dynamically -->
+                </div>
+                <div class="active-filters" id="active-date-filters"></div>
+              </div>
+            </div>
             
             <div class="filter-group">
               <label class="filter-label">Instructor</label>
@@ -1528,7 +1532,7 @@
     let workshopData = [];
     let currentSort = { column: 'date', direction: 'asc' };
     let activeFilters = {
-      date: '',
+      dates: [],
       instructors: [],
       studios: []
     };
@@ -1604,17 +1608,21 @@
         e.preventDefault();
         // Reset filter values
         activeFilters = {
-          date: '',
+          dates: [],
           instructors: [],
           studios: []
         };
         
         // Reset UI
-        document.getElementById('date-filter').value = '';
+        document.querySelectorAll('#date-options input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        
         document.querySelectorAll('#instructor-options input[type="checkbox"], #studio-options input[type="checkbox"]').forEach(checkbox => {
           checkbox.checked = false;
         });
         
+        document.getElementById('active-date-filters').innerHTML = '';
         document.getElementById('active-instructor-filters').innerHTML = '';
         document.getElementById('active-studio-filters').innerHTML = '';
         
@@ -2160,12 +2168,38 @@
       const studios = [...new Set(workshopData.map(w => w.studio))].filter(s => s && s !== 'TBA').sort();
       
       // Populate date filter
-      const dateFilter = document.getElementById('date-filter');
+      const dateOptions = document.getElementById('date-options');
+      dateOptions.innerHTML = '';
       dates.forEach(date => {
-        const option = document.createElement('option');
-        option.value = date;
-        option.textContent = date;
-        dateFilter.appendChild(option);
+        dateOptions.innerHTML += `
+          <div class="multiselect-option">
+            <input type="checkbox" id="date-${date.replace(/\s+/g, '-')}" value="${date}">
+            <label for="date-${date.replace(/\s+/g, '-')}" >${date}</label>
+          </div>
+        `;
+      });
+      // Date dropdown open/close
+      const dateDropdown = document.getElementById('date-filter');
+      const dateTrigger = dateDropdown.querySelector('.multiselect-trigger');
+      dateTrigger.addEventListener('click', function() {
+        const dropdownList = dateDropdown.querySelector('.multiselect-dropdown-list');
+        dropdownList.classList.toggle('active');
+        // Close other dropdowns if open
+        document.getElementById('instructor-options').classList.remove('active');
+        document.getElementById('studio-options').classList.remove('active');
+      });
+      // Date checkbox change events
+      dateOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            activeFilters.dates.push(this.value);
+          } else {
+            activeFilters.dates = activeFilters.dates.filter(d => d !== this.value);
+          }
+          renderWorkshopsTable();
+          updateActiveFilters('date');
+          updateFiltersSummary();
+        });
       });
       
       // Populate instructor filter
@@ -2190,13 +2224,6 @@
         `;
       });
       
-      // Set up date filter event listener
-      dateFilter.addEventListener('change', function() {
-        activeFilters.date = this.value;
-        renderWorkshopsTable();
-        updateFiltersSummary();
-      });
-      
       // Set up instructor multiselect
       const instructorDropdown = document.getElementById('instructor-filter');
       const instructorTrigger = instructorDropdown.querySelector('.multiselect-trigger');
@@ -2205,8 +2232,9 @@
         const dropdownList = instructorDropdown.querySelector('.multiselect-dropdown-list');
         dropdownList.classList.toggle('active');
         
-        // Close studio dropdown if open
+        // Close other dropdowns if open
         document.getElementById('studio-options').classList.remove('active');
+        document.getElementById('date-options').classList.remove('active');
       });
       
       // Set up studio multiselect
@@ -2217,8 +2245,9 @@
         const dropdownList = studioDropdown.querySelector('.multiselect-dropdown-list');
         dropdownList.classList.toggle('active');
         
-        // Close instructor dropdown if open
+        // Close other dropdowns if open
         document.getElementById('instructor-options').classList.remove('active');
+        document.getElementById('date-options').classList.remove('active');
       });
       
       // Instructor checkbox change events
@@ -2260,7 +2289,23 @@
     }
     
     function updateActiveFilters(type) {
-      if (type === 'instructor') {
+      if (type === 'date') {
+        const container = document.getElementById('active-date-filters');
+        container.innerHTML = '';
+        activeFilters.dates.forEach(date => {
+          const pill = document.createElement('div');
+          pill.className = 'filter-pill';
+          pill.innerHTML = `
+            ${date}
+            <button class="remove-filter" data-type="date" data-value="${date}" aria-label="Remove ${date} filter">×</button>
+          `;
+          container.appendChild(pill);
+        });
+        // Update dropdown text
+        const trigger = document.querySelector('#date-filter .multiselect-trigger');
+        trigger.textContent = activeFilters.dates.length > 0 ? 
+          `${activeFilters.dates.length} Selected` : 'Select Dates';
+      } else if (type === 'instructor') {
         const container = document.getElementById('active-instructor-filters');
         container.innerHTML = '';
         
@@ -2304,7 +2349,11 @@
           const type = this.dataset.type;
           const value = this.dataset.value;
           
-          if (type === 'instructor') {
+          if (type === 'date') {
+            activeFilters.dates = activeFilters.dates.filter(d => d !== value);
+            document.getElementById(`date-${value.replace(/\s+/g, '-')}`).checked = false;
+            updateActiveFilters('date');
+          } else if (type === 'instructor') {
             activeFilters.instructors = activeFilters.instructors.filter(i => i !== value);
             document.getElementById(`instructor-${value.replace(/\s+/g, '-')}`).checked = false;
             updateActiveFilters('instructor');
@@ -2322,38 +2371,29 @@
     
     function updateFiltersSummary() {
       const summary = document.getElementById('filters-summary');
-      
-      const activeFilterCount = (activeFilters.date ? 1 : 0) + 
+      const activeFilterCount = activeFilters.dates.length + 
                                activeFilters.instructors.length + 
                                activeFilters.studios.length;
-      
       if (activeFilterCount === 0) {
         summary.textContent = 'No filters applied';
         return;
       }
-      
       let summaryText = 'Showing workshops';
-      
-      if (activeFilters.date) {
-        summaryText += ` on ${activeFilters.date}`;
+      if (activeFilters.dates.length > 0) {
+        summaryText += ` on ${activeFilters.dates.join(', ')}`;
       }
-      
       if (activeFilters.instructors.length > 0) {
         const instructorsText = activeFilters.instructors.length === 1 
           ? activeFilters.instructors[0]
           : `any of ${activeFilters.instructors.length} selected instructors`;
-        
-        summaryText += activeFilters.date ? ` with ${instructorsText}` : ` by ${instructorsText}`;
+        summaryText += activeFilters.dates.length > 0 ? ` with ${instructorsText}` : ` by ${instructorsText}`;
       }
-      
       if (activeFilters.studios.length > 0) {
         const studiosText = activeFilters.studios.length === 1 
           ? activeFilters.studios[0]
           : `any of ${activeFilters.studios.length} selected studios`;
-        
         summaryText += ` at ${studiosText}`;
       }
-      
       summary.textContent = summaryText;
     }
     
@@ -2370,7 +2410,7 @@
       // Filter the data based on active filters
       let filteredData = workshopData.filter(workshop => {
         // Date filter
-        if (activeFilters.date && workshop.date !== activeFilters.date) {
+        if (activeFilters.dates.length > 0 && !activeFilters.dates.includes(workshop.date)) {
           return false;
         }
         
