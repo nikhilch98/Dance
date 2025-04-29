@@ -652,8 +652,20 @@ def admin_delete_workshop(uuid: str):
 async def admin_panel(request: Request):
     return templates.TemplateResponse("website/admin_panel.html", {"request": request})
 
-# Start MongoDB change stream watcher for cache invalidation
+# Start cache invalidation watcher
 start_cache_invalidation_watcher()
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=8002, reload=True, workers=4)
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=8002,
+        workers=4,  # Number of worker processes
+        loop="uvloop",  # Use uvloop for better performance
+        http="httptools",  # Use httptools for better performance
+        reload=True,  # Enable auto-reload during development
+        access_log=True,
+        log_level="info",
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

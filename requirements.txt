@@ -7,8 +7,11 @@ webdriver-manager
 Pillow
 tqdm
 fastapi
-uvicorn
+uvicorn[standard]
 motor
 jinja2
 black
 python-multipart
+uvloop
+httptools
+python-dotenv
