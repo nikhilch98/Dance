@@ -1944,7 +1944,7 @@
             const imagesToPreload = studioData.slice(0, 6).map(studio => {
               return studio.image_url 
                 ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
-                : '/static/assets/studios/placeholder.jpg';
+                : '/static/assets/studios/studios.png';
             });
             
             // Start preloading immediately
@@ -1957,7 +1957,7 @@
             const cardsHTML = studioData.map((studio, index) => {
               const imageUrl = studio.image_url 
                 ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
-                : '/static/assets/studios/placeholder.jpg';
+                : '/static/assets/studios/studios.png';
                 
               const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';
               
@@ -1969,7 +1969,7 @@
                        alt="${studio.name}" 
                        ${fetchPriority}
                        loading="lazy"
-                       onerror="this.src='/static/assets/studios/placeholder.jpg'">
+                       onerror="this.src='/static/assets/studios/studios.png'">
                   <h3>${studio.name}</h3>
                   ${studio.instagram_link ? `
                     <a href="${studio.instagram_link}" 
@@ -2052,7 +2052,7 @@
         const imagesToPreload = artists.slice(0, 6).map(artist => {
           return artist.image_url 
             ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
-            : '/static/assets/artists/placeholder.jpg';
+            : '/static/assets/artists/artists.png';
         });
         
         // Start preloading immediately
@@ -2065,7 +2065,7 @@
         const cardsHTML = artists.map((artist, index) => {
           const imageUrl = artist.image_url 
             ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
-            : '/static/assets/artists/placeholder.jpg';
+            : '/static/assets/artists/artists.png';
           
           const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';
           
@@ -2077,7 +2077,7 @@
                    alt="${artist.name}" 
                    ${fetchPriority}
                    loading="lazy"
-                   onerror="this.src='/static/assets/artists/placeholder.jpg'">
+                   onerror="this.src='/static/assets/artists/artists.png'">
               <h3>${artist.name}</h3>
               ${artist.instagram_link ? `
                 <a href="${artist.instagram_link}" 
