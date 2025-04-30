@@ -1,6 +1,0 @@
-{
-    "port": "8002",
-    "mongo_uri": "mongodb://localhost:27017",
-    "db_name": "discovery",
-    "static_dir": "static"
-}
