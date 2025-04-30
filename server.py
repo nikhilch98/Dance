@@ -29,6 +29,7 @@ from utils.utils import (
     get_formatted_date_without_day,
     cache_response,
     start_cache_invalidation_watcher,
+    DatabaseManager,
 )
 
 
@@ -142,6 +143,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add startup event to initialize database connection pool and start cache invalidation
+@app.on_event("startup")
+async def startup_db_client():
+    """Initialize database connection pool and start cache watcher on startup."""
+    # Initialize database connection pool with a test query
+    client = DatabaseManager.get_mongo_client()
+    client.admin.command('ping')
+    print("MongoDB connection pool initialized")
+    
+    # Start the cache invalidation watcher
+    start_cache_invalidation_watcher()
+    print("Cache invalidation watcher started")
 
 # Dependency for version validation
 def validate_version(version: str = Query(APIConfig.DEFAULT_VERSION)) -> str:
@@ -652,8 +665,12 @@ def admin_delete_workshop(uuid: str):
 async def admin_panel(request: Request):
     return templates.TemplateResponse("website/admin_panel.html", {"request": request})
 
-# Start cache invalidation watcher
-start_cache_invalidation_watcher()
+# Add shutdown event handler to close database connections
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    """Close database connections when the application shuts down."""
+    DatabaseManager.close_connections()
+    print("Application shutdown: Database connections closed.")
 
 if __name__ == "__main__":
     uvicorn.run(

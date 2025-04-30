@@ -144,35 +144,83 @@ class DateTimeFormats:
 # Database Operations
 class DatabaseManager:
     """Database connection and operation management."""
+    
+    # Class variable to store the singleton instance
+    _instance = None
+    _client = None
+    _lock = threading.Lock()
 
-    @staticmethod
-    def get_mongo_client(env=config.DEFAULT_ENV) -> MongoClient:
-        """Get a MongoDB client instance.
+    @classmethod
+    def get_mongo_client(cls, env=config.DEFAULT_ENV) -> MongoClient:
+        """Get a MongoDB client instance with connection pooling.
+        
+        This method implements a thread-safe singleton pattern to maintain
+        a single MongoDB client with connection pooling across the application.
 
         Args:
-            env (str, optional): Environment to use. Defaults to None.
+            env (str, optional): Environment to use. Defaults to config.DEFAULT_ENV.
                 If None, tries to parse from command-line arguments.
 
         Returns:
-            MongoDB client configured with application settings
+            MongoDB client configured with application settings and connection pooling
 
         Raises:
             Exception: If connection fails
         """
-        try:
-            # If no environment specified, try to parse from command-line
-            if env is None:
-                # Use the parse_args method from config to determine environment
-                cfg = config.parse_args(sys.argv[0] if len(sys.argv) > 0 else None)
-            else:
-                # If environment is explicitly specified, create config for that env
-                cfg = config.Config(env)
+        # Return existing client if available
+        if cls._client is not None:
+            return cls._client
+        
+        # Thread-safe creation of new client
+        with cls._lock:
+            # Double-check lock pattern
+            if cls._client is not None:
+                return cls._client
+            
+            try:
+                # If no environment specified, try to parse from command-line
+                if env is None:
+                    # Use the parse_args method from config to determine environment
+                    cfg = config.parse_args(sys.argv[0] if len(sys.argv) > 0 else None)
+                else:
+                    # If environment is explicitly specified, create config for that env
+                    cfg = config.Config(env)
 
-            # Use the MongoDB URI from the configuration
-            client = MongoClient(cfg.mongodb_uri, server_api=ServerApi("1"))
-            return client
-        except Exception as e:
-            raise Exception(f"Failed to connect to MongoDB: {str(e)}")
+                # Connection pool settings
+                pool_options = {
+                    "maxPoolSize": 100,                # Maximum number of connections in the pool
+                    "minPoolSize": 10,                 # Minimum number of connections in the pool
+                    "maxIdleTimeMS": 30000,            # Maximum time a connection can remain idle (30 seconds)
+                    "waitQueueTimeoutMS": 2000,        # How long a thread will wait for a connection (2 seconds)
+                    "connectTimeoutMS": DatabaseConfig.TIMEOUT_MS,
+                    "retryWrites": DatabaseConfig.RETRY_WRITES,
+                    "w": DatabaseConfig.W_CONCERN,
+                }
+                
+                # Initialize MongoDB client with connection pooling
+                cls._client = MongoClient(
+                    cfg.mongodb_uri, 
+                    server_api=ServerApi("1"),
+                    **pool_options
+                )
+                
+                # Test the connection to verify it works
+                cls._client.admin.command('ping')
+                
+                print("Successfully established MongoDB connection pool")
+                return cls._client
+                
+            except Exception as e:
+                cls._client = None  # Reset on failure
+                raise Exception(f"Failed to connect to MongoDB: {str(e)}")
+                
+    @classmethod
+    def close_connections(cls):
+        """Close all connections in the MongoDB client pool."""
+        if cls._client is not None:
+            cls._client.close()
+            cls._client = None
+            print("MongoDB connection pool closed")
 
 
 # Date and Time Operations
@@ -573,12 +621,12 @@ is_image_downloadable = is_image_downloadable
 
 # --- Change Stream Cache Invalidation ---
 def start_cache_invalidation_watcher():
-    from pymongo import MongoClient
     import config
     import threading
     import requests
 
-    client = MongoClient(config.Config().mongodb_uri)
+    # Use the connection pool instead of creating a new connection
+    client = DatabaseManager.get_mongo_client()
     db = client["discovery"]
 
     def process_hot_reload_queue():

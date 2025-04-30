@@ -8,15 +8,30 @@ import (
 	"time"
 
 	"github.com/nikhilchatragadda/dance/config"
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var (
-	client     *mongo.Client
-	clientOnce sync.Once
-	clientErr  error
+	client            *mongo.Client
+	clientOnce        sync.Once
+	clientErr         error
+	connectionMetrics ConnectionMetrics
+	metricsLock       sync.Mutex
 )
+
+// ConnectionMetrics tracks MongoDB connection usage
+type ConnectionMetrics struct {
+	ConnectionsCreated      int
+	ConnectionsReused       int
+	LastConnectionCreatedAt time.Time
+	ConnectTimeAvgMs        float64
+	ConnectTimeDataPoints   int
+	QueryTimeAvgMs          float64
+	QueryTimeDataPoints     int
+}
 
 // Cache related variables
 var (
@@ -33,25 +48,58 @@ type CacheItem struct {
 	Expiration time.Time
 }
 
-// GetMongoClient returns a MongoDB client instance
+// GetMongoClient returns a MongoDB client instance with connection pooling
 func GetMongoClient() (*mongo.Client, error) {
+	// Record metrics for a connection request
+	metricsLock.Lock()
+	connectionMetrics.ConnectionsReused++
+	metricsLock.Unlock()
+
+	// Use sync.Once to ensure we only create one client
 	clientOnce.Do(func() {
+		startTime := time.Now()
+
+		metricsLock.Lock()
+		connectionMetrics.ConnectionsCreated++
+		connectionMetrics.LastConnectionCreatedAt = time.Now()
+		metricsLock.Unlock()
+
 		cfg := config.NewConfig(config.DefaultEnv)
 
-		// Use shorter connection timeout (3s instead of 10s)
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		// Use shorter connection timeout (2s instead of 10s)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		// Configure connection options with optimal settings for performance
 		clientOptions := options.Client().
 			ApplyURI(cfg.MongoDBURI).
-			SetConnectTimeout(3 * time.Second).
-			SetServerSelectionTimeout(3 * time.Second).
-			SetMaxConnIdleTime(30 * time.Second).
-			SetMaxPoolSize(20).
-			SetMinPoolSize(5).
+			SetConnectTimeout(2 * time.Second).
+			SetServerSelectionTimeout(2 * time.Second).
+			SetSocketTimeout(5 * time.Second).
+			SetMaxConnIdleTime(60 * time.Second).
+			SetMaxPoolSize(100).  // Increase pool size for better concurrency
+			SetMinPoolSize(10).   // Ensure minimum available connections
+			SetMaxConnecting(10). // Limit simultaneous connection creation
 			SetRetryWrites(true).
 			SetRetryReads(true)
+
+		// Configure connection pool monitoring with string constants
+		clientOptions.SetPoolMonitor(&event.PoolMonitor{
+			Event: func(evt *event.PoolEvent) {
+				log.Printf("[MongoDB] Pool event: %s for connection: %s", evt.Type, evt.ConnectionID)
+				switch evt.Type {
+				case "ConnectionPoolCreated":
+				case event.ConnectionPoolCreated:
+					log.Printf("[MongoDB] Pool created with %d max size", *clientOptions.MaxPoolSize)
+				case event.ConnectionCreated:
+					log.Printf("[MongoDB] New connection created: %s", evt.ConnectionID)
+				case event.GetSucceeded:
+					log.Printf("[MongoDB] Connection acquired from pool: %s", evt.ConnectionID)
+				case event.ConnectionClosed:
+					log.Printf("[MongoDB] Connection closed: %s", evt.ConnectionID)
+				}
+			},
+		})
 
 		// Connect to MongoDB with optimized settings
 		var err error
@@ -62,21 +110,60 @@ func GetMongoClient() (*mongo.Client, error) {
 			return
 		}
 
-		// Ping with shorter timeout
-		pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// Ping with shorter timeout to verify connection
+		pingCtx, pingCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer pingCancel()
 
-		if err = client.Ping(pingCtx, nil); err != nil {
+		if err = client.Ping(pingCtx, readpref.Primary()); err != nil {
 			clientErr = fmt.Errorf("failed to ping MongoDB: %v", err)
 			log.Printf("Failed to ping MongoDB: %v", err)
 			return
 		}
 
-		log.Printf("Successfully connected to MongoDB with optimized connection pool")
+		connectTime := time.Since(startTime)
+		log.Printf("Successfully connected to MongoDB with optimized connection pool in %v", connectTime)
+
+		// Update connection metrics
+		metricsLock.Lock()
+		connectionMetrics.ConnectTimeDataPoints++
+		totalTimeMs := connectionMetrics.ConnectTimeAvgMs * float64(connectionMetrics.ConnectTimeDataPoints-1)
+		totalTimeMs += float64(connectTime.Milliseconds())
+		connectionMetrics.ConnectTimeAvgMs = totalTimeMs / float64(connectionMetrics.ConnectTimeDataPoints)
+		metricsLock.Unlock()
 	})
 
 	// Return existing client without reconnecting
 	return client, clientErr
+}
+
+// GetConnectionMetrics returns the current MongoDB connection metrics
+func GetConnectionMetrics() ConnectionMetrics {
+	metricsLock.Lock()
+	defer metricsLock.Unlock()
+	return connectionMetrics
+}
+
+// TrackQueryTime records a query execution time for metrics
+func TrackQueryTime(duration time.Duration) {
+	metricsLock.Lock()
+	defer metricsLock.Unlock()
+
+	connectionMetrics.QueryTimeDataPoints++
+	totalTimeMs := connectionMetrics.QueryTimeAvgMs * float64(connectionMetrics.QueryTimeDataPoints-1)
+	totalTimeMs += float64(duration.Milliseconds())
+	connectionMetrics.QueryTimeAvgMs = totalTimeMs / float64(connectionMetrics.QueryTimeDataPoints)
+}
+
+// ExecuteWithMetrics runs a MongoDB operation and tracks metrics
+func ExecuteWithMetrics(operation string, fn func() error) error {
+	startTime := time.Now()
+	err := fn()
+	duration := time.Since(startTime)
+
+	log.Printf("[MongoDB] %s completed in %v", operation, duration)
+	TrackQueryTime(duration)
+
+	return err
 }
 
 // FormatDate formats the date using the specified time details
