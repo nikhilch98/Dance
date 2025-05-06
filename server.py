@@ -610,7 +610,7 @@ async def proxy_image(url: HttpUrl):
 @app.get("/admin/api/artists")
 def admin_list_artists():
     client = get_mongo_client()
-    return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}))
+    return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}).sort("artist_name", 1))
 
 
 # --- New Admin APIs ---
