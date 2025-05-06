@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Assign Artists</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #121824;
+      background-image: linear-gradient(135deg, #121824 0%, #1a2436 50%, #121830 100%);
+      color: #f0f4f8;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 1400px; margin: 20px auto; padding: 20px; background: rgba(20, 30, 48, 0.7); backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    h1 { text-align: center; color: #4d9eff; margin-bottom: 24px; font-weight: 600; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: rgba(30, 40, 58, 0.6); backdrop-filter: blur(30px); box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; font-size: 0.9rem; margin-top: 20px; }
+    thead { background-color: rgba(0,123,255,0.2); backdrop-filter: blur(20px); }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); vertical-align: middle; }
+    th { color: #4d9eff; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
+    tbody tr:nth-child(even) { background-color: rgba(30,40,58,0.8); }
+    tbody tr:nth-child(odd) { background-color: rgba(20,30,48,0.8); }
+    tbody tr:hover { background-color: rgba(0,123,255,0.15) !important; }
+    .actions select, .actions button { padding: 8px 12px; margin-left: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(40,50,70,0.8); color: #f0f4f8; font-size:0.85rem; cursor:pointer; }
+    .actions button { background-color: #28a745; border-color: #28a745; }
+    .actions button:hover { background-color: #218838; }
+    .actions select:focus, .actions button:focus { outline: 2px solid #4d9eff; }
+    .loading, .error, .message { text-align: center; padding: 20px; font-size: 1rem; }
+    .error { color: #ff6b6b; }
+    .message { color: #5cb85c; }
+    a { color: #4d9eff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Responsive table styles from index.html */
+    @media (max-width: 900px) {
+        table, thead, tbody, th, td, tr { display: block; width: 100% !important; }
+        thead tr { position: absolute; top: -9999px; left: -9999px; }
+        tr { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 15px; padding: 10px; background: rgba(25,35,50,0.9) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        td { border: none; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; padding-left: 45% !important; padding-top: 8px; padding-bottom: 8px; white-space: normal; text-align: right !important; min-height: 28px; }
+        td:before { content: attr(data-label); position: absolute; left: 10px; width: calc(45% - 20px); padding-right: 10px; white-space: nowrap; text-align: left !important; font-weight: 600; color: #4d9eff; }
+        .actions select, .actions button { width: calc(50% - 8px); margin: 5px 4px; display: inline-block; }
+        .actions { text-align: right; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Assign Artists to Workshops</h1>
+    <div id="message-area"></div>
+    <table id="workshops-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Original 'By'</th>
+          <th>Song</th>
+          <th>Studio</th>
+          <th>Link</th>
+          <th>Assign Artist</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let allArtists = [];
+
+    async function fetchArtists() {
+      try {
+        const response = await fetch('/admin/api/artists');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        allArtists = await response.json();
+      } catch (error) {
+        console.error("Error fetching artists:", error);
+        displayMessage("Error fetching artists list. Please try again.", "error");
+        allArtists = []; // Ensure it's an array
+      }
+    }
+
+    async function fetchMissingArtistSessions() {
+      const tableBody = document.querySelector("#workshops-table tbody");
+      tableBody.innerHTML = '<tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>';
+      try {
+        const response = await fetch('/admin/api/missing_artist_sessions');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const sessions = await response.json();
+        renderTable(sessions);
+      } catch (error) {
+        console.error("Error fetching missing artist sessions:", error);
+        tableBody.innerHTML = '<tr><td colspan="7" class="error">Could not load workshop sessions. Please try again.</td></tr>';
+      }
+    }
+
+    function renderTable(sessions) {
+      const tableBody = document.querySelector("#workshops-table tbody");
+      tableBody.innerHTML = ""; // Clear loading or previous data
+
+      if (sessions.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="message">No workshops found with missing artists.</td></tr>';
+        return;
+      }
+
+      sessions.forEach(session => {
+        const row = tableBody.insertRow();
+        row.dataset.uuid = session.workshop_uuid;
+        row.dataset.detailIndex = session.detail_index;
+
+        // Add data-label for responsive mode
+        row.insertCell().outerHTML = `<td data-label="Date">${session.date || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Time">${session.time || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Original 'By'">${session.original_by_field || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Song">${session.song || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Studio">${session.studio_name || 'N/A'}</td>`;
+        const linkCell = row.insertCell();
+        linkCell.dataset.label = "Link";
+        if (session.payment_link) {
+            const link = document.createElement('a');
+            link.href = session.payment_link;
+            link.textContent = "Register";
+            link.target = "_blank";
+            linkCell.appendChild(link);
+        } else {
+            linkCell.textContent = 'N/A';
+        }
+        
+        const actionsCell = row.insertCell();
+        actionsCell.classList.add("actions");
+        actionsCell.dataset.label = "Assign Artist";
+
+        const select = document.createElement("select");
+        select.innerHTML = `<option value="">Select Artist</option>`;
+        if (Array.isArray(allArtists)) {
+            allArtists.forEach(artist => {
+                const option = document.createElement("option");
+                option.value = artist.artist_id;
+                option.textContent = artist.artist_name;
+                option.dataset.artistName = artist.artist_name; // Store name for payload
+                select.appendChild(option);
+            });
+        }
+
+        const button = document.createElement("button");
+        button.textContent = "Assign";
+        button.onclick = () => assignArtist(session.workshop_uuid, session.detail_index, select, row);
+
+        actionsCell.appendChild(select);
+        actionsCell.appendChild(button);
+      });
+    }
+
+    async function assignArtist(workshopUuid, detailIndex, selectElement, rowElement) {
+      const artistId = selectElement.value;
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
+      const artistName = selectedOption.dataset.artistName;
+
+      if (!artistId) {
+        displayMessage("Please select an artist.", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/admin/api/workshops/${workshopUuid}/details/${detailIndex}/assign_artist`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ artist_id: artistId, artist_name: artistName }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          displayMessage(result.message || "Artist assigned successfully!", "message");
+          rowElement.remove(); // Remove the row from the table
+          // If no more rows, show message
+          const tableBody = document.querySelector("#workshops-table tbody");
+          if (tableBody.rows.length === 0) {
+              tableBody.innerHTML = '<tr><td colspan="7" class="message">All workshops have artists assigned.</td></tr>';
+          }
+        } else {
+          displayMessage(result.detail || result.message || "Failed to assign artist.", "error");
+        }
+      } catch (error) {
+        console.error("Error assigning artist:", error);
+        displayMessage("An error occurred while assigning the artist. Please try again.", "error");
+      }
+    }
+
+    function displayMessage(message, type = "message") {
+      const messageArea = document.getElementById("message-area");
+      messageArea.innerHTML = `<p class="${type}">${message}</p>`;
+      setTimeout(() => {
+        messageArea.innerHTML = "";
+      }, 5000); // Clear message after 5 seconds
+    }
+
+    async function init() {
+      await fetchArtists(); // Fetch artists first
+      await fetchMissingArtistSessions(); // Then fetch sessions
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html> 

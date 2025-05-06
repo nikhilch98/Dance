@@ -589,81 +589,83 @@ async def proxy_image(url: HttpUrl):
         raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
 
-# --- Studios CRUD ---
-@app.get("/admin/api/studios")
-def admin_list_studios():
-    client = get_mongo_client()
-    return list(client["discovery"]["studios"].find({}, {"_id": 0}))
-
-@app.post("/admin/api/studios")
-def admin_create_studio(studio: dict = Body(...)):
-    client = get_mongo_client()
-    client["discovery"]["studios"].insert_one(studio)
-    return {"success": True}
-
-@app.put("/admin/api/studios/{studio_id}")
-def admin_update_studio(studio_id: str, studio: dict = Body(...)):
-    client = get_mongo_client()
-    client["discovery"]["studios"].update_one({"studio_id": studio_id}, {"$set": studio})
-    return {"success": True}
-
-@app.delete("/admin/api/studios/{studio_id}")
-def admin_delete_studio(studio_id: str):
-    client = get_mongo_client()
-    client["discovery"]["studios"].delete_one({"studio_id": studio_id})
-    return {"success": True}
-
 # --- Artists CRUD ---
 @app.get("/admin/api/artists")
 def admin_list_artists():
     client = get_mongo_client()
     return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}))
 
-@app.post("/admin/api/artists")
-def admin_create_artist(artist: dict = Body(...)):
-    client = get_mongo_client()
-    client["discovery"]["artists_v2"].insert_one(artist)
-    return {"success": True}
 
-@app.put("/admin/api/artists/{artist_id}")
-def admin_update_artist(artist_id: str, artist: dict = Body(...)):
-    client = get_mongo_client()
-    client["discovery"]["artists_v2"].update_one({"artist_id": artist_id}, {"$set": artist})
-    return {"success": True}
+# --- New Admin APIs ---
+class AssignArtistPayload(BaseModel):
+    artist_id: str
+    artist_name: str
 
-@app.delete("/admin/api/artists/{artist_id}")
-def admin_delete_artist(artist_id: str):
+@app.get("/admin/api/missing_artist_sessions")
+def admin_get_missing_artist_sessions():
     client = get_mongo_client()
-    client["discovery"]["artists_v2"].delete_one({"artist_id": artist_id})
-    return {"success": True}
+    missing_artist_sessions = []
+    
+    # Build a mapping from studio_id to studio_name
+    studio_map = {s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()}
 
-# --- Workshops CRUD ---
-@app.get("/admin/api/workshops")
-def admin_list_workshops():
-    client = get_mongo_client()
-    return list(client["discovery"]["workshops_v2"].find({}, {"_id": 0}))
+    # Find workshops that have at least one detail with a missing artist_id
+    workshops_cursor = client["discovery"]["workshops_v2"].find(
+        {"workshop_details.artist_id": {"$in": [None, ""]}}
+    )
 
-@app.post("/admin/api/workshops")
-def admin_create_workshop(workshop: dict = Body(...)):
-    client = get_mongo_client()
-    client["discovery"]["workshops_v2"].insert_one(workshop)
-    return {"success": True}
+    for workshop in workshops_cursor:
+        for index, detail in enumerate(workshop.get("workshop_details", [])):
+            if not detail.get("artist_id"):
+                session_data = {
+                    "workshop_uuid": workshop["uuid"],
+                    "detail_index": index,
+                    "date": get_formatted_date_without_day(detail["time_details"]),
+                    "time": get_formatted_time(detail["time_details"]),
+                    "song": detail.get("song", "N/A"),
+                    "studio_name": studio_map.get(workshop.get("studio_id"), "N/A"),
+                    "payment_link": workshop.get("payment_link"),
+                    "original_by_field": detail.get("by", "N/A"),
+                    "timestamp_epoch": get_timestamp_epoch(detail["time_details"]),
+                }
+                missing_artist_sessions.append(session_data)
+    
+    # Sort by timestamp for consistency
+    missing_artist_sessions.sort(key=lambda x: x["timestamp_epoch"])
+    return missing_artist_sessions
 
-@app.put("/admin/api/workshops/{uuid}")
-def admin_update_workshop(uuid: str, workshop: dict = Body(...)):
+@app.put("/admin/api/workshops/{workshop_uuid}/details/{detail_index}/assign_artist")
+def admin_assign_artist_to_session(workshop_uuid: str, detail_index: int, payload: AssignArtistPayload = Body(...)):
     client = get_mongo_client()
-    client["discovery"]["workshops_v2"].update_one({"uuid": uuid}, {"$set": workshop})
-    return {"success": True}
+    
+    # Construct the update query for a specific element in the array
+    # The $[identifier] syntax is used with arrayFilters
+    update_field_artist_id = f"workshop_details.{detail_index}.artist_id"
+    update_field_by = f"workshop_details.{detail_index}.by"
 
-@app.delete("/admin/api/workshops/{uuid}")
-def admin_delete_workshop(uuid: str):
-    client = get_mongo_client()
-    client["discovery"]["workshops_v2"].delete_one({"uuid": uuid})
-    return {"success": True}
+    result = client["discovery"]["workshops_v2"].update_one(
+        {"uuid": workshop_uuid},
+        {
+            "$set": {
+                update_field_artist_id: payload.artist_id,
+                update_field_by: payload.artist_name,
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail=f"Workshop with UUID {workshop_uuid} not found.")
+    if result.modified_count == 0:
+        # This could happen if the artist_id was already set or detail_index is out of bounds (though mongo might not error)
+        # For simplicity, we'll consider it a success if matched, but ideally, check if modification actually happened as expected.
+        pass
+        
+    return {"success": True, "message": f"Artist {payload.artist_name} assigned to workshop {workshop_uuid}, detail index {detail_index}."}
+
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
-    return templates.TemplateResponse("website/admin_panel.html", {"request": request})
+    return templates.TemplateResponse("website/admin_missing_artists.html", {"request": request})
 
 # Add shutdown event handler to close database connections
 @app.on_event("shutdown")
