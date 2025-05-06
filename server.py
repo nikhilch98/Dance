@@ -8,6 +8,7 @@ profiles, and studio schedules.
 from datetime import datetime, timedelta, time
 from typing import List, Dict, Optional
 from collections import defaultdict
+from bson import ObjectId
 from fastapi import (
     FastAPI,
     HTTPException,
@@ -638,7 +639,7 @@ def admin_get_missing_artist_sessions():
         for index, detail in enumerate(workshop.get("workshop_details", [])):
             if not detail.get("artist_id"):
                 session_data = {
-                    "workshop_uuid": workshop["uuid"],
+                    "workshop_uuid": str(workshop["_id"]),
                     "detail_index": index,
                     "date": get_formatted_date_without_day(detail["time_details"]),
                     "time": get_formatted_time(detail["time_details"]),
@@ -667,7 +668,7 @@ def admin_assign_artist_to_session(
     update_field_by = f"workshop_details.{detail_index}.by"
 
     result = client["discovery"]["workshops_v2"].update_one(
-        {"uuid": workshop_uuid},
+        {"_id": ObjectId(workshop_uuid)},
         {
             "$set": {
                 update_field_artist_id: payload.artist_id,
