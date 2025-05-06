@@ -41,8 +41,13 @@
         tr { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 15px; padding: 10px; background: rgba(25,35,50,0.9) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         td { border: none; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; padding-left: 45% !important; padding-top: 8px; padding-bottom: 8px; white-space: normal; text-align: right !important; min-height: 28px; }
         td:before { content: attr(data-label); position: absolute; left: 10px; width: calc(45% - 20px); padding-right: 10px; white-space: nowrap; text-align: left !important; font-weight: 600; color: #4d9eff; }
-        .actions select, .actions button { width: calc(50% - 8px); margin: 5px 4px; display: inline-block; }
-        .actions { text-align: right; }
+        .actions select, .actions button {
+             display: block; /* Stack them vertically */
+             width: 100%;    /* Make them take the full width of the content area of the td */
+             margin: 5px 0;  /* Adjust margin for vertical stacking */
+             box-sizing: border-box; /* Include padding and border in the element's total width */
+        }
+        /* .actions { text-align: right; } */ /* This rule is no longer needed as td has text-align: right */
     }
   </style>
 </head>
