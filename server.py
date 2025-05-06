@@ -8,7 +8,18 @@ profiles, and studio schedules.
 from datetime import datetime, timedelta, time
 from typing import List, Dict, Optional
 from collections import defaultdict
-from fastapi import FastAPI, HTTPException, Query, Response, Depends, Request, Cookie, Form, Body, Header
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Query,
+    Response,
+    Depends,
+    Request,
+    Cookie,
+    Form,
+    Body,
+    Header,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -143,18 +154,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Add startup event to initialize database connection pool and start cache invalidation
 @app.on_event("startup")
 async def startup_db_client():
     """Initialize database connection pool and start cache watcher on startup."""
     # Initialize database connection pool with a test query
     client = DatabaseManager.get_mongo_client()
-    client.admin.command('ping')
+    client.admin.command("ping")
     print("MongoDB connection pool initialized")
-    
+
     # Start the cache invalidation watcher
     start_cache_invalidation_watcher()
     print("Cache invalidation watcher started")
+
 
 # Dependency for version validation
 def validate_version(version: str = Query(APIConfig.DEFAULT_VERSION)) -> str:
@@ -192,7 +205,10 @@ class DatabaseOperations:
         workshops = []
 
         # Build a mapping from studio_id to studio_name
-        studio_map = {s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()}
+        studio_map = {
+            s["studio_id"]: s["studio_name"]
+            for s in client["discovery"]["studios"].find()
+        }
 
         for workshop in list(client["discovery"]["workshops_v2"].find()):
             formatted_details = [
@@ -457,6 +473,7 @@ async def home(request: Request):
     """Serve the home page."""
     return templates.TemplateResponse("website/index.html", {"request": request})
 
+
 # API Routes
 @app.get("/api/workshops", response_model=List[Workshop])
 @cache_response(expire=3600)
@@ -601,13 +618,16 @@ class AssignArtistPayload(BaseModel):
     artist_id: str
     artist_name: str
 
+
 @app.get("/admin/api/missing_artist_sessions")
 def admin_get_missing_artist_sessions():
     client = get_mongo_client()
     missing_artist_sessions = []
-    
+
     # Build a mapping from studio_id to studio_name
-    studio_map = {s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()}
+    studio_map = {
+        s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()
+    }
 
     # Find workshops that have at least one detail with a missing artist_id
     workshops_cursor = client["discovery"]["workshops_v2"].find(
@@ -629,15 +649,18 @@ def admin_get_missing_artist_sessions():
                     "timestamp_epoch": get_timestamp_epoch(detail["time_details"]),
                 }
                 missing_artist_sessions.append(session_data)
-    
+
     # Sort by timestamp for consistency
     missing_artist_sessions.sort(key=lambda x: x["timestamp_epoch"])
     return missing_artist_sessions
 
+
 @app.put("/admin/api/workshops/{workshop_uuid}/details/{detail_index}/assign_artist")
-def admin_assign_artist_to_session(workshop_uuid: str, detail_index: int, payload: AssignArtistPayload = Body(...)):
+def admin_assign_artist_to_session(
+    workshop_uuid: str, detail_index: int, payload: AssignArtistPayload = Body(...)
+):
     client = get_mongo_client()
-    
+
     # Construct the update query for a specific element in the array
     # The $[identifier] syntax is used with arrayFilters
     update_field_artist_id = f"workshop_details.{detail_index}.artist_id"
@@ -650,22 +673,30 @@ def admin_assign_artist_to_session(workshop_uuid: str, detail_index: int, payloa
                 update_field_artist_id: payload.artist_id,
                 update_field_by: payload.artist_name,
             }
-        }
+        },
     )
 
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail=f"Workshop with UUID {workshop_uuid} not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Workshop with UUID {workshop_uuid} not found."
+        )
     if result.modified_count == 0:
         # This could happen if the artist_id was already set or detail_index is out of bounds (though mongo might not error)
         # For simplicity, we'll consider it a success if matched, but ideally, check if modification actually happened as expected.
         pass
-        
-    return {"success": True, "message": f"Artist {payload.artist_name} assigned to workshop {workshop_uuid}, detail index {detail_index}."}
+
+    return {
+        "success": True,
+        "message": f"Artist {payload.artist_name} assigned to workshop {workshop_uuid}, detail index {detail_index}.",
+    }
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
-    return templates.TemplateResponse("website/admin_missing_artists.html", {"request": request})
+    return templates.TemplateResponse(
+        "website/admin_missing_artists.html", {"request": request}
+    )
+
 
 # Add shutdown event handler to close database connections
 @app.on_event("shutdown")
@@ -673,6 +704,7 @@ async def shutdown_db_client():
     """Close database connections when the application shuts down."""
     DatabaseManager.close_connections()
     print("Application shutdown: Database connections closed.")
+
 
 if __name__ == "__main__":
     uvicorn.run(

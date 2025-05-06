@@ -144,7 +144,7 @@ class DateTimeFormats:
 # Database Operations
 class DatabaseManager:
     """Database connection and operation management."""
-    
+
     # Class variable to store the singleton instance
     _instance = None
     _client = None
@@ -153,7 +153,7 @@ class DatabaseManager:
     @classmethod
     def get_mongo_client(cls, env=config.DEFAULT_ENV) -> MongoClient:
         """Get a MongoDB client instance with connection pooling.
-        
+
         This method implements a thread-safe singleton pattern to maintain
         a single MongoDB client with connection pooling across the application.
 
@@ -170,13 +170,13 @@ class DatabaseManager:
         # Return existing client if available
         if cls._client is not None:
             return cls._client
-        
+
         # Thread-safe creation of new client
         with cls._lock:
             # Double-check lock pattern
             if cls._client is not None:
                 return cls._client
-            
+
             try:
                 # If no environment specified, try to parse from command-line
                 if env is None:
@@ -188,32 +188,30 @@ class DatabaseManager:
 
                 # Connection pool settings
                 pool_options = {
-                    "maxPoolSize": 100,                # Maximum number of connections in the pool
-                    "minPoolSize": 10,                 # Minimum number of connections in the pool
-                    "maxIdleTimeMS": 30000,            # Maximum time a connection can remain idle (30 seconds)
-                    "waitQueueTimeoutMS": 2000,        # How long a thread will wait for a connection (2 seconds)
+                    "maxPoolSize": 100,  # Maximum number of connections in the pool
+                    "minPoolSize": 10,  # Minimum number of connections in the pool
+                    "maxIdleTimeMS": 30000,  # Maximum time a connection can remain idle (30 seconds)
+                    "waitQueueTimeoutMS": 2000,  # How long a thread will wait for a connection (2 seconds)
                     "connectTimeoutMS": DatabaseConfig.TIMEOUT_MS,
                     "retryWrites": DatabaseConfig.RETRY_WRITES,
                     "w": DatabaseConfig.W_CONCERN,
                 }
-                
+
                 # Initialize MongoDB client with connection pooling
                 cls._client = MongoClient(
-                    cfg.mongodb_uri, 
-                    server_api=ServerApi("1"),
-                    **pool_options
+                    cfg.mongodb_uri, server_api=ServerApi("1"), **pool_options
                 )
-                
+
                 # Test the connection to verify it works
-                cls._client.admin.command('ping')
-                
+                cls._client.admin.command("ping")
+
                 print("Successfully established MongoDB connection pool")
                 return cls._client
-                
+
             except Exception as e:
                 cls._client = None  # Reset on failure
                 raise Exception(f"Failed to connect to MongoDB: {str(e)}")
-                
+
     @classmethod
     def close_connections(cls):
         """Close all connections in the MongoDB client pool."""
@@ -619,6 +617,7 @@ capture_screenshot = ScreenshotManager.capture_screenshot
 upload_screenshot = ScreenshotManager.upload_screenshot
 is_image_downloadable = is_image_downloadable
 
+
 # --- Change Stream Cache Invalidation ---
 def start_cache_invalidation_watcher():
     import config
@@ -635,52 +634,66 @@ def start_cache_invalidation_watcher():
             try:
                 # Wait for items in the queue
                 hot_reload_queue.get()
-                
+
                 # If there are more items, clear them and just keep one
                 while not hot_reload_queue.empty():
                     hot_reload_queue.get()
-                
+
                 with hot_reload_lock:
                     is_hot_reload_running = True
                     try:
                         # Call internal API endpoints to repopulate cache
                         artist_ids = list(set(db["artists_v2"].distinct("artist_id")))
                         studio_ids = list(set(db["studios"].distinct("studio_id")))
-                        
+
                         # Call internal api endpoints
                         endpoints = [
                             "http://localhost:8002/api/studios?version=v2",
                             "http://localhost:8002/api/workshops?version=v2",
                             "http://localhost:8002/api/artists?version=v2",
                         ]
-                        
+
                         for studio_id in studio_ids:
-                            endpoints.append(f"http://localhost:8002/api/workshops_by_studio/{studio_id}?version=v2")
+                            endpoints.append(
+                                f"http://localhost:8002/api/workshops_by_studio/{studio_id}?version=v2"
+                            )
                         for artist_id in artist_ids:
-                            endpoints.append(f"http://localhost:8002/api/workshops_by_artist/{artist_id}?version=v2")
+                            endpoints.append(
+                                f"http://localhost:8002/api/workshops_by_artist/{artist_id}?version=v2"
+                            )
 
                         for url in endpoints:
                             try:
                                 requests.get(url, timeout=10)
                             except Exception as e:
                                 print(f"Cache hot reload failed for {url}: {e}")
-                                
+
                         print("Cache hot reload completed")
                     except Exception as e:
                         print(f"Hot reload cache error: {e}")
                     finally:
                         is_hot_reload_running = False
-                        
+
             except Exception as e:
                 print(f"Error in process_hot_reload_queue: {e}")
                 is_hot_reload_running = False
 
     def watch_collection(collection):
-        pipeline = [{'$match': {'operationType': {'$in': ['insert', 'update', 'replace', 'delete']}}}]
+        pipeline = [
+            {
+                "$match": {
+                    "operationType": {"$in": ["insert", "update", "replace", "delete"]}
+                }
+            }
+        ]
         try:
-            with collection.watch(pipeline=pipeline, full_document='updateLookup') as stream:
+            with collection.watch(
+                pipeline=pipeline, full_document="updateLookup"
+            ) as stream:
                 for change in stream:
-                    print(f"Change detected in {collection.name}: {change['operationType']}")
+                    print(
+                        f"Change detected in {collection.name}: {change['operationType']}"
+                    )
                     cache.clear()
                     # Add hot reload request to queue instead of starting immediately
                     hot_reload_queue.put(True)
@@ -695,9 +708,9 @@ def start_cache_invalidation_watcher():
 
     # Start the queue processor thread
     threading.Thread(target=process_hot_reload_queue, daemon=True).start()
-    
+
     # Start the change watcher threads
     threading.Thread(target=watch_changes, daemon=True).start()
-    
+
     # Initial cache warmup
     hot_reload_queue.put(True)

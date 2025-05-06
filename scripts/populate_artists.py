@@ -121,6 +121,14 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Om Tharpe", "danceastic_om"),
+        Artist("Upasana Madan", "upasanamadan"),
+        Artist("Mannu Mehta", "mannumehta_"),
+        Artist("Vikas Paudel", "vikas_paudel"),
+        Artist("Vatsaal Vithalani", "vatsaalvithalani09"),
+        Artist("Anvi Shetty", "anvishetty"),
+        Artist("Sanu Priya", "dancewings2soul"),
+        Artist("Radhika Warikoo", "dancewithrw"),
         Artist("Aadil Khan", "aadilkhann"),
         Artist("Mohit Solanki", "mohitsolanki11"),
         Artist("Enette D'souza", "enettedsouzadance"),
@@ -165,12 +173,12 @@ def get_artists_list() -> List[Artist]:
         Artist("Yahvi", "yahvichavan"),
         Artist("Dev Narayan Gupta", "gurudev.ng"),
         Artist("Rudra Barve", "rudra.barve"),
-        Artist("Nishi","nish.i11"),
-        Artist("Ankit Sati","ankitsati"),
-        Artist("Surya H","surya_from_k_town_"),
-        Artist("Prabhat Patro","prabhat.patro"),
-        Artist("Dherya kandari","dheryakandari"),
-        Artist("Thangaat Garba","thangaatgarba"),
+        Artist("Nishi", "nish.i11"),
+        Artist("Ankit Sati", "ankitsati"),
+        Artist("Surya H", "surya_from_k_town_"),
+        Artist("Prabhat Patro", "prabhat.patro"),
+        Artist("Dherya kandari", "dheryakandari"),
+        Artist("Thangaat Garba", "thangaatgarba"),
     ]
 
 
