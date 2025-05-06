@@ -159,7 +159,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Vidit Gaur", "vidit__gaur"),
         Artist("Vipul Devrani", "vipuldevrani"),
         Artist("Harjot Narang", "harjotnarang"),
-        Artist("Shazek Sheik", "shazebsheikh"),
+        Artist("Shazeb Sheik", "shazebsheikh"),
         Artist("Sagar Chand", "sagar_chand78"),
         Artist("Siddhartha Dayani", "siddharthadayani"),
         Artist("Shehzaan Khan", "isshehzaannkhan"),
