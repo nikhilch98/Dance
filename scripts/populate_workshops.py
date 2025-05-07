@@ -85,7 +85,7 @@ class WorkshopProcessor:
                 screenshot_path, artists_data=artists_data
             )
             if not response or not response.is_workshop:
-                print(link, "is not a workshop")
+                print(link, "is not a workshop", response)
                 return None
 
             # Prepare workshop data for bulk update
@@ -245,7 +245,7 @@ class WorkshopProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            time.sleep(0.1)
+            # time.sleep(2)
             # Convert to WorkshopSummary
             return WorkshopSummary(
                 is_workshop=analyzed_data.get("is_workshop", False),
@@ -332,8 +332,8 @@ class StudioProcessor:
                 print(
                     f"Inserted {len(insert_result.inserted_ids)} new workshops for {studio.config.studio_id}"
                 )
-                print(f"Ignored Links : {ignored_links}")
-                print(f"Missing artists links : {missing_artists}")
+                print(f"Ignored Links for {studio.config.studio_id} : {ignored_links}")
+                print(f"Missing artists links for {studio.config.studio_id} : {missing_artists}")
         except Exception as e:
             print(f"Error processing studio {studio.config.studio_id}: {str(e)}")
 
