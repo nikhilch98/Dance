@@ -2120,26 +2120,18 @@
           return response.json();
         })
         .then(data => {
-          // Process workshops data - flatten workshop_details array
-          workshopData = [];
-          
-          data.forEach(workshop => {
-            if (workshop.workshop_details && workshop.workshop_details.length > 0) {
-              workshop.workshop_details.forEach(detail => {
-                workshopData.push({
-              date: detail.date,
-              time: detail.time,
-                  instructor: detail.by || 'TBA',
-                  instructor_instagram: detail.instagram_link || null,
-                  song: detail.song || 'TBA',
-                  pricing: detail.pricing_info || 'TBA',
-                  studio: workshop.studio_name || workshop.studio_id || 'TBA',
-                  registration_link: workshop.payment_link || detail.payment_link || null,
-                  timestamp_epoch: detail.timestamp_epoch || 0
-                });
-              });
-            }
-          });
+          // Each workshop is now a single session, so just use the data as-is
+          workshopData = data.map(workshop => ({
+            date: workshop.date,
+            time: workshop.time,
+            instructor: workshop.by || 'TBA',
+            instructor_instagram: workshop.instagram_link || null,
+            song: workshop.song || 'TBA',
+            pricing: workshop.pricing_info || 'TBA',
+            studio: workshop.studio_name || workshop.studio_id || 'TBA',
+            registration_link: workshop.payment_link || null,
+            timestamp_epoch: workshop.timestamp_epoch || 0
+          }));
           
           // Initialize filters once data is loaded
           initializeFilters();

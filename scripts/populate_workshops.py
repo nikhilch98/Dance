@@ -15,7 +15,7 @@ from datetime import datetime, date
 from typing import List, Optional, Dict, Any
 import json
 import pymongo
-
+import pytz
 from openai import OpenAI
 from pydantic import BaseModel
 from tqdm import tqdm
@@ -85,7 +85,6 @@ class WorkshopProcessor:
                 screenshot_path, artists_data=artists_data
             )
             if not response or not response.is_workshop:
-                print(link, "is not a workshop", response)
                 return None
 
             # Prepare workshop data for bulk update
@@ -112,11 +111,12 @@ class WorkshopProcessor:
             return None
         finally:
             # Cleanup screenshot
-            if os.path.exists(screenshot_path):
-                try:
-                    os.remove(screenshot_path)
-                except Exception as e:
-                    print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
+            # if os.path.exists(screenshot_path):
+            #     try:
+            #         os.remove(screenshot_path)
+            #     except Exception as e:
+            #         print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
+            pass
 
     def _get_gpt_system_content(self, artists_data: list = []) -> str:
         """Generate system content for GPT prompt.
@@ -141,7 +141,7 @@ class WorkshopProcessor:
             "whether the event is a Bangalore-based dance workshop.\n\n"
             f"Artists Data for additional context : {artists}\n\n"
             f"Current Date for reference : {current_date}\n\n"
-            "1. If it is NOT a dance workshop in Bangalore, or it is a regular weekly or monthly classes,  set `is_workshop` to `false` "
+            "1. If it is NOT a dance workshop in Bangalore, or it is a regular weekly or monthly classes, or this workshop is a past event based on the current date, set `is_workshop` to `false` "
             "   and provide an empty list for `workshop_details`.\n"
             "2. If it IS a Bangalore-based dance workshop, set `is_workshop` to `true` and "
             "   return a list of one or more workshop objects under `workshop_details` with the "
@@ -245,7 +245,7 @@ class WorkshopProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            # time.sleep(2)
+            time.sleep(2)
             # Convert to WorkshopSummary
             return WorkshopSummary(
                 is_workshop=analyzed_data.get("is_workshop", False),
@@ -289,8 +289,9 @@ class StudioProcessor:
         try:
             links = set(x.lower() for x in studio.scrape_links())
             workshop_updates = []
-            ignored_links = []
+            ignored_links = set()
             missing_artists = set()
+            old_links = set()
             with tqdm(
                 total=len(links),
                 desc=f"Processing {studio.config.studio_id}",
@@ -317,11 +318,16 @@ class StudioProcessor:
                                 "updated_at": time.time(),
                                 "version": self.version,
                             }
-                            workshop_updates.append(inserted_data)
-                            if workshop["artist_id"] is None:
-                                missing_artists.add(link)
+                            # Check if the workshop is a past event based on the current date in IST
+                            if inserted_data["time_details"]["year"] < datetime.now(pytz.timezone('Asia/Kolkata')).year or (inserted_data["time_details"]["year"] == datetime.now(pytz.timezone('Asia/Kolkata')).year and inserted_data["time_details"]["month"] < datetime.now(pytz.timezone('Asia/Kolkata')).month) or (inserted_data["time_details"]["year"] == datetime.now(pytz.timezone('Asia/Kolkata')).year and inserted_data["time_details"]["month"] == datetime.now(pytz.timezone('Asia/Kolkata')).month and inserted_data["time_details"]["day"] < datetime.now(pytz.timezone('Asia/Kolkata')).day):
+                                ignored_links.add(link)
+                                old_links.add(link)
+                            else:
+                                workshop_updates.append(inserted_data)
+                                if workshop["artist_id"] is None:
+                                    missing_artists.add(link)
                     else:
-                        ignored_links.append(link)
+                        ignored_links.add(link)
 
                     pbar.update(1)
 
@@ -343,10 +349,10 @@ class StudioProcessor:
                 print(
                     f"Inserted {len(insert_result.inserted_ids)} new workshops for {studio.config.studio_id}"
                 )
-                print(f"Ignored Links for {studio.config.studio_id} : {ignored_links}")
-                print(f"Missing artists links for {studio.config.studio_id} : {missing_artists}")
+            return ignored_links, old_links, missing_artists, studio.config.studio_id
         except Exception as e:
             print(f"Error processing studio {studio.config.studio_id}: {str(e)}")
+            return [], [], [], studio.config.studio_id
 
 
 def get_artists_data(cfg: config.Config) -> List[Dict]:
@@ -462,11 +468,16 @@ def main():
             futures.append(
                 executor.submit(processor.process_studio, studio, artists_data)
             )
-
+        ignored_links_set = set()
         # Wait for completion and handle errors
         for future in as_completed(futures):
             try:
-                future.result()
+                ignored_links, old_links, missing_artists, studio_id = future.result()
+                for link in ignored_links:
+                    ignored_links_set.add(link)
+                print(f"Ignored Links for {studio_id} : {ignored_links}")
+                print(f"Missing artists links for {studio_id} : {missing_artists}")
+                print(f"Old links for {studio_id} : {old_links}")
             except Exception as e:
                 print(f"Error in studio processing thread: {str(e)}")
 

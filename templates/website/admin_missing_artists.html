@@ -73,6 +73,27 @@
     </table>
   </div>
 
+  <div class="container">
+    <h1>Assign Songs to Workshops</h1>
+    <div id="song-message-area"></div>
+    <table id="songs-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Original 'By'</th>
+          <th>Song</th>
+          <th>Studio</th>
+          <th>Link</th>
+          <th>Assign Song</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <script>
     let allArtists = [];
 
@@ -114,7 +135,6 @@
       sessions.forEach(session => {
         const row = tableBody.insertRow();
         row.dataset.uuid = session.workshop_uuid;
-        row.dataset.detailIndex = session.detail_index;
 
         // Add data-label for responsive mode
         row.insertCell().outerHTML = `<td data-label="Date">${session.date || 'N/A'}</td>`;
@@ -143,23 +163,23 @@
         if (Array.isArray(allArtists)) {
             allArtists.forEach(artist => {
                 const option = document.createElement("option");
-                option.value = artist.artist_id;
-                option.textContent = artist.artist_name;
-                option.dataset.artistName = artist.artist_name; // Store name for payload
+                option.value = artist.id || artist.artist_id;
+                option.textContent = artist.name || artist.artist_name;
+                option.dataset.artistName = artist.name || artist.artist_name; // Store name for payload
                 select.appendChild(option);
             });
         }
 
         const button = document.createElement("button");
         button.textContent = "Assign";
-        button.onclick = () => assignArtist(session.workshop_uuid, session.detail_index, select, row);
+        button.onclick = () => assignArtist(session.workshop_uuid, select, row);
 
         actionsCell.appendChild(select);
         actionsCell.appendChild(button);
       });
     }
 
-    async function assignArtist(workshopUuid, detailIndex, selectElement, rowElement) {
+    async function assignArtist(workshopUuid, selectElement, rowElement) {
       const artistId = selectElement.value;
       const selectedOption = selectElement.options[selectElement.selectedIndex];
       const artistName = selectedOption.dataset.artistName;
@@ -170,7 +190,7 @@
       }
 
       try {
-        const response = await fetch(`/admin/api/workshops/${workshopUuid}/details/${detailIndex}/assign_artist`, {
+        const response = await fetch(`/admin/api/workshops/${workshopUuid}/assign_artist`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -197,6 +217,93 @@
       }
     }
 
+    // SONG ASSIGNMENT SECTION
+    async function fetchMissingSongSessions() {
+      const tableBody = document.querySelector("#songs-table tbody");
+      tableBody.innerHTML = '<tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>';
+      try {
+        const response = await fetch('/admin/api/missing_song_sessions');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const sessions = await response.json();
+        renderSongTable(sessions);
+      } catch (error) {
+        console.error("Error fetching missing song sessions:", error);
+        tableBody.innerHTML = '<tr><td colspan="7" class="error">Could not load workshop sessions. Please try again.</td></tr>';
+      }
+    }
+
+    function renderSongTable(sessions) {
+      const tableBody = document.querySelector("#songs-table tbody");
+      tableBody.innerHTML = "";
+      if (sessions.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="message">No workshops found with missing songs.</td></tr>';
+        return;
+      }
+      sessions.forEach(session => {
+        const row = tableBody.insertRow();
+        row.dataset.uuid = session.workshop_uuid;
+        row.insertCell().outerHTML = `<td data-label="Date">${session.date || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Time">${session.time || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Original 'By'">${session.original_by_field || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Song">${session.song || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Studio">${session.studio_name || 'N/A'}</td>`;
+        const linkCell = row.insertCell();
+        linkCell.dataset.label = "Link";
+        if (session.payment_link) {
+            const link = document.createElement('a');
+            link.href = session.payment_link;
+            link.textContent = "Register";
+            link.target = "_blank";
+            linkCell.appendChild(link);
+        } else {
+            linkCell.textContent = 'N/A';
+        }
+        const actionsCell = row.insertCell();
+        actionsCell.classList.add("actions");
+        actionsCell.dataset.label = "Assign Song";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "Enter song name";
+        input.style.marginRight = "8px";
+        const button = document.createElement("button");
+        button.textContent = "Assign";
+        button.onclick = () => assignSong(session.workshop_uuid, input, row);
+        actionsCell.appendChild(input);
+        actionsCell.appendChild(button);
+      });
+    }
+
+    async function assignSong(workshopUuid, inputElement, rowElement) {
+      const song = inputElement.value.trim();
+      if (!song) {
+        displaySongMessage("Please enter a song name.", "error");
+        return;
+      }
+      try {
+        const response = await fetch(`/admin/api/workshops/${workshopUuid}/assign_song`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ song }),
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          displaySongMessage(result.message || "Song assigned successfully!", "message");
+          rowElement.remove();
+          const tableBody = document.querySelector("#songs-table tbody");
+          if (tableBody.rows.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="message">All workshops have songs assigned.</td></tr>';
+          }
+        } else {
+          displaySongMessage(result.detail || result.message || "Failed to assign song.", "error");
+        }
+      } catch (error) {
+        console.error("Error assigning song:", error);
+        displaySongMessage("An error occurred while assigning the song. Please try again.", "error");
+      }
+    }
+
     function displayMessage(message, type = "message") {
       const messageArea = document.getElementById("message-area");
       messageArea.innerHTML = `<p class="${type}">${message}</p>`;
@@ -205,9 +312,18 @@
       }, 5000); // Clear message after 5 seconds
     }
 
+    function displaySongMessage(message, type = "message") {
+      const messageArea = document.getElementById("song-message-area");
+      messageArea.innerHTML = `<p class="${type}">${message}</p>`;
+      setTimeout(() => {
+        messageArea.innerHTML = "";
+      }, 5000);
+    }
+
     async function init() {
       await fetchArtists(); // Fetch artists first
       await fetchMissingArtistSessions(); // Then fetch sessions
+      await fetchMissingSongSessions(); // Fetch missing song sessions
     }
 
     document.addEventListener("DOMContentLoaded", init);
