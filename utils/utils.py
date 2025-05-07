@@ -3,7 +3,7 @@
 This module provides utility functions for database operations, date/time
 formatting, URL handling, and screenshot capture functionality.
 """
-
+import uuid
 from datetime import datetime
 from io import BytesIO
 from typing import Dict, Optional, Set, Tuple, Union
@@ -34,6 +34,8 @@ hot_reload_queue = queue.Queue()
 hot_reload_lock = threading.Lock()
 is_hot_reload_running = False
 
+def generate_uuid():
+    return str(uuid.uuid4())
 
 def cache_response(expire: int = 3600):
     def decorator(func):

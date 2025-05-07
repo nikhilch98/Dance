@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from utils.utils import DatabaseManager, ScreenshotManager, retry
+from utils.utils import DatabaseManager, ScreenshotManager, retry, generate_uuid
 from studios.dna import DnaStudio
 from studios.dance_inn import DanceInnStudio
 from studios.vins import VinsStudio
@@ -129,8 +129,8 @@ class WorkshopProcessor:
         """
         artists = ", ".join(
             [
-                f"{artist.get('artist_name')} (ID: {artist.get('artist_id')})"
-                for artist in artists_data
+                f"(#{ind+1} Name: {artist.get('artist_name')} | ID: {artist.get('artist_id')})"
+                for ind, artist in enumerate(artists_data)
             ]
         )
         current_date = date.today().strftime("%B %d, %Y")
@@ -290,7 +290,7 @@ class StudioProcessor:
             links = set(x.lower() for x in studio.scrape_links())
             workshop_updates = []
             ignored_links = []
-            missing_artists = []
+            missing_artists = set()
             with tqdm(
                 total=len(links),
                 desc=f"Processing {studio.config.studio_id}",
@@ -303,12 +303,23 @@ class StudioProcessor:
                     )
 
                     if workshop_data:
-                        workshop_updates.append(workshop_data)
-                        if None in [
-                            workshop["artist_id"]
-                            for workshop in workshop_data["workshop_details"]
-                        ]:
-                            missing_artists.append(link)
+                        for workshop in workshop_data["workshop_details"]:
+                            inserted_data = {
+                                "payment_link": link,
+                                "studio_id": studio.config.studio_id,
+                                "uuid_group": f"{studio.config.studio_id}/{link.split('/')[-1]}",
+                                "uuid": generate_uuid(),
+                                "time_details": workshop["time_details"],
+                                "by": workshop["by"],
+                                "song": workshop["song"],
+                                "pricing_info": workshop["pricing_info"],
+                                "artist_id": workshop["artist_id"],
+                                "updated_at": time.time(),
+                                "version": self.version,
+                            }
+                            workshop_updates.append(inserted_data)
+                            if workshop["artist_id"] is None:
+                                missing_artists.add(link)
                     else:
                         ignored_links.append(link)
 
