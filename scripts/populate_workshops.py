@@ -61,11 +61,12 @@ class WorkshopSummary(BaseModel):
 class WorkshopProcessor:
     """Workshop data processing and management system."""
 
-    def __init__(self, client: OpenAI, artists: List[Dict], mongo_client: Any):
+    def __init__(self, client: OpenAI, artists: List[Dict], mongo_client: Any, cfg: config.Config):
         """Initialize workshop processor."""
         self.client = client
         self.artists = artists
         self.mongo_client = mongo_client
+        self.cfg = cfg
 
     def process_link(
         self, link: str, studio: Any, version: int = 0, artists_data: list = []
@@ -80,8 +81,8 @@ class WorkshopProcessor:
             if not ScreenshotManager.capture_screenshot(link, screenshot_path):
                 return None
 
-            # Analyze screenshot with GPT
-            response = self._analyze_with_gpt(
+            # Analyze screenshot with selected AI model
+            response = self.analyze_with_ai(
                 screenshot_path, artists_data=artists_data
             )
             if not response or not response.is_workshop:
@@ -110,13 +111,22 @@ class WorkshopProcessor:
             print(f"Error processing link {link}: {str(e)}")
             return None
         finally:
-            # Cleanup screenshot
-            # if os.path.exists(screenshot_path):
-            #     try:
-            #         os.remove(screenshot_path)
-            #     except Exception as e:
-            #         print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
+            #Cleanup screenshot
+            if os.path.exists(screenshot_path):
+                try:
+                    os.remove(screenshot_path)
+                except Exception as e:
+                    print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
             pass
+
+    def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[WorkshopSummary]:
+        """Analyze workshop screenshot using the selected AI model."""
+        if self.cfg.ai_model == "openai":
+            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-4o-2024-11-20")
+        elif self.cfg.ai_model == "gemini":
+            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gemini-2.5-flash-preview-04-17")
+        else:
+            raise ValueError(f"Unknown ai_model: {self.ai_model}")
 
     def _get_gpt_system_content(self, artists_data: list = []) -> str:
         """Generate system content for GPT prompt.
@@ -201,8 +211,8 @@ class WorkshopProcessor:
             "9. Return only that JSON."
         )
 
-    def _analyze_with_gpt(
-        self, screenshot_path: str, artists_data: list = []
+    def _analyze_with_ai(
+        self, screenshot_path: str, artists_data: list, model_version:str
     ) -> Optional[WorkshopSummary]:
         """Analyze workshop screenshot using GPT.
 
@@ -220,7 +230,7 @@ class WorkshopProcessor:
 
             # Prepare GPT request
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-2024-11-20",
+                model=model_version,
                 messages=[
                     {
                         "role": "system",
@@ -245,7 +255,8 @@ class WorkshopProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            time.sleep(2)
+            if "gpt" in model_version:
+                time.sleep(2)
             # Convert to WorkshopSummary
             return WorkshopSummary(
                 is_workshop=analyzed_data.get("is_workshop", False),
@@ -277,9 +288,10 @@ class StudioProcessor:
         mongo_client: Any,
         version: int,
         position: int,
+        cfg: config.Config
     ):
         """Initialize studio processor."""
-        self.workshop_processor = WorkshopProcessor(client, artists, mongo_client)
+        self.workshop_processor = WorkshopProcessor(client, artists, mongo_client, cfg)
         self.version = version
         self.position = position
         self.mongo_client = mongo_client
@@ -388,6 +400,13 @@ def parse_arguments():
         help="Specify the studio to populate workshops for",
     )
 
+    parser.add_argument(
+        "--ai_model",
+        required=True,
+        choices=["openai", "gemini"],
+        help="Choose which AI model to use: openai or gemini",
+    )
+
     return parser.parse_args()
 
 
@@ -400,11 +419,16 @@ def main():
     env = args.env
 
     # Parse environment configuration
-    cfg = config.Config(env=args.env)
+    cfg = config.Config(env=args.env, ai_model=args.ai_model)
 
     # Initialize clients
     artists = get_artists_data(cfg)
-    client = OpenAI(api_key=cfg.openai_api_key)
+    if cfg.ai_model == "openai":
+        client = OpenAI(api_key=cfg.openai_api_key)
+    elif cfg.ai_model == "gemini":
+        client = OpenAI(api_key=cfg.gemini_api_key, base_url=cfg.gemini_base_url)
+    else:
+        raise ValueError(f"Invalid ai_model: {args.ai_model}")
     mongo_client = DatabaseManager.get_mongo_client(env)
 
     # Verify database connection
@@ -464,6 +488,7 @@ def main():
                 mongo_client=mongo_client,
                 version=version,
                 position=position,
+                cfg=cfg
             )
             futures.append(
                 executor.submit(processor.process_studio, studio, artists_data)
