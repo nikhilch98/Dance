@@ -6,12 +6,13 @@ import sys
 PROD_MONGODB_URI = "mongodb+srv://admin:admin@cluster0.8czn7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 DEFAULT_ENV = "prod"
+DEFAULT_AI_MODEL = "openai"
 
 
 class Config:
     """Configuration management for development and production environments."""
 
-    def __init__(self, env=DEFAULT_ENV):
+    def __init__(self, env=DEFAULT_ENV, ai_model=DEFAULT_AI_MODEL):
         """Initialize configuration based on environment."""
         if env == "dev":
             self.host = "localhost"
@@ -32,7 +33,7 @@ class Config:
 
         else:
             raise ValueError(f"Invalid environment: {env}. Use 'dev' or 'prod'.")
-
+        self.ai_model = ai_model
         # OpenAI API Key (consider using environment variable)
         self.openai_api_key = os.environ.get("OPENAI_API_KEY")
         self.gemini_api_key = os.environ.get("GEMINI_API_KEY")
