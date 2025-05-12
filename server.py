@@ -77,6 +77,7 @@ class WorkshopListItem(BaseModel):
     artist_id: Optional[str]
     date: Optional[str]
     time: Optional[str]
+    event_type: Optional[str]
 
 
 class Artist(BaseModel):
@@ -109,6 +110,7 @@ class WorkshopSession(BaseModel):
     payment_link: HttpUrl
     pricing_info: Optional[str]
     timestamp_epoch: int
+    event_type: Optional[str]
 
 
 class DaySchedule(BaseModel):
@@ -289,6 +291,7 @@ class DatabaseOperations:
             artist_id=workshop.artist_id,
             date=workshop.date_with_day,
             time=workshop.time_str,
+            event_type=workshop.event_type,
         )
             for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True)
         ]
@@ -359,6 +362,7 @@ class DatabaseOperations:
                     payment_link=entry.payment_link,
                     pricing_info=entry.pricing_info,
                     timestamp_epoch=entry.timestamp_epoch,
+                    event_type=entry.event_type,
                 )
             )
 
@@ -443,6 +447,7 @@ class DatabaseOperations:
                         payment_link=x.payment_link,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
+                        event_type=x.event_type,
                     ) for x in sorted_workshops_raw]
                 )
             )
@@ -459,6 +464,7 @@ class DatabaseOperations:
                         payment_link=x.payment_link,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
+                        event_type=x.event_type,
                     ) for x in sorted(
             temp_post_this_week,
             key=lambda x: x.timestamp_epoch, 
