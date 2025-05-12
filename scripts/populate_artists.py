@@ -121,6 +121,9 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Aashish Lama","aashish_lama01"),
+        Artist("Punyakar Upadhyay","punyakar"),
+        Artist("Divyam","div_yumyum"),
         Artist("Charles Edward", "charlesedward___"),
         Artist("Om Tharpe", "danceastic_om"),
         Artist("Upasana Madan", "upasanamadan"),

@@ -324,7 +324,7 @@ class DatabaseOperations:
         artists_with_workshops = set(list(client["discovery"]["workshops_v2"].distinct("artist_id")))
         all_artists = list(client["discovery"]["artists_v2"].find({}))
         
-        return [
+        return sorted([
             {
                 "id": artist["artist_id"],
                 "name": artist["artist_name"],
@@ -332,7 +332,7 @@ class DatabaseOperations:
                 "instagram_link": artist["instagram_link"],
             }
             for artist in all_artists if artist["artist_id"] in artists_with_workshops
-        ]
+        ], key=lambda x: x["name"])
 
     @staticmethod
     def get_workshops_by_artist(artist_id: str) -> List[WorkshopSession]:
