@@ -6,6 +6,7 @@ workshop details extraction and validation.
 """
 
 import base64
+from enum import Enum
 import sys
 import os
 import time
@@ -19,6 +20,7 @@ import pytz
 from openai import OpenAI
 from pydantic import BaseModel
 from tqdm import tqdm
+import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
@@ -29,9 +31,14 @@ from studios.vins import VinsStudio
 from studios.manifest import ManifestStudio
 
 
+class EventType(Enum):
+    WORKSHOP = "workshop"
+    INTENSIVE = "intensive"
+    REGULARS = "regulars"
+
 # Data Models
 class TimeDetails(BaseModel):
-    """Workshop time details."""
+    """Event time details."""
 
     day: Optional[int] = None
     month: Optional[int] = None
@@ -40,29 +47,29 @@ class TimeDetails(BaseModel):
     end_time: Optional[str] = None
 
 
-class WorkshopDetails(BaseModel):
-    """Workshop session details."""
+class EventDetails(BaseModel):
+    """Event session details."""
 
-    time_details: TimeDetails
+    time_details: List[TimeDetails] # Multiple time details can be present for a multi day event , for example in case of intensive or regulars which might span for multiple days
     by: Optional[str] = None
     song: Optional[str] = None
     pricing_info: Optional[str] = None
-    timestamp_epoch: Optional[int] = None
     artist_id: Optional[str] = None
 
 
-class WorkshopSummary(BaseModel):
-    """Workshop summary including all details."""
+class EventSummary(BaseModel):
+    """Event summary including all details."""
 
-    is_workshop: bool
-    workshop_details: List[WorkshopDetails]
+    event_type: EventType
+    event_details: List[EventDetails]
+    is_valid: bool
 
 
-class WorkshopProcessor:
-    """Workshop data processing and management system."""
+class EventProcessor:
+    """Event data processing and management system."""
 
     def __init__(self, client: OpenAI, artists: List[Dict], mongo_client: Any, cfg: config.Config):
-        """Initialize workshop processor."""
+        """Initialize event processor."""
         self.client = client
         self.artists = artists
         self.mongo_client = mongo_client
@@ -82,30 +89,36 @@ class WorkshopProcessor:
                 return None
 
             # Analyze screenshot with selected AI model
-            response = self.analyze_with_ai(
-                screenshot_path, artists_data=artists_data
-            )
-            if not response or not response.is_workshop:
+            response = self.analyze_with_ai(screenshot_path, artists_data)
+            # Check response validity using the correct attribute
+            if not response or not response.is_valid:
                 return None
 
-            # Prepare workshop data for bulk update
+            # Prepare event data for bulk update
             if studio.config.studio_id in ["dance_n_addiction", "manifestbytmn"]:
-                uuid = f"{studio.config.studio_id}/{link.split('/')[-3]}"
+                # Handle potential index errors if URL structure is unexpected
+                try:
+                    uuid_part = link.split('/')[-3]
+                except IndexError:
+                    uuid_part = link.split('/')[-1] # Fallback
+                uuid_group = f"{studio.config.studio_id}/{uuid_part}"
             else:
-                uuid = f"{studio.config.studio_id}/{link.split('/')[-1]}"
+                 uuid_group = f"{studio.config.studio_id}/{link.split('/')[-1]}"
 
-            workshop_data = {
+            # Rename to event_data and include event_type
+            event_data = {
                 "payment_link": link,
                 "studio_id": studio.config.studio_id,
-                "uuid": uuid,
-                "workshop_details": [
-                    detail.model_dump() for detail in response.workshop_details
+                "uuid_group": uuid_group,
+                "event_type": response.event_type.value, # Add event_type
+                "event_details": [
+                    detail.model_dump() for detail in response.event_details # Use event_details
                 ],
                 "updated_at": time.time(),
                 "version": version,
             }
 
-            return workshop_data
+            return event_data # Return event_data
 
         except Exception as e:
             print(f"Error processing link {link}: {str(e)}")
@@ -119,7 +132,7 @@ class WorkshopProcessor:
                     print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
             pass
 
-    def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[WorkshopSummary]:
+    def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[EventSummary]:
         """Analyze workshop screenshot using the selected AI model."""
         if self.cfg.ai_model == "openai":
             return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-4o-2024-11-20")
@@ -128,92 +141,81 @@ class WorkshopProcessor:
         else:
             raise ValueError(f"Unknown ai_model: {self.ai_model}")
 
-    def _get_gpt_system_content(self, artists_data: list = []) -> str:
-        """Generate system content for GPT prompt.
-
-        Args:
-            artists_data: List of artist data to include in context
-
-        Returns:
-            Formatted system prompt for GPT
-        """
-        artists = ", ".join(
-            [
-                f"(#{ind+1} Name: {artist.get('artist_name')} | ID: {artist.get('artist_id')})"
-                for ind, artist in enumerate(artists_data)
-            ]
-        )
-        current_date = date.today().strftime("%B %d, %Y")
-
-        return (
-            "You are given data about an event (potentially a dance workshop). "
-            "You must analyze the provided text and image (the screenshot) to determine "
-            "whether the event is a Bangalore-based dance workshop.\n\n"
-            f"Artists Data for additional context : {artists}\n\n"
-            f"Current Date for reference : {current_date}\n\n"
-            "1. If it is NOT a dance workshop in Bangalore, or it is a regular weekly or monthly classes, or this workshop is a past event based on the current date, set `is_workshop` to `false` "
-            "   and provide an empty list for `workshop_details`.\n"
-            "2. If it IS a Bangalore-based dance workshop, set `is_workshop` to `true` and "
-            "   return a list of one or more workshop objects under `workshop_details` with the "
-            "   following structure:\n\n"
-            "   **`workshop_details`:** (array of objects)\n"
-            "   Each object must have:\n"
-            "   - **`time_details`:** (object) with:\n"
-            "     * **`day`**: integer day of the month\n"
-            "     * **`month`**: integer month (1–12)\n"
-            "     * **`year`**: 4-digit year.\n"
-            "       - If no year is specified but the event date is clearly in the future, "
-            "         choose the earliest valid future year.\n"
-            '     * **`start_time`**: string, 12-hour format. It should have leading zeros if the time is less than 10, Ex: 01:00 AM/PM , 05:00 AM/PM. "HH:MM AM/PM"\n'
-            '     * **`end_time`**: string, 12-hour format. It should have leading zeros if the time is less than 10, Ex: 01:00 AM/PM , 05:00 AM/PM. "HH:MM AM/PM"\n\n'
-            "   - **`by`**: string with the instructor's name(s). If multiple, use ' x ' to separate.\n"
-            "   - **`song`**: string with the routine/song name if available, else null.\n"
-            "   - **`pricing_info`**: string if pricing is found, else null. Do not include any additional "
-            "     tax or service fees. Multiple pricing tiers should be split by a newline character. \n"
-            "   - **`timestamp_epoch`**: integer for the workshop's start time as epoch.\n"
-            "   - **`artist_id`**: if the instructor matches an entry in the provided artists list, "
-            "       use that `artist_id`; otherwise null.\n\n"
-            "   **IMPORTANT**:\n"
-            "   - If there are multiple distinct ticket types (e.g., 'Hangover' vs 'Gandi baat'), each representing\n"
-            "     a different routine or dance item, then create a separate object in `workshop_details` for each.\n"
-            "   - If they share the same date/time, use the same `time_details` for each.\n"
-            "   - Each workshop object's `song` field should reflect that routine's name (e.g., 'Hangover', 'Gandi baat').\n"
-            "   - The `pricing_info` for each object should only show the base price for that ticket type.\n"
-            "   - If there are multiple places where workshop details are mentioned in the image, then give more priority any place which says or is similar to workshop details or about event.\n"
-            "   - For Dance N Addiciton studio specially , there might be an About event details section that has more accurate info about class timings , song and pricing info particularly the session details section if present.\n"
-            "3. Only return a valid JSON object with this exact structure:\n"
-            "   ```json\n"
-            "   {\n"
-            '       "is_workshop": <boolean>,\n'
-            '       "workshop_details": [\n'
-            "           {\n"
-            '               "time_details": {\n'
-            '                   "day": <int>,\n'
-            '                   "month": <int>,\n'
-            '                   "year": <int>,\n'
-            '                   "start_time": <string>,\n'
-            '                   "end_time": <string>\n'
-            "               },\n"
-            '               "by": <string or null>,\n'
-            '               "song": <string or null>,\n'
-            '               "pricing_info": <string or null>,\n'
-            '               "timestamp_epoch": <int or null>,\n'
-            '               "artist_id": <string or null>\n'
-            "           }\n"
-            "       ]\n"
-            "   }\n"
-            "   ```\n\n"
-            "4. Do not include extra text outside the JSON.\n"
-            "5. Use the provided `artists` data to find any matching `artist_id`. If no match, use null.\n"
-            "6. Convert textual date references to numeric day, month, year. If the year is missing, assume future.\n"
-            "7. Use 12-hour clock format for times.\n"
-            "8. Make `timestamp_epoch` the start date/time in Unix epoch.\n"
-            "9. Return only that JSON."
-        )
+    def _generate_prompt(self, artists, current_date):
+        """Generates the prompt for the AI model."""
+        try:
+            return (
+                "You are given data about an event (potentially a dance workshop, intensive, or regulars class). "
+                "You must analyze the provided text and image (the screenshot) to determine "
+                "the type of event and extract its details if it's a Bangalore-based dance event.\n\n"
+                f"Artists Data for additional context : {artists}\n\n"
+                f"Current Date for reference : {current_date}\n\n"
+                "1. Determine if the event is a dance workshop, intensive, or regulars class based in Bangalore.\n"
+                "2. If it is NOT a valid Bangalore-based dance event OR if the event is in the past based on the current date, set `is_valid` to `false`, "
+                "   `event_type` to null, and provide an empty list for `event_details`.\n"
+                "3. If it IS a valid Bangalore-based dance event, set `is_valid` to `true`, determine the `event_type` ('workshop', 'intensive', or 'regulars'), and "
+                "   return a list of one or more event objects under `event_details` with the "
+                "   following structure:\n\n"
+                "   **`event_details`:** (array of objects)\n"
+                "   Each object must have:\n"
+                "   - **`time_details`:** (array of objects) Each time object contains details for one session/day:\n"
+                "     * **`day`**: integer day of the month (null if not found)\n"
+                "     * **`month`**: integer month (1–12) (null if not found)\n"
+                "     * **`year`**: 4-digit year (null if not found).\n"
+                "       - If no year is specified but the event date is clearly in the future relative to the current date, "
+                "         choose the earliest valid future year. Otherwise, use the current year if the month/day suggest it's upcoming, or null.\n"
+                '     * **`start_time`**: string, 12-hour format "HH:MM AM/PM" with leading zeros (e.g., "01:00 PM", "05:30 AM"). Null if not found.\n'
+                '     * **`end_time`**: string, 12-hour format "HH:MM AM/PM" with leading zeros (e.g., "01:00 PM", "05:30 AM"). Null if not found.\n'
+                '     * NOTE: Only intensives or regulars typically have multiple entries in `time_details` array (for multiple days/sessions). Workshops usually have only one.\n\n'
+                "   - **`by`**: string with the instructor's name(s). If multiple, use ' x ' to separate. Null if not found.\n"
+                "   - **`song`**: string with the routine/song name if available, else null.\n"
+                "   - **`pricing_info`**: string if pricing is found, else null. Format multiple tiers/options separated by a newline character '\\n'. Do not include taxes/fees like GST , Service charge , etc. \n"
+                "   - **`artist_id`**: if the instructor in `by` matches an entry in the provided artists list, use that `artist_id`; otherwise null.\n\n"
+                "   **IMPORTANT Extraction Notes**:\n"
+                "   - If multiple distinct classes/routines are offered within the same event post (e.g., different songs/styles with separate pricing/times), create a separate object in `event_details` for each.\n"
+                "   - If different routines share the same date/time, use the same `time_details` object(s) for each corresponding `event_details` object.\n"
+                "   - Prioritize information from sections explicitly labeled 'Workshop Details', 'Event Details', 'Session Details', 'About Event', etc., especially for timings, song, and pricing.\n"
+                "   - For 'Dance N Addiction' studio posts specifically, look for an 'About event details' or 'session details' section for potentially more accurate information.\n\n"
+                "4. Only return a valid JSON object with this exact structure:\n"
+                "   ```json\n"
+                "   {\n"
+                '       "is_valid": <boolean>,\n'
+                '       "event_type": <"workshop" | "intensive" | "regulars" | null>,\n'
+                '       "event_details": [\n'
+                "           {\n"
+                '               "time_details": [\n'
+                "                   {\n"
+                '                       "day": <int | null>,\n'
+                '                       "month": <int | null>,\n'
+                '                       "year": <int | null>,\n'
+                '                       "start_time": <string | null>,\n'
+                '                       "end_time": <string | null>\n'
+                "                   }\n"
+                "                   // ... more time objects if applicable (intensive/regulars)\n"
+                "               ],\n"
+                '               "by": <string | null>,\n'
+                '               "song": <string | null>,\n'
+                '               "pricing_info": <string | null>,\n'
+                '               "artist_id": <string | null>\n'
+                "           }\n"
+                "           // ... more event objects if applicable (multiple distinct routines)\n"
+                "       ]\n"
+                "   }\n"
+                "   ```\n\n"
+                "5. Do not include any extra text, explanations, or formatting outside the JSON structure.\n"
+                "6. Ensure all string values in the JSON are properly escaped.\n"
+                "7. Use the provided `artists` data *only* for matching and populating `artist_id`. Do not infer other details from it.\n"
+                "8. Return only the raw JSON object."
+            )
+        except Exception as e:
+            logging.error(f"Error generating prompt: {e}")
+            # Optionally return a default safe prompt or raise the exception
+            # For now, returning a basic error message or re-raising
+            raise  # Or return a default prompt string
 
     def _analyze_with_ai(
         self, screenshot_path: str, artists_data: list, model_version:str
-    ) -> Optional[WorkshopSummary]:
+    ) -> Optional[EventSummary]:
         """Analyze workshop screenshot using GPT.
 
         Args:
@@ -221,7 +223,7 @@ class WorkshopProcessor:
             artists_data: List of artist data for context
 
         Returns:
-            WorkshopSummary object or None
+            EventSummary object or None
         """
         try:
             # Read screenshot file
@@ -234,7 +236,7 @@ class WorkshopProcessor:
                 messages=[
                     {
                         "role": "system",
-                        "content": self._get_gpt_system_content(artists_data),
+                        "content": self._generate_prompt(artists_data, date.today().strftime("%B %d, %Y")),
                     },
                     {
                         "role": "user",
@@ -250,27 +252,32 @@ class WorkshopProcessor:
                         ],
                     },
                 ],
-                response_format=WorkshopSummary,
+                response_format=EventSummary,
             )
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            if "gpt" in model_version:
-                time.sleep(2)
-            # Convert to WorkshopSummary
-            return WorkshopSummary(
-                is_workshop=analyzed_data.get("is_workshop", False),
-                workshop_details=[
-                    WorkshopDetails(
-                        time_details=TimeDetails(**detail.get("time_details", {})),
-                        by=detail.get("by"),
-                        song=detail.get("song"),
-                        pricing_info=detail.get("pricing_info"),
-                        timestamp_epoch=detail.get("timestamp_epoch"),
-                        artist_id=detail.get("artist_id"),
+            time.sleep(2)
+            # Convert to EventSummary using correct keys and models
+            event_details_list = []
+            for detail_data in analyzed_data.get("event_details", []):
+                time_details_list = [
+                    TimeDetails(**td) for td in detail_data.get("time_details", [])
+                ]
+                event_details_list.append(
+                    EventDetails(
+                        time_details=time_details_list,
+                        by=detail_data.get("by"),
+                        song=detail_data.get("song"),
+                        pricing_info=detail_data.get("pricing_info"),
+                        artist_id=detail_data.get("artist_id"),
                     )
-                    for detail in analyzed_data.get("workshop_details", [])
-                ],
+                )
+
+            return EventSummary(
+                is_valid=analyzed_data.get("is_valid", False), # Use is_valid
+                event_type=analyzed_data.get("event_type"), # Use event_type
+                event_details=event_details_list # Use event_details
             )
 
         except Exception as e:
@@ -291,7 +298,7 @@ class StudioProcessor:
         cfg: config.Config
     ):
         """Initialize studio processor."""
-        self.workshop_processor = WorkshopProcessor(client, artists, mongo_client, cfg)
+        self.event_processor = EventProcessor(client, artists, mongo_client, cfg)
         self.version = version
         self.position = position
         self.mongo_client = mongo_client
@@ -311,33 +318,53 @@ class StudioProcessor:
                 leave=False,
             ) as pbar:
                 for link in links:
-                    workshop_data = self.workshop_processor.process_link(
+                    # Rename variable to event_data
+                    event_data = self.event_processor.process_link(
                         link, studio, self.version, artists_data
                     )
 
-                    if workshop_data:
-                        for workshop in workshop_data["workshop_details"]:
+                    if event_data:
+                        # Iterate through event_details using event_detail
+                        for event_detail in event_data["event_details"]:
                             inserted_data = {
                                 "payment_link": link,
                                 "studio_id": studio.config.studio_id,
-                                "uuid_group": f"{studio.config.studio_id}/{link.split('/')[-1]}",
+                                "uuid_group": event_data["uuid_group"], # Use event_data
                                 "uuid": generate_uuid(),
-                                "time_details": workshop["time_details"],
-                                "by": workshop["by"],
-                                "song": workshop["song"],
-                                "pricing_info": workshop["pricing_info"],
-                                "artist_id": workshop["artist_id"],
+                                "event_type": event_data["event_type"], # Add event_type
+                                "time_details": event_detail["time_details"], # Use event_detail
+                                "by": event_detail["by"], # Use event_detail
+                                "song": event_detail["song"], # Use event_detail
+                                "pricing_info": event_detail["pricing_info"], # Use event_detail
+                                "artist_id": event_detail["artist_id"], # Use event_detail
                                 "updated_at": time.time(),
                                 "version": self.version,
                             }
-                            # Check if the workshop is a past event based on the current date in IST
-                            if inserted_data["time_details"]["year"] < datetime.now(pytz.timezone('Asia/Kolkata')).year or (inserted_data["time_details"]["year"] == datetime.now(pytz.timezone('Asia/Kolkata')).year and inserted_data["time_details"]["month"] < datetime.now(pytz.timezone('Asia/Kolkata')).month) or (inserted_data["time_details"]["year"] == datetime.now(pytz.timezone('Asia/Kolkata')).year and inserted_data["time_details"]["month"] == datetime.now(pytz.timezone('Asia/Kolkata')).month and inserted_data["time_details"]["day"] < datetime.now(pytz.timezone('Asia/Kolkata')).day):
-                                ignored_links.add(link)
+
+                            # Check if the event is in the past using the first time_details entry
+                            is_past_event = False
+                            first_time_detail = next(iter(event_detail.get("time_details", [])), None)
+
+                            if event_data["event_type"] == "workshop" and first_time_detail :
+                                event_year = int(first_time_detail.get("year") or 0)
+                                event_month = int(first_time_detail.get("month") or 0)
+                                event_day = int(first_time_detail.get("day") or 0)
+                                now_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
+
+                                if event_year < now_ist.year or \
+                                    (event_year == now_ist.year and event_month < now_ist.month) or \
+                                    (event_year == now_ist.year and event_month == now_ist.month and event_day < now_ist.day):
+                                    is_past_event = True
+
+                            if is_past_event:
                                 old_links.add(link)
+                                ignored_links.add(link)
                             else:
                                 workshop_updates.append(inserted_data)
-                                if workshop["artist_id"] is None:
-                                    missing_artists.add(link)
+                                # Check artist_id from event_detail
+                                if event_detail["artist_id"] is None:
+                                    # Add tuple of (link, original 'by' field) for context
+                                    missing_artists.add((link, event_detail.get("by"))) # Store link and 'by'
                     else:
                         ignored_links.add(link)
 

@@ -12,6 +12,7 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 
+from bs4 import BeautifulSoup
 import requests
 from tqdm import tqdm
 
@@ -70,6 +71,17 @@ class InstagramAPI:
             return data["data"]["user"]["profile_pic_url_hd"]
         except Exception as e:
             print(f"Failed to fetch data for {username}. Error: {str(e)}")
+            return None
+    
+    @classmethod
+    def fetch_profile_picture_low(cls, username: str) -> Optional[str]:
+        try :
+            resp = requests.get(f"https://www.instagram.com/{username}/", headers={"User-Agent":"Mozilla/5.0"})
+            soup = BeautifulSoup(resp.text, "html.parser")
+            tag = soup.find("meta", property="og:image")
+            return tag["content"] if tag else None
+        except Exception as e:
+            print(f"Failed to fetch low quality data for {username}. Error: {str(e)}")
             return None
 
 
@@ -176,6 +188,8 @@ def main():
 
             # Fetch new profile picture
             pic_url = InstagramAPI.fetch_profile_picture_hd(studio.instagram_id)
+            if not pic_url:
+                pic_url = InstagramAPI.fetch_profile_picture_low(studio.instagram_id)
 
             # Check if the image is downloadable before updating
             if pic_url:

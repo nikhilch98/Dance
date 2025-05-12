@@ -5,6 +5,7 @@ artists, and studios. It includes features for workshop discovery, artist
 profiles, and studio schedules.
 """
 
+import asyncio
 from datetime import datetime, timedelta, time
 from typing import List, Dict, Optional
 from collections import defaultdict
@@ -31,6 +32,12 @@ import uvicorn
 import hashlib
 import base64
 import secrets
+import os
+import tempfile
+from openai import OpenAI
+import config
+import sys
+from enum import Enum
 
 from utils.utils import (
     get_mongo_client,
@@ -55,7 +62,7 @@ class TimeDetails(BaseModel):
     start_time: str
     end_time: Optional[str] = None
 
-class Workshop(BaseModel):
+class WorkshopListItem(BaseModel):
     """Complete workshop information including all sessions."""
 
     uuid: str
@@ -63,7 +70,6 @@ class Workshop(BaseModel):
     studio_id: str
     studio_name: str
     updated_at: float
-    time_details: TimeDetails
     by: Optional[str]
     song: Optional[str]
     pricing_info: Optional[str]
@@ -149,6 +155,56 @@ app.add_middleware(
 )
 
 
+class EventDetails(BaseModel):
+    mongo_id: str
+    payment_link: str
+    studio_id: str
+    uuid_group: str
+    uuid: str
+    event_type: str
+    artist_name: Optional[str]
+    artist_id: Optional[str]
+    song: Optional[str]
+    pricing_info: str
+    updated_at: float
+    date_without_day: str
+    date_with_day: str
+    time_str: str
+    timestamp_epoch: int
+    time_year: Optional[int]
+    time_month: Optional[int]
+    time_day: Optional[int]
+    time_day_full_string: Optional[str]
+
+def format_workshop_data(workshop: dict) -> List[EventDetails]:
+    """Process workshop data from the database."""
+    event_details = []
+    for time_details in workshop["time_details"]:
+        if workshop["event_type"] not in ["workshop", "intensive"]:
+            continue
+        event_details.append(EventDetails(
+            mongo_id=str(workshop["_id"]),
+            payment_link=workshop["payment_link"],
+            studio_id=workshop["studio_id"],
+            uuid_group=workshop["uuid_group"],
+            uuid=workshop["uuid"],
+            event_type=workshop["event_type"],
+            artist_name=workshop["by"],
+            artist_id=workshop["artist_id"],
+            song=workshop["song"],
+            pricing_info=workshop["pricing_info"],
+            updated_at=workshop["updated_at"],
+            date_without_day=get_formatted_date_without_day(time_details),
+            date_with_day=get_formatted_date_with_day(time_details)[0],
+            time_str=get_formatted_time(time_details),
+            timestamp_epoch=get_timestamp_epoch(time_details),
+            time_year=time_details["year"],
+            time_month=time_details["month"],
+            time_day=time_details["day"],
+            time_day_full_string=get_formatted_date_with_day(time_details)[1]
+        ))
+    return event_details
+
 # Add startup event to initialize database connection pool and start cache invalidation
 @app.on_event("startup")
 async def startup_db_client():
@@ -189,42 +245,54 @@ class DatabaseOperations:
     """Database operations for the application."""
 
     @staticmethod
-    def get_workshops() -> List[Workshop]:
+    def get_workshops(studio_id: Optional[str] = None, event_type_blacklist: Optional[List[str]] = ["regulars"], sort_by_timestamp: bool = True, song_whitelist: Optional[List[str]] = [], artist_id_whitelist: Optional[List[str]] = []) -> List[EventDetails]:
         """Fetch all workshops from the database.
 
         Returns:
             List of workshops with formatted details
         """
         client = get_mongo_client()
-        workshops = []
+        filter = {}
+        if studio_id:
+            filter["studio_id"] = studio_id
+        if event_type_blacklist:
+            filter["event_type"] = {"$nin": event_type_blacklist}
+        if song_whitelist:
+            filter["song"] = {"$in": song_whitelist}
+        if artist_id_whitelist:
+            filter["artist_id"] = {"$in": artist_id_whitelist}
 
         # Build a mapping from studio_id to studio_name
-        studio_map = {
-            s["studio_id"]: s["studio_name"]
-            for s in client["discovery"]["studios"].find()
-        }
+        workshops_cursor: List[EventDetails] = []
+        for workshop in list(client["discovery"]["workshops_v2"].find(filter)):
+            workshops_cursor += format_workshop_data(workshop)
+        if sort_by_timestamp:
+            workshops_cursor.sort(key=lambda x: x.timestamp_epoch)
+        return workshops_cursor
 
-        for workshop in list(client["discovery"]["workshops_v2"].find()):
-            workshops.append(
-                {
-                    "_id": str(workshop["_id"]),
-                    "uuid": workshop["uuid"],
-                    "payment_link": workshop["payment_link"],
-                    "studio_id": workshop["studio_id"],
-                    "studio_name": studio_map.get(workshop["studio_id"], ""),
-                    "updated_at": workshop["updated_at"],
-                    "time_details": workshop["time_details"],
-                    "by": workshop.get("by", ""),
-                    "song": workshop.get("song", ""),
-                    "pricing_info": workshop.get("pricing_info", ""),
-                    "timestamp_epoch": get_timestamp_epoch(workshop["time_details"]),
-                    "artist_id": workshop.get("artist_id", ""),
-                    "date": get_formatted_date_without_day(workshop["time_details"]),
-                    "time": get_formatted_time(workshop["time_details"]),
-                }
-            )
-
-        workshops.sort(key=lambda x: x["timestamp_epoch"])
+    def get_all_workshops() -> List[WorkshopListItem]:
+        """Fetch all workshops from the database."""
+        client = get_mongo_client()
+        studios = list(client["discovery"]["studios"].find({}))
+        studios_map = {studio["studio_id"]: studio["studio_name"] for studio in studios}
+        workshops =  [
+            WorkshopListItem(
+            uuid=workshop.uuid,
+            payment_link=workshop.payment_link,
+            studio_id=workshop.studio_id,
+            studio_name=studios_map[workshop.studio_id],
+            updated_at=workshop.updated_at,
+            by=workshop.artist_name,
+            song=workshop.song,
+            pricing_info=workshop.pricing_info,
+            timestamp_epoch=workshop.timestamp_epoch,
+            artist_id=workshop.artist_id,
+            date=workshop.date_with_day,
+            time=workshop.time_str,
+        )
+            for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True)
+        ]
+        print(len( DatabaseOperations.get_workshops(sort_by_timestamp=True)))
         return workshops
 
     @staticmethod
@@ -278,27 +346,23 @@ class DatabaseOperations:
         """
         client = get_mongo_client()
         workshops = []
-
-        for entry in client["discovery"]["workshops_v2"].find(
-            {"artist_id": artist_id}
-        ):
+        workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops(artist_id_whitelist=[artist_id])
+        for entry in workshops_cursor:
             workshops.append(
-                {
-                    "date": get_formatted_date(entry["time_details"]),
-                    "time": get_formatted_time(entry["time_details"]),
-                    "song": entry["song"],
-                    "studio_id": entry["studio_id"],
-                    "artist_id": entry["artist_id"],
-                    "artist": entry["by"],
-                    "payment_link": entry["payment_link"],
-                    "pricing_info": entry["pricing_info"],
-                    "timestamp_epoch": get_timestamp_epoch(
-                        entry["time_details"]
-                    ),
-                }
+                WorkshopSession(
+                    date=entry.date_with_day,
+                    time=entry.time_str,
+                    song=entry.song,
+                    studio_id=entry.studio_id,
+                    artist_id=entry.artist_id,
+                    artist=entry.artist_name,
+                    payment_link=entry.payment_link,
+                    pricing_info=entry.pricing_info,
+                    timestamp_epoch=entry.timestamp_epoch,
+                )
             )
 
-        return sorted(workshops, key=lambda x: x["timestamp_epoch"])
+        return sorted(workshops, key=lambda x: x.timestamp_epoch)
 
     @staticmethod
     def get_workshops_by_studio(studio_id: str) -> CategorizedWorkshopResponse:
@@ -311,38 +375,23 @@ class DatabaseOperations:
             Object containing 'this_week' (list of daily schedules) and 'post_this_week' workshops.
         """
         client = get_mongo_client()
-        temp_this_week = []
-        temp_post_this_week = []
+        temp_this_week: List[EventDetails] = []
+        temp_post_this_week: List[EventDetails] = []
 
         # Calculate current week boundaries (Monday to Sunday)
         today = datetime.now().date()
         start_of_week = today - timedelta(days=today.weekday())
         end_of_week = start_of_week + timedelta(days=6)
 
-        for workshop in client["discovery"]["workshops_v2"].find(
-            {"studio_id": studio_id}
-        ):
-            workshop_data = {
-                "date": get_formatted_date(workshop["time_details"]),
-                "time": get_formatted_time(workshop["time_details"]),
-                "song": workshop.get("song"),
-                "studio_id": studio_id,
-                "artist": workshop.get("by"),
-                "artist_id": workshop.get("artist_id"),
-                "pricing_info": workshop.get("pricing_info"),
-                "payment_link": workshop["payment_link"],
-                "timestamp_epoch": get_timestamp_epoch(workshop["time_details"]),
-                "time_details": workshop[
-                    "time_details"
-                ],  # Keep original details for weekday calculation
-            }
+        workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops(studio_id=studio_id)
 
+        for workshop in workshops_cursor:
             # Categorize by week using time_details
             try:
                 workshop_date = datetime(
-                    year=workshop["time_details"]["year"],
-                    month=workshop["time_details"]["month"],
-                    day=workshop["time_details"]["day"],
+                    year=workshop.time_year,
+                    month=workshop.time_month,
+                    day=workshop.time_day,
                 ).date()
             except KeyError as e:
                 print(
@@ -351,14 +400,17 @@ class DatabaseOperations:
                 continue
 
             if start_of_week <= workshop_date <= end_of_week:
-                temp_this_week.append(workshop_data)
+                temp_this_week.append(workshop)
             elif workshop_date > end_of_week:
-                temp_post_this_week.append(workshop_data)
+                temp_post_this_week.append(workshop)
 
         # Process 'this_week' workshops into daily structure
-        this_week_by_day = defaultdict(list)
+        this_week_by_day: Dict[str, List[EventDetails]] = {}
         for workshop in temp_this_week:
-            weekday = get_formatted_date_with_day(workshop["time_details"])[1]
+            # TODO: What happends if the day is not in the list? when day is not present , it is None
+            weekday = workshop.time_day_full_string
+            if weekday not in this_week_by_day:
+                this_week_by_day[weekday] = []
             this_week_by_day[weekday].append(workshop)
 
         final_this_week = []
@@ -372,56 +424,47 @@ class DatabaseOperations:
             "Sunday",
         ]
         for day in days_order:
-            if this_week_by_day[day]:
-                try:
-                    # Sort within day by timestamp_epoch for more reliable sorting
-                    sorted_workshops_raw = sorted(
-                        this_week_by_day[day],
-                        key=lambda x: x.get(
-                            "timestamp_epoch", 0
-                        ),  # Default to 0 if missing
-                    )
-                    sorted_workshops_cleaned = [
-                        {k: v for k, v in session.items() if k != "time_details"}
-                        for session in sorted_workshops_raw
-                    ]
-                    final_this_week.append(
-                        {"day": day, "workshops": sorted_workshops_cleaned}
-                    )
-                except Exception as e:
-                    print(
-                        f"Warning: Could not sort workshops for {day}: {e}. Appending unsorted."
-                    )
-                    unsorted_cleaned = [
-                        {k: v for k, v in session.items() if k != "time_details"}
-                        for session in this_week_by_day[day]
-                    ]
-                    final_this_week.append({"day": day, "workshops": unsorted_cleaned})
+            if not this_week_by_day.get(day,[]):
+                continue
+            sorted_workshops_raw = sorted(
+                this_week_by_day[day],
+                key=lambda x: x.timestamp_epoch, 
+            )
+            final_this_week.append(
+                DaySchedule(
+                    day=day,
+                    workshops=[WorkshopSession(
+                        date=x.date_with_day,
+                        time=x.time_str,
+                        song=x.song,
+                        studio_id=x.studio_id,
+                        artist=x.artist_name,
+                        artist_id=x.artist_id,
+                        payment_link=x.payment_link,
+                        pricing_info=x.pricing_info,
+                        timestamp_epoch=x.timestamp_epoch,
+                    ) for x in sorted_workshops_raw]
+                )
+            )
 
         # Sort 'post_this_week' workshops chronologically using timestamp_epoch
-        try:
-            print("\nAttempting to sort post_this_week...")  # DEBUG
-            # Sort using timestamp_epoch which is much more reliable than parsing dates
-            sorted_post_this_week_raw = sorted(
-                temp_post_this_week,
-                key=lambda x: x.get("timestamp_epoch", 0),  # Default to 0 if missing
-            )
-            print("Sorting successful.")  # DEBUG
-            # Clean the sorted list (remove time_details if needed)
-            final_post_this_week = [
-                {k: v for k, v in session.items() if k != "time_details"}
-                for session in sorted_post_this_week_raw
-            ]
-        except Exception as e:  # Catch potential errors during sorting
-            print(f"\nERROR: Could not sort post_this_week workshops: {e}.")  # DEBUG
-            # Return unsorted but cleaned data as a fallback
-            final_post_this_week = [
-                {k: v for k, v in session.items() if k != "time_details"}
-                for session in temp_post_this_week
-            ]
 
+        sorted_post_this_week = [WorkshopSession(
+                        date=x.date_with_day,
+                        time=x.time_str,
+                        song=x.song,
+                        studio_id=x.studio_id,
+                        artist=x.artist_name,
+                        artist_id=x.artist_id,
+                        payment_link=x.payment_link,
+                        pricing_info=x.pricing_info,
+                        timestamp_epoch=x.timestamp_epoch,
+                    ) for x in sorted(
+            temp_post_this_week,
+            key=lambda x: x.timestamp_epoch, 
+        )]
         return CategorizedWorkshopResponse(
-            this_week=final_this_week, post_this_week=final_post_this_week
+            this_week=final_this_week, post_this_week=sorted_post_this_week
         )
 
 
@@ -433,7 +476,7 @@ async def home(request: Request):
 
 
 # API Routes
-@app.get("/api/workshops", response_model=List[Workshop])
+@app.get("/api/workshops", response_model=List[WorkshopListItem])
 @cache_response(expire=3600)
 async def get_workshops(version: str = Depends(validate_version)):
     """Get all workshops.
@@ -445,7 +488,7 @@ async def get_workshops(version: str = Depends(validate_version)):
         List of all workshops
     """
     try:
-        return DatabaseOperations.get_workshops()
+        return DatabaseOperations.get_all_workshops()
     except Exception as e:
         # Return empty list if database is not available
         print(f"Database error: {str(e)}")
@@ -586,25 +629,22 @@ def admin_get_missing_artist_sessions():
     studio_map = {
         s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()
     }
-
     # Find workshops that have at least one detail with a missing artist_id
-    workshops_cursor = client["discovery"]["workshops_v2"].find(
-        {"artist_id": {"$in": [None, ""]}}
-    )
 
-    for workshop in workshops_cursor:
-        if not workshop.get("artist_id"):
-            session_data = {
-                "workshop_uuid": str(workshop["_id"]),
-                "date": get_formatted_date_without_day(workshop["time_details"]),
-                "time": get_formatted_time(workshop["time_details"]),
-                "song": workshop.get("song", "N/A"),
-                "studio_name": studio_map.get(workshop.get("studio_id"), "N/A"),
-                "payment_link": workshop.get("payment_link"),
-                "original_by_field": workshop.get("by", "N/A"),
-                "timestamp_epoch": get_timestamp_epoch(workshop["time_details"]),
-            }
-            missing_artist_sessions.append(session_data)
+    workshops = DatabaseOperations.get_workshops(event_type_blacklist=["regulars"], sort_by_timestamp=True, song_whitelist=[], artist_id_whitelist=[None, "", "TBA", "tba", "N/A", "n/a"])
+    for workshop in workshops:
+        session_data = {
+            "workshop_uuid": workshop.mongo_id,
+            "date": workshop.date_without_day,
+            "time": workshop.time_str,
+            "song": workshop.song,
+            "studio_name": studio_map[workshop.studio_id],
+            "payment_link": workshop.payment_link,
+            "original_by_field": workshop.artist_name,
+            "timestamp_epoch": workshop.timestamp_epoch,
+            "event_type": workshop.event_type,
+        }
+        missing_artist_sessions.append(session_data)
 
     # Sort by timestamp for consistency
     missing_artist_sessions.sort(key=lambda x: x["timestamp_epoch"])
@@ -660,23 +700,19 @@ def admin_get_missing_song_sessions():
     }
 
     # Find workshops that have a missing song (null, empty, or 'TBA')
-    workshops_cursor = client["discovery"]["workshops_v2"].find(
-        {"$or": [
-            {"song": {"$in": [None, "", "TBA", "tba"]}},
-            {"song": {"$exists": False}}
-        ]}
-    )
 
-    for workshop in workshops_cursor:
+    workshops = DatabaseOperations.get_workshops(event_type_blacklist=["regulars"], sort_by_timestamp=True, song_whitelist=[None, "", "TBA", "tba", "N/A", "n/a"], artist_id_whitelist=[])
+
+    for workshop in workshops:
         session_data = {
-            "workshop_uuid": str(workshop["_id"]),
-            "date": get_formatted_date_without_day(workshop["time_details"]),
-            "time": get_formatted_time(workshop["time_details"]),
-            "song": workshop.get("song", "N/A"),
-            "studio_name": studio_map.get(workshop.get("studio_id"), "N/A"),
-            "payment_link": workshop.get("payment_link"),
-            "original_by_field": workshop.get("by", "N/A"),
-            "timestamp_epoch": get_timestamp_epoch(workshop["time_details"]),
+            "workshop_uuid": workshop.mongo_id,
+            "date": workshop.date_without_day,
+            "time": workshop.time_str,
+            "song": workshop.song,
+            "studio_name": studio_map[workshop.studio_id],
+            "payment_link": workshop.payment_link,
+            "original_by_field": workshop.artist_name,
+            "timestamp_epoch": workshop.timestamp_epoch,
         }
         missing_song_sessions.append(session_data)
 
@@ -718,6 +754,123 @@ async def shutdown_db_client():
     """Close database connections when the application shuts down."""
     DatabaseManager.close_connections()
     print("Application shutdown: Database connections closed.")
+
+
+# Define request model for the analysis endpoint
+class AnalyzeRequest(BaseModel):
+    link: HttpUrl
+    ai_model: str # 'openai' or 'gemini'
+
+
+# --- New AI Analyzer Web Route ---
+@app.get("/ai", response_class=HTMLResponse)
+async def ai_analyzer_page(request: Request):
+    """Serve the AI analyzer page."""
+    return templates.TemplateResponse("website/ai_analyzer.html", {"request": request})
+
+# --- New AI Analyzer API Route ---
+@app.post("/ai/analyze")
+async def analyze_event_link(payload: AnalyzeRequest):
+    """Takes a URL and AI model choice, screenshots it, and runs AI analysis."""
+    # Use dev env for safety, adjust if needed. Use model from payload.
+    # Ensure ai_model is valid before creating config
+    if payload.ai_model not in ['openai', 'gemini']:
+         raise HTTPException(status_code=400, detail="Invalid AI model specified in request.")
+    cfg = config.Config(env="dev", ai_model=payload.ai_model)
+
+    artists_data = get_artists_data_script(cfg) # Fetch latest artists data
+
+    # Initialize the correct AI client based on selection
+    try:
+        if payload.ai_model == "openai":
+            if not cfg.openai_api_key:
+                 raise HTTPException(status_code=500, detail="OpenAI API key not configured.")
+            ai_client = OpenAI(api_key=cfg.openai_api_key)
+            # Use the specific model from config if available, else default
+            model_version = getattr(cfg, 'openai_model_version', "gpt-4o-2024-11-20")
+        elif payload.ai_model == "gemini":
+            if not cfg.gemini_api_key:
+                raise HTTPException(status_code=500, detail="Gemini API key not configured.")
+            # Note: The Gemini client setup might differ based on your specific library usage
+            # Assuming OpenAI library compatibility or adjust as needed
+            ai_client = OpenAI(api_key=cfg.gemini_api_key, base_url=cfg.gemini_base_url)
+            model_version = getattr(cfg, 'gemini_model_version', "gemini-2.5-flash-preview-04-17")
+        # No else needed due to check above
+    except Exception as e:
+         # Catch potential errors during client initialization (e.g., invalid key format)
+         print(f"Error initializing AI client: {e}")
+         raise HTTPException(status_code=500, detail=f"Failed to initialize AI client: {e}")
+
+    # Get mongo client safely
+    mongo_client = None
+    try:
+        # Use the same environment as Config for consistency
+        mongo_client = DatabaseManager.get_mongo_client(cfg.env)
+        mongo_client.admin.command("ping") # Verify connection
+    except Exception as e:
+        print(f"Warning: Failed to get MongoDB client for /ai/analyze: {e}. Proceeding without DB context for EventProcessor.")
+        # EventProcessor might not strictly need mongo_client for _analyze_with_ai
+
+    # Initialize EventProcessor
+    try:
+        processor = EventProcessor(client=ai_client, artists=artists_data, mongo_client=mongo_client, cfg=cfg)
+    except Exception as e:
+         print(f"Error initializing EventProcessor: {e}")
+         raise HTTPException(status_code=500, detail=f"Failed to initialize EventProcessor: {e}")
+
+    # Create a temporary file for the screenshot
+    screenshot_file = None
+    try:
+        # Use mkstemp for potentially safer temp file creation
+        fd, screenshot_path = tempfile.mkstemp(suffix=".png", prefix="analyze_")
+        os.close(fd) # Close the file descriptor immediately
+        screenshot_file = screenshot_path # Keep track for cleanup
+
+        print(f"Attempting screenshot for {payload.link} to {screenshot_path}")
+        # Capture screenshot
+        if not ScreenshotManager.capture_screenshot(str(payload.link), screenshot_path):
+            # Add more detail to screenshot failure
+            print(f"Screenshot capture failed for URL: {payload.link}")
+            raise HTTPException(status_code=500, detail=f"Failed to capture screenshot for the provided link. Check if the URL is accessible and valid.")
+
+        print(f"Screenshot captured. Analyzing with {payload.ai_model} model: {model_version}...")
+        # Analyze screenshot
+        # Use the internal _analyze_with_ai method which takes model_version
+        analysis_result: Optional[EventSummary] = await asyncio.to_thread(
+            processor._analyze_with_ai,
+            screenshot_path, artists_data, model_version
+        )
+        # analysis_result: Optional[EventSummary] = processor._analyze_with_ai(
+        #      screenshot_path, artists_data, model_version
+        # )
+
+        if analysis_result is None:
+             print(f"AI analysis returned None for {payload.link}")
+             raise HTTPException(status_code=500, detail="AI analysis failed or returned no result.")
+
+        print("Analysis complete.")
+        # Return the Pydantic model, FastAPI handles JSON conversion
+        return analysis_result
+
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions directly
+        print(f"HTTPException during analysis: {http_exc.detail}")
+        raise http_exc
+    except Exception as e:
+        print(f"Error during analysis for {payload.link}: {e}")
+        import traceback
+        traceback.print_exc()
+        # Provide a more generic error message to the client
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during analysis.")
+    finally:
+        # Clean up the temporary screenshot file
+        if screenshot_file and os.path.exists(screenshot_file):
+            try:
+                os.remove(screenshot_file)
+                print(f"Cleaned up screenshot: {screenshot_file}")
+            except Exception as e:
+                # Log cleanup error but don't prevent response
+                print(f"Error cleaning up screenshot {screenshot_file}: {e}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Event Analyzer</title>
+    <link rel="stylesheet" href="/static/css/ai_style.css">
+</head>
+<body>
+    <h1>AI Event Analyzer</h1>
+    <div class="container">
+        <div class="left-panel">
+            <h2>Input</h2>
+            <form id="analyzeForm">
+                <div>
+                    <label for="modelSelect">AI Model:</label>
+                    <select id="modelSelect" name="ai_model" required>
+                        <option value="openai" selected>OpenAI (GPT-4o)</option>
+                        <option value="gemini">Gemini (Flash)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="linkInput">Event Link (URL):</label>
+                    <input type="url" id="linkInput" name="link" placeholder="https://example.com/event" required>
+                </div>
+                <button type="submit" id="analyzeButton">Analyze</button>
+            </form>
+             <div id="loadingIndicator" class="loading">Analyzing... Please wait.</div>
+             <div id="errorMessage" class="error"></div>
+        </div>
+        <div class="right-panel">
+            <h2>Analysis Result (JSON)</h2>
+            <pre id="jsonOutput">Result will appear here...</pre>
+        </div>
+    </div>
+
+    <script src="/static/js/ai_analyzer.js"></script>
+</body>
+</html> 
