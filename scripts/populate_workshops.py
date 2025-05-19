@@ -257,7 +257,8 @@ class EventProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            time.sleep(2)
+            if "gpt" in model_version:
+                time.sleep(2)
             # Convert to EventSummary using correct keys and models
             event_details_list = []
             for detail_data in analyzed_data.get("event_details", []):
@@ -527,9 +528,12 @@ def main():
                 ignored_links, old_links, missing_artists, studio_id = future.result()
                 for link in ignored_links:
                     ignored_links_set.add(link)
-                print(f"Ignored Links for {studio_id} : {ignored_links}")
-                print(f"Missing artists links for {studio_id} : {missing_artists}")
-                print(f"Old links for {studio_id} : {old_links}")
+                if ignored_links:
+                    print(f"Ignored Links for {studio_id} : {ignored_links}")
+                if missing_artists:
+                    print(f"Missing artists links for {studio_id} : {missing_artists}")
+                if old_links:
+                    print(f"Old links for {studio_id} : {old_links}")
             except Exception as e:
                 print(f"Error in studio processing thread: {str(e)}")
 
