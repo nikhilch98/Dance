@@ -124,6 +124,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Akshay Kundu","akshaykundu_akki"),
         Artist("Akshay X Manvi","akshay_x_manvi"),
         Artist("Manvi Kedia", "kedia_manvi"),
+        Artist("Pramod Gowda", "pramod.gowda19"),
         Artist("Aashish Lama","aashish_lama01"),
         Artist("Punyakar Upadhyay","punyakar"),
         Artist("Divyam","div_yumyum"),
