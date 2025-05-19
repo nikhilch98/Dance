@@ -583,8 +583,9 @@ async def get_workshops_by_studio(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+image_cache = {}
+
 @app.get("/proxy-image/")
-@cache_response(expire=86400)  # Cache images for 24 hours
 async def proxy_image(url: HttpUrl):
     """Proxy for fetching images to bypass CORS restrictions.
 
@@ -606,9 +607,15 @@ async def proxy_image(url: HttpUrl):
     }
 
     try:
-        response = requests.get(url, headers=headers, stream=True)
-        response.raise_for_status()
-        return Response(content=response.content, media_type="image/jpeg")
+        # Check if the image is already cached
+        if url in image_cache:
+            data = image_cache[url]
+        else:
+            response = requests.get(url, headers=headers, stream=True)
+            response.raise_for_status()
+            data = response.content
+            image_cache[url] = data
+        return Response(content=data, media_type="image/jpeg")
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
