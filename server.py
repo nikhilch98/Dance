@@ -167,7 +167,7 @@ class EventDetails(BaseModel):
     artist_name: Optional[str]
     artist_id: Optional[str]
     song: Optional[str]
-    pricing_info: str
+    pricing_info: Optional[str]
     updated_at: float
     date_without_day: str
     date_with_day: str
