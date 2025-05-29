@@ -134,9 +134,9 @@ def get_studios_list() -> List[Studio]:
     """
     return [
         Studio("dance.inn.bangalore", "Dance Inn", "dance.inn.bangalore"),
-        Studio("vins.dance.co", "Vins Dance Co", "vinsdanceco"),
-        Studio("dance_n_addiction", "Dance N Addiction", "dance_n_addiction"),
-        Studio("manifestbytmn", "Manifest By TMN", "manifestbytmn"),
+        Studio("vins.dance.co", "Vins", "vinsdanceco"),
+        Studio("dance_n_addiction", "DNA", "dance_n_addiction"),
+        Studio("manifestbytmn", "Manifest", "manifestbytmn"),
     ]
 
 
