@@ -16,3 +16,7 @@ uvloop
 httptools
 python-dotenv
 pytz
+# Authentication dependencies
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart

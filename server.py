@@ -21,12 +21,14 @@ from fastapi import (
     Form,
     Body,
     Header,
+    status,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, HttpUrl
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, HttpUrl, Field, validator
 import requests
 import uvicorn
 import hashlib
@@ -38,6 +40,9 @@ from openai import OpenAI
 import config
 import sys
 from enum import Enum
+import jwt
+from passlib.context import CryptContext
+import re
 
 from utils.utils import (
     get_mongo_client,
@@ -51,6 +56,193 @@ from utils.utils import (
     DatabaseManager,
 )
 
+# Security configuration
+SECRET_KEY = "your-secret-key-here-change-in-production"  # Change this in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+# Authentication Models
+class UserRegistration(BaseModel):
+    """User registration request model."""
+    mobile_number: str = Field(..., regex=r"^\+?[1-9]\d{1,14}$")
+    password: str = Field(..., min_length=6)
+
+class UserLogin(BaseModel):
+    """User login request model."""
+    mobile_number: str = Field(..., regex=r"^\+?[1-9]\d{1,14}$")
+    password: str
+
+class ProfileUpdate(BaseModel):
+    """Profile update request model."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    date_of_birth: Optional[str] = Field(None, regex=r"^\d{4}-\d{2}-\d{2}$")
+    gender: Optional[str] = Field(None, regex=r"^(male|female|other)$")
+
+class PasswordUpdate(BaseModel):
+    """Password update request model."""
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+class UserProfile(BaseModel):
+    """User profile response model."""
+    user_id: str
+    mobile_number: str
+    name: Optional[str]
+    date_of_birth: Optional[str]
+    gender: Optional[str]
+    profile_complete: bool
+    created_at: datetime
+    updated_at: datetime
+
+class AuthResponse(BaseModel):
+    """Authentication response model."""
+    access_token: str
+    token_type: str
+    user: UserProfile
+
+# Password hashing utilities
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """Generate password hash."""
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create JWT access token."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return user info."""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return user_id
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+# Database operations for users
+class UserOperations:
+    """Database operations for user management."""
+    
+    @staticmethod
+    def create_user(mobile_number: str, password: str) -> dict:
+        """Create a new user."""
+        client = get_mongo_client()
+        
+        # Check if user already exists
+        existing_user = client["dance_app"]["users"].find_one({"mobile_number": mobile_number})
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this mobile number already exists"
+            )
+        
+        # Create new user
+        user_data = {
+            "mobile_number": mobile_number,
+            "password_hash": get_password_hash(password),
+            "name": None,
+            "date_of_birth": None,
+            "gender": None,
+            "profile_complete": False,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        
+        result = client["dance_app"]["users"].insert_one(user_data)
+        user_data["_id"] = result.inserted_id
+        return user_data
+    
+    @staticmethod
+    def authenticate_user(mobile_number: str, password: str) -> Optional[dict]:
+        """Authenticate user credentials."""
+        client = get_mongo_client()
+        user = client["dance_app"]["users"].find_one({"mobile_number": mobile_number})
+        
+        if not user or not verify_password(password, user["password_hash"]):
+            return None
+        return user
+    
+    @staticmethod
+    def get_user_by_id(user_id: str) -> Optional[dict]:
+        """Get user by ID."""
+        client = get_mongo_client()
+        try:
+            return client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            return None
+    
+    @staticmethod
+    def update_user_profile(user_id: str, profile_data: dict) -> bool:
+        """Update user profile."""
+        client = get_mongo_client()
+        
+        # Check if profile is complete
+        profile_complete = all([
+            profile_data.get("name"),
+            profile_data.get("date_of_birth"),
+            profile_data.get("gender")
+        ])
+        
+        update_data = {
+            **profile_data,
+            "profile_complete": profile_complete,
+            "updated_at": datetime.utcnow()
+        }
+        
+        result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
+    
+    @staticmethod
+    def update_user_password(user_id: str, new_password: str) -> bool:
+        """Update user password."""
+        client = get_mongo_client()
+        
+        result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "password_hash": get_password_hash(new_password),
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        return result.modified_count > 0
+
+def format_user_profile(user_data: dict) -> UserProfile:
+    """Format user data to UserProfile model."""
+    return UserProfile(
+        user_id=str(user_data["_id"]),
+        mobile_number=user_data["mobile_number"],
+        name=user_data.get("name"),
+        date_of_birth=user_data.get("date_of_birth"),
+        gender=user_data.get("gender"),
+        profile_complete=user_data.get("profile_complete", False),
+        created_at=user_data["created_at"],
+        updated_at=user_data["updated_at"]
+    )
 
 # API Models
 class TimeDetails(BaseModel):
@@ -884,6 +1076,188 @@ async def analyze_event_link(payload: AnalyzeRequest):
             except Exception as e:
                 # Log cleanup error but don't prevent response
                 print(f"Error cleaning up screenshot {screenshot_file}: {e}")
+
+
+# Authentication API Routes
+@app.post("/api/auth/register", response_model=AuthResponse)
+async def register_user(user_data: UserRegistration):
+    """Register a new user.
+    
+    Args:
+        user_data: User registration data
+        
+    Returns:
+        Authentication response with token and user profile
+    """
+    try:
+        # Create user
+        new_user = UserOperations.create_user(
+            mobile_number=user_data.mobile_number,
+            password=user_data.password
+        )
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(new_user["_id"])},
+            expires_delta=access_token_expires
+        )
+        
+        # Format user profile
+        user_profile = format_user_profile(new_user)
+        
+        return AuthResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=user_profile
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Registration error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed"
+        )
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+async def login_user(user_data: UserLogin):
+    """Login user.
+    
+    Args:
+        user_data: User login credentials
+        
+    Returns:
+        Authentication response with token and user profile
+    """
+    # Authenticate user
+    user = UserOperations.authenticate_user(
+        mobile_number=user_data.mobile_number,
+        password=user_data.password
+    )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid mobile number or password"
+        )
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": str(user["_id"])},
+        expires_delta=access_token_expires
+    )
+    
+    # Format user profile
+    user_profile = format_user_profile(user)
+    
+    return AuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_profile
+    )
+
+@app.get("/api/auth/profile", response_model=UserProfile)
+async def get_user_profile(user_id: str = Depends(verify_token)):
+    """Get current user profile.
+    
+    Args:
+        user_id: User ID from JWT token
+        
+    Returns:
+        User profile information
+    """
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return format_user_profile(user)
+
+@app.put("/api/auth/profile", response_model=UserProfile)
+async def update_user_profile(
+    profile_data: ProfileUpdate,
+    user_id: str = Depends(verify_token)
+):
+    """Update user profile.
+    
+    Args:
+        profile_data: Profile update data
+        user_id: User ID from JWT token
+        
+    Returns:
+        Updated user profile
+    """
+    # Get current user
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Prepare update data (only include non-None values)
+    update_data = {}
+    if profile_data.name is not None:
+        update_data["name"] = profile_data.name
+    if profile_data.date_of_birth is not None:
+        update_data["date_of_birth"] = profile_data.date_of_birth
+    if profile_data.gender is not None:
+        update_data["gender"] = profile_data.gender
+    
+    # Update profile
+    success = UserOperations.update_user_profile(user_id, update_data)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Profile update failed"
+        )
+    
+    # Return updated profile
+    updated_user = UserOperations.get_user_by_id(user_id)
+    return format_user_profile(updated_user)
+
+@app.put("/api/auth/password")
+async def update_user_password(
+    password_data: PasswordUpdate,
+    user_id: str = Depends(verify_token)
+):
+    """Update user password.
+    
+    Args:
+        password_data: Password update data
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    # Get current user
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Update password
+    success = UserOperations.update_user_password(user_id, password_data.new_password)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Password update failed"
+        )
+    
+    return {"message": "Password updated successfully"}
 
 
 if __name__ == "__main__":
