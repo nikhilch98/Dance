@@ -66,19 +66,19 @@ security = HTTPBearer()
 # Authentication Models
 class UserRegistration(BaseModel):
     """User registration request model."""
-    mobile_number: str = Field(..., regex=r"^\+?[1-9]\d{1,14}$")
+    mobile_number: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
     password: str = Field(..., min_length=6)
 
 class UserLogin(BaseModel):
     """User login request model."""
-    mobile_number: str = Field(..., regex=r"^\+?[1-9]\d{1,14}$")
+    mobile_number: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
     password: str
 
 class ProfileUpdate(BaseModel):
     """Profile update request model."""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    date_of_birth: Optional[str] = Field(None, regex=r"^\d{4}-\d{2}-\d{2}$")
-    gender: Optional[str] = Field(None, regex=r"^(male|female|other)$")
+    date_of_birth: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    gender: Optional[str] = Field(None, pattern=r"^(male|female|other)$")
 
 class PasswordUpdate(BaseModel):
     """Password update request model."""
