@@ -17,6 +17,7 @@ httptools
 python-dotenv
 pytz
 # Authentication dependencies
+PyJWT
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
