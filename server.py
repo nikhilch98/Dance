@@ -267,6 +267,7 @@ class WorkshopListItem(BaseModel):
     pricing_info: Optional[str]
     timestamp_epoch: int
     artist_id: Optional[str]
+    artist_image_url: Optional[HttpUrl]
     date: Optional[str]
     time: Optional[str]
     event_type: Optional[str]
@@ -469,6 +470,11 @@ class DatabaseOperations:
         client = get_mongo_client()
         studios = list(client["discovery"]["studios"].find({}))
         studios_map = {studio["studio_id"]: studio["studio_name"] for studio in studios}
+        
+        # Build a mapping from artist_id to artist image_url
+        artists = list(client["discovery"]["artists_v2"].find({}))
+        artists_map = {artist["artist_id"]: artist.get("image_url") for artist in artists}
+        
         workshops =  [
             WorkshopListItem(
             uuid=workshop.uuid,
@@ -481,6 +487,7 @@ class DatabaseOperations:
             pricing_info=workshop.pricing_info,
             timestamp_epoch=workshop.timestamp_epoch,
             artist_id=workshop.artist_id,
+            artist_image_url=artists_map.get(workshop.artist_id) if workshop.artist_id else None,
             date=workshop.date_with_day,
             time=workshop.time_str,
             event_type=workshop.event_type,
