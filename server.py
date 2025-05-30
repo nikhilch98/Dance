@@ -43,6 +43,7 @@ from enum import Enum
 import jwt
 from passlib.context import CryptContext
 import re
+from functools import wraps
 
 from utils.utils import (
     get_mongo_client,
@@ -93,6 +94,7 @@ class UserProfile(BaseModel):
     date_of_birth: Optional[str]
     gender: Optional[str]
     profile_complete: bool
+    is_admin: Optional[bool] = False
     created_at: datetime
     updated_at: datetime
 
@@ -141,6 +143,44 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+# Authentication decorators
+def user_authentication(func):
+    """Decorator to require user authentication for API endpoints."""
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        # Extract user_id from kwargs if it exists (injected by Depends(verify_token))
+        user_id = kwargs.get('user_id')
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        return await func(*args, **kwargs)
+    return wrapper
+
+def admin_authentication(func):
+    """Decorator to require admin authentication for API endpoints. Must be used with @user_authentication."""
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        # Extract user_id from kwargs (should be injected by @user_authentication + Depends(verify_token))
+        user_id = kwargs.get('user_id')
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Check if user is admin
+        user = UserOperations.get_user_by_id(user_id)
+        if not user or not user.get('is_admin', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
+        return await func(*args, **kwargs)
+    return wrapper
+
 # Database operations for users
 class UserOperations:
     """Database operations for user management."""
@@ -166,6 +206,7 @@ class UserOperations:
             "date_of_birth": None,
             "gender": None,
             "profile_complete": False,
+            "is_admin": False,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }
@@ -240,6 +281,7 @@ def format_user_profile(user_data: dict) -> UserProfile:
         date_of_birth=user_data.get("date_of_birth"),
         gender=user_data.get("gender"),
         profile_complete=user_data.get("profile_complete", False),
+        is_admin=user_data.get("is_admin", False),
         created_at=user_data["created_at"],
         updated_at=user_data["updated_at"]
     )
@@ -821,7 +863,9 @@ async def proxy_image(url: HttpUrl):
 
 # --- Artists CRUD ---
 @app.get("/admin/api/artists")
-def admin_list_artists():
+@admin_authentication
+@user_authentication
+def admin_list_artists(user_id: str = Depends(verify_token)):
     client = get_mongo_client()
     return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}).sort("artist_name", 1))
 
@@ -833,7 +877,9 @@ class AssignArtistPayload(BaseModel):
 
 
 @app.get("/admin/api/missing_artist_sessions")
-def admin_get_missing_artist_sessions():
+@admin_authentication
+@user_authentication
+def admin_get_missing_artist_sessions(user_id: str = Depends(verify_token)):
     client = get_mongo_client()
     missing_artist_sessions = []
 
@@ -864,8 +910,10 @@ def admin_get_missing_artist_sessions():
 
 
 @app.put("/admin/api/workshops/{workshop_uuid}/assign_artist")
+@admin_authentication
+@user_authentication
 def admin_assign_artist_to_session(
-    workshop_uuid: str, payload: AssignArtistPayload = Body(...)
+    workshop_uuid: str, payload: AssignArtistPayload = Body(...), user_id: str = Depends(verify_token)
 ):
     client = get_mongo_client()
 
@@ -895,14 +943,18 @@ def admin_assign_artist_to_session(
 
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_panel(request: Request):
+@admin_authentication
+@user_authentication
+async def admin_panel(request: Request, user_id: str = Depends(verify_token)):
     return templates.TemplateResponse(
         "website/admin_missing_artists.html", {"request": request}
     )
 
 
 @app.get("/admin/api/missing_song_sessions")
-def admin_get_missing_song_sessions():
+@admin_authentication
+@user_authentication
+def admin_get_missing_song_sessions(user_id: str = Depends(verify_token)):
     client = get_mongo_client()
     missing_song_sessions = []
 
@@ -938,8 +990,10 @@ class AssignSongPayload(BaseModel):
 
 
 @app.put("/admin/api/workshops/{workshop_uuid}/assign_song")
+@admin_authentication
+@user_authentication
 def admin_assign_song_to_session(
-    workshop_uuid: str, payload: AssignSongPayload = Body(...)
+    workshop_uuid: str, payload: AssignSongPayload = Body(...), user_id: str = Depends(verify_token)
 ):
     client = get_mongo_client()
 
@@ -1265,6 +1319,28 @@ async def update_user_password(
         )
     
     return {"message": "Password updated successfully"}
+
+@app.get("/api/config")
+async def get_config(user_id: str = Depends(verify_token)):
+    """Get app configuration for authenticated user.
+    
+    Args:
+        user_id: User ID from JWT token
+        
+    Returns:
+        App configuration including user permissions
+    """
+    # Get current user
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {
+        "is_admin": user.get("is_admin", False)
+    }
 
 
 if __name__ == "__main__":
