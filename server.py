@@ -861,11 +861,19 @@ async def proxy_image(url: HttpUrl):
         raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
 
-# --- Artists CRUD ---
+# Admin dependency function
+def verify_admin_user(user_id: str = Depends(verify_token)):
+    """Dependency function to verify admin user."""
+    user = UserOperations.get_user_by_id(user_id)
+    if not user or not user.get('is_admin', False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return user_id
+
 @app.get("/admin/api/artists")
-@admin_authentication
-@user_authentication
-def admin_list_artists(user_id: str = Depends(verify_token)):
+def admin_list_artists(user_id: str = Depends(verify_admin_user)):
     client = get_mongo_client()
     return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}).sort("artist_name", 1))
 
@@ -877,9 +885,7 @@ class AssignArtistPayload(BaseModel):
 
 
 @app.get("/admin/api/missing_artist_sessions")
-@admin_authentication
-@user_authentication
-def admin_get_missing_artist_sessions(user_id: str = Depends(verify_token)):
+def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user)):
     client = get_mongo_client()
     missing_artist_sessions = []
 
@@ -910,10 +916,8 @@ def admin_get_missing_artist_sessions(user_id: str = Depends(verify_token)):
 
 
 @app.put("/admin/api/workshops/{workshop_uuid}/assign_artist")
-@admin_authentication
-@user_authentication
 def admin_assign_artist_to_session(
-    workshop_uuid: str, payload: AssignArtistPayload = Body(...), user_id: str = Depends(verify_token)
+    workshop_uuid: str, payload: AssignArtistPayload = Body(...), user_id: str = Depends(verify_admin_user)
 ):
     client = get_mongo_client()
 
@@ -943,18 +947,14 @@ def admin_assign_artist_to_session(
 
 
 @app.get("/admin", response_class=HTMLResponse)
-@admin_authentication
-@user_authentication
-async def admin_panel(request: Request, user_id: str = Depends(verify_token)):
+async def admin_panel(request: Request, user_id: str = Depends(verify_admin_user)):
     return templates.TemplateResponse(
         "website/admin_missing_artists.html", {"request": request}
     )
 
 
 @app.get("/admin/api/missing_song_sessions")
-@admin_authentication
-@user_authentication
-def admin_get_missing_song_sessions(user_id: str = Depends(verify_token)):
+def admin_get_missing_song_sessions(user_id: str = Depends(verify_admin_user)):
     client = get_mongo_client()
     missing_song_sessions = []
 
@@ -990,10 +990,8 @@ class AssignSongPayload(BaseModel):
 
 
 @app.put("/admin/api/workshops/{workshop_uuid}/assign_song")
-@admin_authentication
-@user_authentication
 def admin_assign_song_to_session(
-    workshop_uuid: str, payload: AssignSongPayload = Body(...), user_id: str = Depends(verify_token)
+    workshop_uuid: str, payload: AssignSongPayload = Body(...), user_id: str = Depends(verify_admin_user)
 ):
     client = get_mongo_client()
 
