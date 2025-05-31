@@ -355,8 +355,8 @@ class WorkshopListItem(BaseModel):
     song: Optional[str]
     pricing_info: Optional[str]
     timestamp_epoch: int
-    artist_id: Optional[str]
-    artist_image_url: Optional[HttpUrl]
+    artist_id_list: Optional[List[str]] = []
+    artist_image_urls: Optional[List[Optional[HttpUrl]]] = []
     date: Optional[str]
     time: Optional[str]
     event_type: Optional[str]
@@ -388,7 +388,7 @@ class WorkshopSession(BaseModel):
     song: Optional[str]
     studio_id: Optional[str]
     artist: Optional[str]
-    artist_id: Optional[str]
+    artist_id_list: Optional[List[str]] = []
     payment_link: HttpUrl
     pricing_info: Optional[str]
     timestamp_epoch: int
@@ -450,7 +450,7 @@ class EventDetails(BaseModel):
     uuid: str
     event_type: str
     artist_name: Optional[str]
-    artist_id: Optional[str]
+    artist_id_list: Optional[List[str]] = []
     song: Optional[str]
     pricing_info: Optional[str]
     updated_at: float
@@ -473,6 +473,10 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
         if date_without_day is None:
             print(f"Skipping workshop {workshop['uuid']} due to missing data in time_details", time_details)
             continue
+            
+        # Use artist_id_list directly
+        artist_id_list = workshop.get("artist_id_list", [])
+        
         event_details.append(EventDetails(
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
@@ -481,7 +485,7 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             uuid=workshop["uuid"],
             event_type=workshop["event_type"],
             artist_name=workshop["by"],
-            artist_id=workshop["artist_id"],
+            artist_id_list=artist_id_list,
             song=workshop["song"],
             pricing_info=workshop["pricing_info"],
             updated_at=workshop["updated_at"],
@@ -551,7 +555,8 @@ class DatabaseOperations:
         if song_whitelist:
             filter["song"] = {"$in": song_whitelist}
         if artist_id_whitelist:
-            filter["artist_id"] = {"$in": artist_id_whitelist}
+            # Only use artist_id_list field
+            filter["artist_id_list"] = {"$in": artist_id_whitelist}
 
         # Build a mapping from studio_id to studio_name
         workshops_cursor: List[EventDetails] = []
@@ -582,8 +587,8 @@ class DatabaseOperations:
             song=workshop.song,
             pricing_info=workshop.pricing_info,
             timestamp_epoch=workshop.timestamp_epoch,
-            artist_id=workshop.artist_id,
-            artist_image_url=artists_map.get(workshop.artist_id) if workshop.artist_id else None,
+            artist_id_list=workshop.artist_id_list,
+            artist_image_urls=[artists_map.get(artist_id) for artist_id in workshop.artist_id_list] if workshop.artist_id_list else [],
             date=workshop.date_with_day,
             time=workshop.time_str,
             event_type=workshop.event_type,
@@ -618,7 +623,13 @@ class DatabaseOperations:
             List of artists with active workshops
         """
         client = get_mongo_client()
-        artists_with_workshops = set(list(client["discovery"]["workshops_v2"].distinct("artist_id")))
+        # Get artists that appear in artist_id_list arrays
+        artists_with_workshops = set()
+        for workshop in client["discovery"]["workshops_v2"].find({}, {"artist_id_list": 1}):
+            artist_list = workshop.get("artist_id_list", [])
+            if artist_list:
+                artists_with_workshops.update(artist_list)
+        
         all_artists = list(client["discovery"]["artists_v2"].find({}))
         
         return sorted([
@@ -643,22 +654,31 @@ class DatabaseOperations:
         """
         client = get_mongo_client()
         workshops = []
-        workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops(artist_id_whitelist=[artist_id])
-        for entry in workshops_cursor:
-            workshops.append(
-                WorkshopSession(
-                    date=entry.date_with_day,
-                    time=entry.time_str,
-                    song=entry.song,
-                    studio_id=entry.studio_id,
-                    artist_id=entry.artist_id,
-                    artist=entry.artist_name,
-                    payment_link=entry.payment_link,
-                    pricing_info=entry.pricing_info,
-                    timestamp_epoch=entry.timestamp_epoch,
-                    event_type=entry.event_type,
+        
+        # Find workshops where the artist_id is in the artist_id_list
+        workshops_cursor = client["discovery"]["workshops_v2"].find({
+            "artist_id_list": artist_id
+        })
+        
+        for workshop in workshops_cursor:
+            for time_detail in workshop.get("time_details", []):
+                if not time_detail:
+                    continue
+                    
+                workshops.append(
+                    WorkshopSession(
+                        date=get_formatted_date_with_day(time_detail)[0],
+                        time=get_formatted_time(time_detail),
+                        song=workshop.get("song"),
+                        studio_id=workshop.get("studio_id"),
+                        artist_id_list=workshop.get("artist_id_list", []),
+                        artist=workshop.get("by"),
+                        payment_link=workshop.get("payment_link"),
+                        pricing_info=workshop.get("pricing_info"),
+                        timestamp_epoch=get_timestamp_epoch(time_detail),
+                        event_type=workshop.get("event_type"),
+                    )
                 )
-            )
 
         return sorted(workshops, key=lambda x: x.timestamp_epoch)
 
@@ -737,7 +757,7 @@ class DatabaseOperations:
                         song=x.song,
                         studio_id=x.studio_id,
                         artist=x.artist_name,
-                        artist_id=x.artist_id,
+                        artist_id_list=x.artist_id_list,
                         payment_link=x.payment_link,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
@@ -754,7 +774,7 @@ class DatabaseOperations:
                         song=x.song,
                         studio_id=x.studio_id,
                         artist=x.artist_name,
-                        artist_id=x.artist_id,
+                        artist_id_list=x.artist_id_list,
                         payment_link=x.payment_link,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
@@ -933,8 +953,8 @@ def admin_list_artists(user_id: str = Depends(verify_admin_user)):
 
 # --- New Admin APIs ---
 class AssignArtistPayload(BaseModel):
-    artist_id: str
-    artist_name: str
+    artist_id_list: List[str]
+    artist_name_list: List[str]
 
 
 @app.get("/admin/api/missing_artist_sessions")
@@ -946,22 +966,40 @@ def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user))
     studio_map = {
         s["studio_id"]: s["studio_name"] for s in client["discovery"]["studios"].find()
     }
-    # Find workshops that have at least one detail with a missing artist_id
+    
+    # Find workshops that have missing or empty artist_id_list
+    workshops_cursor = client["discovery"]["workshops_v2"].find({
+        "event_type": {"$nin": ["regulars"]},
+        "$or": [
+            {"artist_id_list": {"$exists": False}},
+            {"artist_id_list": None},
+            {"artist_id_list": []},
+            {"artist_id_list": {"$in": [None, "", "TBA", "tba", "N/A", "n/a"]}}
+        ]
+    })
 
-    workshops = DatabaseOperations.get_workshops(event_type_blacklist=["regulars"], sort_by_timestamp=True, song_whitelist=[], artist_id_whitelist=[None, "", "TBA", "tba", "N/A", "n/a"])
-    for workshop in workshops:
-        session_data = {
-            "workshop_uuid": workshop.mongo_id,
-            "date": workshop.date_without_day,
-            "time": workshop.time_str,
-            "song": workshop.song,
-            "studio_name": studio_map[workshop.studio_id],
-            "payment_link": workshop.payment_link,
-            "original_by_field": workshop.artist_name,
-            "timestamp_epoch": workshop.timestamp_epoch,
-            "event_type": workshop.event_type,
-        }
-        missing_artist_sessions.append(session_data)
+    for workshop in workshops_cursor:
+        for time_detail in workshop.get("time_details", []):
+            if not time_detail:
+                continue
+                
+            # Create session data for each time detail
+            session_data = {
+                "workshop_uuid": str(workshop["_id"]),
+                "date": f"{time_detail.get('year', '')}-{str(time_detail.get('month', '')).zfill(2)}-{str(time_detail.get('day', '')).zfill(2)}",
+                "time": f"{time_detail.get('start_time', '')} - {time_detail.get('end_time', '')}" if time_detail.get('end_time') else time_detail.get('start_time', ''),
+                "song": workshop.get("song"),
+                "studio_name": studio_map.get(workshop["studio_id"], "Unknown Studio"),
+                "payment_link": workshop.get("payment_link"),
+                "original_by_field": workshop.get("by"),
+                "timestamp_epoch": int(datetime(
+                    year=time_detail.get('year', 2024),
+                    month=time_detail.get('month', 1),
+                    day=time_detail.get('day', 1)
+                ).timestamp()) if all([time_detail.get('year'), time_detail.get('month'), time_detail.get('day')]) else 0,
+                "event_type": workshop.get("event_type"),
+            }
+            missing_artist_sessions.append(session_data)
 
     # Sort by timestamp for consistency
     missing_artist_sessions.sort(key=lambda x: x["timestamp_epoch"])
@@ -974,12 +1012,15 @@ def admin_assign_artist_to_session(
 ):
     client = get_mongo_client()
 
+    # Join artist names with ' X ' separator
+    combined_artist_names = " X ".join(payload.artist_name_list)
+
     result = client["discovery"]["workshops_v2"].update_one(
         {"_id": ObjectId(workshop_uuid)},
         {
             "$set": {
-                "artist_id": payload.artist_id,
-                "by": payload.artist_name,
+                "artist_id_list": payload.artist_id_list,
+                "by": combined_artist_names,
             }
         },
     )
@@ -995,7 +1036,7 @@ def admin_assign_artist_to_session(
 
     return {
         "success": True,
-        "message": f"Artist {payload.artist_name} assigned to workshop {workshop_uuid}.",
+        "message": f"Artists {combined_artist_names} assigned to workshop {workshop_uuid}.",
     }
 
 
