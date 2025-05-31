@@ -888,30 +888,45 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleUpdatePassword() async {
+    print("🔄 ProfileScreen._handleUpdatePassword: Starting password update UI flow");
+    
     if (_currentPasswordController.text.isEmpty) {
+      print("❌ ProfileScreen: Current password is empty");
       _showErrorSnackBar('Please enter your current password');
       return;
     }
 
     if (_newPasswordController.text.length < 6) {
+      print("❌ ProfileScreen: New password too short (${_newPasswordController.text.length} chars)");
       _showErrorSnackBar('New password must be at least 6 characters');
       return;
     }
 
     if (_newPasswordController.text != _confirmPasswordController.text) {
+      print("❌ ProfileScreen: Password confirmation mismatch");
       _showErrorSnackBar('New passwords do not match');
       return;
     }
 
+    print("✅ ProfileScreen: All validations passed");
+    print("📤 ProfileScreen: Current password length: ${_currentPasswordController.text.length}");
+    print("📤 ProfileScreen: New password length: ${_newPasswordController.text.length}");
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.clearError();
 
+    print("🔗 ProfileScreen: Calling authProvider.updatePassword");
     final success = await authProvider.updatePassword(
       currentPassword: _currentPasswordController.text,
       newPassword: _newPasswordController.text,
     );
 
+    print("📊 ProfileScreen: Password update result: $success");
+    print("📊 ProfileScreen: AuthProvider error: ${authProvider.errorMessage}");
+    print("📊 ProfileScreen: AuthProvider state: ${authProvider.state}");
+
     if (success && mounted) {
+      print("✅ ProfileScreen: Password update successful, updating UI");
       setState(() {
         _isChangingPassword = false;
         _currentPasswordController.clear();
@@ -925,6 +940,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           backgroundColor: Colors.green,
         ),
       );
+    } else {
+      print("❌ ProfileScreen: Password update failed");
+      if (authProvider.errorMessage != null) {
+        print("❌ ProfileScreen: Showing error: ${authProvider.errorMessage}");
+        _showErrorSnackBar(authProvider.errorMessage!);
+      } else {
+        print("❌ ProfileScreen: No specific error message, showing generic error");
+        _showErrorSnackBar('Password update failed. Please try again.');
+      }
     }
   }
 

@@ -44,6 +44,12 @@ import jwt
 from passlib.context import CryptContext
 import re
 from functools import wraps
+import time as time_module
+import logging
+from colorama import Fore, Style, init
+
+# Initialize colorama for cross-platform colored output
+init(autoreset=True)
 
 from utils.utils import (
     get_mongo_client,
@@ -56,6 +62,47 @@ from utils.utils import (
     start_cache_invalidation_watcher,
     DatabaseManager,
 )
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Middleware for logging response times
+async def log_response_time_middleware(request: Request, call_next):
+    """Middleware to log response times for each request."""
+    start_time = time_module.time()
+    response = await call_next(request)
+    process_time = time_module.time() - start_time
+    
+    # Format time - convert to ms if less than 1 second
+    if process_time < 1.0:
+        time_str = f"{process_time * 1000:.1f}ms"
+    else:
+        time_str = f"{process_time:.3f}s"
+    
+    # Color codes based on status code
+    if 200 <= response.status_code < 300:
+        status_color = Fore.GREEN
+    elif 300 <= response.status_code < 400:
+        status_color = Fore.YELLOW
+    elif 400 <= response.status_code < 500:
+        status_color = Fore.RED
+    else:
+        status_color = Fore.MAGENTA
+    
+    # Format the log message with colors
+    log_message = (
+        f"{Fore.CYAN}INFO{Style.RESET_ALL}:server:"
+        f"{request.client.host}:{request.client.port} - "
+        f'"{request.method} {request.url.path}{"?" + str(request.url.query) if request.url.query else ""} '
+        f'HTTP/{request.scope.get("http_version", "1.1")}" '
+        f"{status_color}{response.status_code}{Style.RESET_ALL} - "
+        f"| {Fore.BLUE}{time_str}{Style.RESET_ALL}"
+    )
+    
+    print(log_message)
+    
+    return response
 
 # Security configuration
 SECRET_KEY = "your-secret-key-here-change-in-production"  # Change this in production
@@ -391,6 +438,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add response time logging middleware
+app.middleware("http")(log_response_time_middleware)
+
 
 class EventDetails(BaseModel):
     mongo_id: str
@@ -419,6 +469,10 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
     for time_details in workshop["time_details"]:
         if workshop["event_type"] not in ["workshop", "intensive"]:
             continue
+        date_without_day = get_formatted_date_without_day(time_details)
+        if date_without_day is None:
+            print(f"Skipping workshop {workshop['uuid']} due to missing data in time_details", time_details)
+            continue
         event_details.append(EventDetails(
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
@@ -431,7 +485,7 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             song=workshop["song"],
             pricing_info=workshop["pricing_info"],
             updated_at=workshop["updated_at"],
-            date_without_day=get_formatted_date_without_day(time_details),
+            date_without_day=date_without_day,
             date_with_day=get_formatted_date_with_day(time_details)[0],
             time_str=get_formatted_time(time_details),
             timestamp_epoch=get_timestamp_epoch(time_details),
@@ -536,7 +590,6 @@ class DatabaseOperations:
         )
             for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True)
         ]
-        print(len( DatabaseOperations.get_workshops(sort_by_timestamp=True)))
         return workshops
 
     @staticmethod
@@ -1350,7 +1403,7 @@ if __name__ == "__main__":
         loop="uvloop",  # Use uvloop for better performance
         http="httptools",  # Use httptools for better performance
         reload=True,  # Enable auto-reload during development
-        access_log=True,
+        access_log=False,  # Disable default access logs to prevent duplication with our custom middleware
         log_level="info",
         proxy_headers=True,
         forwarded_allow_ips="*",

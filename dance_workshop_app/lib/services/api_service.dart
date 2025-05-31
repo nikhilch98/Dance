@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/artist.dart';
 import '../models/studio.dart';
 import '../models/workshop.dart';
+import './auth_service.dart';
 
 class ApiService {
   // Set the base URL for the API - using production server
@@ -99,6 +100,34 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Network error while fetching studio workshops: $e');
+    }
+  }
+
+  // Fetches app configuration
+  static Future<Map<String, dynamic>> getConfig() async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http
+          .get(
+            Uri.parse('https://nachna.com/api/config'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load config: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error while fetching config: $e');
     }
   }
 } 

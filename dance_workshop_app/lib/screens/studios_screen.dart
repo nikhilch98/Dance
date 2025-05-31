@@ -21,6 +21,54 @@ class _StudiosScreenState extends State<StudiosScreen> {
     futureStudios = ApiService().fetchStudios();
   }
 
+  // Helper method to convert text to title case
+  String toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
+  // Helper method to handle Instagram linking
+  Future<void> _launchInstagram(String instagramUrl) async {
+    // Extract Instagram username from URL format: https://www.instagram.com/{username}/
+    String? username;
+    if (instagramUrl.contains('instagram.com/')) {
+      final parts = instagramUrl.split('instagram.com/');
+      if (parts.length > 1) {
+        // Remove trailing slash and any query parameters
+        username = parts[1].split('/')[0].split('?')[0];
+      }
+    }
+    
+    if (username != null && username.isNotEmpty) {
+      final appUrl = 'instagram://user?username=$username';
+      final webUrl = 'https://instagram.com/$username';
+
+      if (await canLaunchUrl(Uri.parse(appUrl))) {
+        await launchUrl(Uri.parse(appUrl));
+      } else {
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+      }
+    } else {
+      // Fallback to original URL if username extraction fails
+      final webUrl = Uri.parse(instagramUrl);
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not launch $instagramUrl'),
+              backgroundColor: Colors.red.withOpacity(0.8),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -254,46 +302,34 @@ class _StudiosScreenState extends State<StudiosScreen> {
                                 : _buildFallbackIcon(),
                           ),
                         ),
-                        // Neon Instagram Icon
+                        // Instagram Icon (reduced size)
                         Positioned(
                           bottom: 8,
                           right: 8,
                           child: GestureDetector(
                             onTap: () async {
-                              final url = Uri.parse(studio.instagramLink);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url);
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Could not launch ${studio.instagramLink}'),
-                                      backgroundColor: Colors.red.withOpacity(0.8),
-                                    ),
-                                  );
-                                }
-                              }
+                              await _launchInstagram(studio.instagramLink);
                             },
                             child: Container(
-                              width: 36,
-                              height: 36,
+                              width: 30,
+                              height: 30,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF00D4FF), Color(0xFF9D4EDD)],
+                                  colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00D4FF).withOpacity(0.5),
+                                    color: const Color(0xFFE4405F).withOpacity(0.5),
                                     offset: const Offset(0, 4),
                                     blurRadius: 12,
                                   ),
                                 ],
                               ),
                               child: const Icon(
-                                Icons.camera_alt_rounded,
+                                Icons.photo_camera,
                                 color: Colors.white,
-                                size: 18,
+                                size: 16,
                               ),
                             ),
                           ),
@@ -303,7 +339,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    studio.name,
+                    toTitleCase(studio.name),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,

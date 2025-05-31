@@ -13,6 +13,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       dateOfBirth: json['date_of_birth'] as String?,
       gender: json['gender'] as String?,
       profileComplete: json['profile_complete'] as bool,
+      isAdmin: json['is_admin'] as bool?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -24,6 +25,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'date_of_birth': instance.dateOfBirth,
       'gender': instance.gender,
       'profile_complete': instance.profileComplete,
+      'is_admin': instance.isAdmin,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };
@@ -87,4 +89,12 @@ Map<String, dynamic> _$PasswordUpdateToJson(PasswordUpdate instance) =>
     <String, dynamic>{
       'current_password': instance.currentPassword,
       'new_password': instance.newPassword,
+    };
+
+AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
+      isAdmin: json['is_admin'] as bool,
+    );
+
+Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
+      'is_admin': instance.isAdmin,
     };

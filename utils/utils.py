@@ -273,7 +273,7 @@ class DateTimeFormatter:
         return date_obj.strftime(f"%d{suffix} %b (%a)")
 
     @staticmethod
-    def get_formatted_date_without_day(time_details: Dict) -> str:
+    def get_formatted_date_without_day(time_details: Dict) -> Optional[str]:
         """Format date using datetime module.
 
         Args:
@@ -282,6 +282,12 @@ class DateTimeFormatter:
         Returns:
             Formatted date string (e.g., "07th Feb Thu").
         """
+        if time_details["day"] is None:
+            return None
+        if time_details["month"] is None:
+            return None
+        if time_details["year"] is None:
+            return None
         date_obj = datetime(
             year=int(time_details["year"]),
             month=int(time_details["month"]),

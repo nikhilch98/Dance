@@ -20,6 +20,9 @@ class User {
   @JsonKey(name: 'profile_complete')
   final bool profileComplete;
   
+  @JsonKey(name: 'is_admin')
+  final bool? isAdmin;
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   
@@ -33,6 +36,7 @@ class User {
     this.dateOfBirth,
     this.gender,
     required this.profileComplete,
+    this.isAdmin,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -47,6 +51,7 @@ class User {
     String? dateOfBirth,
     String? gender,
     bool? profileComplete,
+    bool? isAdmin,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -57,6 +62,7 @@ class User {
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       gender: gender ?? this.gender,
       profileComplete: profileComplete ?? this.profileComplete,
+      isAdmin: isAdmin ?? this.isAdmin,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -149,4 +155,17 @@ class PasswordUpdate {
 
   factory PasswordUpdate.fromJson(Map<String, dynamic> json) => _$PasswordUpdateFromJson(json);
   Map<String, dynamic> toJson() => _$PasswordUpdateToJson(this);
+}
+
+@JsonSerializable()
+class AppConfig {
+  @JsonKey(name: 'is_admin')
+  final bool isAdmin;
+
+  AppConfig({
+    required this.isAdmin,
+  });
+
+  factory AppConfig.fromJson(Map<String, dynamic> json) => _$AppConfigFromJson(json);
+  Map<String, dynamic> toJson() => _$AppConfigToJson(this);
 } 

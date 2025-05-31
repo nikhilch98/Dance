@@ -29,6 +29,15 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
   String currentSortColumn = 'date'; // Default sort column
   bool isSortAscending = true; // Default sort direction
 
+  // Helper method to convert text to title case
+  String toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -365,7 +374,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                           ),
                           const SizedBox(width: 16),
                           const Text(
-                            'All Workshops',
+                            'Workshops',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -423,11 +432,11 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildFilterChip(
-                        'Instructor',
+                        'Artist',
                         selectedInstructors.length,
                         const Color(0xFFFF006E),
                         () => _showFilterDialog(
-                          title: 'Filter by Instructor',
+                          title: 'Filter by Artist',
                           options: availableInstructors,
                           selected: selectedInstructors,
                           onSelected: (newSelected) => selectedInstructors = newSelected,
@@ -550,7 +559,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         child: ListView.builder(
                           physics: const BouncingScrollPhysics(),
                           itemCount: displayedWorkshops.length,
-                          itemExtent: 220,
+                          itemExtent: 140,
                           cacheExtent: 1000,
                           itemBuilder: (context, index) {
                             final workshop = displayedWorkshops[index];
@@ -632,204 +641,269 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
   Widget _buildMobileWorkshopCard(WorkshopListItem workshop, int index) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
+            Colors.white.withOpacity(0.12),
+            Colors.white.withOpacity(0.06),
           ],
         ),
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          color: Colors.white.withOpacity(0.15),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.15),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with date and time
+                // Header Row with Artist Name and Date Badge
                 Row(
                   children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                          ),
+                    // Artist Name (Main Title)
+                    Expanded(
+                      child: Text(
+                        workshop.by?.isNotEmpty == true && workshop.by != 'TBA' 
+                            ? toTitleCase(workshop.by!) 
+                            : 'Dance Workshop',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Text(
-                          workshop.date ?? 'TBA',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white.withOpacity(0.1),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                          ),
+                    
+                    // Date Badge (aligned with artist name)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                         ),
-                        child: Text(
-                          workshop.time ?? 'TBA',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      ),
+                      child: Text(
+                        workshop.date ?? 'TBA',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
                 
-                // Instructor and Song
-                if (workshop.by != null && workshop.by!.isNotEmpty && workshop.by != 'TBA')
-                  _buildInfoRow(
-                    Icons.person_rounded,
-                    'Instructor',
-                    workshop.by!,
-                    const Color(0xFFFF006E),
-                  ),
+                const SizedBox(height: 8),
                 
-                if (workshop.song != null && workshop.song!.isNotEmpty && workshop.song != 'TBA')
-                  _buildInfoRow(
-                    Icons.music_note_rounded,
-                    'Song',
-                    workshop.song!,
-                    const Color(0xFF8B5CF6),
-                  ),
-                
-                _buildInfoRow(
-                  Icons.business_rounded,
-                  'Studio',
-                  workshop.studioName,
-                  const Color(0xFF00D4FF),
-                ),
-                
-                if (workshop.pricingInfo != null && workshop.pricingInfo!.isNotEmpty && workshop.pricingInfo != 'TBA')
-                  _buildInfoRow(
-                    Icons.attach_money_rounded,
-                    'Pricing',
-                    workshop.pricingInfo!,
-                    const Color(0xFF10B981),
-                  ),
-                
-                const SizedBox(height: 16),
-                
-                // Register button
-                SizedBox(
-                  width: double.infinity,
-                  child: workshop.paymentLink.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () async {
-                            final uri = Uri.parse(workshop.paymentLink);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri);
-                            } else {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Could not launch ${workshop.paymentLink}'),
-                                    backgroundColor: Colors.red.withOpacity(0.8),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                // Main Content Row with register button
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Instructor Avatar
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        gradient: workshop.artistImageUrl?.isNotEmpty == true
+                            ? null
+                            : const LinearGradient(
+                                colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF3B82F6).withOpacity(0.3),
-                                  offset: const Offset(0, 4),
-                                  blurRadius: 12,
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.app_registration_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Register Now',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00D4FF).withOpacity(0.2),
+                            blurRadius: 6,
+                            spreadRadius: 1,
                           ),
-                        )
-                      : Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: Colors.white.withOpacity(0.1),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
+                        ],
+                      ),
+                      child: workshop.artistImageUrl?.isNotEmpty == true
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                workshop.artistImageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildDefaultAvatar(workshop.by);
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return _buildDefaultAvatar(workshop.by);
+                                },
+                              ),
+                            )
+                          : _buildDefaultAvatar(workshop.by),
+                    ),
+                    
+                    const SizedBox(width: 10),
+                    
+                    // Workshop Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Song Name
+                          if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
+                            Text(
+                              toTitleCase(workshop.song!),
+                              style: const TextStyle(
+                                color: Color(0xFF00D4FF),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          
+                          const SizedBox(height: 2),
+                          
+                          // Studio
+                          Row(
                             children: [
                               Icon(
-                                Icons.schedule_rounded,
-                                color: Colors.white38,
-                                size: 20,
+                                Icons.business_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 12,
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Registration Coming Soon',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  toTitleCase(workshop.studioName),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                          
+                          const SizedBox(height: 2),
+                          
+                          // Time
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  workshop.time ?? 'TBA',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // Register Button (vertically aligned with main content)
+                    SizedBox(
+                      width: 65,
+                      height: 30,
+                      child: workshop.paymentLink.isNotEmpty
+                          ? GestureDetector(
+                              onTap: () async {
+                                final uri = Uri.parse(workshop.paymentLink);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Could not launch ${workshop.paymentLink}'),
+                                        backgroundColor: Colors.red.withOpacity(0.8),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Register',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white.withOpacity(0.1),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Soon',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -839,53 +913,25 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: color.withOpacity(0.2),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
-            ),
+  Widget _buildDefaultAvatar(String? instructorName) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          instructorName?.isNotEmpty == true 
+              ? instructorName!.substring(0, 1).toUpperCase()
+              : '?',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: true,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

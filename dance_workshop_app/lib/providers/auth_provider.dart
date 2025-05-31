@@ -157,17 +157,25 @@ class AuthProvider with ChangeNotifier {
     required String currentPassword,
     required String newPassword,
   }) async {
+    print("🔄 AuthProvider.updatePassword: Starting password update flow");
+    print("📊 Current state: $_state");
+    print("📊 Is loading: $_isLoading");
+    
     _setLoading(true);
     
     try {
+      print("📞 AuthProvider: Calling AuthService.updatePassword");
       await AuthService.updatePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
       
+      print("✅ AuthProvider: AuthService.updatePassword completed successfully");
       _setLoading(false);
       return true;
     } catch (e) {
+      print("❌ AuthProvider: AuthService.updatePassword failed with error: $e");
+      print("❌ Error type: ${e.runtimeType}");
       _setError(e.toString());
       _setLoading(false);
       return false;

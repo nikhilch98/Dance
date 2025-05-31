@@ -21,6 +21,8 @@ class WorkshopListItem {
   final int timestampEpoch;
   @JsonKey(name: 'artist_id')
   final String? artistId;
+  @JsonKey(name: 'artist_image_url')
+  final String? artistImageUrl;
   final String? date;
   final String? time;
   @JsonKey(name: 'event_type')
@@ -37,6 +39,7 @@ class WorkshopListItem {
     this.pricingInfo,
     required this.timestampEpoch,
     this.artistId,
+    this.artistImageUrl,
     this.date,
     this.time,
     this.eventType,

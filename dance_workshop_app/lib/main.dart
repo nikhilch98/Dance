@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './providers/auth_provider.dart';
+import './providers/config_provider.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
 import './screens/profile_setup_screen.dart';
 import './screens/profile_screen.dart';
+import './screens/admin_screen.dart';
 
 void main() {
   // Performance optimizations
@@ -21,6 +23,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ConfigProvider()),
       ],
       child: MaterialApp(
         title: 'Dance Workshop App',
@@ -41,6 +44,7 @@ class MyApp extends StatelessWidget {
           '/profile-setup': (context) => const ProfileSetupScreen(),
           '/home': (context) => const HomeScreen(),
           '/profile': (context) => const ProfileScreen(),
+          '/admin': (context) => const AdminScreen(),
         },
         debugShowCheckedModeBanner: false,
         // Performance optimizations
@@ -74,14 +78,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
+    return Consumer2<AuthProvider, ConfigProvider>(
+      builder: (context, authProvider, configProvider, child) {
         switch (authProvider.state) {
           case AuthState.initial:
           case AuthState.loading:
             return const LoadingScreen();
             
           case AuthState.authenticated:
+            // Load config when authenticated
+            if (!configProvider.isLoaded && configProvider.state != ConfigState.loading) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                configProvider.loadConfig();
+              });
+            }
             return const HomeScreen();
             
           case AuthState.profileIncomplete:
@@ -89,6 +99,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
             
           case AuthState.unauthenticated:
           case AuthState.error:
+            // Clear config on logout
+            if (configProvider.isLoaded) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                configProvider.clearConfig();
+              });
+            }
             return const LoginScreen();
         }
       },

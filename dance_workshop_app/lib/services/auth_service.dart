@@ -154,11 +154,28 @@ class AuthService {
     required String currentPassword,
     required String newPassword,
   }) async {
+    print("🔄 AuthService.updatePassword: Starting password update");
+    print("🔗 Base URL: $_baseUrl");
+    print("🎯 Endpoint: $_baseUrl/password");
+    
     try {
       final token = await getToken();
+      print("🎫 Token available: ${token != null}");
+      
       if (token == null) {
+        print("❌ AuthService.updatePassword: No token found");
         throw AuthException('No authentication token found');
       }
+
+      print("📤 Sending request with current password length: ${currentPassword.length}");
+      print("📤 Sending request with new password length: ${newPassword.length}");
+      
+      final requestBody = jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      });
+      
+      print("📦 Request body: $requestBody");
 
       final response = await http.put(
         Uri.parse('$_baseUrl/password'),
@@ -166,18 +183,36 @@ class AuthService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'current_password': currentPassword,
-          'new_password': newPassword,
-        }),
+        body: requestBody,
       );
 
+      print("📊 Response status code: ${response.statusCode}");
+      print("📄 Response body: ${response.body}");
+      print("📋 Response headers: ${response.headers}");
+
       if (response.statusCode != 200) {
-        final error = jsonDecode(response.body);
-        throw AuthException(error['detail'] ?? 'Password update failed');
+        print("❌ AuthService.updatePassword: HTTP error ${response.statusCode}");
+        try {
+          final error = jsonDecode(response.body);
+          print("❌ Error details: $error");
+          throw AuthException(error['detail'] ?? 'Password update failed');
+        } catch (e) {
+          print("❌ Failed to parse error response: $e");
+          throw AuthException('Password update failed with status ${response.statusCode}');
+        }
       }
+      
+      print("✅ AuthService.updatePassword: Password update successful");
     } catch (e) {
-      if (e is AuthException) rethrow;
+      print("❌ AuthService.updatePassword: Exception occurred: $e");
+      print("❌ Exception type: ${e.runtimeType}");
+      
+      if (e is AuthException) {
+        print("❌ Re-throwing AuthException: ${e.message}");
+        rethrow;
+      }
+      
+      print("❌ Throwing new AuthException for: $e");
       throw AuthException('Network error: $e');
     }
   }

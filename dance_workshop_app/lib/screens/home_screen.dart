@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/config_provider.dart';
 import './studios_screen.dart';
 import './artists_screen.dart';
 import './workshops_screen.dart';
 import './profile_screen.dart';
+import './admin_screen.dart';
 import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
@@ -15,13 +18,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _screens = <Widget>[
-    StudiosScreen(),
-    ArtistsScreen(),
-    WorkshopsScreen(),
-    ProfileScreen(),
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -30,74 +26,96 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      body: Center(
-        child: _screens.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withOpacity(0.15),
-              Colors.white.withOpacity(0.05),
-            ],
+    return Consumer<ConfigProvider>(
+      builder: (context, configProvider, child) {
+        final isAdmin = configProvider.isAdmin;
+        
+        // Define screens based on admin status
+        final screens = <Widget>[
+          const StudiosScreen(),
+          const ArtistsScreen(),
+          const WorkshopsScreen(),
+          if (isAdmin) const AdminScreen(),
+          const ProfileScreen(),
+        ];
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF0A0A0F),
+          body: Center(
+            child: screens.elementAt(_selectedIndex),
           ),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              offset: const Offset(0, 8),
-              blurRadius: 24,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              height: 80,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.business_rounded,
-                    label: 'Studios',
-                    index: 0,
-                    gradient: const [Color(0xFF00D4FF), Color(0xFF9D4EDD)],
-                  ),
-                  _buildNavItem(
-                    icon: Icons.people_rounded,
-                    label: 'Artists',
-                    index: 1,
-                    gradient: const [Color(0xFFFF006E), Color(0xFF8338EC)],
-                  ),
-                  _buildNavItem(
-                    icon: Icons.event_rounded,
-                    label: 'Workshops',
-                    index: 2,
-                    gradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                  ),
-                  _buildNavItem(
-                    icon: Icons.person_rounded,
-                    label: 'Profile',
-                    index: 3,
-                    gradient: const [Color(0xFF10B981), Color(0xFF059669)],
-                  ),
+          bottomNavigationBar: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.15),
+                  Colors.white.withOpacity(0.05),
                 ],
+              ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(0, 8),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  height: 80,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(
+                        icon: Icons.business_rounded,
+                        label: 'Studios',
+                        index: 0,
+                        gradient: const [Color(0xFF00D4FF), Color(0xFF9D4EDD)],
+                      ),
+                      _buildNavItem(
+                        icon: Icons.people_rounded,
+                        label: 'Artists',
+                        index: 1,
+                        gradient: const [Color(0xFFFF006E), Color(0xFF8338EC)],
+                      ),
+                      _buildNavItem(
+                        icon: Icons.event_rounded,
+                        label: 'Workshops',
+                        index: 2,
+                        gradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                      ),
+                      if (isAdmin)
+                        _buildNavItem(
+                          icon: Icons.admin_panel_settings_rounded,
+                          label: 'Admin',
+                          index: 3,
+                          gradient: const [Color(0xFFFF4081), Color(0xFFE91E63)],
+                        ),
+                      _buildNavItem(
+                        icon: Icons.person_rounded,
+                        label: 'Profile',
+                        index: isAdmin ? 4 : 3,
+                        gradient: const [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

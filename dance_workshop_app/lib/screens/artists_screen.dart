@@ -22,8 +22,10 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
   void initState() {
     super.initState();
     futureArtists = ApiService().fetchArtists().then((artists) {
-      allArtists = artists;
-      displayedArtists = artists;
+      setState(() {
+        allArtists = artists;
+        displayedArtists = artists;
+      });
       return artists;
     });
     _searchController.addListener(_filterArtists);
@@ -47,6 +49,54 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
         }).toList();
       }
     });
+  }
+
+  // Helper method to handle Instagram linking
+  Future<void> _launchInstagram(String instagramUrl) async {
+    // Extract Instagram username from URL format: https://www.instagram.com/{username}/
+    String? username;
+    if (instagramUrl.contains('instagram.com/')) {
+      final parts = instagramUrl.split('instagram.com/');
+      if (parts.length > 1) {
+        // Remove trailing slash and any query parameters
+        username = parts[1].split('/')[0].split('?')[0];
+      }
+    }
+    
+    if (username != null && username.isNotEmpty) {
+      final appUrl = 'instagram://user?username=$username';
+      final webUrl = 'https://instagram.com/$username';
+
+      if (await canLaunchUrl(Uri.parse(appUrl))) {
+        await launchUrl(Uri.parse(appUrl));
+      } else {
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+      }
+    } else {
+      // Fallback to original URL if username extraction fails
+      final webUrl = Uri.parse(instagramUrl);
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not launch $instagramUrl'),
+              backgroundColor: Colors.red.withOpacity(0.8),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Helper method to convert text to title case
+  String toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 
   @override
@@ -130,7 +180,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                               ),
                             ),
                             child: Text(
-                              '${allArtists.length} Artists',
+                              '${displayedArtists.length} Found',
                               style: const TextStyle(
                                 color: Color(0xFFFF006E),
                                 fontWeight: FontWeight.w600,
@@ -403,46 +453,37 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                                 : _buildFallbackIcon(),
                           ),
                         ),
-                        // Neon Instagram Icon
+                        // Instagram Icon (reduced size)
                         Positioned(
                           bottom: 8,
                           right: 8,
                           child: GestureDetector(
                             onTap: () async {
-                              final url = Uri.parse(artist.instagramLink);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url);
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Could not launch ${artist.instagramLink}'),
-                                      backgroundColor: Colors.red.withOpacity(0.8),
-                                    ),
-                                  );
-                                }
-                              }
+                              // Try to open Instagram app first, fallback to browser
+                              final instagramUrl = artist.instagramLink;
+                              
+                              await _launchInstagram(instagramUrl);
                             },
                             child: Container(
-                              width: 36,
-                              height: 36,
+                              width: 30,
+                              height: 30,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
+                                  colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFF006E).withOpacity(0.5),
+                                    color: const Color(0xFFE4405F).withOpacity(0.5),
                                     offset: const Offset(0, 4),
                                     blurRadius: 12,
                                   ),
                                 ],
                               ),
                               child: const Icon(
-                                Icons.camera_alt_rounded,
+                                Icons.photo_camera,
                                 color: Colors.white,
-                                size: 18,
+                                size: 16,
                               ),
                             ),
                           ),
@@ -452,7 +493,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    artist.name,
+                    toTitleCase(artist.name),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
