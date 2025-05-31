@@ -50,5 +50,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Export Compliance for App Store -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
+	<key>ITSEncryptionExportComplianceCode</key>
+	<string>a5ca1ab6-90b7-4765-9538-0b2f58e6b6c2</string>
 </dict>
 </plist>

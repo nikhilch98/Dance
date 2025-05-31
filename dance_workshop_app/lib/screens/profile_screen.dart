@@ -24,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _dateOfBirth;
   
   bool _isEditingProfile = false;
-  bool _isChangingPassword = false;
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
@@ -132,19 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       child: Row(
         children: [
-          // Back Button
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              iconSize: isSmallScreen ? 20 : 24,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
+          // Spacer to center the title
+          SizedBox(width: isSmallScreen ? 48 : 56), // Same width as the edit button
           
           Expanded(
             child: Text(
@@ -177,7 +165,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _loadUserData(); // Reset changes
                   }
                   _isEditingProfile = !_isEditingProfile;
-                  _isChangingPassword = false;
                 });
               },
             ),
@@ -229,12 +216,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                         _buildEditableFields(isSmallScreen),
                       ] else ...[
                         _buildReadOnlyFields(user, isSmallScreen),
-                      ],
-                      
-                      // Password Change Section
-                      if (_isChangingPassword) ...[
-                        SizedBox(height: isSmallScreen ? 16 : 20),
-                        _buildPasswordChangeSection(isSmallScreen),
                       ],
                       
                       // Error Message
@@ -596,96 +577,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildPasswordChangeSection(bool isSmallScreen) {
-    final fieldSpacing = isSmallScreen ? 12.0 : 16.0;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Divider(color: Colors.white24),
-        SizedBox(height: isSmallScreen ? 12 : 16),
-        
-        Text(
-          'Change Password',
-          style: TextStyle(
-            fontSize: isSmallScreen ? 16 : 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        
-        SizedBox(height: isSmallScreen ? 12 : 16),
-        
-        // Current Password
-        _buildTextField(
-          controller: _currentPasswordController,
-          label: 'Current Password',
-          hint: 'Enter current password',
-          icon: Icons.lock_outline,
-          obscureText: _obscureCurrentPassword,
-          isSmallScreen: isSmallScreen,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
-              color: Colors.white.withOpacity(0.7),
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureCurrentPassword = !_obscureCurrentPassword;
-              });
-            },
-          ),
-        ),
-        
-        SizedBox(height: fieldSpacing),
-        
-        // New Password
-        _buildTextField(
-          controller: _newPasswordController,
-          label: 'New Password',
-          hint: 'Enter new password',
-          icon: Icons.lock,
-          obscureText: _obscureNewPassword,
-          isSmallScreen: isSmallScreen,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureNewPassword ? Icons.visibility : Icons.visibility_off,
-              color: Colors.white.withOpacity(0.7),
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureNewPassword = !_obscureNewPassword;
-              });
-            },
-          ),
-        ),
-        
-        SizedBox(height: fieldSpacing),
-        
-        // Confirm New Password
-        _buildTextField(
-          controller: _confirmPasswordController,
-          label: 'Confirm New Password',
-          hint: 'Re-enter new password',
-          icon: Icons.lock,
-          obscureText: _obscureConfirmPassword,
-          isSmallScreen: isSmallScreen,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-              color: Colors.white.withOpacity(0.7),
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
-              });
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildActionButtons(bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
@@ -701,45 +592,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             
             SizedBox(height: isSmallScreen ? 8 : 12),
             
-            // Change Password Toggle Button
+            // Change Password Button
             _buildOutlineButton(
-              text: _isChangingPassword ? 'Cancel Password Change' : 'Change Password',
-              onPressed: () {
-                setState(() {
-                  _isChangingPassword = !_isChangingPassword;
-                  if (!_isChangingPassword) {
-                    // Clear password fields
-                    _currentPasswordController.clear();
-                    _newPasswordController.clear();
-                    _confirmPasswordController.clear();
-                  }
-                });
-              },
+              text: 'Change Password',
+              onPressed: _showChangePasswordDialog,
               isSmallScreen: isSmallScreen,
             ),
-            
-            if (_isChangingPassword) ...[
-              SizedBox(height: isSmallScreen ? 8 : 12),
-              _buildGradientButton(
-                text: 'Update Password',
-                onPressed: _handleUpdatePassword,
-                isSmallScreen: isSmallScreen,
-              ),
-            ],
           ] else ...[
-            // Edit Profile Button
-            _buildGradientButton(
-              text: 'Edit Profile',
-              onPressed: () {
-                setState(() {
-                  _isEditingProfile = true;
-                });
-              },
-              isSmallScreen: isSmallScreen,
-            ),
-            
-            SizedBox(height: isSmallScreen ? 8 : 12),
-            
             // Logout Button
             _buildOutlineButton(
               text: 'Logout',
@@ -875,7 +734,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (success && mounted) {
       setState(() {
         _isEditingProfile = false;
-        _isChangingPassword = false;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -884,71 +742,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           backgroundColor: Colors.green,
         ),
       );
-    }
-  }
-
-  Future<void> _handleUpdatePassword() async {
-    print("🔄 ProfileScreen._handleUpdatePassword: Starting password update UI flow");
-    
-    if (_currentPasswordController.text.isEmpty) {
-      print("❌ ProfileScreen: Current password is empty");
-      _showErrorSnackBar('Please enter your current password');
-      return;
-    }
-
-    if (_newPasswordController.text.length < 6) {
-      print("❌ ProfileScreen: New password too short (${_newPasswordController.text.length} chars)");
-      _showErrorSnackBar('New password must be at least 6 characters');
-      return;
-    }
-
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      print("❌ ProfileScreen: Password confirmation mismatch");
-      _showErrorSnackBar('New passwords do not match');
-      return;
-    }
-
-    print("✅ ProfileScreen: All validations passed");
-    print("📤 ProfileScreen: Current password length: ${_currentPasswordController.text.length}");
-    print("📤 ProfileScreen: New password length: ${_newPasswordController.text.length}");
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.clearError();
-
-    print("🔗 ProfileScreen: Calling authProvider.updatePassword");
-    final success = await authProvider.updatePassword(
-      currentPassword: _currentPasswordController.text,
-      newPassword: _newPasswordController.text,
-    );
-
-    print("📊 ProfileScreen: Password update result: $success");
-    print("📊 ProfileScreen: AuthProvider error: ${authProvider.errorMessage}");
-    print("📊 ProfileScreen: AuthProvider state: ${authProvider.state}");
-
-    if (success && mounted) {
-      print("✅ ProfileScreen: Password update successful, updating UI");
-      setState(() {
-        _isChangingPassword = false;
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password updated successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      print("❌ ProfileScreen: Password update failed");
-      if (authProvider.errorMessage != null) {
-        print("❌ ProfileScreen: Showing error: ${authProvider.errorMessage}");
-        _showErrorSnackBar(authProvider.errorMessage!);
-      } else {
-        print("❌ ProfileScreen: No specific error message, showing generic error");
-        _showErrorSnackBar('Password update failed. Please try again.');
-      }
     }
   }
 
@@ -994,6 +787,411 @@ class _ProfileScreenState extends State<ProfileScreen>
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    // Clear password fields when opening dialog
+    _currentPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+    
+    showDialog(
+      context: context,
+      builder: (context) => _ChangePasswordDialog(
+        currentPasswordController: _currentPasswordController,
+        newPasswordController: _newPasswordController,
+        confirmPasswordController: _confirmPasswordController,
+        onUpdatePassword: _handleUpdatePassword,
+      ),
+    );
+  }
+
+  Future<void> _handleUpdatePassword() async {
+    print("🔄 ProfileScreen._handleUpdatePassword: Starting password update UI flow");
+    
+    if (_currentPasswordController.text.isEmpty) {
+      print("❌ ProfileScreen: Current password is empty");
+      _showErrorSnackBar('Please enter your current password');
+      return;
+    }
+
+    if (_newPasswordController.text.length < 6) {
+      print("❌ ProfileScreen: New password too short (${_newPasswordController.text.length} chars)");
+      _showErrorSnackBar('New password must be at least 6 characters');
+      return;
+    }
+
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      print("❌ ProfileScreen: Password confirmation mismatch");
+      _showErrorSnackBar('New passwords do not match');
+      return;
+    }
+
+    print("✅ ProfileScreen: All validations passed");
+    print("📤 ProfileScreen: Current password length: ${_currentPasswordController.text.length}");
+    print("📤 ProfileScreen: New password length: ${_newPasswordController.text.length}");
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearError();
+
+    print("🔗 ProfileScreen: Calling authProvider.updatePassword");
+    final success = await authProvider.updatePassword(
+      currentPassword: _currentPasswordController.text,
+      newPassword: _newPasswordController.text,
+    );
+
+    print("📊 ProfileScreen: Password update result: $success");
+    print("📊 ProfileScreen: AuthProvider error: ${authProvider.errorMessage}");
+    print("📊 ProfileScreen: AuthProvider state: ${authProvider.state}");
+
+    if (success && mounted) {
+      print("✅ ProfileScreen: Password update successful, updating UI");
+      setState(() {
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      print("❌ ProfileScreen: Password update failed");
+      if (authProvider.errorMessage != null) {
+        print("❌ ProfileScreen: Showing error: ${authProvider.errorMessage}");
+        _showErrorSnackBar(authProvider.errorMessage!);
+      } else {
+        print("❌ ProfileScreen: No specific error message, showing generic error");
+        _showErrorSnackBar('Password update failed. Please try again.');
+      }
+    }
+  }
+}
+
+class _ChangePasswordDialog extends StatefulWidget {
+  final TextEditingController currentPasswordController;
+  final TextEditingController newPasswordController;
+  final TextEditingController confirmPasswordController;
+  final Future<void> Function() onUpdatePassword;
+
+  const _ChangePasswordDialog({
+    required this.currentPasswordController,
+    required this.newPasswordController,
+    required this.confirmPasswordController,
+    required this.onUpdatePassword,
+  });
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.15),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1.5,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.lock,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Change Password',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Password Fields
+                  _buildPasswordFields(),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildOutlineButton(
+                          text: 'Cancel',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: _buildGradientButton(
+                          text: 'Update Password',
+                          onPressed: () async {
+                            await widget.onUpdatePassword();
+                            if (mounted && context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordFields() {
+    const fieldSpacing = 16.0;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Current Password
+        _buildTextField(
+          controller: widget.currentPasswordController,
+          label: 'Current Password',
+          hint: 'Enter current password',
+          icon: Icons.lock_outline,
+          obscureText: _obscureCurrentPassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white.withOpacity(0.7),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureCurrentPassword = !_obscureCurrentPassword;
+              });
+            },
+          ),
+        ),
+        
+        const SizedBox(height: fieldSpacing),
+        
+        // New Password
+        _buildTextField(
+          controller: widget.newPasswordController,
+          label: 'New Password',
+          hint: 'Enter new password',
+          icon: Icons.lock,
+          obscureText: _obscureNewPassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureNewPassword ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white.withOpacity(0.7),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureNewPassword = !_obscureNewPassword;
+              });
+            },
+          ),
+        ),
+        
+        const SizedBox(height: fieldSpacing),
+        
+        // Confirm New Password
+        _buildTextField(
+          controller: widget.confirmPasswordController,
+          label: 'Confirm New Password',
+          hint: 'Re-enter new password',
+          icon: Icons.lock,
+          obscureText: _obscureConfirmPassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white.withOpacity(0.7),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required bool obscureText,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: const Color(0xFF00D4FF)),
+        suffixIcon: suffixIcon,
+        labelStyle: TextStyle(
+          color: Colors.white.withOpacity(0.8),
+          fontSize: 15,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.5),
+          fontSize: 15,
+        ),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF00D4FF), width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGradientButton({
+    required String text,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D4FF).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Center(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutlineButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Center(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ),
     );

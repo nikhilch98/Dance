@@ -21,7 +21,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
   @override
   void initState() {
     super.initState();
-    futureArtists = ApiService().fetchArtists().then((artists) {
+    futureArtists = ApiService().fetchArtists(hasWorkshops: true).then((artists) {
       setState(() {
         allArtists = artists;
         displayedArtists = artists;

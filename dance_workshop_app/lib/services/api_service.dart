@@ -32,10 +32,15 @@ class ApiService {
   }
 
   // Fetches all artists
-  Future<List<Artist>> fetchArtists() async {
+  Future<List<Artist>> fetchArtists({bool? hasWorkshops}) async {
     try {
+      String url = '$baseUrl/api/artists?version=v2';
+      if (hasWorkshops != null) {
+        url += '&has_workshops=$hasWorkshops';
+      }
+      
       final response = await http
-          .get(Uri.parse('$baseUrl/api/artists?version=v2'))
+          .get(Uri.parse(url))
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {

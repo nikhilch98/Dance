@@ -30,7 +30,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     _tabController = TabController(length: 2, vsync: this);
     _loadMissingSongSessions();
     _loadMissingArtistSessions();
-    _loadArtists();
+    _loadAllArtists();
   }
 
   @override
@@ -39,22 +39,26 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  Future<void> _loadArtists() async {
+  Future<void> _loadAllArtists() async {
     try {
-      final artists = await ApiService().fetchArtists();
-      setState(() {
-        allArtists = artists;
-      });
+      final artists = await ApiService().fetchArtists(hasWorkshops: null); // null means all artists
+      if (mounted) {
+        setState(() {
+          allArtists = artists;
+        });
+      }
     } catch (e) {
       print('Error loading artists: $e');
     }
   }
 
   Future<void> _loadMissingSongSessions() async {
-    setState(() {
-      isLoadingSongs = true;
-      songsError = null;
-    });
+    if (mounted) {
+      setState(() {
+        isLoadingSongs = true;
+        songsError = null;
+      });
+    }
 
     try {
       final token = await AuthService.getToken();
@@ -69,9 +73,11 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       );
 
       if (response.statusCode == 200) {
-        setState(() {
-          missingSongSessions = List<Map<String, dynamic>>.from(json.decode(response.body));
-        });
+        if (mounted) {
+          setState(() {
+            missingSongSessions = List<Map<String, dynamic>>.from(json.decode(response.body));
+          });
+        }
       } else if (response.statusCode == 401) {
         throw Exception('Authentication failed. Please log in again.');
       } else if (response.statusCode == 403) {
@@ -80,21 +86,27 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         throw Exception('Failed to load workshops missing songs (Error ${response.statusCode})');
       }
     } catch (e) {
-      setState(() {
-        songsError = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          songsError = e.toString();
+        });
+      }
     } finally {
-      setState(() {
-        isLoadingSongs = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoadingSongs = false;
+        });
+      }
     }
   }
 
   Future<void> _loadMissingArtistSessions() async {
-    setState(() {
-      isLoadingArtists = true;
-      artistsError = null;
-    });
+    if (mounted) {
+      setState(() {
+        isLoadingArtists = true;
+        artistsError = null;
+      });
+    }
 
     try {
       final token = await AuthService.getToken();
@@ -109,9 +121,11 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       );
 
       if (response.statusCode == 200) {
-        setState(() {
-          missingArtistSessions = List<Map<String, dynamic>>.from(json.decode(response.body));
-        });
+        if (mounted) {
+          setState(() {
+            missingArtistSessions = List<Map<String, dynamic>>.from(json.decode(response.body));
+          });
+        }
       } else if (response.statusCode == 401) {
         throw Exception('Authentication failed. Please log in again.');
       } else if (response.statusCode == 403) {
@@ -120,13 +134,17 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         throw Exception('Failed to load workshops missing artists (Error ${response.statusCode})');
       }
     } catch (e) {
-      setState(() {
-        artistsError = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          artistsError = e.toString();
+        });
+      }
     } finally {
-      setState(() {
-        isLoadingArtists = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoadingArtists = false;
+        });
+      }
     }
   }
 
@@ -156,11 +174,55 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               behavior: SnackBarBehavior.floating,
             ),
           );
+          // Refresh the missing artists list
+          _loadMissingArtistSessions();
         }
-        // Refresh the missing artists list
-        _loadMissingArtistSessions();
       } else {
         throw Exception('Failed to assign artist (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _assignSongToWorkshop(String workshopUuid, String songName) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('No authentication token');
+
+      final response = await http.put(
+        Uri.parse('https://nachna.com/admin/api/workshops/$workshopUuid/assign_song'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'song': songName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Successfully assigned song: $songName'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          // Refresh the missing songs list
+          _loadMissingSongSessions();
+        }
+      } else {
+        throw Exception('Failed to assign song (Error ${response.statusCode})');
       }
     } catch (e) {
       if (mounted) {
@@ -189,10 +251,29 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        return _AssignArtistDialog(
+          session: session,
+          allArtists: allArtists,
+          onAssignArtist: _assignArtistToWorkshop,
+        );
+      },
+    );
+  }
+
+  Future<void> _showAssignSongDialog(Map<String, dynamic> session) async {
+    final TextEditingController songController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
             margin: const EdgeInsets.all(16),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
@@ -217,6 +298,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Header
                       Row(
                         children: [
                           Container(
@@ -224,11 +306,11 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
+                                colors: [Color(0xFFFF4081), Color(0xFFE91E63)],
                               ),
                             ),
                             child: const Icon(
-                              Icons.person_add,
+                              Icons.music_note,
                               color: Colors.white,
                               size: 20,
                             ),
@@ -236,7 +318,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Text(
-                              'Assign Artist',
+                              'Assign Song',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -251,6 +333,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         ],
                       ),
                       const SizedBox(height: 16),
+                      
+                      // Workshop Info
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -261,7 +345,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              session['song'] ?? 'Unknown Workshop',
+                              session['original_by_field'] ?? 'Unknown Workshop',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -280,59 +364,99 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Select an artist to assign:',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      
+                      // Song Input Field
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.1),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: songController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Enter song name...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.music_note,
+                              color: Colors.white.withOpacity(0.6),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 300),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: allArtists.length,
-                          itemBuilder: (context, index) {
-                            final artist = allArtists[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.white.withOpacity(0.1),
+                      const SizedBox(height: 20),
+                      
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey.withOpacity(0.3),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
                               ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFFFF006E),
-                                  child: Text(
-                                    artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
                                 ),
-                                title: Text(
-                                  artist.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                trailing: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                onTap: () {
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                final songName = songController.text.trim();
+                                if (songName.isNotEmpty) {
                                   Navigator.of(context).pop();
-                                  _assignArtistToWorkshop(session['workshop_uuid'], artist);
-                                },
+                                  _assignSongToWorkshop(session['workshop_uuid'], songName);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('⚠️ Please enter a song name'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF4081),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
                               ),
-                            );
-                          },
-                        ),
+                              child: const Text(
+                                'Assign',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -673,7 +797,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 itemCount: missingSongSessions.length,
                 itemBuilder: (context, index) {
                   final session = missingSongSessions[index];
-                  return _buildSessionCard(session, Icons.music_note, const Color(0xFFFF4081));
+                  return _buildSessionCard(session, Icons.music_note, const Color(0xFFFF4081), showAssignSongButton: true);
                 },
               ),
             ),
@@ -820,7 +944,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildSessionCard(Map<String, dynamic> session, IconData icon, Color accentColor, {bool showAssignButton = false}) {
+  Widget _buildSessionCard(Map<String, dynamic> session, IconData icon, Color accentColor, {bool showAssignButton = false, bool showAssignSongButton = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1011,6 +1135,316 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     ),
                   ),
                 ],
+                if (showAssignSongButton) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showAssignSongDialog(session),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF4081),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.music_note, size: 20),
+                      label: const Text(
+                        'Assign Song',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AssignArtistDialog extends StatefulWidget {
+  final Map<String, dynamic> session;
+  final List<Artist> allArtists;
+  final Function(String, Artist) onAssignArtist;
+
+  const _AssignArtistDialog({
+    required this.session,
+    required this.allArtists,
+    required this.onAssignArtist,
+  });
+
+  @override
+  State<_AssignArtistDialog> createState() => _AssignArtistDialogState();
+}
+
+class _AssignArtistDialogState extends State<_AssignArtistDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Artist> filteredArtists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    filteredArtists = widget.allArtists;
+    _searchController.addListener(_filterArtists);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterArtists);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterArtists() {
+    final query = _searchController.text.toLowerCase();
+    if (mounted) {
+      setState(() {
+        if (query.isEmpty) {
+          filteredArtists = widget.allArtists;
+        } else {
+          filteredArtists = widget.allArtists.where((artist) {
+            return artist.name.toLowerCase().contains(query);
+          }).toList();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8, // Limit to 80% of screen height
+          maxWidth: MediaQuery.of(context).size.width * 0.9,   // Limit to 90% of screen width
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.15),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1.5,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Fixed Header
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Row
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.person_add,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Assign Artist',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Workshop Info
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.session['song'] ?? 'Unknown Workshop',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '📅 ${widget.session['date']} • 📍 ${widget.session['studio_name']}',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Search Bar
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.1),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Search artists...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Colors.white.withOpacity(0.6),
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear,
+                                      color: Colors.white.withOpacity(0.6),
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Results count
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${filteredArtists.length} artist${filteredArtists.length != 1 ? 's' : ''} found',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Scrollable Artist List
+                Flexible(
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+                    child: filteredArtists.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Text(
+                                'No artists found matching "${_searchController.text}"',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 16,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: filteredArtists.length,
+                            itemBuilder: (context, index) {
+                              final artist = filteredArtists[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withOpacity(0.1),
+                                ),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: const Color(0xFFFF006E),
+                                    child: Text(
+                                      artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    artist.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    widget.onAssignArtist(widget.session['workshop_uuid'], artist);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
               ],
             ),
           ),
