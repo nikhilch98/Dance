@@ -611,7 +611,7 @@ class DatabaseOperations:
         ]
 
     @staticmethod
-    def get_artists() -> List[Artist]:
+    def get_artists(has_workshops: Optional[bool] = None) -> List[Artist]:
         """Fetch all active artists from the database.
 
         Returns:
@@ -628,7 +628,7 @@ class DatabaseOperations:
                 "image_url": artist.get("image_url"),
                 "instagram_link": artist["instagram_link"],
             }
-            for artist in all_artists if artist["artist_id"] in artists_with_workshops
+            for artist in all_artists if has_workshops is None or (has_workshops and artist["artist_id"] in artists_with_workshops) or (not has_workshops and artist["artist_id"] not in artists_with_workshops)
         ], key=lambda x: x["name"])
 
     @staticmethod
@@ -815,17 +815,17 @@ async def get_studios(version: str = Depends(validate_version)):
 
 @app.get("/api/artists", response_model=List[Artist])
 @cache_response(expire=3600)
-async def get_artists(version: str = Depends(validate_version)):
+async def get_artists(version: str = Depends(validate_version), has_workshops: Optional[bool] = None):
     """Get all artists with active workshops.
 
     Args:
         version: API version
-
+        has_workshops: If True, only return artists with active workshops. If False, only return artists without active workshops. If None, return all artists.
     Returns:
         List of artists
     """
     try:
-        return DatabaseOperations.get_artists()
+        return DatabaseOperations.get_artists(has_workshops=has_workshops)
     except Exception as e:
         print(f"Database error: {str(e)}")
         return []
