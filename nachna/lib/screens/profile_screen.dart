@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _selectedGender;
   DateTime? _selectedDate;
   String? _dateOfBirth;
+  String? _localProfilePictureUrl;
   
   bool _isEditingProfile = false;
   bool _obscureCurrentPassword = true;
@@ -68,6 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       _nameController.text = user.name ?? '';
       _selectedGender = user.gender;
       _dateOfBirth = user.dateOfBirth;
+      _localProfilePictureUrl = user.profilePictureUrl;
       
       if (user.dateOfBirth != null) {
         try {
@@ -98,6 +100,17 @@ class _ProfileScreenState extends State<ProfileScreen>
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
+        }
+
+        // Sync local state with provider data if they differ
+        if (_localProfilePictureUrl != user.profilePictureUrl) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _localProfilePictureUrl = user.profilePictureUrl;
+              });
+            }
+          });
         }
 
         return Scaffold(
@@ -245,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     height: 120,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(60),
-                      gradient: user.profilePictureUrl == null
+                      gradient: _localProfilePictureUrl == null
                           ? const LinearGradient(
                               colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                             )
@@ -258,13 +271,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                     ),
-                    child: user.profilePictureUrl != null
+                    child: _localProfilePictureUrl != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(60),
                             child: Image.network(
-                              'https://nachna.com${user.profilePictureUrl}',
+                              'https://nachna.com$_localProfilePictureUrl',
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
+                                print('Error loading profile image: $error');
                                 return _buildDefaultAvatar(user);
                               },
                               loadingBuilder: (context, child, loadingProgress) {
@@ -613,6 +627,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           gradient: LinearGradient(
@@ -623,57 +638,60 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
+            width: 1.5,
           ),
         ),
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      color: Colors.white.withOpacity(0.3),
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Profile Picture',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Title
+                Text(
+                  'Profile Picture',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildImagePickerOption(
-                          'Camera',
-                          Icons.camera_alt_rounded,
-                          const Color(0xFF3B82F6),
-                          () => _pickImage(ImageSource.camera),
-                        ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildImagePickerOption(
+                        'Camera',
+                        Icons.camera_alt_rounded,
+                        const Color(0xFF3B82F6),
+                        () => _pickImageWithPermissionCheck(ImageSource.camera),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildImagePickerOption(
-                          'Gallery',
-                          Icons.photo_library_rounded,
-                          const Color(0xFF10B981),
-                          () => _pickImage(ImageSource.gallery),
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildImagePickerOption(
+                        'Gallery',
+                        Icons.photo_library_rounded,
+                        const Color(0xFF10B981),
+                        () => _pickImageWithPermissionCheck(ImageSource.gallery),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_localProfilePictureUrl != null)
                   SizedBox(
                     width: double.infinity,
                     child: _buildImagePickerOption(
@@ -683,8 +701,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       () => _removeProfilePicture(),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
         ),
@@ -722,59 +739,109 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImageWithPermissionCheck(ImageSource source) async {
     Navigator.pop(context); // Close bottom sheet
     
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        maxWidth: 800,
-        maxHeight: 800,
+        maxWidth: 1024,
+        maxHeight: 1024,
         imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front,
       );
       
       if (image != null) {
         await _uploadProfilePicture(File(image.path));
+      } else {
+        // User cancelled image selection
+        setState(() {
+          _isUploadingImage = false;
+        });
       }
     } catch (e) {
-      _showErrorSnackBar('Failed to pick image: $e');
+      print('Error picking image: $e');
+      setState(() {
+        _isUploadingImage = false;
+      });
+      
+      String errorMessage = 'Failed to pick image.';
+      if (e.toString().contains('permission')) {
+        errorMessage = source == ImageSource.camera 
+            ? 'Camera permission denied. Please enable camera access in Settings.'
+            : 'Photo library permission denied. Please enable photo access in Settings.';
+      } else if (e.toString().contains('camera')) {
+        errorMessage = 'Camera not available. Please try using gallery instead.';
+      }
+      
+      _showErrorSnackBar(errorMessage);
     }
   }
 
   Future<void> _uploadProfilePicture(File imageFile) async {
-    setState(() {
-      _isUploadingImage = true;
-    });
-
+    // Loading state is already set in _pickImageWithPermissionCheck
     try {
       final imageUrl = await AuthService.uploadProfilePicture(imageFile);
       
-      // Refresh user data
+      // Update local state immediately for instant UI feedback
+      setState(() {
+        _localProfilePictureUrl = imageUrl;
+        _isUploadingImage = false;
+      });
+      
+      // Refresh user data in provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.refreshProfile();
       
       _showSuccessSnackBar('Profile picture updated successfully!');
     } catch (e) {
-      _showErrorSnackBar('Failed to upload profile picture: $e');
-    } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
+      print('Error uploading profile picture: $e');
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
+      
+      String errorMessage = 'Failed to upload profile picture.';
+      if (e.toString().contains('size')) {
+        errorMessage = 'Image file is too large. Please choose a smaller image.';
+      } else if (e.toString().contains('format')) {
+        errorMessage = 'Invalid image format. Please choose a JPEG or PNG image.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+      
+      _showErrorSnackBar(errorMessage);
     }
   }
 
   Future<void> _removeProfilePicture() async {
     Navigator.pop(context); // Close bottom sheet
     
+    setState(() {
+      _isUploadingImage = true;
+    });
+    
     try {
       await AuthService.removeProfilePicture();
       
-      // Refresh user data
+      // Update local state immediately for instant UI feedback
+      setState(() {
+        _localProfilePictureUrl = null;
+        _isUploadingImage = false;
+      });
+      
+      // Refresh user data in provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.refreshProfile();
       
       _showSuccessSnackBar('Profile picture removed successfully!');
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
       _showErrorSnackBar('Failed to remove profile picture: $e');
     }
   }
