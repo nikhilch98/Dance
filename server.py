@@ -803,6 +803,18 @@ async def home(request: Request):
     return templates.TemplateResponse("website/index.html", {"request": request})
 
 
+@app.get("/privacy-policy")
+async def privacy_policy(request: Request):
+    """Serve the privacy policy page."""
+    return templates.TemplateResponse("website/privacy_policy.html", {"request": request})
+
+
+@app.get("/terms-of-service")
+async def terms_of_service(request: Request):
+    """Serve the terms of service page."""
+    return templates.TemplateResponse("website/terms_of_service.html", {"request": request})
+
+
 # API Routes
 @app.get("/api/workshops", response_model=List[WorkshopListItem])
 @cache_response(expire=3600)
