@@ -145,6 +145,7 @@ class UserProfile(BaseModel):
     date_of_birth: Optional[str]
     gender: Optional[str]
     profile_picture_url: Optional[str] = None
+    profile_picture_id: Optional[str] = None
     profile_complete: bool
     is_admin: Optional[bool] = False
     created_at: datetime
@@ -323,32 +324,6 @@ class UserOperations:
             }}
         )
         return result.modified_count > 0
-    
-    @staticmethod
-    def update_profile_picture(user_id: str, image_url: str) -> bool:
-        """Update user profile picture."""
-        client = get_mongo_client()
-        
-        result = client["dance_app"]["users"].update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {
-                "profile_picture_url": image_url,
-                "updated_at": datetime.utcnow()
-            }}
-        )
-        return result.modified_count > 0
-    
-    @staticmethod
-    def remove_profile_picture(user_id: str) -> bool:
-        """Remove user profile picture."""
-        client = get_mongo_client()
-        
-        result = client["dance_app"]["users"].update_one(
-            {"_id": ObjectId(user_id)},
-            {"$unset": {"profile_picture_url": ""},
-             "$set": {"updated_at": datetime.utcnow()}}
-        )
-        return result.modified_count > 0
 
 def format_user_profile(user_data: dict) -> UserProfile:
     """Format user data to UserProfile model."""
@@ -359,6 +334,7 @@ def format_user_profile(user_data: dict) -> UserProfile:
         date_of_birth=user_data.get("date_of_birth"),
         gender=user_data.get("gender"),
         profile_picture_url=user_data.get("profile_picture_url"),
+        profile_picture_id=user_data.get("profile_picture_id"),
         profile_complete=user_data.get("profile_complete", False),
         is_admin=user_data.get("is_admin", False),
         created_at=user_data["created_at"],
@@ -1471,7 +1447,7 @@ async def upload_profile_picture(
     file: UploadFile = File(...),
     user_id: str = Depends(verify_token)
 ):
-    """Upload user profile picture.
+    """Upload user profile picture to MongoDB.
     
     Args:
         file: Image file to upload
@@ -1508,27 +1484,51 @@ async def upload_profile_picture(
         max_size = (800, 800)
         image.thumbnail(max_size, Image.Resampling.LANCZOS)
         
-        # Create uploads directory if it doesn't exist
-        uploads_dir = "static/uploads/profile_pictures"
-        os.makedirs(uploads_dir, exist_ok=True)
+        # Convert processed image to bytes
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, "JPEG", quality=85, optimize=True)
+        img_byte_arr = img_byte_arr.getvalue()
         
-        # Generate unique filename
-        file_extension = "jpg"  # Always save as JPG for consistency
-        filename = f"{user_id}_{secrets.token_hex(8)}.{file_extension}"
-        file_path = os.path.join(uploads_dir, filename)
+        # Get MongoDB client
+        client = get_mongo_client()
         
-        # Save optimized image
-        image.save(file_path, "JPEG", quality=85, optimize=True)
+        # Remove existing profile picture if any
+        existing_user = client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
+        if existing_user and existing_user.get("profile_picture_id"):
+            # Delete old profile picture from MongoDB
+            client["dance_app"]["profile_pictures"].delete_one(
+                {"_id": ObjectId(existing_user["profile_picture_id"])}
+            )
+        
+        # Save new image to MongoDB
+        profile_picture_doc = {
+            "user_id": user_id,
+            "image_data": img_byte_arr,
+            "content_type": "image/jpeg",
+            "filename": f"profile_{user_id}_{secrets.token_hex(8)}.jpg",
+            "size": len(img_byte_arr),
+            "created_at": datetime.utcnow(),
+        }
+        
+        result = client["dance_app"]["profile_pictures"].insert_one(profile_picture_doc)
+        picture_id = str(result.inserted_id)
         
         # Create URL for the image
-        image_url = f"/static/uploads/profile_pictures/{filename}"
+        image_url = f"/api/profile-picture/{picture_id}"
         
-        # Update user profile in database
-        success = UserOperations.update_profile_picture(user_id, image_url)
-        if not success:
-            # Clean up uploaded file if database update fails
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        # Update user profile in database with picture ID
+        update_result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "profile_picture_id": picture_id,
+                "profile_picture_url": image_url,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        if update_result.modified_count == 0:
+            # Clean up uploaded image if database update fails
+            client["dance_app"]["profile_pictures"].delete_one({"_id": ObjectId(picture_id)})
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update profile picture"
@@ -1549,7 +1549,7 @@ async def upload_profile_picture(
 
 @app.delete("/api/auth/profile-picture")
 async def remove_profile_picture(user_id: str = Depends(verify_token)):
-    """Remove user profile picture.
+    """Remove user profile picture from MongoDB.
     
     Args:
         user_id: User ID from JWT token
@@ -1557,32 +1557,89 @@ async def remove_profile_picture(user_id: str = Depends(verify_token)):
     Returns:
         Success message
     """
-    # Get current user to find existing profile picture
-    user = UserOperations.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+    try:
+        client = get_mongo_client()
+        
+        # Get current user to find existing profile picture
+        user = client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Remove profile picture from MongoDB if it exists
+        if user.get("profile_picture_id"):
+            client["dance_app"]["profile_pictures"].delete_one(
+                {"_id": ObjectId(user["profile_picture_id"])}
+            )
+        
+        # Remove profile picture references from user document
+        update_result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$unset": {
+                "profile_picture_id": "",
+                "profile_picture_url": ""
+            },
+             "$set": {"updated_at": datetime.utcnow()}}
         )
-    
-    # Remove from database
-    success = UserOperations.remove_profile_picture(user_id)
-    if not success:
+        
+        if update_result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to remove profile picture"
+            )
+        
+        return {"message": "Profile picture removed successfully"}
+        
+    except Exception as e:
+        print(f"Error removing profile picture: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove profile picture"
         )
+
+
+@app.get("/api/profile-picture/{picture_id}")
+async def get_profile_picture(picture_id: str):
+    """Serve profile picture from MongoDB.
     
-    # Try to delete the physical file (optional, don't fail if it doesn't exist)
-    if user.get("profile_picture_url"):
-        try:
-            file_path = user["profile_picture_url"].replace("/static/", "static/")
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            print(f"Warning: Could not delete profile picture file: {str(e)}")
-    
-    return {"message": "Profile picture removed successfully"}
+    Args:
+        picture_id: Profile picture ID
+        
+    Returns:
+        Image response
+    """
+    try:
+        client = get_mongo_client()
+        
+        # Get profile picture from MongoDB
+        picture_doc = client["dance_app"]["profile_pictures"].find_one(
+            {"_id": ObjectId(picture_id)}
+        )
+        
+        if not picture_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Profile picture not found"
+            )
+        
+        # Return image data
+        return Response(
+            content=picture_doc["image_data"],
+            media_type=picture_doc.get("content_type", "image/jpeg"),
+            headers={
+                "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
+                "Content-Disposition": f'inline; filename="{picture_doc.get("filename", "profile.jpg")}"'
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error serving profile picture: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile picture not found"
+        )
 
 
 if __name__ == "__main__":

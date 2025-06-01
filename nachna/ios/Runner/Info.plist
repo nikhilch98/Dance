@@ -57,5 +57,11 @@
 	<string>a5ca1ab6-90b7-4765-9538-0b2f58e6b6c2</string> -->
 	<!-- <key>ITSAppUsesNonExemptEncryption</key>
 	<true/> -->
+	
+	<!-- Camera and Photo Library Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to take profile pictures</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select profile pictures</string>
 </dict>
 </plist>
