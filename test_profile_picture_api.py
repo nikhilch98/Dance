@@ -14,8 +14,8 @@ import os
 # Configuration
 BASE_URL = "https://nachna.com/api/auth"
 TEST_USER = {
-    "mobile_number": "9876543210",
-    "password": "testpass123"
+    "mobile_number": "9999999999",
+    "password": "test123"
 }
 
 def create_test_image():

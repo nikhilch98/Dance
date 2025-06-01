@@ -189,20 +189,30 @@
 
 ## Testing Guidelines
 
-### Unit Testing
-1. **Model Testing**: Test all model serialization/deserialization
-2. **Service Testing**: Test API service methods
-3. **Provider Testing**: Test state management logic
+### Test User Credentials
+For all testing and development purposes, use the following test user:
 
-### Widget Testing
-1. **Screen Testing**: Test main screen functionality
-2. **Form Testing**: Test form validation and submission
-3. **Navigation Testing**: Test navigation flows
+- **Mobile Number:** `9999999999`
+- **Password:** `test123`
+- **User ID:** `683cdbb39caf05c68764cde4`
+- **Profile Status:** Incomplete (for testing profile setup flow)
 
-### Integration Testing
-1. **API Integration**: Test complete API workflows
-2. **Authentication Flow**: Test login/logout/registration flows
-3. **Image Upload**: Test image upload functionality
+### Testing Workflows
+1. **Authentication Testing:** Use the test user for login/logout flows
+2. **Profile Picture Testing:** Test upload, removal, and display functionality
+3. **Profile Setup Testing:** Test the onboarding profile completion flow
+4. **Admin Testing:** Create separate admin users as needed
+
+### API Testing
+- **Base URL:** `https://nachna.com/api/auth`
+- **Test Scripts:** Use `create_test_user.py` and `test_profile_picture_api.py`
+- **Profile Picture API:** Verified working with MongoDB storage
+
+### Development Notes
+- Test user is created via API registration endpoint
+- Profile pictures are stored in MongoDB `profile_pictures` collection
+- All authentication uses JWT tokens with 30-day expiration
+- Use this test user consistently across all development and testing scenarios
 
 ## Accessibility Guidelines
 

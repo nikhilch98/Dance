@@ -49,7 +49,7 @@ from functools import wraps
 import time as time_module
 import logging
 from colorama import Fore, Style, init
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import io
 
 # Initialize colorama for cross-platform colored output
@@ -1456,8 +1456,8 @@ async def upload_profile_picture(
     Returns:
         Success message with image URL
     """
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith('image/'):
+    # Validate file type - be more flexible with content type
+    if file.content_type and not file.content_type.startswith('image/'):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an image"
@@ -1473,7 +1473,13 @@ async def upload_profile_picture(
         )
     
     try:
-        # Validate and process image
+        # Validate and process image - this will fail if it's not a valid image
+        image = Image.open(io.BytesIO(file_content))
+        
+        # Verify it's actually an image by trying to load it
+        image.verify()
+        
+        # Reopen the image since verify() closes it
         image = Image.open(io.BytesIO(file_content))
         
         # Convert to RGB if necessary
@@ -1539,11 +1545,19 @@ async def upload_profile_picture(
             "image_url": image_url
         }
         
+    except UnidentifiedImageError as e:
+        print(f"Invalid image format: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format. Please upload a valid image file (JPEG, PNG, etc.)"
+        )
     except Exception as e:
         print(f"Error processing image: {str(e)}")
+        print(f"File content type: {file.content_type}")
+        print(f"File size: {len(file_content) if 'file_content' in locals() else 'unknown'}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process image"
+            detail=f"Failed to process image: {str(e)}"
         )
 
 

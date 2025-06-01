@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/user.dart';
@@ -232,13 +233,35 @@ class AuthService {
       );
 
       request.headers['Authorization'] = 'Bearer $token';
+      
+      // Determine content type based on file extension
+      String contentType = 'image/jpeg';
+      final extension = imageFile.path.toLowerCase().split('.').last;
+      if (extension == 'png') {
+        contentType = 'image/png';
+      } else if (extension == 'jpg' || extension == 'jpeg') {
+        contentType = 'image/jpeg';
+      } else if (extension == 'gif') {
+        contentType = 'image/gif';
+      } else if (extension == 'webp') {
+        contentType = 'image/webp';
+      }
+      
       request.files.add(await http.MultipartFile.fromPath(
         'file',
         imageFile.path,
+        contentType: MediaType.parse(contentType),
       ));
+
+      print('📤 Uploading image: ${imageFile.path}');
+      print('📤 Content type: $contentType');
+      print('📤 File size: ${await imageFile.length()} bytes');
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Upload response: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -268,6 +291,7 @@ class AuthService {
         throw AuthException(error['detail'] ?? 'Profile picture upload failed');
       }
     } catch (e) {
+      print('❌ Upload error: $e');
       if (e is AuthException) rethrow;
       throw AuthException('Network error: $e');
     }
