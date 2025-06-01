@@ -1,0 +1,230 @@
+# Nachna App - Design Language & Development Rules
+
+## Design Language Guidelines
+
+### Color Palette
+- **Primary Gradient**: `LinearGradient(colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)])`
+- **Background Gradient**: 
+  ```dart
+  LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0A0A0F),
+      Color(0xFF1A1A2E),
+      Color(0xFF16213E),
+      Color(0xFF0F3460),
+    ],
+  )
+  ```
+- **Accent Colors**:
+  - Blue: `Color(0xFF3B82F6)` to `Color(0xFF1D4ED8)`
+  - Green: `Color(0xFF10B981)` to `Color(0xFF059669)`
+  - Purple: `Color(0xFF8B5CF6)`
+  - Pink/Red: `Color(0xFFFF006E)` to `Color(0xFFDC2626)`
+- **Text Colors**:
+  - Primary: `Colors.white`
+  - Secondary: `Colors.white.withOpacity(0.7)`
+  - Tertiary: `Colors.white.withOpacity(0.5)`
+
+### Typography
+- **Headers**: Bold, white text with appropriate sizing
+- **Body Text**: Regular weight, white or white with opacity
+- **Font Sizes**: Use responsive sizing based on screen width/height percentages
+- **Letter Spacing**: Use `letterSpacing: 1.2` for headers
+
+### Component Design Patterns
+
+#### Cards & Containers
+- **Border Radius**: Always use `BorderRadius.circular(20)` or `BorderRadius.circular(24)` for main containers
+- **Glassmorphism Effect**:
+  ```dart
+  Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.15),
+          Colors.white.withOpacity(0.05),
+        ],
+      ),
+      border: Border.all(
+        color: Colors.white.withOpacity(0.2),
+        width: 1.5,
+      ),
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: // Your content here
+      ),
+    ),
+  )
+  ```
+
+#### Buttons
+- **Primary Buttons**: Use gradient backgrounds with shadow effects
+- **Secondary Buttons**: Use outline style with glassmorphism
+- **Border Radius**: `BorderRadius.circular(16)` for buttons
+- **Padding**: `EdgeInsets.symmetric(vertical: 16)` for standard buttons
+
+#### Form Fields
+- **Background**: `Colors.white.withOpacity(0.1)`
+- **Border**: `BorderSide(color: Colors.white.withOpacity(0.2))`
+- **Focus Border**: `BorderSide(color: Color(0xFF00D4FF), width: 2)`
+- **Border Radius**: `BorderRadius.circular(12)`
+- **Icons**: Use `Color(0xFF00D4FF)` for prefix icons
+
+#### Shadows & Effects
+- **Box Shadows**: Use colored shadows that match the element's color theme
+- **Blur Effects**: Use `ImageFilter.blur(sigmaX: 10, sigmaY: 10)` for glassmorphism
+- **Opacity Layers**: Layer different opacity levels for depth
+
+### Animation Guidelines
+- **Duration**: Use `Duration(milliseconds: 800)` for standard animations
+- **Curves**: Prefer `Curves.easeOut` and `Curves.easeOutCubic`
+- **Fade Animations**: Always include fade transitions for screen changes
+- **Slide Animations**: Use subtle slide effects with `Offset(0, 0.3)`
+
+### Responsive Design
+- **Screen Breakpoints**: Use `MediaQuery.of(context).size` for responsive sizing
+- **Percentage-based Sizing**: Use screen width/height percentages for consistent scaling
+- **Minimum/Maximum Constraints**: Use `.clamp()` for font sizes and dimensions
+- **Safe Areas**: Always wrap content in `SafeArea` widgets
+
+### Navigation & UX
+- **Bottom Sheets**: Use glassmorphism design with rounded top corners
+- **Dialogs**: Follow the same glassmorphism pattern as cards
+- **Snackbars**: Use floating behavior with rounded corners and appropriate colors
+- **Loading States**: Use `CircularProgressIndicator` with white color
+
+## Code Quality Rules
+
+### Flutter/Dart Specific
+1. **State Management**: Use Provider pattern consistently
+2. **Error Handling**: Always wrap async operations in try-catch blocks
+3. **Null Safety**: Use null-aware operators and proper null checks
+4. **Widget Composition**: Break down complex widgets into smaller, reusable components
+5. **Performance**: Use `const` constructors where possible
+
+### API Integration
+1. **Base URLs**: Use consistent base URL configuration
+2. **Error Responses**: Handle HTTP errors gracefully with user-friendly messages
+3. **Loading States**: Show loading indicators during API calls
+4. **Token Management**: Use secure storage for authentication tokens
+
+### File Organization
+1. **Screens**: Place in `lib/screens/` directory
+2. **Models**: Place in `lib/models/` directory with JSON serialization
+3. **Services**: Place in `lib/services/` directory
+4. **Providers**: Place in `lib/providers/` directory
+5. **Widgets**: Place reusable widgets in `lib/widgets/` directory
+
+### Naming Conventions
+1. **Files**: Use snake_case for file names
+2. **Classes**: Use PascalCase for class names
+3. **Variables**: Use camelCase for variable names
+4. **Constants**: Use UPPER_SNAKE_CASE for constants
+5. **Private Members**: Prefix with underscore `_`
+
+### Documentation
+1. **Comments**: Add meaningful comments for complex logic
+2. **Method Documentation**: Use dartdoc comments for public methods
+3. **README**: Keep README updated with setup instructions
+
+## UI/UX Consistency Rules
+
+### Profile & User Management
+- **Profile Pictures**: Always show circular avatars with gradient fallbacks
+- **User Info**: Display in card format with glassmorphism
+- **Edit States**: Use inline editing or modal dialogs consistently
+
+### Forms & Input
+- **Validation**: Show validation errors with red color and clear messages
+- **Success States**: Use green color for success messages
+- **Field Spacing**: Maintain consistent spacing between form fields
+- **Keyboard Handling**: Dismiss keyboard appropriately
+
+### Lists & Cards
+- **Workshop Cards**: Use consistent card design with gradient overlays
+- **Artist Cards**: Show circular profile pictures with names
+- **Studio Cards**: Include studio images and information in card format
+
+### Image Handling
+- **Loading States**: Show skeleton or placeholder while loading
+- **Error States**: Show fallback images or gradients on error
+- **Optimization**: Resize and compress images appropriately
+- **Caching**: Implement proper image caching strategies
+
+## Performance Guidelines
+
+### Memory Management
+1. **Dispose Controllers**: Always dispose of controllers in dispose() method
+2. **Cancel Timers**: Cancel any timers or subscriptions
+3. **Image Memory**: Use appropriate image sizes and caching
+
+### Network Optimization
+1. **Request Debouncing**: Implement debouncing for search and frequent requests
+2. **Caching**: Cache API responses where appropriate
+3. **Compression**: Compress images before upload
+
+### Build Optimization
+1. **Widget Rebuilds**: Minimize unnecessary widget rebuilds
+2. **Const Constructors**: Use const constructors for static widgets
+3. **Builder Patterns**: Use builder patterns for conditional rendering
+
+## Security Guidelines
+
+### Data Protection
+1. **Secure Storage**: Use flutter_secure_storage for sensitive data
+2. **Token Expiry**: Handle token expiration gracefully
+3. **Input Validation**: Validate all user inputs on both client and server
+4. **Image Upload**: Validate image types and sizes before upload
+
+### API Security
+1. **HTTPS**: Always use HTTPS for API calls
+2. **Authentication**: Include proper authentication headers
+3. **Error Messages**: Don't expose sensitive information in error messages
+
+## Testing Guidelines
+
+### Unit Testing
+1. **Model Testing**: Test all model serialization/deserialization
+2. **Service Testing**: Test API service methods
+3. **Provider Testing**: Test state management logic
+
+### Widget Testing
+1. **Screen Testing**: Test main screen functionality
+2. **Form Testing**: Test form validation and submission
+3. **Navigation Testing**: Test navigation flows
+
+### Integration Testing
+1. **API Integration**: Test complete API workflows
+2. **Authentication Flow**: Test login/logout/registration flows
+3. **Image Upload**: Test image upload functionality
+
+## Accessibility Guidelines
+
+### Screen Reader Support
+1. **Semantic Labels**: Add semantic labels to interactive elements
+2. **Focus Management**: Ensure proper focus management
+3. **Contrast**: Maintain sufficient color contrast
+
+### Touch Targets
+1. **Minimum Size**: Ensure touch targets are at least 44x44 points
+2. **Spacing**: Provide adequate spacing between interactive elements
+
+## Deployment Guidelines
+
+### Build Configuration
+1. **Environment Variables**: Use proper environment configuration
+2. **Build Variants**: Configure debug/release builds appropriately
+3. **App Icons**: Ensure proper app icons for all platforms
+
+### Platform Specific
+1. **iOS**: Configure proper Info.plist settings
+2. **Android**: Configure proper AndroidManifest.xml settings
+3. **Permissions**: Request only necessary permissions
+
+Remember: Consistency is key. When implementing new features or making changes, always refer back to these guidelines to ensure the app maintains its cohesive design language and user experience. 

@@ -22,6 +22,8 @@ from fastapi import (
     Body,
     Header,
     status,
+    File,
+    UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -47,6 +49,8 @@ from functools import wraps
 import time as time_module
 import logging
 from colorama import Fore, Style, init
+from PIL import Image
+import io
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -140,6 +144,7 @@ class UserProfile(BaseModel):
     name: Optional[str]
     date_of_birth: Optional[str]
     gender: Optional[str]
+    profile_picture_url: Optional[str] = None
     profile_complete: bool
     is_admin: Optional[bool] = False
     created_at: datetime
@@ -318,6 +323,32 @@ class UserOperations:
             }}
         )
         return result.modified_count > 0
+    
+    @staticmethod
+    def update_profile_picture(user_id: str, image_url: str) -> bool:
+        """Update user profile picture."""
+        client = get_mongo_client()
+        
+        result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "profile_picture_url": image_url,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        return result.modified_count > 0
+    
+    @staticmethod
+    def remove_profile_picture(user_id: str) -> bool:
+        """Remove user profile picture."""
+        client = get_mongo_client()
+        
+        result = client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$unset": {"profile_picture_url": ""},
+             "$set": {"updated_at": datetime.utcnow()}}
+        )
+        return result.modified_count > 0
 
 def format_user_profile(user_data: dict) -> UserProfile:
     """Format user data to UserProfile model."""
@@ -327,6 +358,7 @@ def format_user_profile(user_data: dict) -> UserProfile:
         name=user_data.get("name"),
         date_of_birth=user_data.get("date_of_birth"),
         gender=user_data.get("gender"),
+        profile_picture_url=user_data.get("profile_picture_url"),
         profile_complete=user_data.get("profile_complete", False),
         is_admin=user_data.get("is_admin", False),
         created_at=user_data["created_at"],
@@ -1433,6 +1465,124 @@ async def get_config(user_id: str = Depends(verify_token)):
     return {
         "is_admin": user.get("is_admin", False)
     }
+
+@app.post("/api/auth/profile-picture")
+async def upload_profile_picture(
+    file: UploadFile = File(...),
+    user_id: str = Depends(verify_token)
+):
+    """Upload user profile picture.
+    
+    Args:
+        file: Image file to upload
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message with image URL
+    """
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith('image/'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image"
+        )
+    
+    # Validate file size (max 5MB)
+    max_size = 5 * 1024 * 1024  # 5MB
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size must be less than 5MB"
+        )
+    
+    try:
+        # Validate and process image
+        image = Image.open(io.BytesIO(file_content))
+        
+        # Convert to RGB if necessary
+        if image.mode in ('RGBA', 'LA', 'P'):
+            image = image.convert('RGB')
+        
+        # Resize image to max 800x800 while maintaining aspect ratio
+        max_size = (800, 800)
+        image.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Create uploads directory if it doesn't exist
+        uploads_dir = "static/uploads/profile_pictures"
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        # Generate unique filename
+        file_extension = "jpg"  # Always save as JPG for consistency
+        filename = f"{user_id}_{secrets.token_hex(8)}.{file_extension}"
+        file_path = os.path.join(uploads_dir, filename)
+        
+        # Save optimized image
+        image.save(file_path, "JPEG", quality=85, optimize=True)
+        
+        # Create URL for the image
+        image_url = f"/static/uploads/profile_pictures/{filename}"
+        
+        # Update user profile in database
+        success = UserOperations.update_profile_picture(user_id, image_url)
+        if not success:
+            # Clean up uploaded file if database update fails
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update profile picture"
+            )
+        
+        return {
+            "message": "Profile picture uploaded successfully",
+            "image_url": image_url
+        }
+        
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process image"
+        )
+
+
+@app.delete("/api/auth/profile-picture")
+async def remove_profile_picture(user_id: str = Depends(verify_token)):
+    """Remove user profile picture.
+    
+    Args:
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    # Get current user to find existing profile picture
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Remove from database
+    success = UserOperations.remove_profile_picture(user_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove profile picture"
+        )
+    
+    # Try to delete the physical file (optional, don't fail if it doesn't exist)
+    if user.get("profile_picture_url"):
+        try:
+            file_path = user["profile_picture_url"].replace("/static/", "static/")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Warning: Could not delete profile picture file: {str(e)}")
+    
+    return {"message": "Profile picture removed successfully"}
 
 
 if __name__ == "__main__":

@@ -54,7 +54,7 @@ class EventDetails(BaseModel):
     by: Optional[str] = None
     song: Optional[str] = None
     pricing_info: Optional[str] = None
-    artist_id: Optional[str] = None
+    artist_id_list: Optional[List[str]] = []
 
 
 class EventSummary(BaseModel):
@@ -167,10 +167,10 @@ class EventProcessor:
                 '     * **`start_time`**: string, 12-hour format "HH:MM AM/PM" with leading zeros (e.g., "01:00 PM", "05:30 AM"). Null if not found.\n'
                 '     * **`end_time`**: string, 12-hour format "HH:MM AM/PM" with leading zeros (e.g., "01:00 PM", "05:30 AM"). Null if not found.\n'
                 '     * NOTE: Only intensives or regulars typically have multiple entries in `time_details` array (for multiple days/sessions). Workshops usually have only one.\n\n'
-                "   - **`by`**: string with the instructor's name(s). If multiple, use ' x ' to separate. Null if not found.\n"
+                "   - **`by`**: string with the instructor's name(s). If multiple, use ' X ' to separate. Null if not found.\n"
                 "   - **`song`**: string with the routine/song name if available, else null.\n"
                 "   - **`pricing_info`**: string if pricing is found, else null. Format multiple tiers/options separated by a newline character '\\n'. Do not include taxes/fees like GST , Service charge , etc. \n"
-                "   - **`artist_id`**: if the instructor in `by` matches an entry in the provided artists list, use that `artist_id`; otherwise null.\n\n"
+                "   - **`artist_id_list`**: array of strings. If the instructor(s) in `by` match entries in the provided artists list, use those `artist_id`s; otherwise empty array. For multiple instructors, include all matching artist_ids.\n\n"
                 "   **IMPORTANT Extraction Notes**:\n"
                 "   - If multiple distinct classes/routines are offered within the same event post (e.g., different songs/styles with separate pricing/times), create a separate object in `event_details` for each.\n"
                 "   - If different routines share the same date/time, use the same `time_details` object(s) for each corresponding `event_details` object.\n"
@@ -196,7 +196,7 @@ class EventProcessor:
                 '               "by": <string | null>,\n'
                 '               "song": <string | null>,\n'
                 '               "pricing_info": <string | null>,\n'
-                '               "artist_id": <string | null>\n'
+                '               "artist_id_list": <array of strings>\n'
                 "           }\n"
                 "           // ... more event objects if applicable (multiple distinct routines)\n"
                 "       ]\n"
@@ -204,7 +204,7 @@ class EventProcessor:
                 "   ```\n\n"
                 "5. Do not include any extra text, explanations, or formatting outside the JSON structure.\n"
                 "6. Ensure all string values in the JSON are properly escaped.\n"
-                "7. Use the provided `artists` data *only* for matching and populating `artist_id`. Do not infer other details from it.\n"
+                "7. Use the provided `artists` data *only* for matching and populating `artist_id_list`. Do not infer other details from it.\n"
                 "8. Return only the raw JSON object."
             )
         except Exception as e:
@@ -271,7 +271,7 @@ class EventProcessor:
                         by=detail_data.get("by"),
                         song=detail_data.get("song"),
                         pricing_info=detail_data.get("pricing_info"),
-                        artist_id=detail_data.get("artist_id"),
+                        artist_id_list=detail_data.get("artist_id_list", []),
                     )
                 )
 
@@ -337,7 +337,7 @@ class StudioProcessor:
                                 "by": event_detail["by"], # Use event_detail
                                 "song": event_detail["song"], # Use event_detail
                                 "pricing_info": event_detail["pricing_info"], # Use event_detail
-                                "artist_id": event_detail["artist_id"], # Use event_detail
+                                "artist_id_list": event_detail["artist_id_list"], # Use event_detail
                                 "updated_at": time.time(),
                                 "version": self.version,
                             }
@@ -363,7 +363,7 @@ class StudioProcessor:
                             else:
                                 workshop_updates.append(inserted_data)
                                 # Check artist_id from event_detail
-                                if event_detail["artist_id"] is None:
+                                if not event_detail["artist_id_list"]:
                                     # Add tuple of (link, original 'by' field) for context
                                     missing_artists.add((link, event_detail.get("by"))) # Store link and 'by'
                     else:

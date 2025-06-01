@@ -61,14 +61,17 @@
           <th>Date</th>
           <th>Time</th>
           <th>Original 'By'</th>
+          <th>Current Artist</th>
           <th>Song</th>
           <th>Studio</th>
+          <th>Event Type</th>
+          <th>UUID</th>
           <th>Link</th>
           <th>Assign Artist</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>
+        <tr class="loading-row"><td colspan="10" class="loading">Loading workshops...</td></tr>
       </tbody>
     </table>
   </div>
@@ -102,6 +105,12 @@
         const response = await fetch('/admin/api/artists');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         allArtists = await response.json();
+        
+        // Debug: Log all artist data points
+        if (allArtists.length > 0) {
+          console.log("Available artist data points:", allArtists[0]);
+          console.log("All artists data:", allArtists);
+        }
       } catch (error) {
         console.error("Error fetching artists:", error);
         displayMessage("Error fetching artists list. Please try again.", "error");
@@ -111,7 +120,7 @@
 
     async function fetchMissingArtistSessions() {
       const tableBody = document.querySelector("#workshops-table tbody");
-      tableBody.innerHTML = '<tr class="loading-row"><td colspan="7" class="loading">Loading workshops...</td></tr>';
+      tableBody.innerHTML = '<tr class="loading-row"><td colspan="10" class="loading">Loading workshops...</td></tr>';
       try {
         const response = await fetch('/admin/api/missing_artist_sessions');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -119,7 +128,7 @@
         renderTable(sessions);
       } catch (error) {
         console.error("Error fetching missing artist sessions:", error);
-        tableBody.innerHTML = '<tr><td colspan="7" class="error">Could not load workshop sessions. Please try again.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" class="error">Could not load workshop sessions. Please try again.</td></tr>';
       }
     }
 
@@ -127,8 +136,14 @@
       const tableBody = document.querySelector("#workshops-table tbody");
       tableBody.innerHTML = ""; // Clear loading or previous data
 
+      // Debug: Log all data points available
+      if (sessions.length > 0) {
+        console.log("Available session data points:", sessions[0]);
+        console.log("All session data:", sessions);
+      }
+
       if (sessions.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="7" class="message">No workshops found with missing artists.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" class="message">No workshops found with missing artists.</td></tr>';
         return;
       }
 
@@ -140,8 +155,11 @@
         row.insertCell().outerHTML = `<td data-label="Date">${session.date || 'N/A'}</td>`;
         row.insertCell().outerHTML = `<td data-label="Time">${session.time || 'N/A'}</td>`;
         row.insertCell().outerHTML = `<td data-label="Original 'By'">${session.original_by_field || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Current Artist">${session.current_artist_name || session.artist_name || 'N/A'}</td>`;
         row.insertCell().outerHTML = `<td data-label="Song">${session.song || 'N/A'}</td>`;
         row.insertCell().outerHTML = `<td data-label="Studio">${session.studio_name || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="Event Type">${session.event_type || 'N/A'}</td>`;
+        row.insertCell().outerHTML = `<td data-label="UUID">${session.workshop_uuid || 'N/A'}</td>`;
         const linkCell = row.insertCell();
         linkCell.dataset.label = "Link";
         if (session.payment_link) {
@@ -206,7 +224,7 @@
           // If no more rows, show message
           const tableBody = document.querySelector("#workshops-table tbody");
           if (tableBody.rows.length === 0) {
-              tableBody.innerHTML = '<tr><td colspan="7" class="message">All workshops have artists assigned.</td></tr>';
+              tableBody.innerHTML = '<tr><td colspan="10" class="message">All workshops have artists assigned.</td></tr>';
           }
         } else {
           displayMessage(result.detail || result.message || "Failed to assign artist.", "error");
