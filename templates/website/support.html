@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - nachna | Dance Workshop App</title>
+    <meta name="description" content="Get help and support for the nachna dance workshop app. Find answers to common questions and contact our support team.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #0A0A0F 0%, #1A1A2E 25%, #16213E 50%, #0F3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 0;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(156, 39, 176, 0.1));
+            border-radius: 20px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00D4FF, #9C27B0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+        }
+        
+        .support-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .support-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .support-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+        }
+        
+        .support-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #00D4FF;
+        }
+        
+        .support-card h3 {
+            font-size: 1.3rem;
+            margin: 20px 0 10px 0;
+            color: #ffffff;
+        }
+        
+        .support-card p, .support-card li {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+        
+        .support-card ul {
+            margin-left: 20px;
+        }
+        
+        .contact-info {
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.2), rgba(156, 39, 176, 0.2));
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .contact-info h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #ffffff;
+        }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .contact-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .contact-item h3 {
+            color: #00D4FF;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .contact-item a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .contact-item a:hover {
+            color: #00D4FF;
+        }
+        
+        .faq-section {
+            margin-top: 50px;
+        }
+        
+        .faq-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .faq-question {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+        
+        .faq-answer {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        
+        .app-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .version-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            header {
+                padding: 40px 20px;
+            }
+            
+            .support-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>nachna Support</h1>
+            <p class="subtitle">Get help with your dance workshop experience</p>
+        </header>
+        
+        <div class="support-grid">
+            <div class="support-card">
+                <h2>🚀 Getting Started</h2>
+                <h3>Download & Setup</h3>
+                <p>Download nachna from the App Store and create your account using your mobile number.</p>
+                
+                <h3>Profile Setup</h3>
+                <ul>
+                    <li>Complete your profile with name, date of birth, and gender</li>
+                    <li>Upload a profile picture (optional)</li>
+                    <li>Your profile helps us personalize your experience</li>
+                </ul>
+                
+                <h3>Browse Workshops</h3>
+                <p>Explore dance workshops by browsing all workshops, filtering by artist, or searching by studio.</p>
+            </div>
+            
+            <div class="support-card">
+                <h2>💃 Using the App</h2>
+                <h3>Workshop Discovery</h3>
+                <ul>
+                    <li>Browse all available dance workshops</li>
+                    <li>View workshop details: song, date, time, pricing</li>
+                    <li>See artist information and photos</li>
+                    <li>Check studio locations and schedules</li>
+                </ul>
+                
+                <h3>Booking Workshops</h3>
+                <p>Tap "Register" on any workshop to be redirected to the booking system. Payment is handled securely through our partner platforms.</p>
+                
+                <h3>Artist & Studio Profiles</h3>
+                <p>Explore artist portfolios and studio information. Follow links to their Instagram profiles for more content.</p>
+            </div>
+            
+            <div class="support-card">
+                <h2>👤 Account Management</h2>
+                <h3>Profile Updates</h3>
+                <ul>
+                    <li>Edit your personal information anytime</li>
+                    <li>Upload or change your profile picture</li>
+                    <li>Update your password for security</li>
+                </ul>
+                
+                <h3>Privacy & Security</h3>
+                <ul>
+                    <li>Your data is encrypted and secure</li>
+                    <li>Profile pictures are stored safely</li>
+                    <li>You control what information to share</li>
+                </ul>
+                
+                <h3>Account Issues</h3>
+                <p>If you can't log in or forgot your password, contact our support team for assistance.</p>
+            </div>
+            
+            <div class="support-card">
+                <h2>🛠️ Troubleshooting</h2>
+                <h3>Common Issues</h3>
+                <ul>
+                    <li><strong>App won't load:</strong> Check your internet connection</li>
+                    <li><strong>Can't upload photo:</strong> Ensure image is under 5MB</li>
+                    <li><strong>Login problems:</strong> Verify mobile number and password</li>
+                    <li><strong>Workshop not loading:</strong> Try refreshing the app</li>
+                </ul>
+                
+                <h3>Performance Tips</h3>
+                <ul>
+                    <li>Close and reopen the app if it feels slow</li>
+                    <li>Ensure you have the latest version</li>
+                    <li>Free up storage space on your device</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="contact-info">
+            <h2>Contact Support</h2>
+            <p>Need help? Our support team is here to assist you with any questions or issues.</p>
+            
+            <div class="contact-grid">
+                <div class="contact-item">
+                    <h3>📧 Email Support</h3>
+                    <a href="mailto:support@nachna.com">support@nachna.com</a>
+                    <p>We typically respond within 24 hours</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h3>📱 Developer Contact</h3>
+                    <a href="mailto:Nikhil.ch1430@gmail.com">Nikhil.ch1430@gmail.com</a>
+                    <p>Direct contact with the development team</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h3>🌐 Website</h3>
+                    <a href="https://nachna.com">nachna.com</a>
+                    <p>Visit our website for more information</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h3>📋 Feedback</h3>
+                    <a href="mailto:feedback@nachna.com">feedback@nachna.com</a>
+                    <p>Share your thoughts and suggestions</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="faq-section">
+            <div class="support-card">
+                <h2>❓ Frequently Asked Questions</h2>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Is nachna free to use?</div>
+                    <div class="faq-answer">Yes, the nachna app is completely free to download and use. You only pay for the workshops you choose to book through our partner platforms.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">How do I book a workshop?</div>
+                    <div class="faq-answer">Find a workshop you like and tap the "Register" button. You'll be redirected to the booking platform where you can complete your payment securely.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Can I cancel a workshop booking?</div>
+                    <div class="faq-answer">Cancellation policies vary by studio and workshop. Please check the specific terms when booking or contact the studio directly.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Why can't I see some workshops?</div>
+                    <div class="faq-answer">Workshops may have limited capacity or specific requirements. Some workshops might also be for certain skill levels or age groups.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">How do I update my profile?</div>
+                    <div class="faq-answer">Go to the Profile tab, tap the edit icon, and update your information. Don't forget to save your changes!</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Is my data secure?</div>
+                    <div class="faq-answer">Yes, we use industry-standard encryption to protect your data. Your password is securely hashed, and profile pictures are stored safely in our database.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="app-info">
+            <h2>About nachna</h2>
+            <p>nachna is your gateway to the vibrant world of dance workshops and artistic expression. Connect with talented artists, discover amazing studios, and book your next dance experience.</p>
+            
+            <div class="version-info">
+                <p><strong>App Version:</strong> 1.0.0</p>
+                <p><strong>Last Updated:</strong> January 2024</p>
+                <p><strong>Platform:</strong> iOS</p>
+                <p><strong>Privacy Policy:</strong> <a href="/privacy-policy" style="color: #00D4FF;">nachna.com/privacy-policy</a></p>
+                <p><strong>Terms of Service:</strong> <a href="/terms-of-service" style="color: #00D4FF;">nachna.com/terms-of-service</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

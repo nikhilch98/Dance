@@ -1,0 +1,74 @@
+nachna App - App Store Review Notes
+
+DEMO ACCOUNT FOR TESTING:
+Mobile Number: 9999999999
+Password: test123
+
+APP OVERVIEW:
+nachna is a dance workshop discovery and booking platform that connects users with dance artists, studios, and workshops. The app provides a comprehensive platform for the dance community to discover, book, and manage dance experiences.
+
+KEY FEATURES TO TEST:
+1. User Authentication - Registration, login, profile setup, password management
+2. Workshop Discovery - Browse workshops, multiple artist support, filtering, booking integration
+3. Artist Profiles - Artist directory, artist workshops, Instagram integration
+4. Studio Integration - Studio directory, schedules, location information
+5. Profile Management - Profile pictures, personal information, account security
+
+TESTING INSTRUCTIONS:
+1. Launch app and login with demo account (9999999999/test123)
+2. Complete profile setup and upload profile picture
+3. Browse workshops, artists, and studios
+4. Test profile editing and picture management
+5. Test external link redirections (payment and Instagram links)
+
+TECHNICAL IMPLEMENTATION:
+- Backend: FastAPI Python server at nachna.com
+- Database: MongoDB for secure data storage
+- Authentication: JWT token-based with 30-day expiration
+- Image Storage: MongoDB GridFS for profile pictures
+- Frontend: Flutter with custom glassmorphism design
+- Security: bcrypt password hashing, HTTPS encryption, input validation
+
+DATA AND PRIVACY:
+- Clear privacy policy at nachna.com/privacy-policy
+- Terms of service at nachna.com/terms-of-service
+- Secure password hashing and JWT authentication
+- User control over profile data and pictures
+- GDPR compliance for data protection
+
+EXTERNAL INTEGRATIONS:
+- Payment links redirect to external booking systems (no in-app payments)
+- Instagram links for artist/studio social media (open in browser)
+- No in-app social media posting or content sharing
+
+EXPECTED BEHAVIORS:
+- Smooth app launch and navigation
+- Successful login with demo credentials
+- Profile picture upload and display
+- Workshop data loading and display
+- External link redirections working properly
+- Clear error messages for invalid inputs
+
+SUPPORT INFORMATION:
+Developer: Nikhil Chatragadda
+Email: Nikhil.ch1430@gmail.com
+Phone: +91 8985374940
+Website: https://nachna.com
+
+COMPLIANCE:
+- Follows iOS Human Interface Guidelines
+- No private APIs or undocumented features
+- Appropriate content rating (4+)
+- No in-app purchases or subscriptions
+- Professional design with consistent UI/UX
+
+LEGAL & SUPPORT INFORMATION:
+Privacy Policy: https://nachna.com/privacy-policy
+Terms of Service: https://nachna.com/terms-of-service
+Support URL: https://nachna.com/support
+Support Email: support@nachna.com
+Developer Contact: Nikhil.ch1430@gmail.com
+
+The support page includes comprehensive help documentation, FAQs, troubleshooting guides, and multiple contact methods to ensure users receive prompt assistance with any questions or issues.
+
+The demo account (9999999999/test123) demonstrates all app features including authentication, profile management, workshop discovery, and external integrations. The app connects to a live backend with real workshop data and provides a complete dance community platform experience. 

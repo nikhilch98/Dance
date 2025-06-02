@@ -1,0 +1,43 @@
+nachna App - Support URL Information
+
+SUPPORT URL FOR APP STORE CONNECT:
+https://nachna.com/support
+
+ALTERNATIVE SUPPORT CONTACT:
+Direct Email: support@nachna.com
+Developer Email: Nikhil.ch1430@gmail.com
+
+SUPPORT PAGE FEATURES:
+✅ Getting Started Guide
+✅ App Usage Instructions  
+✅ Account Management Help
+✅ Troubleshooting Section
+✅ Frequently Asked Questions
+✅ Contact Information
+✅ App Version Info
+✅ Privacy Policy Link
+✅ Terms of Service Link
+
+SUPPORT SECTIONS INCLUDED:
+1. Getting Started - Download, setup, profile completion
+2. Using the App - Workshop discovery, booking, artist/studio profiles
+3. Account Management - Profile updates, privacy, security
+4. Troubleshooting - Common issues and performance tips
+5. Contact Support - Multiple contact methods
+6. FAQ - 6 most common questions answered
+7. About nachna - App information and legal links
+
+CONTACT METHODS PROVIDED:
+- Email Support: support@nachna.com (24hr response)
+- Developer Contact: Nikhil.ch1430@gmail.com  
+- Website: nachna.com
+- Feedback: feedback@nachna.com
+
+The support page follows nachna's design language with:
+- Glassmorphism effects
+- Primary gradient colors (#00D4FF to #9C27B0)
+- Dark gradient background
+- Responsive design for mobile
+- Professional layout with clear sections
+
+This comprehensive support page ensures users can get help with any issues and provides Apple with confidence that proper user support is available. 

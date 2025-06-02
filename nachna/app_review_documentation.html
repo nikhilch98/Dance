@@ -1,0 +1,343 @@
+<h1 id="nachna-app---app-store-review-documentation">nachna App - App
+Store Review Documentation</h1>
+<h2 id="app-overview">App Overview</h2>
+<p><strong>App Name:</strong> nachna<br />
+<strong>Version:</strong> 1.0.0<br />
+<strong>Category:</strong> Health &amp; Fitness<br />
+<strong>Platform:</strong> iOS<br />
+<strong>Developer:</strong> Nikhil Chatragadda</p>
+<h2 id="app-description">App Description</h2>
+<p>nachna is a dance workshop discovery and booking platform that
+connects users with dance artists, studios, and workshops. The app
+provides a comprehensive platform for the dance community to discover,
+book, and manage dance experiences.</p>
+<h2 id="key-features">Key Features</h2>
+<h3 id="workshop-discovery">1. Workshop Discovery</h3>
+<ul>
+<li>Browse dance workshops by date, artist, or studio</li>
+<li>View detailed workshop information including songs, pricing, and
+schedules</li>
+<li>Filter workshops by various criteria</li>
+<li>Real-time workshop availability</li>
+</ul>
+<h3 id="artist-profiles">2. Artist Profiles</h3>
+<ul>
+<li>Explore profiles of dance artists</li>
+<li>View artist portfolios and upcoming workshops</li>
+<li>Follow favorite artists</li>
+<li>Instagram integration for artist social media</li>
+</ul>
+<h3 id="studio-integration">3. Studio Integration</h3>
+<ul>
+<li>Discover dance studios with detailed information</li>
+<li>View studio schedules organized by week</li>
+<li>Direct booking through integrated payment systems</li>
+<li>Location and contact information</li>
+</ul>
+<h3 id="user-profile-management">4. User Profile Management</h3>
+<ul>
+<li>Secure user registration and authentication</li>
+<li>Profile setup with personal information</li>
+<li>Profile picture upload and management</li>
+<li>Password management and security</li>
+</ul>
+<h3 id="admin-dashboard">5. Admin Dashboard</h3>
+<ul>
+<li>Workshop management for administrators</li>
+<li>Artist assignment to workshops</li>
+<li>Missing data management</li>
+<li>Content moderation tools</li>
+</ul>
+<h2 id="technical-architecture">Technical Architecture</h2>
+<h3 id="backend">Backend</h3>
+<ul>
+<li><strong>Server:</strong> FastAPI Python server</li>
+<li><strong>Database:</strong> MongoDB for data storage</li>
+<li><strong>Authentication:</strong> JWT token-based authentication</li>
+<li><strong>Image Storage:</strong> MongoDB GridFS for profile
+pictures</li>
+<li><strong>API:</strong> RESTful API with comprehensive endpoints</li>
+</ul>
+<h3 id="frontend">Frontend</h3>
+<ul>
+<li><strong>Framework:</strong> Flutter (Dart)</li>
+<li><strong>State Management:</strong> Provider pattern</li>
+<li><strong>UI Design:</strong> Custom glassmorphism design system</li>
+<li><strong>Navigation:</strong> Material Design navigation
+patterns</li>
+<li><strong>Image Handling:</strong> Cached network images with
+fallbacks</li>
+</ul>
+<h3 id="security-features">Security Features</h3>
+<ul>
+<li>Secure password hashing using bcrypt</li>
+<li>JWT token authentication with 30-day expiration</li>
+<li>Input validation and sanitization</li>
+<li>Secure image upload with file type validation</li>
+<li>HTTPS-only API communication</li>
+</ul>
+<h2 id="user-authentication-flow">User Authentication Flow</h2>
+<h3 id="registration-process">Registration Process</h3>
+<ol type="1">
+<li>User enters mobile number and password</li>
+<li>Server validates input and creates account</li>
+<li>Password is securely hashed using bcrypt</li>
+<li>JWT token is generated and returned</li>
+<li>User is redirected to profile setup</li>
+</ol>
+<h3 id="login-process">Login Process</h3>
+<ol type="1">
+<li>User enters mobile number and password</li>
+<li>Server validates credentials</li>
+<li>JWT token is generated and returned</li>
+<li>User gains access to app features</li>
+</ol>
+<h3 id="profile-setup">Profile Setup</h3>
+<ol type="1">
+<li>User completes profile information (name, date of birth,
+gender)</li>
+<li>Optional profile picture upload</li>
+<li>Profile completion status is tracked</li>
+<li>Users can update profile information anytime</li>
+</ol>
+<h2 id="demo-account-information">Demo Account Information</h2>
+<p><strong>Mobile Number:</strong> 9999999999<br />
+<strong>Password:</strong> test123<br />
+<strong>User ID:</strong> 683cdbb39caf05c68764cde4<br />
+<strong>Profile Status:</strong> Incomplete (for testing profile setup
+flow)</p>
+<p>This test account demonstrates: - Login/logout functionality -
+Profile setup and completion flow - Profile picture upload/removal -
+Workshop browsing and discovery - Artist and studio exploration</p>
+<h2 id="api-endpoints">API Endpoints</h2>
+<h3 id="authentication-endpoints">Authentication Endpoints</h3>
+<ul>
+<li><code>POST /api/auth/register</code> - User registration</li>
+<li><code>POST /api/auth/login</code> - User login</li>
+<li><code>GET /api/auth/profile</code> - Get user profile</li>
+<li><code>PUT /api/auth/profile</code> - Update user profile</li>
+<li><code>PUT /api/auth/password</code> - Change password</li>
+<li><code>POST /api/auth/profile-picture</code> - Upload profile
+picture</li>
+<li><code>DELETE /api/auth/profile-picture</code> - Remove profile
+picture</li>
+</ul>
+<h3 id="workshop-endpoints">Workshop Endpoints</h3>
+<ul>
+<li><code>GET /api/workshops</code> - Get all workshops</li>
+<li><code>GET /api/workshops_by_artist/{artist_id}</code> - Get
+workshops by artist</li>
+<li><code>GET /api/workshops_by_studio/{studio_id}</code> - Get
+workshops by studio</li>
+</ul>
+<h3 id="artist-studio-endpoints">Artist &amp; Studio Endpoints</h3>
+<ul>
+<li><code>GET /api/artists</code> - Get all artists</li>
+<li><code>GET /api/studios</code> - Get all studios</li>
+</ul>
+<h3 id="admin-endpoints">Admin Endpoints</h3>
+<ul>
+<li><code>GET /admin/api/missing_artist_sessions</code> - Get workshops
+missing artists</li>
+<li><code>PUT /admin/api/workshops/{uuid}/assign_artist</code> - Assign
+artists to workshops</li>
+<li><code>GET /admin/api/missing_song_sessions</code> - Get workshops
+missing songs</li>
+<li><code>PUT /admin/api/workshops/{uuid}/assign_song</code> - Assign
+songs to workshops</li>
+</ul>
+<h2 id="data-models">Data Models</h2>
+<h3 id="user-profile">User Profile</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;user_id&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;mobile_number&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;string (optional)&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;date_of_birth&quot;</span><span class="fu">:</span> <span class="st">&quot;string (optional)&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;gender&quot;</span><span class="fu">:</span> <span class="st">&quot;string (optional)&quot;</span><span class="fu">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;profile_picture_url&quot;</span><span class="fu">:</span> <span class="st">&quot;string (optional)&quot;</span><span class="fu">,</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;profile_complete&quot;</span><span class="fu">:</span> <span class="st">&quot;boolean&quot;</span><span class="fu">,</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;is_admin&quot;</span><span class="fu">:</span> <span class="st">&quot;boolean&quot;</span><span class="fu">,</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;created_at&quot;</span><span class="fu">:</span> <span class="st">&quot;datetime&quot;</span><span class="fu">,</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;updated_at&quot;</span><span class="fu">:</span> <span class="st">&quot;datetime&quot;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="workshop">Workshop</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;uuid&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;payment_link&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;studio_id&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;studio_name&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;artist_id_list&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;string&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;artist_image_urls&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;string&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;song&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;pricing_info&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;date&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;time&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span><span class="fu">,</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;event_type&quot;</span><span class="fu">:</span> <span class="st">&quot;string&quot;</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h2 id="privacy-and-data-protection">Privacy and Data Protection</h2>
+<h3 id="data-collection">Data Collection</h3>
+<ul>
+<li>User registration information (mobile number, password)</li>
+<li>Profile information (name, date of birth, gender)</li>
+<li>Profile pictures (stored securely in MongoDB)</li>
+<li>Workshop booking preferences and history</li>
+</ul>
+<h3 id="data-usage">Data Usage</h3>
+<ul>
+<li>User authentication and account management</li>
+<li>Personalized workshop recommendations</li>
+<li>Profile display and social features</li>
+<li>Administrative functions for content management</li>
+</ul>
+<h3 id="data-security">Data Security</h3>
+<ul>
+<li>All passwords are hashed using bcrypt</li>
+<li>JWT tokens for secure authentication</li>
+<li>Profile pictures stored in encrypted MongoDB collections</li>
+<li>HTTPS encryption for all API communications</li>
+<li>Input validation and sanitization</li>
+</ul>
+<h3 id="data-retention">Data Retention</h3>
+<ul>
+<li>User accounts remain active until deletion is requested</li>
+<li>Profile pictures can be removed by users at any time</li>
+<li>Workshop data is maintained for historical purposes</li>
+<li>Logs are rotated and cleaned regularly</li>
+</ul>
+<h2 id="content-guidelines">Content Guidelines</h2>
+<h3 id="user-generated-content">User-Generated Content</h3>
+<ul>
+<li>Profile pictures must be appropriate and non-offensive</li>
+<li>User names and profile information must be accurate</li>
+<li>No spam, harassment, or inappropriate content allowed</li>
+</ul>
+<h3 id="workshop-content">Workshop Content</h3>
+<ul>
+<li>All workshop information is curated by administrators</li>
+<li>Artist and studio information is verified</li>
+<li>Payment links are validated for security</li>
+<li>Content is regularly reviewed and updated</li>
+</ul>
+<h2 id="testing-instructions">Testing Instructions</h2>
+<h3 id="basic-app-flow-testing">Basic App Flow Testing</h3>
+<ol type="1">
+<li><strong>Registration/Login:</strong>
+<ul>
+<li>Use demo account: 9999999999 / test123</li>
+<li>Test registration with new mobile number</li>
+<li>Verify JWT token authentication</li>
+</ul></li>
+<li><strong>Profile Management:</strong>
+<ul>
+<li>Complete profile setup flow</li>
+<li>Upload/remove profile picture</li>
+<li>Update profile information</li>
+<li>Change password</li>
+</ul></li>
+<li><strong>Workshop Discovery:</strong>
+<ul>
+<li>Browse all workshops</li>
+<li>Filter by artist or studio</li>
+<li>View workshop details</li>
+<li>Test payment link redirection</li>
+</ul></li>
+<li><strong>Artist/Studio Exploration:</strong>
+<ul>
+<li>Browse artist profiles</li>
+<li>View artist workshops</li>
+<li>Explore studio schedules</li>
+<li>Test Instagram link integration</li>
+</ul></li>
+</ol>
+<h3 id="admin-features-testing">Admin Features Testing</h3>
+<ol type="1">
+<li><strong>Admin Access:</strong>
+<ul>
+<li>Login with admin account</li>
+<li>Access admin dashboard</li>
+<li>View missing data reports</li>
+</ul></li>
+<li><strong>Content Management:</strong>
+<ul>
+<li>Assign artists to workshops</li>
+<li>Assign songs to workshops</li>
+<li>Search and filter functionality</li>
+</ul></li>
+</ol>
+<h2 id="known-issues-and-limitations">Known Issues and Limitations</h2>
+<h3 id="current-limitations">Current Limitations</h3>
+<ul>
+<li>App requires internet connection for all features</li>
+<li>Payment processing is handled by external providers</li>
+<li>Image uploads are limited to 5MB</li>
+<li>Admin features require special permissions</li>
+</ul>
+<h3 id="planned-improvements">Planned Improvements</h3>
+<ul>
+<li>Offline mode for basic browsing</li>
+<li>Push notifications for workshop updates</li>
+<li>Enhanced search and filtering options</li>
+<li>Social features for user interaction</li>
+</ul>
+<h2 id="support-and-contact-information">Support and Contact
+Information</h2>
+<h3 id="developer-contact">Developer Contact</h3>
+<ul>
+<li><strong>Name:</strong> Nikhil Chatragadda</li>
+<li><strong>Email:</strong> Nikhil.ch1430@gmail.com</li>
+<li><strong>Phone:</strong> +91 8985374940</li>
+</ul>
+<h3 id="app-support">App Support</h3>
+<ul>
+<li><strong>Website:</strong> https://nachna.com</li>
+<li><strong>Privacy Policy:</strong>
+https://nachna.com/privacy-policy</li>
+<li><strong>Terms of Service:</strong>
+https://nachna.com/terms-of-service</li>
+</ul>
+<h3 id="technical-support">Technical Support</h3>
+<ul>
+<li><strong>API Base URL:</strong> https://nachna.com/api</li>
+<li><strong>Server Status:</strong> Monitored 24/7</li>
+<li><strong>Database:</strong> MongoDB Atlas (cloud-hosted)</li>
+<li><strong>CDN:</strong> Integrated for image delivery</li>
+</ul>
+<h2 id="compliance-and-legal">Compliance and Legal</h2>
+<h3 id="app-store-guidelines-compliance">App Store Guidelines
+Compliance</h3>
+<ul>
+<li>App follows all iOS Human Interface Guidelines</li>
+<li>No use of private APIs or undocumented features</li>
+<li>Proper handling of user data and privacy</li>
+<li>Appropriate content rating (4+)</li>
+</ul>
+<h3 id="legal-compliance">Legal Compliance</h3>
+<ul>
+<li>Privacy policy clearly outlines data usage</li>
+<li>Terms of service define user responsibilities</li>
+<li>GDPR compliance for data protection</li>
+<li>Age-appropriate content and features</li>
+</ul>
+<h2 id="version-history">Version History</h2>
+<h3 id="version-1.0.0-current">Version 1.0.0 (Current)</h3>
+<ul>
+<li>Initial release</li>
+<li>Core workshop discovery features</li>
+<li>User authentication and profiles</li>
+<li>Artist and studio integration</li>
+<li>Admin dashboard</li>
+<li>Profile picture management</li>
+</ul>
+<h3 id="planned-updates">Planned Updates</h3>
+<ul>
+<li>Version 1.1.0: Push notifications</li>
+<li>Version 1.2.0: Social features</li>
+<li>Version 1.3.0: Offline mode</li>
+<li>Version 2.0.0: Enhanced UI/UX</li>
+</ul>
+<hr />
+<p><strong>Document Version:</strong> 1.0<br />
+<strong>Last Updated:</strong> January 2024<br />
+<strong>Prepared for:</strong> App Store Connect Review Process</p>

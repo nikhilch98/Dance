@@ -815,6 +815,12 @@ async def terms_of_service(request: Request):
     return templates.TemplateResponse("website/terms_of_service.html", {"request": request})
 
 
+@app.get("/support")
+async def support(request: Request):
+    """Serve the support page."""
+    return templates.TemplateResponse("website/support.html", {"request": request})
+
+
 # API Routes
 @app.get("/api/workshops", response_model=List[WorkshopListItem])
 @cache_response(expire=3600)
