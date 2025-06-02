@@ -21,7 +21,7 @@ class ArtistReactionButtons extends StatelessWidget {
     return Consumer<ReactionProvider>(
       builder: (context, reactionProvider, child) {
         final isLiked = reactionProvider.isArtistLiked(artistId);
-        final isFollowed = reactionProvider.isArtistFollowed(artistId);
+        final isNotified = reactionProvider.isArtistNotified(artistId);
         final effectiveColor = primaryColor ?? const Color(0xFFFF006E);
 
         if (isCompact) {
@@ -38,10 +38,10 @@ class ArtistReactionButtons extends StatelessWidget {
               const SizedBox(width: 8),
               _buildCompactButton(
                 context,
-                icon: Icons.person_add,
-                isActive: isFollowed,
+                icon: Icons.notifications,
+                isActive: isNotified,
                 color: const Color(0xFF8338EC),
-                onTap: () => _handleReaction(context, reactionProvider, ReactionType.FOLLOW),
+                onTap: () => _handleReaction(context, reactionProvider, ReactionType.NOTIFY),
               ),
             ],
           );
@@ -84,11 +84,11 @@ class ArtistReactionButtons extends StatelessWidget {
                   ),
                   _buildReactionButton(
                     context,
-                    icon: Icons.person_add,
-                    label: 'Follow',
-                    isActive: isFollowed,
+                    icon: Icons.notifications,
+                    label: 'Notify',
+                    isActive: isNotified,
                     color: const Color(0xFF8338EC),
-                    onTap: () => _handleReaction(context, reactionProvider, ReactionType.FOLLOW),
+                    onTap: () => _handleReaction(context, reactionProvider, ReactionType.NOTIFY),
                   ),
                 ],
               ),

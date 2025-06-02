@@ -1,6 +1,6 @@
 enum EntityType { ARTIST }
 
-enum ReactionType { LIKE, FOLLOW }
+enum ReactionType { LIKE, NOTIFY }
 
 class ReactionRequest {
   final String entityId;
@@ -77,17 +77,17 @@ class ReactionResponse {
 
 class UserReactionsResponse {
   final List<String> likedArtists;
-  final List<String> followedArtists;
+  final List<String> notifiedArtists;
 
   UserReactionsResponse({
     required this.likedArtists,
-    required this.followedArtists,
+    required this.notifiedArtists,
   });
 
   factory UserReactionsResponse.fromJson(Map<String, dynamic> json) {
     return UserReactionsResponse(
       likedArtists: List<String>.from(json['liked_artists'] ?? []),
-      followedArtists: List<String>.from(json['followed_artists'] ?? []),
+      notifiedArtists: List<String>.from(json['notified_artists'] ?? []),
     );
   }
 }
@@ -96,13 +96,13 @@ class ReactionStatsResponse {
   final String entityId;
   final EntityType entityType;
   final int likeCount;
-  final int followCount;
+  final int notifyCount;
 
   ReactionStatsResponse({
     required this.entityId,
     required this.entityType,
     required this.likeCount,
-    required this.followCount,
+    required this.notifyCount,
   });
 
   factory ReactionStatsResponse.fromJson(Map<String, dynamic> json) {
@@ -112,7 +112,7 @@ class ReactionStatsResponse {
         (e) => e.name == json['entity_type'],
       ),
       likeCount: json['like_count'] ?? 0,
-      followCount: json['follow_count'] ?? 0,
+      notifyCount: json['notify_count'] ?? 0,
     );
   }
 }

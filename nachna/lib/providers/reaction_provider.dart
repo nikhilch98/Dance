@@ -116,9 +116,9 @@ class ReactionProvider with ChangeNotifier {
     return _userReactions?.likedArtists.contains(artistId) ?? false;
   }
 
-  /// Check if user is following an artist
-  bool isArtistFollowed(String artistId) {
-    return _userReactions?.followedArtists.contains(artistId) ?? false;
+  /// Check if user has notifications enabled for an artist
+  bool isArtistNotified(String artistId) {
+    return _userReactions?.notifiedArtists.contains(artistId) ?? false;
   }
 
   /// Get the existing reaction ID for an artist and reaction type

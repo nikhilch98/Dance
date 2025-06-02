@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script for the updated reaction system functionality.
-Tests artist-only reactions with soft delete.
+Tests artist-only reactions with soft delete and both LIKE and NOTIFY reactions.
 """
 import requests
 import json
@@ -69,26 +69,26 @@ def test_reaction_system():
     like_reaction_id = like_reaction["id"]
     print(f"✅ LIKE reaction created with ID: {like_reaction_id}")
     
-    # Step 4: Test creating a FOLLOW reaction (should replace LIKE)
-    print("\n4. Creating FOLLOW reaction (should replace LIKE)...")
-    follow_response = requests.post(f"{BASE_URL}/reactions",
+    # Step 4: Test creating a NOTIFY reaction (should coexist with LIKE)
+    print("\n4. Creating NOTIFY reaction (should coexist with LIKE)...")
+    notify_response = requests.post(f"{BASE_URL}/reactions",
         headers=headers,
         json={
             "entity_id": artist_id,
             "entity_type": "ARTIST",
-            "reaction": "FOLLOW"
+            "reaction": "NOTIFY"
         }
     )
     
-    if follow_response.status_code not in [200, 201]:
-        print(f"❌ Failed to create FOLLOW reaction: {follow_response.text}")
+    if notify_response.status_code not in [200, 201]:
+        print(f"❌ Failed to create NOTIFY reaction: {notify_response.text}")
         return False
     
-    follow_reaction = follow_response.json()
-    follow_reaction_id = follow_reaction["id"]
-    print(f"✅ FOLLOW reaction created with ID: {follow_reaction_id}")
+    notify_reaction = notify_response.json()
+    notify_reaction_id = notify_reaction["id"]
+    print(f"✅ NOTIFY reaction created with ID: {notify_reaction_id}")
     
-    # Step 5: Check user reactions
+    # Step 5: Check user reactions (both should exist)
     print("\n5. Checking user reactions...")
     user_reactions_response = requests.get(f"{BASE_URL}/user/reactions", headers=headers)
     
@@ -99,34 +99,34 @@ def test_reaction_system():
     user_reactions = user_reactions_response.json()
     print(f"✅ User reactions: {user_reactions}")
     
-    # Verify LIKE was replaced by FOLLOW
-    if artist_id in user_reactions.get("followed_artists", []):
-        print("✅ Artist is correctly in followed list")
+    # Verify both LIKE and NOTIFY exist
+    if artist_id in user_reactions.get("notified_artists", []):
+        print("✅ Artist is correctly in notified list")
     else:
-        print("❌ Artist should be in followed list")
+        print("❌ Artist should be in notified list")
         return False
     
-    if artist_id not in user_reactions.get("liked_artists", []):
-        print("✅ Artist is correctly NOT in liked list (replaced by follow)")
+    if artist_id in user_reactions.get("liked_artists", []):
+        print("✅ Artist is correctly in liked list (both reactions coexist)")
     else:
-        print("❌ Artist should NOT be in liked list (should be replaced by follow)")
+        print("❌ Artist should be in liked list (both reactions should coexist)")
         return False
     
-    # Step 6: Test soft delete
-    print("\n6. Testing soft delete of FOLLOW reaction...")
+    # Step 6: Test soft delete of NOTIFY reaction
+    print("\n6. Testing soft delete of NOTIFY reaction...")
     delete_response = requests.delete(f"{BASE_URL}/reactions",
         headers=headers,
-        json={"reaction_id": follow_reaction_id}
+        json={"reaction_id": notify_reaction_id}
     )
     
     if delete_response.status_code != 200:
         print(f"❌ Failed to soft delete reaction: {delete_response.text}")
         return False
     
-    print("✅ Reaction soft deleted successfully")
+    print("✅ NOTIFY reaction soft deleted successfully")
     
-    # Step 7: Verify reaction was soft deleted
-    print("\n7. Verifying reaction was soft deleted...")
+    # Step 7: Verify NOTIFY was soft deleted but LIKE remains
+    print("\n7. Verifying NOTIFY was soft deleted but LIKE remains...")
     user_reactions_response = requests.get(f"{BASE_URL}/user/reactions", headers=headers)
     
     if user_reactions_response.status_code != 200:
@@ -135,14 +135,48 @@ def test_reaction_system():
     
     user_reactions = user_reactions_response.json()
     
-    if artist_id not in user_reactions.get("followed_artists", []):
-        print("✅ Artist is correctly NOT in followed list after soft delete")
+    if artist_id not in user_reactions.get("notified_artists", []):
+        print("✅ Artist is correctly NOT in notified list after soft delete")
     else:
-        print("❌ Artist should NOT be in followed list after soft delete")
+        print("❌ Artist should NOT be in notified list after soft delete")
         return False
     
-    # Step 8: Test reaction stats
-    print("\n8. Testing reaction stats...")
+    if artist_id in user_reactions.get("liked_artists", []):
+        print("✅ Artist is still in liked list (LIKE reaction remains)")
+    else:
+        print("❌ Artist should still be in liked list (LIKE reaction should remain)")
+        return False
+    
+    # Step 8: Test re-creating NOTIFY after soft delete
+    print("\n8. Testing re-creating NOTIFY reaction after soft delete...")
+    notify_response2 = requests.post(f"{BASE_URL}/reactions",
+        headers=headers,
+        json={
+            "entity_id": artist_id,
+            "entity_type": "ARTIST",
+            "reaction": "NOTIFY"
+        }
+    )
+    
+    if notify_response2.status_code not in [200, 201]:
+        print(f"❌ Failed to re-create NOTIFY reaction: {notify_response2.text}")
+        return False
+    
+    print("✅ NOTIFY reaction re-created successfully after soft delete")
+    
+    # Step 9: Verify both reactions exist again
+    print("\n9. Verifying both reactions exist again...")
+    user_reactions_response = requests.get(f"{BASE_URL}/user/reactions", headers=headers)
+    user_reactions = user_reactions_response.json()
+    
+    if artist_id in user_reactions.get("notified_artists", []) and artist_id in user_reactions.get("liked_artists", []):
+        print("✅ Both LIKE and NOTIFY reactions exist after re-creation")
+    else:
+        print(f"❌ Both reactions should exist. Got: {user_reactions}")
+        return False
+    
+    # Step 10: Test reaction stats
+    print("\n10. Testing reaction stats...")
     stats_response = requests.get(f"{BASE_URL}/reactions/stats/ARTIST/{artist_id}", headers=headers)
     
     if stats_response.status_code != 200:
@@ -152,8 +186,15 @@ def test_reaction_system():
     stats = stats_response.json()
     print(f"✅ Reaction stats: {stats}")
     
-    # Step 9: Test workshop reactions are rejected
-    print("\n9. Testing that workshop reactions are rejected...")
+    # Verify stats show both reactions
+    if stats.get("like_count", 0) >= 1 and stats.get("notify_count", 0) >= 1:
+        print("✅ Stats correctly show both LIKE and NOTIFY counts")
+    else:
+        print(f"❌ Stats should show both reaction types. Got: {stats}")
+        return False
+    
+    # Step 11: Test workshop reactions are rejected
+    print("\n11. Testing that workshop reactions are rejected...")
     workshop_response = requests.post(f"{BASE_URL}/reactions",
         headers=headers,
         json={
@@ -163,10 +204,10 @@ def test_reaction_system():
         }
     )
     
-    if workshop_response.status_code == 400:
-        print("✅ Workshop reactions correctly rejected")
+    if workshop_response.status_code == 422:  # Updated to expect 422 for validation error
+        print("✅ Workshop reactions correctly rejected with validation error")
     else:
-        print(f"❌ Workshop reactions should be rejected, got: {workshop_response.status_code}")
+        print(f"❌ Workshop reactions should be rejected with 422, got: {workshop_response.status_code}")
         return False
     
     print("\n🎉 All reaction system tests passed!")
