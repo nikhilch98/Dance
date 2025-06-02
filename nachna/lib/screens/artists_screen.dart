@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/artist.dart';
 import '../services/api_service.dart';
 import 'artist_detail_screen.dart';
+import '../widgets/reaction_buttons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 
@@ -490,10 +491,10 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                                         gradient: const LinearGradient(
                                           colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                         ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.photo_camera,
-                                        color: Colors.white,
+                              ),
+                              child: const Icon(
+                                Icons.photo_camera,
+                                color: Colors.white,
                                         size: 14,
                                       ),
                                     );
@@ -539,6 +540,15 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Compact Reaction Buttons
+                  Center(
+                    child: ArtistReactionButtons(
+                      artistId: artist.id,
+                      isCompact: true,
+                      primaryColor: const Color(0xFFFF006E),
                     ),
                   ),
                 ],

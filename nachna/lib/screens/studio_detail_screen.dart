@@ -291,9 +291,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
               // Workshops Content
               Expanded(
                 child: FutureBuilder<CategorizedWorkshopResponse>(
-                  future: futureWorkshops,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+        future: futureWorkshops,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
                           padding: const EdgeInsets.all(24),
@@ -312,8 +312,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                           ),
                         ),
                       );
-                    } else if (snapshot.hasError) {
-                      return Center(
+          } else if (snapshot.hasError) {
+            return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
                           padding: const EdgeInsets.all(24),
@@ -356,9 +356,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    } else if (!snapshot.hasData || (snapshot.data!.thisWeek.isEmpty && snapshot.data!.postThisWeek.isEmpty)) {
+              ),
+            );
+          } else if (!snapshot.hasData || (snapshot.data!.thisWeek.isEmpty && snapshot.data!.postThisWeek.isEmpty)) {
                       return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
@@ -402,18 +402,18 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    } else {
-                      final response = snapshot.data!;
-                      final hasThisWeek = response.thisWeek.isNotEmpty;
-                      final hasPostThisWeek = response.postThisWeek.isNotEmpty;
+              ),
+            );
+          } else {
+            final response = snapshot.data!;
+            final hasThisWeek = response.thisWeek.isNotEmpty;
+            final hasPostThisWeek = response.postThisWeek.isNotEmpty;
 
-                      return ListView(
+            return ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         physics: const BouncingScrollPhysics(),
-                        children: [
-                          // This Week section
+              children: [
+                // This Week section
                           if (hasThisWeek) ...[
                             _buildSectionHeader('This Week', Icons.calendar_today_rounded, const Color(0xFF00D4FF)),
                             const SizedBox(height: 12),
@@ -482,7 +482,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         ),
       ),
       child: Row(
-        children: [
+                    children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -498,9 +498,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           const SizedBox(width: 12),
           Text(
             title,
-            style: TextStyle(
+                        style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.bold,
               color: color,
               letterSpacing: 0.5,
             ),
@@ -533,8 +533,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                 // Day Header
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -544,9 +544,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                     ),
                   ),
-                  child: Text(
-                    daySchedule.day,
-                    style: const TextStyle(
+                                child: Text(
+                                  daySchedule.day,
+                                  style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -559,9 +559,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                 ...daySchedule.workshops.map((workshop) => _buildCompactWorkshopCard(workshop)),
               ],
             ),
-          ),
-        ),
-      ),
+                                  ),
+                                ),
+                              ),
     );
   }
 
@@ -594,24 +594,24 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+                                    child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => _showWorkshopDetails(workshop),
-              child: Padding(
+                                      onTap: () => _showWorkshopDetails(workshop),
+                                      child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
                     // Header with Date and Time
                     Row(
                       children: [
                         Expanded(
                           child: Text(
                             workshop.date,
-                            style: const TextStyle(
+                                              style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -626,7 +626,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                           child: Text(
                             workshop.time,
                             style: const TextStyle(
-                              color: Colors.white,
+                                                color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -647,9 +647,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             color: Color(0xFF00D4FF),
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                                        ),
+                                      ),
+                                    ),
                     
                     if (workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA')
                       Row(
@@ -669,15 +669,15 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                        ],
                       ),
-                    
+                    ],
+                  ),
+
                     if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(
-                          children: [
+                    children: [
                             Icon(
                               Icons.currency_rupee_rounded,
                               color: Colors.white.withOpacity(0.7),
@@ -687,7 +687,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             Expanded(
                               child: Text(
                                 workshop.pricingInfo!,
-                                style: TextStyle(
+                        style: TextStyle(
                                   color: Colors.white.withOpacity(0.8),
                                   fontSize: 13,
                                 ),
@@ -716,10 +716,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
         ),
-      ),
-      child: InkWell(
+                                    ),
+                                     child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showWorkshopDetails(workshop),
+                                      onTap: () => _showWorkshopDetails(workshop),
         child: Row(
           children: [
             // Time Badge
@@ -746,22 +746,22 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             
             // Workshop Info
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
                   if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
-                    Text(
+                                            Text(
                       toTitleCase(workshop.song!),
-                      style: const TextStyle(
-                        color: Colors.white,
+                                              style: const TextStyle(
+                                                color: Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                      ),
+                                              ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
+                                            ),
                   if (workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA')
-                    Text(
+                                            Text(
                       'with ${toTitleCase(workshop.artist!)}',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
@@ -769,19 +769,19 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
-            ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
             
             // Arrow Icon
             Icon(
               Icons.arrow_forward_ios_rounded,
               color: Colors.white.withOpacity(0.5),
               size: 16,
-            ),
-          ],
-        ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }

@@ -112,23 +112,23 @@ class _ProfileScreenState extends State<ProfileScreen>
             }
           });
         }
-
-        return Scaffold(
+    
+    return Scaffold(
           backgroundColor: const Color(0xFF0A0A0F),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0A0A0F),
-                  Color(0xFF1A1A2E),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A0A0F),
+              Color(0xFF1A1A2E),
                   Color(0xFF16213E),
-                  Color(0xFF0F3460),
-                ],
-              ),
-            ),
-            child: SafeArea(
+              Color(0xFF0F3460),
+            ],
+          ),
+        ),
+        child: SafeArea(
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -146,9 +146,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             colors: [
                               Colors.white.withOpacity(0.1),
                               Colors.white.withOpacity(0.05),
-                            ],
-                          ),
-                        ),
+              ],
+            ),
+          ),
                         child: ClipRRect(
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -156,39 +156,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                               padding: const EdgeInsets.all(20),
                               child: const Align(
                                 alignment: Alignment.bottomLeft,
-                                child: Text(
-                                  'Profile',
-                                  style: TextStyle(
+            child: Text(
+              'Profile',
+              style: TextStyle(
                                     fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
                                     letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ),
+              ),
+            ),
+          ),
                             ),
                           ),
                         ),
                       ),
                     ),
                     actions: [
-                      Container(
+          Container(
                         margin: const EdgeInsets.only(right: 16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
                           color: Colors.white.withOpacity(0.1),
-                        ),
-                        child: IconButton(
+            ),
+            child: IconButton(
                           onPressed: _showLogoutDialog,
                           icon: const Icon(
                             Icons.logout_rounded,
                             color: Color(0xFFFF006E),
                             size: 24,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+            ),
+          ),
+        ],
+      ),
 
                   // Profile Content
                   SliverToBoxAdapter(
@@ -231,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildProfileHeader(User user) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
+            decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: [
@@ -239,24 +239,24 @@ class _ProfileScreenState extends State<ProfileScreen>
             Colors.white.withOpacity(0.05),
           ],
         ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
           width: 1.5,
-        ),
-      ),
+              ),
+            ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Column(
-            children: [
+                  child: Column(
+                    children: [
               // Profile Picture
               Stack(
                 children: [
-                  Container(
+                        Container(
                     width: 120,
                     height: 120,
-                    decoration: BoxDecoration(
+                          decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(60),
                       gradient: _localProfilePictureUrl == null
                           ? const LinearGradient(
@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           spreadRadius: 2,
                         ),
                       ],
-                    ),
+                          ),
                     child: _localProfilePictureUrl != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(60),
@@ -284,8 +284,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return _buildDefaultAvatar(user);
-                              },
-                            ),
+              },
+            ),
                           )
                         : _buildDefaultAvatar(user),
                   ),
@@ -299,20 +299,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                       child: Container(
                         width: 36,
                         height: 36,
-                        decoration: BoxDecoration(
+      decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(18),
-                          gradient: const LinearGradient(
+        gradient: const LinearGradient(
                             colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                          ),
+        ),
                           border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
+        boxShadow: [
+          BoxShadow(
                               color: const Color(0xFF3B82F6).withOpacity(0.3),
                               blurRadius: 8,
                               spreadRadius: 1,
-                            ),
-                          ],
-                        ),
+          ),
+        ],
+      ),
                         child: _isUploadingImage
                             ? const SizedBox(
                                 width: 16,
@@ -324,11 +324,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                               )
                             : const Icon(
                                 Icons.camera_alt_rounded,
-                                color: Colors.white,
+            color: Colors.white,
                                 size: 18,
-                              ),
-                      ),
-                    ),
+          ),
+        ),
+      ),
                   ),
                 ],
               ),
@@ -342,20 +342,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                ),
+        ),
                 textAlign: TextAlign.center,
-              ),
+          ),
               
               const SizedBox(height: 4),
               
               // Mobile Number
-              Text(
+                Text(
                 '+91 ${user.mobileNumber}',
-                style: TextStyle(
+                  style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(0.7),
+                  ),
                 ),
-              ),
               
               const SizedBox(height: 8),
               
@@ -368,8 +368,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     colors: user.profileComplete
                         ? [const Color(0xFF10B981), const Color(0xFF059669)]
                         : [const Color(0xFFFF006E), const Color(0xFFDC2626)],
-                  ),
-                ),
+            ),
+          ),
                 child: Text(
                   user.profileComplete ? 'Profile Complete' : 'Complete Profile',
                   style: const TextStyle(
@@ -378,9 +378,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
+            ),
+        ],
+      ),
         ),
       ),
     );
@@ -393,7 +393,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         gradient: const LinearGradient(
           colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
         ),
-      ),
+        ),
       child: Center(
         child: Text(
           user.name?.isNotEmpty == true 
@@ -412,7 +412,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildProfileStats(User user) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+        decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: [
@@ -423,21 +423,21 @@ class _ProfileScreenState extends State<ProfileScreen>
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
         ),
-      ),
+        ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
+                children: [
               _buildStatItem('Member Since', _formatMemberSince(user.createdAt)),
               _buildStatDivider(),
               _buildStatItem('Profile', user.profileComplete ? 'Complete' : 'Incomplete'),
               _buildStatDivider(),
               _buildStatItem('Role', user.isAdmin == true ? 'Admin' : 'Member'),
-            ],
-          ),
+                ],
+              ),
         ),
       ),
     );
@@ -457,10 +457,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
+                  style: TextStyle(
             fontSize: 12,
             color: Colors.white.withOpacity(0.7),
-          ),
+                  ),
         ),
       ],
     );
@@ -476,7 +476,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileActions(User user) {
     return Row(
-      children: [
+        children: [
         Expanded(
           child: _buildActionButton(
             'Edit Profile',
@@ -484,7 +484,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const Color(0xFF3B82F6),
             () => _navigateToEditProfile(),
           ),
-        ),
+            ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildActionButton(
@@ -492,9 +492,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             Icons.lock_rounded,
             const Color(0xFF8B5CF6),
             () => _showChangePasswordDialog(),
-          ),
+            ),
         ),
-      ],
+        ],
     );
   }
 
@@ -503,35 +503,35 @@ class _ProfileScreenState extends State<ProfileScreen>
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: [color, color.withOpacity(0.8)],
-          ),
-          boxShadow: [
-            BoxShadow(
+            ),
+            boxShadow: [
+              BoxShadow(
               color: color.withOpacity(0.3),
               blurRadius: 8,
               spreadRadius: 1,
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Text(
-              text,
+                        text,
               style: const TextStyle(
-                color: Colors.white,
+                          color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
+                      ),
               ),
-            ),
           ],
-        ),
-      ),
+            ),
+          ),
     );
   }
 
@@ -559,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               const Text(
                 'Personal Information',
-                style: TextStyle(
+              style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -591,7 +591,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.white.withOpacity(0.7),
-              ),
+        ),
             ),
           ),
           Expanded(
@@ -645,51 +645,51 @@ class _ProfileScreenState extends State<ProfileScreen>
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 // Handle
-                Container(
+                      Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                        ),
+                      ),
                 const SizedBox(height: 20),
                 
                 // Title
                 Text(
                   'Profile Picture',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                ),
+                  ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
+                  Row(
+                    children: [
+                      Expanded(
                       child: _buildImagePickerOption(
                         'Camera',
                         Icons.camera_alt_rounded,
                         const Color(0xFF3B82F6),
                         () => _pickImageWithPermissionCheck(ImageSource.camera),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                      const SizedBox(width: 12),
+                      Expanded(
                       child: _buildImagePickerOption(
                         'Gallery',
                         Icons.photo_library_rounded,
                         const Color(0xFF10B981),
                         () => _pickImageWithPermissionCheck(ImageSource.gallery),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(height: 12),
                 if (_localProfilePictureUrl != null)
                   SizedBox(
@@ -700,7 +700,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const Color(0xFFFF006E),
                       () => _removeProfilePicture(),
                     ),
-                  ),
+              ),
               ],
             ),
           ),
@@ -722,7 +722,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      children: [
             Icon(icon, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Text(
@@ -734,8 +734,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
           ],
+          ),
         ),
-      ),
     );
   }
 
@@ -755,9 +755,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         await _uploadProfilePicture(File(image.path));
       } else {
         // User cancelled image selection
-        setState(() {
+              setState(() {
           _isUploadingImage = false;
-        });
+              });
       }
     } catch (e) {
       print('Error picking image: $e');
@@ -784,7 +784,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       final imageUrl = await AuthService.uploadProfilePicture(imageFile);
       
       // Update local state immediately for instant UI feedback
-      setState(() {
+              setState(() {
         _localProfilePictureUrl = imageUrl;
         _isUploadingImage = false;
       });
@@ -800,8 +800,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _isUploadingImage = false;
         });
-      }
-      
+  }
+
       String errorMessage = 'Failed to upload profile picture.';
       if (e.toString().contains('size')) {
         errorMessage = 'Image file is too large. Please choose a smaller image.';
@@ -875,7 +875,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
-          ),
+        ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -886,7 +886,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               'Logout',
               style: TextStyle(color: Color(0xFFFF006E)),
             ),
-          ),
+        ),
         ],
       ),
     );

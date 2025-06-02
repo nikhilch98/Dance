@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
+import './providers/reaction_provider.dart';
+import './services/auth_service.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
@@ -24,6 +26,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ConfigProvider()),
+        ChangeNotifierProvider(create: (_) => ReactionProvider()),
       ],
       child: MaterialApp(
         title: 'Dance Workshop App',
@@ -78,8 +81,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, ConfigProvider>(
-      builder: (context, authProvider, configProvider, child) {
+    return Consumer3<AuthProvider, ConfigProvider, ReactionProvider>(
+      builder: (context, authProvider, configProvider, reactionProvider, child) {
         switch (authProvider.state) {
           case AuthState.initial:
           case AuthState.loading:
@@ -92,6 +95,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 configProvider.loadConfig();
               });
             }
+            
+            // Initialize reaction provider with auth token
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              final token = await AuthService.getToken();
+              if (token != null) {
+                reactionProvider.setAuthToken(token);
+                reactionProvider.loadUserReactions();
+              }
+            });
+            
             return const HomeScreen();
             
           case AuthState.profileIncomplete:

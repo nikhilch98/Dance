@@ -3,6 +3,7 @@ import '../models/artist.dart';
 import '../services/api_service.dart';
 import '../models/workshop.dart';
 import '../widgets/workshop_detail_modal.dart';
+import '../widgets/reaction_buttons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 
@@ -282,6 +283,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         ],
                                       ),
                                     ),
+                                    const SizedBox(height: 16),
+                                    // Reaction Buttons
+                                    ArtistReactionButtons(
+                                      artistId: widget.artist.id,
+                                      primaryColor: const Color(0xFFFF006E),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -297,9 +304,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               // Workshops Content
               Expanded(
                 child: FutureBuilder<List<WorkshopSession>>(
-                  future: futureWorkshops,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+        future: futureWorkshops,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
                           padding: const EdgeInsets.all(24),
@@ -318,8 +325,8 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           ),
                         ),
                       );
-                    } else if (snapshot.hasError) {
-                      return Center(
+          } else if (snapshot.hasError) {
+            return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
                           padding: const EdgeInsets.all(24),
@@ -362,9 +369,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
@@ -408,12 +415,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    } else {
-                      // Sort workshops by timestamp before displaying
-                      final sortedWorkshops = snapshot.data!;
-                      sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
+              ),
+            );
+          } else {
+            // Sort workshops by timestamp before displaying
+            final sortedWorkshops = snapshot.data!;
+            sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,9 +477,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               physics: const BouncingScrollPhysics(),
-                              itemCount: sortedWorkshops.length,
-                              itemBuilder: (context, index) {
-                                final workshop = sortedWorkshops[index];
+              itemCount: sortedWorkshops.length,
+              itemBuilder: (context, index) {
+                final workshop = sortedWorkshops[index];
                                 return _buildWorkshopCard(workshop, index);
                               },
                             ),
@@ -571,10 +578,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 Expanded(
                                   child: Text(
                                     workshop.date,
-                                    style: const TextStyle(
+                              style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
@@ -589,7 +596,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   child: Text(
                                     workshop.time,
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                color: Colors.white,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -689,11 +696,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-        );
-      },
+                        ),
+                      ),
+                    ),
+                  );
+              },
     );
   }
 } 

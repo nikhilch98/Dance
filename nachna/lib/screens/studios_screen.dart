@@ -336,10 +336,10 @@ class _StudiosScreenState extends State<StudiosScreen> {
                                         gradient: const LinearGradient(
                                           colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                         ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.photo_camera,
-                                        color: Colors.white,
+                              ),
+                              child: const Icon(
+                                Icons.photo_camera,
+                                color: Colors.white,
                                         size: 14,
                                       ),
                                     );

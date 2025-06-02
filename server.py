@@ -157,6 +157,62 @@ class AuthResponse(BaseModel):
     token_type: str
     user: UserProfile
 
+# Reaction System Models
+class EntityType(str, Enum):
+    """Enum for entity types that can be reacted to."""
+    ARTIST = "ARTIST"
+
+class ReactionType(str, Enum):
+    """Enum for reaction types."""
+    LIKE = "LIKE"
+    FOLLOW = "FOLLOW"
+
+class ReactionRequest(BaseModel):
+    """Request model for creating/updating reactions."""
+    entity_id: str = Field(..., min_length=1)
+    entity_type: EntityType
+    reaction: ReactionType
+
+class ReactionDeleteRequest(BaseModel):
+    """Request model for soft deleting reactions."""
+    reaction_id: str = Field(..., min_length=1)
+
+class ReactionResponse(BaseModel):
+    """Response model for reactions."""
+    id: str
+    user_id: str
+    entity_id: str
+    entity_type: EntityType
+    reaction: ReactionType
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+class UserReactionsResponse(BaseModel):
+    """Response model for user's reactions grouped by entity type."""
+    liked_artists: List[str] = []
+    followed_artists: List[str] = []
+
+class ReactionStatsResponse(BaseModel):
+    """Response model for reaction statistics."""
+    entity_id: str
+    entity_type: EntityType
+    like_count: int = 0
+    follow_count: int = 0
+
+# Push Notification Models
+class PushNotificationRequest(BaseModel):
+    """Request model for sending push notifications."""
+    user_ids: List[str]
+    title: str
+    body: str
+    data: Optional[Dict[str, str]] = None
+
+class DeviceTokenRequest(BaseModel):
+    """Request model for device token registration."""
+    device_token: str
+    platform: str = Field(..., pattern=r"^(ios|android)$")
+
 # Password hashing utilities
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
@@ -341,6 +397,262 @@ def format_user_profile(user_data: dict) -> UserProfile:
         updated_at=user_data["updated_at"]
     )
 
+# Database operations for reactions
+class ReactionOperations:
+    """Database operations for user reactions (likes and follows) - Artist only with soft delete."""
+    
+    @staticmethod
+    def create_or_update_reaction(user_id: str, entity_id: str, entity_type: EntityType, reaction: ReactionType) -> dict:
+        """Create or update a user reaction for artists only."""
+        client = get_mongo_client()
+        
+        # Only allow artist reactions
+        if entity_type != EntityType.ARTIST:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only artist reactions are supported"
+            )
+        
+        # Check if an active reaction already exists
+        existing_reaction = client["dance_app"]["reactions"].find_one({
+            "user_id": user_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type.value,
+            "reaction": reaction.value,
+            "is_deleted": {"$ne": True}
+        })
+        
+        if existing_reaction:
+            # Active reaction already exists, return it
+            return existing_reaction
+        
+        # Soft delete any existing different reaction for the same artist
+        if reaction == ReactionType.FOLLOW:
+            # For follow, soft delete any existing like on the same artist
+            client["dance_app"]["reactions"].update_many(
+                {
+                    "user_id": user_id,
+                    "entity_id": entity_id,
+                    "entity_type": entity_type.value,
+                    "reaction": ReactionType.LIKE.value,
+                    "is_deleted": {"$ne": True}
+                },
+                {
+                    "$set": {
+                        "is_deleted": True,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+        elif reaction == ReactionType.LIKE:
+            # For like, soft delete any existing follow on the same artist
+            client["dance_app"]["reactions"].update_many(
+                {
+                    "user_id": user_id,
+                    "entity_id": entity_id,
+                    "entity_type": entity_type.value,
+                    "reaction": ReactionType.FOLLOW.value,
+                    "is_deleted": {"$ne": True}
+                },
+                {
+                    "$set": {
+                        "is_deleted": True,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+        
+        # Create new reaction
+        reaction_data = {
+            "user_id": user_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type.value,
+            "reaction": reaction.value,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "is_deleted": False
+        }
+        
+        result = client["dance_app"]["reactions"].insert_one(reaction_data)
+        reaction_data["_id"] = result.inserted_id
+        return reaction_data
+    
+    @staticmethod
+    def soft_delete_reaction(reaction_id: str, user_id: str) -> bool:
+        """Soft delete a reaction by ID, ensuring the user owns it."""
+        client = get_mongo_client()
+        
+        result = client["dance_app"]["reactions"].update_one(
+            {
+                "_id": ObjectId(reaction_id),
+                "user_id": user_id,
+                "is_deleted": {"$ne": True}
+            },
+            {
+                "$set": {
+                    "is_deleted": True,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        return result.modified_count > 0
+    
+    @staticmethod
+    def get_user_reactions(user_id: str) -> UserReactionsResponse:
+        """Get all active reactions for a specific user."""
+        client = get_mongo_client()
+        
+        reactions = list(client["dance_app"]["reactions"].find({
+            "user_id": user_id,
+            "is_deleted": {"$ne": True}
+        }))
+        
+        liked_artists = []
+        followed_artists = []
+        
+        for reaction in reactions:
+            if reaction["entity_type"] == EntityType.ARTIST.value:
+                if reaction["reaction"] == ReactionType.LIKE.value:
+                    liked_artists.append(reaction["entity_id"])
+                elif reaction["reaction"] == ReactionType.FOLLOW.value:
+                    followed_artists.append(reaction["entity_id"])
+        
+        return UserReactionsResponse(
+            liked_artists=liked_artists,
+            followed_artists=followed_artists
+        )
+    
+    @staticmethod
+    def get_reaction_stats(entity_id: str, entity_type: EntityType) -> ReactionStatsResponse:
+        """Get reaction statistics for a specific entity (excluding deleted reactions)."""
+        client = get_mongo_client()
+        
+        # Only allow artist reactions
+        if entity_type != EntityType.ARTIST:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only artist reactions are supported"
+            )
+        
+        pipeline = [
+            {"$match": {
+                "entity_id": entity_id, 
+                "entity_type": entity_type.value,
+                "is_deleted": {"$ne": True}
+            }},
+            {"$group": {
+                "_id": "$reaction",
+                "count": {"$sum": 1}
+            }}
+        ]
+        
+        stats = list(client["dance_app"]["reactions"].aggregate(pipeline))
+        
+        like_count = 0
+        follow_count = 0
+        
+        for stat in stats:
+            if stat["_id"] == ReactionType.LIKE.value:
+                like_count = stat["count"]
+            elif stat["_id"] == ReactionType.FOLLOW.value:
+                follow_count = stat["count"]
+        
+        return ReactionStatsResponse(
+            entity_id=entity_id,
+            entity_type=entity_type,
+            like_count=like_count,
+            follow_count=follow_count
+        )
+    
+    @staticmethod
+    def get_followers_of_artist(artist_id: str) -> List[str]:
+        """Get all user IDs who actively follow a specific artist."""
+        client = get_mongo_client()
+        
+        followers = list(client["dance_app"]["reactions"].find({
+            "entity_id": artist_id,
+            "entity_type": EntityType.ARTIST.value,
+            "reaction": ReactionType.FOLLOW.value,
+            "is_deleted": {"$ne": True}
+        }))
+        
+        return [follower["user_id"] for follower in followers]
+    
+    @staticmethod
+    def get_user_reaction_for_entity(user_id: str, entity_id: str, entity_type: EntityType) -> Optional[dict]:
+        """Get user's active reaction for a specific entity."""
+        client = get_mongo_client()
+        
+        return client["dance_app"]["reactions"].find_one({
+            "user_id": user_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type.value,
+            "is_deleted": {"$ne": True}
+        })
+
+# Database operations for push notifications
+class PushNotificationOperations:
+    """Database operations for push notification management."""
+    
+    @staticmethod
+    def register_device_token(user_id: str, device_token: str, platform: str) -> bool:
+        """Register or update device token for a user."""
+        client = get_mongo_client()
+        
+        # Remove existing token if it exists for any user (tokens should be unique)
+        client["dance_app"]["device_tokens"].delete_many({"device_token": device_token})
+        
+        # Insert new token
+        token_data = {
+            "user_id": user_id,
+            "device_token": device_token,
+            "platform": platform,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "is_active": True
+        }
+        
+        result = client["dance_app"]["device_tokens"].insert_one(token_data)
+        return result.inserted_id is not None
+    
+    @staticmethod
+    def get_device_tokens(user_ids: List[str]) -> List[dict]:
+        """Get active device tokens for multiple users."""
+        client = get_mongo_client()
+        
+        tokens = list(client["dance_app"]["device_tokens"].find({
+            "user_id": {"$in": user_ids},
+            "is_active": True
+        }))
+        
+        return tokens
+    
+    @staticmethod
+    def deactivate_device_token(device_token: str) -> bool:
+        """Deactivate a device token (when it becomes invalid)."""
+        client = get_mongo_client()
+        
+        result = client["dance_app"]["device_tokens"].update_one(
+            {"device_token": device_token},
+            {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+        )
+        
+        return result.modified_count > 0
+
+def format_reaction_response(reaction_data: dict) -> ReactionResponse:
+    """Format reaction data to ReactionResponse model."""
+    return ReactionResponse(
+        id=str(reaction_data["_id"]),
+        user_id=reaction_data["user_id"],
+        entity_id=reaction_data["entity_id"],
+        entity_type=EntityType(reaction_data["entity_type"]),
+        reaction=ReactionType(reaction_data["reaction"]),
+        created_at=reaction_data["created_at"],
+        updated_at=reaction_data["updated_at"],
+        is_deleted=reaction_data.get("is_deleted", False)
+    )
+
 # API Models
 class TimeDetails(BaseModel):
     """Time details for a workshop session."""
@@ -442,7 +754,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=APIConfig.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -1678,6 +1990,207 @@ async def get_profile_picture(picture_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile picture not found"
         )
+
+
+# Reaction API Routes
+@app.post("/api/reactions", response_model=ReactionResponse)
+async def create_reaction(
+    reaction_data: ReactionRequest,
+    user_id: str = Depends(verify_token)
+):
+    """Create or update a user reaction (like/follow).
+    
+    Args:
+        reaction_data: Reaction request data
+        user_id: User ID from JWT token
+        
+    Returns:
+        Created/updated reaction
+    """
+    try:
+        reaction = ReactionOperations.create_or_update_reaction(
+            user_id=user_id,
+            entity_id=reaction_data.entity_id,
+            entity_type=reaction_data.entity_type,
+            reaction=reaction_data.reaction
+        )
+        
+        return format_reaction_response(reaction)
+        
+    except Exception as e:
+        print(f"Error creating reaction: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create reaction"
+        )
+
+@app.delete("/api/reactions")
+async def remove_reaction(
+    reaction_data: ReactionDeleteRequest,
+    user_id: str = Depends(verify_token)
+):
+    """Soft delete a user reaction.
+    
+    Args:
+        reaction_data: Reaction delete request data containing reaction_id
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    success = ReactionOperations.soft_delete_reaction(
+        reaction_id=reaction_data.reaction_id,
+        user_id=user_id
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reaction not found or already deleted"
+        )
+    
+    return {"message": "Reaction removed successfully"}
+
+@app.get("/api/user/reactions", response_model=UserReactionsResponse)
+async def get_user_reactions(user_id: str = Depends(verify_token)):
+    """Get all reactions for the authenticated user.
+    
+    Args:
+        user_id: User ID from JWT token
+        
+    Returns:
+        User's reactions grouped by entity type
+    """
+    return ReactionOperations.get_user_reactions(user_id)
+
+@app.get("/api/reactions/stats/{entity_type}/{entity_id}", response_model=ReactionStatsResponse)
+async def get_reaction_stats(
+    entity_type: EntityType,
+    entity_id: str,
+    user_id: str = Depends(verify_token)
+):
+    """Get reaction statistics for a specific artist.
+    
+    Args:
+        entity_type: Type of entity (ARTIST only)
+        entity_id: ID of the artist
+        user_id: User ID from JWT token (for authentication)
+        
+    Returns:
+        Reaction statistics for the artist
+    """
+    return ReactionOperations.get_reaction_stats(entity_id, entity_type)
+
+# Push Notification API Routes
+@app.post("/api/notifications/register-token")
+async def register_device_token(
+    token_data: DeviceTokenRequest,
+    user_id: str = Depends(verify_token)
+):
+    """Register device token for push notifications.
+    
+    Args:
+        token_data: Device token data
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    success = PushNotificationOperations.register_device_token(
+        user_id=user_id,
+        device_token=token_data.device_token,
+        platform=token_data.platform
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to register device token"
+        )
+    
+    return {"message": "Device token registered successfully"}
+
+# Function to send push notifications when new workshops are added
+async def send_workshop_notifications(artist_id: str, workshop_data: dict):
+    """Send push notifications to followers when a new workshop is added.
+    
+    Args:
+        artist_id: ID of the artist
+        workshop_data: Workshop information
+    """
+    try:
+        # Get all followers of the artist
+        follower_ids = ReactionOperations.get_followers_of_artist(artist_id)
+        
+        if not follower_ids:
+            print(f"No followers found for artist {artist_id}")
+            return
+        
+        # Get device tokens for followers
+        device_tokens = PushNotificationOperations.get_device_tokens(follower_ids)
+        
+        if not device_tokens:
+            print(f"No device tokens found for followers of artist {artist_id}")
+            return
+        
+        # Get artist name from database
+        client = get_mongo_client()
+        artist = client["discovery"]["artists_v2"].find_one({"artist_id": artist_id})
+        artist_name = artist.get("artist_name", "Your favorite artist") if artist else "Your favorite artist"
+        
+        # Create notification content
+        title = f"🎉 {artist_name} is back!"
+        body = f"Your favorite artist is coming to Bengaluru! New workshop tickets are now available. Book ASAP before they run out! 💃"
+        
+        # Here you would integrate with actual push notification service (FCM, APNs)
+        # For now, we'll just log the notification
+        print(f"Sending push notification to {len(device_tokens)} devices:")
+        print(f"Title: {title}")
+        print(f"Body: {body}")
+        print(f"Recipients: {follower_ids}")
+        
+        # You can add actual push notification sending logic here
+        # Example with Firebase Admin SDK:
+        # from firebase_admin import messaging
+        # messages = []
+        # for token_data in device_tokens:
+        #     message = messaging.Message(
+        #         notification=messaging.Notification(
+        #             title=title,
+        #             body=body
+        #         ),
+        #         token=token_data['device_token'],
+        #         data={
+        #             'artist_id': artist_id,
+        #             'workshop_id': workshop_data.get('uuid', ''),
+        #             'type': 'new_workshop'
+        #         }
+        #     )
+        #     messages.append(message)
+        # 
+        # response = messaging.send_all(messages)
+        # print(f'Successfully sent {response.success_count} messages')
+        
+    except Exception as e:
+        print(f"Error sending workshop notifications: {str(e)}")
+
+# Admin endpoint to manually trigger notifications (for testing)
+@app.post("/admin/api/send-test-notification")
+async def send_test_notification(
+    artist_id: str = Body(..., embed=True),
+    user_id: str = Depends(verify_admin_user)
+):
+    """Send test notification to followers of an artist.
+    
+    Args:
+        artist_id: ID of the artist
+        user_id: Admin user ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    await send_workshop_notifications(artist_id, {"uuid": "test-workshop-id"})
+    return {"message": f"Test notification sent to followers of artist {artist_id}"}
 
 
 if __name__ == "__main__":

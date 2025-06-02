@@ -68,6 +68,9 @@ class WorkshopSession {
   @JsonKey(name: 'event_type')
   final String? eventType;
 
+  // Getter for unique workshop ID
+  String get id => timestampEpoch.toString();
+
   WorkshopSession({
     required this.date,
     required this.time,

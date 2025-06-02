@@ -29,6 +29,7 @@ class WorkshopDetailModal extends StatelessWidget {
             Text('Studio: ${workshop.studioId ?? 'TBA'}', style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 8),
             Text('Pricing: ${workshop.pricingInfo ?? 'TBA'}', style: const TextStyle(color: Colors.greenAccent)),
+            const SizedBox(height: 12),
             if (workshop.paymentLink.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
