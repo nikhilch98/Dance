@@ -800,7 +800,13 @@ class DatabaseOperations:
 @app.get("/")
 async def home(request: Request):
     """Serve the home page."""
-    return templates.TemplateResponse("website/index.html", {"request": request})
+    return templates.TemplateResponse("website/marketing.html", {"request": request})
+
+
+@app.get("/marketing")
+async def marketing(request: Request):
+    """Serve the marketing page."""
+    return templates.TemplateResponse("website/marketing.html", {"request": request})
 
 
 @app.get("/privacy-policy")

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nachna - Discover Dance Workshops & Connect with Artists</title>
+    <meta name="description" content="nachna is the ultimate dance workshop discovery platform. Find amazing dance workshops, connect with talented artists, and explore top studios. Join the dance community today!">
+    <meta name="keywords" content="dance workshops, dance classes, dance artists, dance studios, dance community, workshop booking, dance events">
+    <meta property="og:title" content="nachna - Discover Dance Workshops & Connect with Artists">
+    <meta property="og:description" content="The ultimate platform for discovering dance workshops, connecting with artists, and exploring studios. Join the vibrant dance community!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nachna.com">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #0A0A0F 0%, #1A1A2E 25%, #16213E 50%, #0F3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 0;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.15), rgba(156, 39, 176, 0.15));
+            border-radius: 30px;
+            margin-bottom: 60px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(0,212,255,0.2)"/><circle cx="40" cy="80" r="1" fill="rgba(156,39,176,0.2)"/></svg>');
+            pointer-events: none;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00D4FF, #9C27B0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+        
+        .hero .tagline {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .app-store-button {
+            display: inline-block;
+            background: linear-gradient(45deg, #00D4FF, #9C27B0);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+        
+        .app-store-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* Features Section */
+        .features {
+            margin: 80px 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 212, 255, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #00D4FF;
+            font-weight: 600;
+        }
+        
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        
+        /* Screenshots Section */
+        .screenshots {
+            margin: 80px 0;
+            text-align: center;
+        }
+        
+        .screenshots-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+        
+        .screenshot {
+            width: 250px;
+            height: 500px;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.1), rgba(156, 39, 176, 0.1));
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .screenshot:hover {
+            transform: scale(1.05);
+        }
+        
+        .screenshot-placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        /* Benefits Section */
+        .benefits {
+            margin: 80px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: 60px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .benefit-icon {
+            font-size: 1.5rem;
+            color: #00D4FF;
+            margin-top: 5px;
+        }
+        
+        .benefit-text h4 {
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .benefit-text p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+        
+        /* Call to Action */
+        .cta {
+            text-align: center;
+            margin: 80px 0;
+            padding: 60px 40px;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.2), rgba(156, 39, 176, 0.2));
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+        }
+        
+        .cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+        
+        .cta p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 60px;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #00D4FF;
+        }
+        
+        .footer p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero .tagline {
+                font-size: 1.2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .screenshots-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>nachna</h1>
+                <p class="tagline">Discover Dance Workshops & Connect with Artists</p>
+                <p class="subtitle">The ultimate platform for the dance community. Find amazing workshops, connect with talented artists, and explore top studios all in one place.</p>
+                <a href="#" class="app-store-button">📱 Download on App Store</a>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features">
+            <h2 class="section-title">Why Choose nachna?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3>Discover Workshops</h3>
+                    <p>Browse hundreds of dance workshops across different styles, skill levels, and locations. Find the perfect class that matches your passion and schedule.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <span class="feature-icon">👨‍🎤</span>
+                    <h3>Connect with Artists</h3>
+                    <p>Explore profiles of talented dance artists, view their upcoming workshops, and follow their journey through integrated social media links.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <span class="feature-icon">🏢</span>
+                    <h3>Explore Studios</h3>
+                    <p>Discover dance studios in your area, check their schedules, and learn about their facilities and specialties.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <span class="feature-icon">📅</span>
+                    <h3>Easy Booking</h3>
+                    <p>Seamlessly book workshops with integrated payment systems. View pricing, schedules, and availability all in one place.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <span class="feature-icon">👤</span>
+                    <h3>Personal Profile</h3>
+                    <p>Create your dance profile, upload photos, and manage your personal information securely with advanced privacy controls.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <span class="feature-icon">🌟</span>
+                    <h3>Community Driven</h3>
+                    <p>Join a vibrant community of dancers, artists, and studios. Share experiences and grow together in your dance journey.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshots Section -->
+        <section class="screenshots">
+            <h2 class="section-title">Experience nachna</h2>
+            <div class="screenshots-container">
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        <p><strong>Workshop Discovery</strong><br>Browse and filter workshops by artist, studio, or date</p>
+                    </div>
+                </div>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        <p><strong>Artist Profiles</strong><br>Explore artist portfolios and upcoming workshops</p>
+                    </div>
+                </div>
+                <div class="screenshot">
+                    <div class="screenshot-placeholder">
+                        <p><strong>Personal Profile</strong><br>Manage your profile and preferences</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits Section -->
+        <section class="benefits">
+            <h2 class="section-title">Benefits for Everyone</h2>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <span class="benefit-icon">✅</span>
+                    <div class="benefit-text">
+                        <h4>For Dancers</h4>
+                        <p>Find workshops that match your skill level and interests. Connect with like-minded dancers and grow your skills.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="benefit-icon">🎭</span>
+                    <div class="benefit-text">
+                        <h4>For Artists</h4>
+                        <p>Showcase your workshops to a wider audience. Build your following and connect with passionate dancers.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="benefit-icon">🏪</span>
+                    <div class="benefit-text">
+                        <h4>For Studios</h4>
+                        <p>Promote your facility and workshops. Reach new customers and fill your classes with enthusiastic participants.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="benefit-icon">🔒</span>
+                    <div class="benefit-text">
+                        <h4>Privacy First</h4>
+                        <p>Your data is protected with industry-standard encryption. You control what information to share.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="benefit-icon">📱</span>
+                    <div class="benefit-text">
+                        <h4>Mobile Optimized</h4>
+                        <p>Beautifully designed for iOS with intuitive navigation and stunning visual effects.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <span class="benefit-icon">🆓</span>
+                    <div class="benefit-text">
+                        <h4>Free to Use</h4>
+                        <p>Download and use nachna completely free. Pay only for the workshops you choose to attend.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action -->
+        <section class="cta">
+            <h2>Ready to Start Dancing?</h2>
+            <p>Join thousands of dancers who have already discovered their passion through nachna. Download now and start your dance journey today!</p>
+            <a href="#" class="app-store-button">📱 Get nachna on App Store</a>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="/privacy-policy">Privacy Policy</a>
+                <a href="/terms-of-service">Terms of Service</a>
+                <a href="/support">Support</a>
+                <a href="mailto:contact@nachna.com">Contact</a>
+            </div>
+            <p>&copy; 2024 nachna. All rights reserved. Made with ❤️ for the dance community.</p>
+        </footer>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,49 @@
+nachna App - Marketing URL Information
+
+MARKETING URL FOR APP STORE CONNECT:
+https://nachna.com
+
+ALTERNATIVE MARKETING URLs:
+https://nachna.com/marketing
+
+MARKETING PAGE FEATURES:
+✅ Professional Hero Section with App Branding
+✅ Key Features Showcase (6 main features)
+✅ App Screenshots Section (placeholder for actual screenshots)
+✅ Benefits for Different User Types (Dancers, Artists, Studios)
+✅ Call-to-Action for App Download
+✅ Professional Footer with Legal Links
+✅ Responsive Design for Mobile/Desktop
+✅ SEO Optimized with Meta Tags
+✅ Social Media Ready with Open Graph Tags
+
+MARKETING CONTENT HIGHLIGHTS:
+- Hero: "nachna - Discover Dance Workshops & Connect with Artists"
+- Tagline: "The ultimate platform for the dance community"
+- Features: Workshop Discovery, Artist Connections, Studio Exploration, Easy Booking, Personal Profiles, Community Driven
+- Benefits: Tailored messaging for dancers, artists, studios, privacy, mobile optimization, free usage
+- Call-to-Action: Clear App Store download prompts
+
+DESIGN ELEMENTS:
+- nachna brand colors (#00D4FF to #9C27B0 gradient)
+- Glassmorphism design matching app aesthetic
+- Dark gradient background for premium feel
+- Interactive hover effects and animations
+- Mobile-responsive layout
+- Professional typography and spacing
+
+SEO & SOCIAL OPTIMIZATION:
+- Title: "nachna - Discover Dance Workshops & Connect with Artists"
+- Meta description optimized for app store discovery
+- Keywords: dance workshops, dance classes, dance artists, dance studios
+- Open Graph tags for social media sharing
+- Structured for search engine visibility
+
+LEGAL COMPLIANCE:
+- Links to Privacy Policy: /privacy-policy
+- Links to Terms of Service: /terms-of-service
+- Links to Support: /support
+- Contact information included
+- Copyright notice and professional branding
+
+This marketing page serves as both the main website homepage and the dedicated marketing URL for App Store Connect, providing comprehensive information about the nachna app and encouraging downloads. 
