@@ -165,7 +165,7 @@ class EntityType(str, Enum):
 class ReactionType(str, Enum):
     """Enum for reaction types."""
     LIKE = "LIKE"
-    FOLLOW = "FOLLOW"
+    NOTIFY = "NOTIFY"
 
 class ReactionRequest(BaseModel):
     """Request model for creating/updating reactions."""
@@ -191,14 +191,14 @@ class ReactionResponse(BaseModel):
 class UserReactionsResponse(BaseModel):
     """Response model for user's reactions grouped by entity type."""
     liked_artists: List[str] = []
-    followed_artists: List[str] = []
+    notified_artists: List[str] = []
 
 class ReactionStatsResponse(BaseModel):
     """Response model for reaction statistics."""
     entity_id: str
     entity_type: EntityType
     like_count: int = 0
-    follow_count: int = 0
+    notify_count: int = 0
 
 # Push Notification Models
 class PushNotificationRequest(BaseModel):
@@ -414,7 +414,7 @@ class ReactionOperations:
             )
         
         # Check if an active reaction already exists
-        existing_reaction = client["dance_app"]["reactions"].find_one({
+        existing_active_reaction = client["dance_app"]["reactions"].find_one({
             "user_id": user_id,
             "entity_id": entity_id,
             "entity_type": entity_type.value,
@@ -422,47 +422,34 @@ class ReactionOperations:
             "is_deleted": {"$ne": True}
         })
         
-        if existing_reaction:
+        if existing_active_reaction:
             # Active reaction already exists, return it
-            return existing_reaction
+            return existing_active_reaction
         
-        # Soft delete any existing different reaction for the same artist
-        if reaction == ReactionType.FOLLOW:
-            # For follow, soft delete any existing like on the same artist
-            client["dance_app"]["reactions"].update_many(
-                {
-                    "user_id": user_id,
-                    "entity_id": entity_id,
-                    "entity_type": entity_type.value,
-                    "reaction": ReactionType.LIKE.value,
-                    "is_deleted": {"$ne": True}
-                },
+        # Check if a soft-deleted reaction exists that we can reactivate
+        existing_deleted_reaction = client["dance_app"]["reactions"].find_one({
+            "user_id": user_id,
+            "entity_id": entity_id,
+            "entity_type": entity_type.value,
+            "reaction": reaction.value,
+            "is_deleted": True
+        })
+        
+        if existing_deleted_reaction:
+            # Reactivate the soft-deleted reaction
+            client["dance_app"]["reactions"].update_one(
+                {"_id": existing_deleted_reaction["_id"]},
                 {
                     "$set": {
-                        "is_deleted": True,
+                        "is_deleted": False,
                         "updated_at": datetime.utcnow()
                     }
                 }
             )
-        elif reaction == ReactionType.LIKE:
-            # For like, soft delete any existing follow on the same artist
-            client["dance_app"]["reactions"].update_many(
-                {
-                    "user_id": user_id,
-                    "entity_id": entity_id,
-                    "entity_type": entity_type.value,
-                    "reaction": ReactionType.FOLLOW.value,
-                    "is_deleted": {"$ne": True}
-                },
-                {
-                    "$set": {
-                        "is_deleted": True,
-                        "updated_at": datetime.utcnow()
-                    }
-                }
-            )
+            # Return the updated reaction
+            return client["dance_app"]["reactions"].find_one({"_id": existing_deleted_reaction["_id"]})
         
-        # Create new reaction
+        # Create new reaction (users can have both LIKE and NOTIFY simultaneously)
         reaction_data = {
             "user_id": user_id,
             "entity_id": entity_id,
@@ -509,18 +496,18 @@ class ReactionOperations:
         }))
         
         liked_artists = []
-        followed_artists = []
+        notified_artists = []
         
         for reaction in reactions:
             if reaction["entity_type"] == EntityType.ARTIST.value:
                 if reaction["reaction"] == ReactionType.LIKE.value:
                     liked_artists.append(reaction["entity_id"])
-                elif reaction["reaction"] == ReactionType.FOLLOW.value:
-                    followed_artists.append(reaction["entity_id"])
+                elif reaction["reaction"] == ReactionType.NOTIFY.value:
+                    notified_artists.append(reaction["entity_id"])
         
         return UserReactionsResponse(
             liked_artists=liked_artists,
-            followed_artists=followed_artists
+            notified_artists=notified_artists
         )
     
     @staticmethod
@@ -550,34 +537,34 @@ class ReactionOperations:
         stats = list(client["dance_app"]["reactions"].aggregate(pipeline))
         
         like_count = 0
-        follow_count = 0
+        notify_count = 0
         
         for stat in stats:
             if stat["_id"] == ReactionType.LIKE.value:
                 like_count = stat["count"]
-            elif stat["_id"] == ReactionType.FOLLOW.value:
-                follow_count = stat["count"]
+            elif stat["_id"] == ReactionType.NOTIFY.value:
+                notify_count = stat["count"]
         
         return ReactionStatsResponse(
             entity_id=entity_id,
             entity_type=entity_type,
             like_count=like_count,
-            follow_count=follow_count
+            notify_count=notify_count
         )
     
     @staticmethod
-    def get_followers_of_artist(artist_id: str) -> List[str]:
-        """Get all user IDs who actively follow a specific artist."""
+    def get_notified_users_of_artist(artist_id: str) -> List[str]:
+        """Get all user IDs who actively have notifications enabled for a specific artist."""
         client = get_mongo_client()
         
-        followers = list(client["dance_app"]["reactions"].find({
+        notified_users = list(client["dance_app"]["reactions"].find({
             "entity_id": artist_id,
             "entity_type": EntityType.ARTIST.value,
-            "reaction": ReactionType.FOLLOW.value,
+            "reaction": ReactionType.NOTIFY.value,
             "is_deleted": {"$ne": True}
         }))
         
-        return [follower["user_id"] for follower in followers]
+        return [user["user_id"] for user in notified_users]
     
     @staticmethod
     def get_user_reaction_for_entity(user_id: str, entity_id: str, entity_type: EntityType) -> Optional[dict]:
@@ -2112,25 +2099,25 @@ async def register_device_token(
 
 # Function to send push notifications when new workshops are added
 async def send_workshop_notifications(artist_id: str, workshop_data: dict):
-    """Send push notifications to followers when a new workshop is added.
+    """Send push notifications to users with notifications enabled when a new workshop is added.
     
     Args:
         artist_id: ID of the artist
         workshop_data: Workshop information
     """
     try:
-        # Get all followers of the artist
-        follower_ids = ReactionOperations.get_followers_of_artist(artist_id)
+        # Get all users who have notifications enabled for the artist
+        notified_user_ids = ReactionOperations.get_notified_users_of_artist(artist_id)
         
-        if not follower_ids:
-            print(f"No followers found for artist {artist_id}")
+        if not notified_user_ids:
+            print(f"No users with notifications enabled found for artist {artist_id}")
             return
         
-        # Get device tokens for followers
-        device_tokens = PushNotificationOperations.get_device_tokens(follower_ids)
+        # Get device tokens for notified users
+        device_tokens = PushNotificationOperations.get_device_tokens(notified_user_ids)
         
         if not device_tokens:
-            print(f"No device tokens found for followers of artist {artist_id}")
+            print(f"No device tokens found for notified users of artist {artist_id}")
             return
         
         # Get artist name from database
@@ -2147,7 +2134,7 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
         print(f"Sending push notification to {len(device_tokens)} devices:")
         print(f"Title: {title}")
         print(f"Body: {body}")
-        print(f"Recipients: {follower_ids}")
+        print(f"Recipients: {notified_user_ids}")
         
         # You can add actual push notification sending logic here
         # Example with Firebase Admin SDK:
@@ -2180,7 +2167,7 @@ async def send_test_notification(
     artist_id: str = Body(..., embed=True),
     user_id: str = Depends(verify_admin_user)
 ):
-    """Send test notification to followers of an artist.
+    """Send test notification to users with notifications enabled for an artist.
     
     Args:
         artist_id: ID of the artist
@@ -2190,7 +2177,7 @@ async def send_test_notification(
         Success message
     """
     await send_workshop_notifications(artist_id, {"uuid": "test-workshop-id"})
-    return {"message": f"Test notification sent to followers of artist {artist_id}"}
+    return {"message": f"Test notification sent to notified users of artist {artist_id}"}
 
 
 if __name__ == "__main__":
