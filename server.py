@@ -51,6 +51,13 @@ import logging
 from colorama import Fore, Style, init
 from PIL import Image, UnidentifiedImageError
 import io
+import ssl
+import json
+import asyncio
+from typing import Optional
+import httpx
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -2179,6 +2186,180 @@ async def send_test_notification(
     await send_workshop_notifications(artist_id, {"uuid": "test-workshop-id"})
     return {"message": f"Test notification sent to notified users of artist {artist_id}"}
 
+# APNs Configuration
+APNS_SANDBOX_URL = "https://api.sandbox.push.apple.com"
+APNS_PRODUCTION_URL = "https://api.push.apple.com"
+
+# APNs Credentials - you can also load these from environment variables
+APNS_AUTH_KEY_ID = "W5H5A6ZUS2"
+APNS_TEAM_ID = "3N4P4C85F3"  # Your Apple Developer Team ID
+APNS_BUNDLE_ID = "com.nikhilchatragadda.dance-workshop-app"  # Your app's bundle ID
+APNS_KEY_PATH = "./nachna/AuthKey_W5H5A6ZUS2.p8"
+
+class APNsService:
+    """Apple Push Notification service integration with proper JWT authentication."""
+    
+    def __init__(self, use_sandbox: bool = True):
+        self.base_url = APNS_SANDBOX_URL if use_sandbox else APNS_PRODUCTION_URL
+        self.auth_key_id = APNS_AUTH_KEY_ID
+        self.team_id = APNS_TEAM_ID
+        self.bundle_id = APNS_BUNDLE_ID
+        self.key_path = APNS_KEY_PATH
+        self._private_key = None
+        self._load_private_key()
+        
+    def _load_private_key(self):
+        """Load the private key from the .p8 file."""
+        try:
+            with open(self.key_path, 'rb') as key_file:
+                self._private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password=None
+                )
+            print(f"✅ APNs private key loaded successfully from {self.key_path}")
+        except FileNotFoundError:
+            print(f"❌ APNs private key file not found: {self.key_path}")
+            self._private_key = None
+        except Exception as e:
+            print(f"❌ Error loading APNs private key: {str(e)}")
+            self._private_key = None
+    
+    def _generate_jwt_token(self):
+        """Generate JWT token for APNs authentication."""
+        if not self._private_key:
+            raise Exception("Private key not loaded")
+            
+        # JWT payload
+        now = datetime.utcnow()
+        payload = {
+            'iss': self.team_id,  # Issuer (Team ID)
+            'iat': int(now.timestamp()),  # Issued at
+            'exp': int((now + timedelta(minutes=55)).timestamp()),  # Expires (max 1 hour)
+        }
+        
+        # JWT headers
+        headers = {
+            'alg': 'ES256',
+            'kid': self.auth_key_id,  # Key ID
+        }
+        
+        # Generate the token
+        token = jwt.encode(
+            payload, 
+            self._private_key, 
+            algorithm='ES256', 
+            headers=headers
+        )
+        
+        return token
+        
+    async def send_notification(self, device_token: str, title: str, body: str, data: dict = None):
+        """Send push notification via APNs."""
+        if not self._private_key:
+            print("❌ APNs private key not available")
+            return False
+            
+        payload = {
+            "aps": {
+                "alert": {
+                    "title": title,
+                    "body": body
+                },
+                "sound": "default",
+                "badge": 1,
+                "mutable-content": 1
+            }
+        }
+        
+        if data:
+            payload.update(data)
+        
+        try:
+            jwt_token = self._generate_jwt_token()
+        except Exception as e:
+            print(f"❌ Failed to generate JWT token: {str(e)}")
+            return False
+        
+        headers = {
+            "authorization": f"bearer {jwt_token}",
+            "apns-topic": self.bundle_id,
+            "apns-push-type": "alert",
+            "apns-priority": "10",
+            "apns-expiration": "0"
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/3/device/{device_token}",
+                    headers=headers,
+                    json=payload
+                )
+                
+                if response.status_code == 200:
+                    print(f"✅ APNs notification sent successfully to {device_token[:10]}...")
+                    return True
+                else:
+                    print(f"❌ APNs error: {response.status_code} - {response.text}")
+                    # Log the response for debugging
+                    try:
+                        error_data = response.json()
+                        print(f"   Error details: {error_data}")
+                    except:
+                        pass
+                    return False
+                    
+        except httpx.TimeoutException:
+            print("❌ APNs request timeout")
+            return False
+        except Exception as e:
+            print(f"❌ APNs exception: {str(e)}")
+            return False
+
+# Initialize APNs service
+apns_service = APNsService(use_sandbox=True)
+
+# Test endpoint for APNs
+@app.post("/admin/api/test-apns")
+async def test_apns_notification(
+    device_token: str = Body(...),
+    title: str = Body(default="Test Notification"),
+    body: str = Body(default="This is a test notification from Nachna!"),
+    user_id: str = Depends(verify_admin_user)
+):
+    """Send test APNs notification to a specific device token.
+    
+    Args:
+        device_token: iOS device token
+        title: Notification title
+        body: Notification body
+        user_id: Admin user ID
+        
+    Returns:
+        Success/failure message
+    """
+    try:
+        success = await apns_service.send_notification(
+            device_token=device_token,
+            title=title,
+            body=body,
+            data={"test": "true", "type": "admin_test"}
+        )
+        
+        if success:
+            return {"message": "Test notification sent successfully"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send test notification"
+            )
+            
+    except Exception as e:
+        print(f"Error sending test notification: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send test notification: {str(e)}"
+        )
 
 if __name__ == "__main__":
     uvicorn.run(
