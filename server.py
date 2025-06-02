@@ -2193,8 +2193,8 @@ APNS_PRODUCTION_URL = "https://api.push.apple.com"
 # APNs Credentials - you can also load these from environment variables
 APNS_AUTH_KEY_ID = "W5H5A6ZUS2"
 APNS_TEAM_ID = "3N4P4C85F3"  # Your Apple Developer Team ID
-APNS_BUNDLE_ID = "com.nikhilchatragadda.dance-workshop-app"  # Your app's bundle ID
-APNS_KEY_PATH = "./nachna/AuthKey_W5H5A6ZUS2.p8"
+APNS_BUNDLE_ID = "com.nachna.nachna"  # Your app's bundle ID
+APNS_KEY_PATH = "./AuthKey_W5H5A6ZUS2.p8"
 
 class APNsService:
     """Apple Push Notification service integration with proper JWT authentication."""
