@@ -1,0 +1,54 @@
+nachna App - iPad 13" Display Screenshots for App Store Connect
+
+GENERATED DIRECTORIES:
+✅ appstore_ipad_13_2064x2752_portrait/ (2064 × 2752px)
+✅ appstore_ipad_13_2048x2732_portrait/ (2048 × 2732px)  
+✅ appstore_ipad_13_2752x2064_landscape/ (2752 × 2064px)
+✅ appstore_ipad_13_2732x2048_landscape/ (2732 × 2048px)
+
+SCREENSHOT FILES (4 per directory = 16 total):
+- 00_marketing.png (brand-focused marketing screenshot)
+- 01_studios.png (Studios discovery screen)
+- 02_workshops.png (Workshops listing screen)
+- 03_artists.png (Artists discovery screen)
+
+TECHNICAL SPECIFICATIONS:
+✅ Dimensions: Exact iPad 13" Display requirements
+✅ Format: PNG with high quality (95% compression)
+✅ Color Space: RGB 
+✅ File Sizes: Optimized for App Store Connect
+✅ Design: Centered iPhone screenshots with app background
+✅ Effects: Subtle shadows and professional presentation
+
+APP STORE CONNECT UPLOAD INSTRUCTIONS:
+1. Log into App Store Connect
+2. Navigate to Your App > App Store > iOS App > Screenshots
+3. Select "iPad 13" Display" section
+4. Choose either portrait format (both are acceptable):
+   - 2064 × 2752px (recommended) OR
+   - 2048 × 2732px (alternative)
+5. Upload up to 10 screenshots from your chosen format directory
+6. You can mix both portrait formats if desired
+7. Landscape formats are also available if needed
+
+RECOMMENDED UPLOAD ORDER:
+1. 00_marketing.png (brand introduction)
+2. 01_studios.png (studios discovery)
+3. 02_workshops.png (workshop browsing)
+4. 03_artists.png (artist connections)
+
+DESIGN FEATURES:
+- nachna brand colors and gradient backgrounds
+- Professional centering with shadow effects  
+- iPhone screenshots scaled to 85% for iPad presentation
+- Consistent with app's glassmorphism design language
+- Marketing screenshot with gradient background
+
+QUALITY ASSURANCE:
+✅ All dimensions verified programmatically
+✅ Image quality optimized for App Store display
+✅ File sizes appropriate for upload
+✅ Brand consistency maintained across all screenshots
+✅ Professional presentation suitable for App Store review
+
+These iPad screenshots showcase the nachna app's key features adapted for iPad 13" Display, maintaining the app's visual identity while meeting App Store Connect technical requirements. 

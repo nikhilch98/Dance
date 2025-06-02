@@ -311,25 +311,40 @@ class _StudiosScreenState extends State<StudiosScreen> {
                               await _launchInstagram(studio.instagramLink);
                             },
                             child: Container(
-                              width: 30,
-                              height: 30,
+                              width: 24,
+                              height: 24,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                                ),
+                                borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFE4405F).withOpacity(0.5),
-                                    offset: const Offset(0, 4),
-                                    blurRadius: 12,
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(0, 2),
+                                    blurRadius: 8,
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.photo_camera,
-                                color: Colors.white,
-                                size: 16,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.asset(
+                                  'instagram-icon.png',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback to gradient container with camera icon
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.photo_camera,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),

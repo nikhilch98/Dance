@@ -108,7 +108,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          // Back button and Instagram
+                          // Back button row
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -132,31 +132,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 ),
                               ),
                               
-                              // Instagram Button
-                              GestureDetector(
-                                onTap: () => _launchInstagram(widget.studio.instagramLink),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFE4405F).withOpacity(0.3),
-                                        offset: const Offset(0, 4),
-                                        blurRadius: 12,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
+                              // Empty space for balance
+                              const SizedBox(width: 40),
                             ],
                           ),
                           
@@ -203,14 +180,66 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      toTitleCase(widget.studio.name),
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
+                                    // Studio Name with Instagram Icon
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            toTitleCase(widget.studio.name),
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              letterSpacing: 0.5,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        // Instagram Icon aligned with text
+                                        GestureDetector(
+                                          onTap: () => _launchInstagram(widget.studio.instagramLink),
+                                          child: Container(
+                                            width: 20,
+                                            height: 20,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(5),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.2),
+                                                  offset: const Offset(0, 2),
+                                                  blurRadius: 8,
+                                                ),
+                                              ],
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(5),
+                                              child: Image.asset(
+                                                'instagram-icon.png',
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  // Fallback to gradient container with camera icon
+                                                  return Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(5),
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                                                      ),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.camera_alt_rounded,
+                                                      color: Colors.white,
+                                                      size: 12,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 8),
                                     Container(

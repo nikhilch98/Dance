@@ -33,6 +33,53 @@
 - **Font Sizes**: Use responsive sizing based on screen width/height percentages
 - **Letter Spacing**: Use `letterSpacing: 1.2` for headers
 
+### Overflow Prevention & Text Handling
+- **CRITICAL RULE**: Always account for text overflow and content that may exceed container bounds
+- **Text Widgets**: Always include `maxLines` and `overflow: TextOverflow.ellipsis` for dynamic content
+- **Row/Column Layouts**: Use `Flexible` or `Expanded` widgets to prevent overflow, never assume fixed content sizes
+- **Long Names/Titles**: Design for names that may be 2-3 times longer than expected (e.g., "Charmi Chinoy Bhatian" vs "John")
+- **Multi-language Support**: Account for text expansion in different languages (some languages require 30-40% more space)
+- **Dynamic Content**: Always test with edge cases like very long strings, empty strings, and special characters
+- **Container Sizing**: Use `MainAxisSize.min` when content should only take necessary space
+- **Cross-Axis Alignment**: Use `CrossAxisAlignment.start` when text might wrap to multiple lines
+- **Icon Positioning**: When placing icons next to text, account for text wrapping by using proper padding and alignment
+- **Responsive Text**: Implement text scaling that adapts to different screen sizes and accessibility settings
+
+#### Required Overflow Patterns:
+```dart
+// For dynamic text that might be long
+Text(
+  dynamicContent,
+  maxLines: 2,
+  overflow: TextOverflow.ellipsis,
+  style: // your style
+)
+
+// For rows with text and icons
+Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Flexible(
+      child: Text(
+        longText,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    const SizedBox(width: 6),
+    Icon(Icons.example),
+  ],
+)
+
+// For containers with dynamic content
+Container(
+  constraints: BoxConstraints(
+    maxWidth: MediaQuery.of(context).size.width * 0.8,
+  ),
+  child: // your content
+)
+```
+
 ### Component Design Patterns
 
 #### Cards & Containers
