@@ -63,5 +63,16 @@
 	<string>This app needs access to camera to take profile pictures</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to select profile pictures</string>
+	
+	<!-- Push Notification Permissions -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app sends notifications about new workshops from your favorite artists</string>
+	
+	<!-- Background Modes for Push Notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-fetch</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

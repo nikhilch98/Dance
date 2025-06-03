@@ -4,6 +4,7 @@ import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
 import './services/auth_service.dart';
+import './services/notification_service.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
@@ -11,9 +12,10 @@ import './screens/profile_setup_screen.dart';
 import './screens/profile_screen.dart';
 import './screens/admin_screen.dart';
 
-void main() {
+void main() async {
   // Performance optimizations
   WidgetsFlutterBinding.ensureInitialized();
+  
   runApp(const MyApp());
 }
 
@@ -76,7 +78,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // Initialize authentication state
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).initializeAuth();
+      _initializeNotifications();
     });
+  }
+
+  Future<void> _initializeNotifications() async {
+    // Initialize notification service
+    final deviceToken = await NotificationService().initialize();
+    if (deviceToken != null) {
+      print('✅ Notifications initialized with token: ${deviceToken.substring(0, 10)}...');
+    } else {
+      print('❌ Failed to initialize notifications');
+    }
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:io';
+import '../services/notification_service.dart';
 
 class APNsTestWidget extends StatefulWidget {
   const APNsTestWidget({Key? key}) : super(key: key);
@@ -14,37 +15,42 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
   String? _deviceToken;
   String _status = 'Not initialized';
   bool _isLoading = false;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
-    _initializeNotifications();
+    _getDeviceToken();
   }
 
-  Future<void> _initializeNotifications() async {
+  Future<void> _getDeviceToken() async {
     setState(() {
-      _status = 'Initializing...';
+      _status = 'Getting device token...';
       _isLoading = true;
     });
 
     try {
       if (Platform.isIOS) {
-        // Initialize Firebase Messaging or APNs
-        // For now, simulate getting a device token
-        await Future.delayed(const Duration(seconds: 1));
+        final token = _notificationService.deviceToken;
         
-        // In a real app, you would get the actual device token like this:
-        // final messaging = FirebaseMessaging.instance;
-        // final token = await messaging.getToken();
-        
-        // For testing, generate a dummy token
-        final dummyToken = 'a' * 64; // Real tokens are 64 hex characters
-        
-        setState(() {
-          _deviceToken = dummyToken;
-          _status = 'Device token obtained (dummy for testing)';
-          _isLoading = false;
-        });
+        if (token != null) {
+          setState(() {
+            _deviceToken = token;
+            _status = 'Device token obtained successfully';
+            _isLoading = false;
+          });
+        } else {
+          // Try to initialize if not already done
+          final newToken = await _notificationService.initialize();
+          
+          setState(() {
+            _deviceToken = newToken;
+            _status = newToken != null 
+              ? 'Device token obtained successfully' 
+              : 'Failed to get device token';
+            _isLoading = false;
+          });
+        }
       } else {
         setState(() {
           _status = 'APNs testing only available on iOS';
@@ -66,42 +72,6 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
     }
   }
 
-  Future<void> _testNotificationPermissions() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Checking notification permissions...';
-    });
-
-    try {
-      if (Platform.isIOS) {
-        // In a real app:
-        // final messaging = FirebaseMessaging.instance;
-        // final settings = await messaging.requestPermission(
-        //   alert: true,
-        //   announcement: false,
-        //   badge: true,
-        //   carPlay: false,
-        //   criticalAlert: false,
-        //   provisional: false,
-        //   sound: true,
-        // );
-        
-        // For testing, simulate permission check
-        await Future.delayed(const Duration(seconds: 1));
-        
-        setState(() {
-          _status = 'Notification permissions: Authorized (simulated)';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _status = 'Permission error: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _sendTestNotification() async {
     if (_deviceToken == null) {
       _showSnackBar('No device token available');
@@ -114,30 +84,21 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
     });
 
     try {
-      // Here you would call your server's test notification endpoint
-      // For example:
-      // final response = await http.post(
-      //   Uri.parse('https://nachna.com/api/admin/api/test-apns'),
-      //   headers: {
-      //     'Authorization': 'Bearer ${your_auth_token}',
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: json.encode({
-      //     'device_token': _deviceToken,
-      //     'title': 'Test Notification',
-      //     'body': 'This is a test from the Nachna app!',
-      //   }),
-      // );
-
-      // For testing, simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final success = await _notificationService.sendTestNotification(
+        title: 'Nachna Test',
+        body: 'This is a test notification from the Nachna app! 🎉',
+      );
       
       setState(() {
-        _status = 'Test notification sent! Check your device.';
+        _status = success 
+          ? 'Test notification sent! Check your device.' 
+          : 'Failed to send test notification';
         _isLoading = false;
       });
       
-      _showSnackBar('Test notification request sent');
+      _showSnackBar(success 
+        ? 'Test notification sent successfully' 
+        : 'Failed to send test notification');
     } catch (e) {
       setState(() {
         _status = 'Error sending notification: ${e.toString()}';
@@ -235,6 +196,8 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
                       Expanded(
                         child: Text(
                           _status,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 14,
@@ -297,7 +260,7 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _testNotificationPermissions,
+                        onPressed: _isLoading ? null : _getDeviceToken,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF8338EC),
                           foregroundColor: Colors.white,
@@ -307,7 +270,7 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
                           ),
                         ),
                         child: const Text(
-                          'Check Permissions',
+                          'Refresh Token',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -373,9 +336,9 @@ class _APNsTestWidgetState extends State<APNsTestWidget> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '1. Copy device token and send to your backend team\n'
-                        '2. Ensure APNs credentials are configured\n'
-                        '3. Use admin endpoint to send test notifications\n'
+                        '1. Copy device token using the button above\n'
+                        '2. Use this token in the Python test script\n'
+                        '3. Send test notifications via admin panel\n'
                         '4. Check device notification center for results',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
