@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import '../models/artist.dart';
+import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:ui';
 import 'package:nachna/services/auth_service.dart';
-import 'package:nachna/services/api_service.dart';
-import 'package:nachna/models/artist.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});

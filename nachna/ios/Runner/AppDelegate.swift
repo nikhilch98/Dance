@@ -5,6 +5,8 @@ import UserNotifications
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private var notificationChannel: FlutterMethodChannel?
+  private var deviceTokenString: String?
+  private var permissionStatusObserver: NSObjectProtocol?
   
   override func application(
     _ application: UIApplication,
@@ -31,7 +33,85 @@ import UserNotifications
     // Setup notification handling
     setupNotifications(application: application, launchOptions: launchOptions)
     
+    // Monitor app lifecycle for permission changes
+    setupPermissionStatusMonitoring()
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+  
+  private func setupPermissionStatusMonitoring() {
+    // Monitor when app becomes active (user might have changed settings)
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didBecomeActiveNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      self?.checkPermissionStatusOnAppActivation()
+    }
+    
+    // Monitor when app enters foreground
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willEnterForegroundNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      // Delay check to allow the app to fully activate
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        self?.checkPermissionStatusOnAppActivation()
+      }
+    }
+  }
+  
+  private func checkPermissionStatusOnAppActivation() {
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+        DispatchQueue.main.async {
+          switch settings.authorizationStatus {
+          case .authorized, .provisional:
+            // Permissions are granted - try to get token if we don't have one
+            if self?.deviceTokenString == nil {
+              print("📱 Permissions granted but no token - registering for remote notifications")
+              UIApplication.shared.registerForRemoteNotifications()
+            } else {
+              // Re-register existing token with server (in case registration failed before)
+              print("📱 Permissions granted and token exists - notifying Flutter")
+              self?.notifyFlutterOfPermissionChange(granted: true, token: self?.deviceTokenString)
+            }
+            
+          case .denied:
+            // User has explicitly denied - notify Flutter
+            print("📱 Permissions denied - notifying Flutter")
+            self?.notifyFlutterOfPermissionChange(granted: false, token: nil)
+            
+          case .notDetermined:
+            // User hasn't been asked yet - this is normal on first launch
+            print("📱 Permissions not determined yet")
+            break
+            
+          case .ephemeral:
+            // App Clips - treat as authorized
+            if self?.deviceTokenString == nil {
+              UIApplication.shared.registerForRemoteNotifications()
+            }
+            
+          @unknown default:
+            print("⚠️ Unknown notification authorization status")
+          }
+        }
+      }
+    } else {
+      // iOS < 10 - check if registered for remote notifications
+      let isRegistered = UIApplication.shared.isRegisteredForRemoteNotifications
+      print("📱 iOS < 10 - isRegisteredForRemoteNotifications: \(isRegistered)")
+      self.notifyFlutterOfPermissionChange(granted: isRegistered, token: self.deviceTokenString)
+    }
+  }
+  
+  private func notifyFlutterOfPermissionChange(granted: Bool, token: String?) {
+    notificationChannel?.invokeMethod("onPermissionStatusChanged", arguments: [
+      "granted": granted,
+      "token": token as Any
+    ])
   }
   
   private func setupNotifications(application: UIApplication, launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
@@ -42,10 +122,15 @@ import UserNotifications
     
     // Check if app was launched from notification
     if let userInfo = launchOptions?[UIApplication.LaunchOptionsKey.remoteNotification] as? [String: Any] {
-      // Handle app launch from notification
       DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
         self.notificationChannel?.invokeMethod("onNotificationTapped", arguments: userInfo)
       }
+    }
+    
+    // Always try to register for remote notifications on app start
+    // (this will work if permissions were granted in Settings)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+      self.checkPermissionStatusOnAppActivation()
     }
   }
   
@@ -53,99 +138,208 @@ import UserNotifications
     switch call.method {
     case "requestPermissionsAndGetToken":
       requestPermissionsAndGetToken(result: result)
+    case "checkPermissionStatus":
+      checkCurrentPermissionStatus(result: result)
+    case "openNotificationSettings":
+      openNotificationSettings(result: result)
+    case "retryTokenRegistration":
+      retryTokenRegistration(result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
   }
   
-  private func requestPermissionsAndGetToken(result: @escaping FlutterResult) {
-    // Request notification permissions
+  private func checkCurrentPermissionStatus(result: @escaping FlutterResult) {
     if #available(iOS 10.0, *) {
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { granted, error in
-          if granted {
-            DispatchQueue.main.async {
-              UIApplication.shared.registerForRemoteNotifications()
+      UNUserNotificationCenter.current().getNotificationSettings { settings in
+        DispatchQueue.main.async {
+          let status = settings.authorizationStatus
+          result([
+            "status": self.authorizationStatusToString(status),
+            "canRequest": status == .notDetermined,
+            "token": self.deviceTokenString as Any,
+            "isRegistered": UIApplication.shared.isRegisteredForRemoteNotifications
+          ])
+        }
+      }
+    } else {
+      // For iOS < 10, check if registered
+      let isRegistered = UIApplication.shared.isRegisteredForRemoteNotifications
+      result([
+        "status": isRegistered ? "authorized" : "denied",
+        "canRequest": !isRegistered,
+        "token": self.deviceTokenString as Any,
+        "isRegistered": isRegistered
+      ])
+    }
+  }
+  
+  private func openNotificationSettings(result: @escaping FlutterResult) {
+    if #available(iOS 10.0, *) {
+      if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+        UIApplication.shared.open(settingsUrl) { success in
+          result(success)
+        }
+      } else {
+        result(false)
+      }
+    } else {
+      result(false)
+    }
+  }
+  
+  private func retryTokenRegistration(result: @escaping FlutterResult) {
+    // Force re-registration for remote notifications
+    UIApplication.shared.registerForRemoteNotifications()
+    
+    // Wait for token to be received
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      result([
+        "success": self.deviceTokenString != nil,
+        "token": self.deviceTokenString as Any
+      ])
+    }
+  }
+  
+  @available(iOS 10.0, *)
+  private func authorizationStatusToString(_ status: UNAuthorizationStatus) -> String {
+    switch status {
+    case .notDetermined: return "notDetermined"
+    case .denied: return "denied"
+    case .authorized: return "authorized"
+    case .provisional: return "provisional"
+    case .ephemeral: return "ephemeral"
+    @unknown default: return "unknown"
+    }
+  }
+  
+  private func requestPermissionsAndGetToken(result: @escaping FlutterResult) {
+    if #available(iOS 10.0, *) {
+      // First check current status
+      UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+        DispatchQueue.main.async {
+          switch settings.authorizationStatus {
+          case .authorized, .provisional:
+            // Already authorized - just get token
+            print("📱 Already authorized - registering for remote notifications")
+            UIApplication.shared.registerForRemoteNotifications()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+              result([
+                "success": true,
+                "token": self?.deviceTokenString as Any,
+                "wasAlreadyAuthorized": true,
+                "shouldOpenSettings": false
+              ])
             }
             
-            // Wait a bit for token to be received
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-              if let token = self.deviceTokenString {
-                result([
-                  "success": true,
-                  "token": token
-                ])
-              } else {
-                result([
-                  "success": false,
-                  "error": "Failed to get device token"
-                ])
-              }
-            }
-          } else {
+          case .denied:
+            // Previously denied - can't request again, must go to Settings
+            print("📱 Previously denied - directing to Settings")
             result([
               "success": false,
-              "error": error?.localizedDescription ?? "Permission denied"
+              "error": "Notifications previously denied. Please enable in Settings.",
+              "shouldOpenSettings": true,
+              "wasAlreadyAuthorized": false,
+              "token": NSNull()
+            ])
+            
+          case .notDetermined:
+            // Can request permission
+            print("📱 Requesting permission for first time")
+            let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+            UNUserNotificationCenter.current().requestAuthorization(
+              options: authOptions,
+              completionHandler: { granted, error in
+                DispatchQueue.main.async {
+                  if granted {
+                    print("📱 Permission granted - registering for remote notifications")
+                    UIApplication.shared.registerForRemoteNotifications()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                      result([
+                        "success": true,
+                        "token": self?.deviceTokenString as Any,
+                        "wasAlreadyAuthorized": true,
+                        "shouldOpenSettings": false
+                      ])
+                    }
+                  } else {
+                    print("📱 Permission denied by user")
+                    result([
+                      "success": false,
+                      "error": error?.localizedDescription ?? "Permission denied",
+                      "shouldOpenSettings": false,
+                      "wasAlreadyAuthorized": false,
+                      "token": NSNull()
+                    ])
+                  }
+                }
+              }
+            )
+            
+          default:
+            result([
+              "success": false,
+              "error": "Unknown authorization status",
+              "shouldOpenSettings": false,
+              "wasAlreadyAuthorized": false,
+              "token": NSNull()
             ])
           }
         }
-      )
+      }
     } else {
+      // iOS < 10 handling
+      print("📱 iOS < 10 - registering for notifications")
       let settings = UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
       UIApplication.shared.registerUserNotificationSettings(settings)
       UIApplication.shared.registerForRemoteNotifications()
       
-      // For iOS < 10, assume success
-      DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-        if let token = self.deviceTokenString {
-          result([
-            "success": true,
-            "token": token
-          ])
-        } else {
-          result([
-            "success": false,
-            "error": "Failed to get device token"
-          ])
-        }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        result([
+          "success": self.deviceTokenString != nil,
+          "token": self.deviceTokenString as Any,
+          "wasAlreadyAuthorized": false,
+          "shouldOpenSettings": false
+        ])
       }
     }
   }
-  
-  private var deviceTokenString: String?
   
   // Handle successful registration for remote notifications
   override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
     print("📱 APNs Device Token: \(tokenString)")
     
+    let wasNewToken = deviceTokenString != tokenString
     deviceTokenString = tokenString
     
-    // Notify Flutter about token refresh
-    notificationChannel?.invokeMethod("onTokenRefresh", arguments: tokenString)
+    // Always notify Flutter when we get a token (new or refreshed)
+    notificationChannel?.invokeMethod("onTokenRefresh", arguments: [
+      "token": tokenString,
+      "isNewToken": wasNewToken
+    ])
   }
   
   // Handle registration failure
   override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
     print("❌ Failed to register for remote notifications: \(error)")
     deviceTokenString = nil
+    
+    notificationChannel?.invokeMethod("onRegistrationError", arguments: [
+      "error": error.localizedDescription
+    ])
   }
   
   // Handle notification when app is in background/terminated
   override func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
     print("📨 Background notification received: \(userInfo)")
     
-    // Notify Flutter
     notificationChannel?.invokeMethod("onNotificationReceived", arguments: userInfo)
-    
     completionHandler(.newData)
   }
   
   // MARK: - UNUserNotificationCenterDelegate
   
-  // Handle notifications when app is in foreground
   @available(iOS 10, *)
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
                               willPresent notification: UNNotification,
@@ -153,10 +347,8 @@ import UserNotifications
     let userInfo = notification.request.content.userInfo
     print("📨 Foreground notification received: \(userInfo)")
     
-    // Notify Flutter
     notificationChannel?.invokeMethod("onNotificationReceived", arguments: userInfo)
     
-    // Show notification even when app is in foreground
     if #available(iOS 14.0, *) {
       completionHandler([[.banner, .sound, .badge]])
     } else {
@@ -164,7 +356,6 @@ import UserNotifications
     }
   }
 
-  // Handle notification tap
   @available(iOS 10, *)
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
                               didReceive response: UNNotificationResponse,
@@ -172,9 +363,11 @@ import UserNotifications
     let userInfo = response.notification.request.content.userInfo
     print("📨 Notification tapped: \(userInfo)")
     
-    // Notify Flutter
     notificationChannel?.invokeMethod("onNotificationTapped", arguments: userInfo)
-    
     completionHandler()
+  }
+  
+  deinit {
+    NotificationCenter.default.removeObserver(self)
   }
 }

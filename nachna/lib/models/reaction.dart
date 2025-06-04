@@ -90,11 +90,18 @@ class UserReactionsResponse {
       notifiedArtists: List<String>.from(json['notified_artists'] ?? []),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'liked_artists': likedArtists,
+      'notified_artists': notifiedArtists,
+    };
+  }
 }
 
 class ReactionStatsResponse {
   final String entityId;
-  final EntityType entityType;
+  final String entityType;
   final int likeCount;
   final int notifyCount;
 
@@ -108,9 +115,7 @@ class ReactionStatsResponse {
   factory ReactionStatsResponse.fromJson(Map<String, dynamic> json) {
     return ReactionStatsResponse(
       entityId: json['entity_id'],
-      entityType: EntityType.values.firstWhere(
-        (e) => e.name == json['entity_type'],
-      ),
+      entityType: json['entity_type'],
       likeCount: json['like_count'] ?? 0,
       notifyCount: json['notify_count'] ?? 0,
     );

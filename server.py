@@ -58,6 +58,7 @@ from typing import Optional
 import httpx
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+import threading
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -826,6 +827,60 @@ async def startup_db_client():
     # Start the cache invalidation watcher
     start_cache_invalidation_watcher()
     print("Cache invalidation watcher started")
+
+    # Start the workshop notification watcher
+    start_workshop_notification_watcher()
+    print("Workshop notification watcher started")
+
+# Workshop notification watcher
+def start_workshop_notification_watcher():
+    """Start watching for new workshop insertions and send notifications."""
+    import threading
+    
+    def workshop_notification_watcher():
+        client = get_mongo_client()
+        db = client["discovery"]
+        workshops_collection = db["workshops_v2"]
+        
+        # Watch for insert operations only
+        pipeline = [
+            {
+                "$match": {
+                    "operationType": "insert"
+                }
+            }
+        ]
+        
+        try:
+            with workshops_collection.watch(pipeline=pipeline, full_document="updateLookup") as stream:
+                for change in stream:
+                    try:
+                        print(f"New workshop detected: {change['operationType']}")
+                        
+                        # Get the full document
+                        new_workshop = change.get('fullDocument')
+                        if not new_workshop:
+                            continue
+                        
+                        # Extract artist IDs from the workshop
+                        artist_ids = new_workshop.get('artist_id_list', [])
+                        if not artist_ids:
+                            print(f"No artist IDs found in workshop {new_workshop.get('uuid', 'unknown')}")
+                            continue
+                        
+                        # Send notifications for each artist
+                        for artist_id in artist_ids:
+                            if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
+                                asyncio.run(send_workshop_notifications(artist_id, new_workshop))
+                        
+                    except Exception as e:
+                        print(f"Error processing workshop change: {e}")
+                        
+        except Exception as e:
+            print(f"Workshop notification watcher error: {e}")
+    
+    # Start the watcher in a separate thread
+    threading.Thread(target=workshop_notification_watcher, daemon=True).start()
 
 
 # Dependency for version validation
@@ -2136,37 +2191,64 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
         title = f"🎉 {artist_name} is back!"
         body = f"Your favorite artist is coming to Bengaluru! New workshop tickets are now available. Book ASAP before they run out! 💃"
         
-        # Here you would integrate with actual push notification service (FCM, APNs)
-        # For now, we'll just log the notification
+        # Data for deep linking
+        notification_data = {
+            'artist_id': artist_id,
+            'workshop_id': workshop_data.get('uuid', ''),
+            'type': 'new_workshop'
+        }
+        
         print(f"Sending push notification to {len(device_tokens)} devices:")
         print(f"Title: {title}")
         print(f"Body: {body}")
         print(f"Recipients: {notified_user_ids}")
+        print(f"Deep link data: {notification_data}")
         
-        # You can add actual push notification sending logic here
-        # Example with Firebase Admin SDK:
-        # from firebase_admin import messaging
-        # messages = []
-        # for token_data in device_tokens:
-        #     message = messaging.Message(
-        #         notification=messaging.Notification(
-        #             title=title,
-        #             body=body
-        #         ),
-        #         token=token_data['device_token'],
-        #         data={
-        #             'artist_id': artist_id,
-        #             'workshop_id': workshop_data.get('uuid', ''),
-        #             'type': 'new_workshop'
-        #         }
-        #     )
-        #     messages.append(message)
-        # 
-        # response = messaging.send_all(messages)
-        # print(f'Successfully sent {response.success_count} messages')
+        # Send APNs notifications to iOS devices
+        ios_tokens = [token for token in device_tokens if token.get('platform') == 'ios']
+        android_tokens = [token for token in device_tokens if token.get('platform') == 'android']
+        
+        success_count = 0
+        total_sent = 0
+        
+        # Send to iOS devices using APNs
+        if ios_tokens:
+            print(f"Sending to {len(ios_tokens)} iOS devices...")
+            for token_data in ios_tokens:
+                device_token = token_data.get('device_token')
+                if device_token:
+                    try:
+                        success = await apns_service.send_notification(
+                            device_token=device_token,
+                            title=title,
+                            body=body,
+                            data=notification_data
+                        )
+                        total_sent += 1
+                        if success:
+                            success_count += 1
+                        else:
+                            # Mark token as inactive if send failed
+                            PushNotificationOperations.deactivate_device_token(device_token)
+                            print(f"Deactivated invalid device token: {device_token[:10]}...")
+                    except Exception as e:
+                        print(f"Error sending to iOS device {device_token[:10]}...: {e}")
+        
+        # For Android devices, you would typically use Firebase Cloud Messaging (FCM)
+        # This is a placeholder for FCM implementation
+        if android_tokens:
+            print(f"Android FCM notifications not implemented yet for {len(android_tokens)} devices")
+            # TODO: Implement FCM for Android devices
+            # for token_data in android_tokens:
+            #     # Send FCM notification
+            #     pass
+        
+        print(f"✅ Notification sending complete: {success_count}/{total_sent} successful")
         
     except Exception as e:
-        print(f"Error sending workshop notifications: {str(e)}")
+        print(f"❌ Error sending workshop notifications: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 # Admin endpoint to manually trigger notifications (for testing)
 @app.post("/admin/api/send-test-notification")

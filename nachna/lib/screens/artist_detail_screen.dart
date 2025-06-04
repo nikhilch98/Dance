@@ -8,9 +8,16 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 
 class ArtistDetailScreen extends StatefulWidget {
-  final Artist artist;
+  final Artist? artist;
+  final String? artistId;
+  final bool fromNotification;
 
-  const ArtistDetailScreen({super.key, required this.artist});
+  const ArtistDetailScreen({
+    super.key, 
+    this.artist,
+    this.artistId,
+    this.fromNotification = false,
+  }) : assert(artist != null || artistId != null, 'Either artist or artistId must be provided');
 
   @override
   State<ArtistDetailScreen> createState() => _ArtistDetailScreenState();
@@ -18,11 +25,59 @@ class ArtistDetailScreen extends StatefulWidget {
 
 class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
   late Future<List<WorkshopSession>> futureWorkshops;
+  Artist? _artist;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    futureWorkshops = ApiService().fetchWorkshopsByArtist(widget.artist.id);
+    _initializeArtist();
+  }
+
+  void _initializeArtist() {
+    if (widget.artist != null) {
+      _artist = widget.artist;
+      futureWorkshops = ApiService().fetchWorkshopsByArtist(_artist!.id);
+    } else if (widget.artistId != null) {
+      _loadArtistById(widget.artistId!);
+    }
+  }
+
+  Future<void> _loadArtistById(String artistId) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Load all artists and find the one with matching ID
+      final allArtists = await ApiService().fetchArtists();
+      final foundArtist = allArtists.firstWhere(
+        (artist) => artist.id == artistId,
+        orElse: () => throw Exception('Artist not found'),
+      );
+      
+      setState(() {
+        _artist = foundArtist;
+        _isLoading = false;
+      });
+      
+      futureWorkshops = ApiService().fetchWorkshopsByArtist(artistId);
+      
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load artist: $e'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   void _showWorkshopDetails(WorkshopSession workshop) {
@@ -59,6 +114,48 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state if artist is being loaded
+    if (_isLoading || _artist == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A0F),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0A0A0F),
+                Color(0xFF1A1A2E),
+                Color(0xFF16213E),
+                Color(0xFF0F3460),
+              ],
+            ),
+          ),
+          child: const SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xFF00D4FF),
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading artist...',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       body: Container(
@@ -168,9 +265,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(18),
-                                  child: widget.artist.imageUrl != null
+                                  child: _artist?.imageUrl != null
                                       ? Image.network(
-                                          'https://nachna.com/proxy-image/?url=${Uri.encodeComponent(widget.artist.imageUrl!)}',
+                                          'https://nachna.com/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
                                             return _buildArtistIcon();
@@ -193,7 +290,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       children: [
                                         Flexible(
                                           child: Text(
-                                            toTitleCase(widget.artist.name),
+                                            toTitleCase(_artist?.name ?? ''),
                                             style: const TextStyle(
                                               fontSize: 24,
                                               fontWeight: FontWeight.bold,
@@ -207,7 +304,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         const SizedBox(width: 6),
                                         // Instagram Icon aligned with text
                                         GestureDetector(
-                                          onTap: () => _launchInstagram(widget.artist.instagramLink),
+                                          onTap: () => _launchInstagram(_artist?.instagramLink ?? ''),
                                           child: Container(
                                             width: 20,
                                             height: 20,
@@ -286,7 +383,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                     const SizedBox(height: 16),
                                     // Reaction Buttons
                                     ArtistReactionButtons(
-                                      artistId: widget.artist.id,
+                                      artistId: _artist?.id ?? '',
                                       primaryColor: const Color(0xFFFF006E),
                                     ),
                                   ],
@@ -304,9 +401,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               // Workshops Content
               Expanded(
                 child: FutureBuilder<List<WorkshopSession>>(
-        future: futureWorkshops,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+                  future: futureWorkshops,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
                           padding: const EdgeInsets.all(24),
@@ -325,8 +422,8 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           ),
                         ),
                       );
-          } else if (snapshot.hasError) {
-            return Center(
+                    } else if (snapshot.hasError) {
+                      return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
                           padding: const EdgeInsets.all(24),
@@ -369,9 +466,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                             ],
                           ),
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        ),
+                      );
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Center(
                         child: Container(
                           margin: const EdgeInsets.all(20),
@@ -406,7 +503,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Check back later for upcoming workshops by ${widget.artist.name}',
+                                'Check back later for upcoming workshops by ${_artist?.name}',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.7),
                                   fontSize: 14,
@@ -415,12 +512,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                             ],
                           ),
-              ),
-            );
-          } else {
-            // Sort workshops by timestamp before displaying
-            final sortedWorkshops = snapshot.data!;
-            sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
+                        ),
+                      );
+                    } else {
+                      // Sort workshops by timestamp before displaying
+                      final sortedWorkshops = snapshot.data!;
+                      sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,9 +574,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               physics: const BouncingScrollPhysics(),
-              itemCount: sortedWorkshops.length,
-              itemBuilder: (context, index) {
-                final workshop = sortedWorkshops[index];
+                              itemCount: sortedWorkshops.length,
+                              itemBuilder: (context, index) {
+                                final workshop = sortedWorkshops[index];
                                 return _buildWorkshopCard(workshop, index);
                               },
                             ),
@@ -578,10 +675,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 Expanded(
                                   child: Text(
                                     workshop.date,
-                              style: const TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
@@ -596,7 +693,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   child: Text(
                                     workshop.time,
                                     style: const TextStyle(
-                                color: Colors.white,
+                                      color: Colors.white,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -696,11 +793,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     ),
                   ),
                 ),
-                        ),
-                      ),
-                    ),
-                  );
-              },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 } 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
@@ -11,10 +13,20 @@ import './screens/register_screen.dart';
 import './screens/profile_setup_screen.dart';
 import './screens/profile_screen.dart';
 import './screens/admin_screen.dart';
+import './screens/artist_detail_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Performance optimizations
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
   runApp(const MyApp());
 }
@@ -72,6 +84,8 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  
   @override
   void initState() {
     super.initState();
@@ -83,13 +97,43 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _initializeNotifications() async {
-    // Initialize notification service
-    final deviceToken = await NotificationService().initialize();
+    // Initialize notification service with deep link handler
+    final deviceToken = await NotificationService().initialize(
+      onNotificationTap: _handleNotificationTap,
+    );
+    
     if (deviceToken != null) {
       print('✅ Notifications initialized with token: ${deviceToken.substring(0, 10)}...');
     } else {
       print('❌ Failed to initialize notifications');
     }
+  }
+
+  void _handleNotificationTap(String artistId) {
+    print('🎭 Deep link: Navigating to artist $artistId');
+    
+    // Navigate to artists tab and then to specific artist
+    _navigateToArtist(artistId);
+  }
+
+  void _navigateToArtist(String artistId) {
+    // First ensure we're on the home screen
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)), // Artists tab
+      (route) => false,
+    );
+    
+    // Then navigate to specific artist after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ArtistDetailScreen(
+            artistId: artistId,
+            fromNotification: true,
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -115,6 +159,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
               if (token != null) {
                 reactionProvider.setAuthToken(token);
                 reactionProvider.loadUserReactions();
+                
+                // Register device token with server after authentication
+                await NotificationService().registerDeviceToken();
               }
             });
             
