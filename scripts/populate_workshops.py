@@ -97,19 +97,15 @@ class EventProcessor:
             # Prepare event data for bulk update
             if studio.config.studio_id in ["dance_n_addiction", "manifestbytmn"]:
                 # Handle potential index errors if URL structure is unexpected
-                try:
-                    uuid_part = link.split('/')[-3]
-                except IndexError:
-                    uuid_part = link.split('/')[-1] # Fallback
-                uuid_group = f"{studio.config.studio_id}/{uuid_part}"
+                uuid = f"{studio.config.studio_id}/{link.split('/')[-3]}"
             else:
-                 uuid_group = f"{studio.config.studio_id}/{link.split('/')[-1]}"
+                uuid = f"{studio.config.studio_id}/{link.split('/')[-1]}"
 
             # Rename to event_data and include event_type
             event_data = {
                 "payment_link": link,
                 "studio_id": studio.config.studio_id,
-                "uuid_group": uuid_group,
+                "uuid": uuid,
                 "event_type": response.event_type.value, # Add event_type
                 "event_details": [
                     detail.model_dump() for detail in response.event_details # Use event_details
@@ -330,8 +326,7 @@ class StudioProcessor:
                             inserted_data = {
                                 "payment_link": link,
                                 "studio_id": studio.config.studio_id,
-                                "uuid_group": event_data["uuid_group"], # Use event_data
-                                "uuid": generate_uuid(),
+                                "uuid": event_data["uuid"], # Use event_data
                                 "event_type": event_data["event_type"], # Add event_type
                                 "time_details": event_detail["time_details"], # Use event_detail
                                 "by": event_detail["by"], # Use event_detail

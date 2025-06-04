@@ -787,7 +787,6 @@ class EventDetails(BaseModel):
     mongo_id: str
     payment_link: str
     studio_id: str
-    uuid_group: str
     uuid: str
     event_type: str
     artist_name: Optional[str]
@@ -822,7 +821,6 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
             studio_id=workshop["studio_id"],
-            uuid_group=workshop["uuid_group"],
             uuid=workshop["uuid"],
             event_type=workshop["event_type"],
             artist_name=workshop["by"],
