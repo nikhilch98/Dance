@@ -73,7 +73,17 @@ from utils.utils import (
     cache_response,
     start_cache_invalidation_watcher,
     DatabaseManager,
+    ScreenshotManager,
 )
+
+# Import EventProcessor and related functions from populate_workshops
+sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+try:
+    from scripts.populate_workshops import EventProcessor, get_artists_data_script, EventSummary
+except ImportError:
+    # If scripts is not a package, try direct import
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+    from populate_workshops import EventProcessor, get_artists_data_script, EventSummary
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -661,6 +671,164 @@ class PushNotificationOperations:
         
         return result.modified_count > 0
 
+class NotificationOperations:
+    """Database operations for notification tracking to prevent duplicates."""
+    
+    @staticmethod
+    def has_notification_been_sent(user_id: str, workshop_uuid: str, notification_type: str) -> bool:
+        """Check if a notification has already been sent for a specific workshop to a user."""
+        client = get_mongo_client()
+        
+        existing_notification = client["dance_app"]["notification_history"].find_one({
+            "user_id": user_id,
+            "workshop_uuid": workshop_uuid,
+            "notification_type": notification_type,
+            "is_sent": True
+        })
+        
+        return existing_notification is not None
+    
+    @staticmethod
+    def record_notification_sent(user_id: str, workshop_uuid: str, artist_id: str, notification_type: str, title: str, body: str) -> bool:
+        """Record that a notification has been sent."""
+        client = get_mongo_client()
+        
+        notification_record = {
+            "user_id": user_id,
+            "workshop_uuid": workshop_uuid,
+            "artist_id": artist_id,
+            "notification_type": notification_type,
+            "title": title,
+            "body": body,
+            "is_sent": True,
+            "sent_at": datetime.utcnow(),
+            "created_at": datetime.utcnow()
+        }
+        
+        result = client["dance_app"]["notification_history"].insert_one(notification_record)
+        return result.inserted_id is not None
+    
+    @staticmethod
+    def get_workshop_details_for_comparison(workshop_uuid: str) -> Optional[dict]:
+        """Get workshop details for comparison to detect changes."""
+        client = get_mongo_client()
+        
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        if not workshop:
+            return None
+            
+        # Extract key details that we want to track for changes
+        details = {
+            "uuid": workshop.get("uuid"),
+            "time_details": workshop.get("time_details", []),
+            "pricing_info": workshop.get("pricing_info"),
+            "payment_link": workshop.get("payment_link"),
+            "is_sold_out": workshop.get("is_sold_out", False)
+        }
+        
+        return details
+    
+    @staticmethod
+    def has_workshop_changed_significantly(workshop_uuid: str) -> tuple[bool, str]:
+        """Check if workshop has changed significantly enough to warrant a new notification.
+        
+        Returns:
+            tuple: (has_changed: bool, change_type: str)
+        """
+        client = get_mongo_client()
+        
+        # Get the last notification sent for this workshop
+        last_notification = client["dance_app"]["notification_history"].find_one(
+            {"workshop_uuid": workshop_uuid},
+            sort=[("sent_at", -1)]
+        )
+        
+        if not last_notification:
+            return False, ""
+        
+        # Get current workshop details
+        current_workshop = NotificationOperations.get_workshop_details_for_comparison(workshop_uuid)
+        if not current_workshop:
+            return False, ""
+        
+        # Check for significant changes
+        # 1. Time/Date change
+        if last_notification.get("workshop_time_details") != current_workshop.get("time_details"):
+            return True, "schedule_change"
+        
+        # 2. Price drop
+        old_price = last_notification.get("workshop_pricing_info", "")
+        new_price = current_workshop.get("pricing_info", "")
+        if old_price and new_price:
+            try:
+                # Simple price extraction (you might need to adjust based on your pricing format)
+                old_price_num = float(re.findall(r'\d+', old_price)[0])
+                new_price_num = float(re.findall(r'\d+', new_price)[0])
+                if new_price_num < old_price_num:
+                    return True, "price_drop"
+            except:
+                pass
+        
+        # 3. Sold out status change (reopened)
+        if last_notification.get("workshop_is_sold_out", False) and not current_workshop.get("is_sold_out", False):
+            return True, "reopened"
+        
+        return False, ""
+    
+    @staticmethod
+    def should_send_reminder(workshop_uuid: str, user_id: str) -> bool:
+        """Check if we should send a 24-hour reminder for a workshop."""
+        client = get_mongo_client()
+        
+        # Check if reminder already sent
+        reminder_sent = client["dance_app"]["notification_history"].find_one({
+            "user_id": user_id,
+            "workshop_uuid": workshop_uuid,
+            "notification_type": "reminder_24h",
+            "is_sent": True
+        })
+        
+        if reminder_sent:
+            return False
+        
+        # Get workshop details
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        if not workshop:
+            return False
+        
+        # Check if workshop is within 24-48 hours
+        for time_detail in workshop.get("time_details", []):
+            try:
+                workshop_date = datetime(
+                    year=time_detail.get("year"),
+                    month=time_detail.get("month"),
+                    day=time_detail.get("day")
+                )
+                
+                time_until_workshop = workshop_date - datetime.now()
+                hours_until = time_until_workshop.total_seconds() / 3600
+                
+                # Send reminder if workshop is between 24-48 hours away
+                if 24 <= hours_until <= 48:
+                    return True
+            except:
+                continue
+        
+        return False
+    
+    @staticmethod
+    def cleanup_old_notifications(days_to_keep: int = 90):
+        """Clean up old notification history records."""
+        client = get_mongo_client()
+        
+        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+        
+        result = client["dance_app"]["notification_history"].delete_many({
+            "sent_at": {"$lt": cutoff_date}
+        })
+        
+        return result.deleted_count
+
 def format_reaction_response(reaction_data: dict) -> ReactionResponse:
     """Format reaction data to ReactionResponse model."""
     return ReactionResponse(
@@ -858,7 +1026,7 @@ async def startup_db_client():
 
 # Workshop notification watcher
 def start_workshop_notification_watcher():
-    """Start watching for new workshop insertions and send notifications."""
+    """Start watching for new workshop insertions and updates to send notifications."""
     import threading
     
     def workshop_notification_watcher():
@@ -866,11 +1034,11 @@ def start_workshop_notification_watcher():
         db = client["discovery"]
         workshops_collection = db["workshops_v2"]
         
-        # Watch for insert operations only
+        # Watch for both insert and update operations
         pipeline = [
             {
                 "$match": {
-                    "operationType": "insert"
+                    "operationType": {"$in": ["insert", "update", "replace"]}
                 }
             }
         ]
@@ -879,32 +1047,117 @@ def start_workshop_notification_watcher():
             with workshops_collection.watch(pipeline=pipeline, full_document="updateLookup") as stream:
                 for change in stream:
                     try:
-                        print(f"New workshop detected: {change['operationType']}")
+                        operation_type = change['operationType']
+                        print(f"Workshop change detected: {operation_type}")
                         
                         # Get the full document
-                        new_workshop = change.get('fullDocument')
-                        if not new_workshop:
+                        workshop = change.get('fullDocument')
+                        if not workshop:
+                            continue
+                        
+                        workshop_uuid = workshop.get('uuid')
+                        if not workshop_uuid:
+                            print(f"Workshop UUID not found, skipping")
                             continue
                         
                         # Extract artist IDs from the workshop
-                        artist_ids = new_workshop.get('artist_id_list', [])
+                        artist_ids = workshop.get('artist_id_list', [])
                         if not artist_ids:
-                            print(f"No artist IDs found in workshop {new_workshop.get('uuid', 'unknown')}")
+                            print(f"No artist IDs found in workshop {workshop_uuid}")
                             continue
                         
-                        # Send notifications for each artist
-                        for artist_id in artist_ids:
-                            if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
-                                asyncio.run(send_workshop_notifications(artist_id, new_workshop))
+                        # Determine notification type based on operation and changes
+                        if operation_type == "insert":
+                            # New workshop - send new workshop notifications
+                            for artist_id in artist_ids:
+                                if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
+                                    asyncio.run(send_workshop_notifications(artist_id, workshop, "new_workshop"))
+                        
+                        elif operation_type in ["update", "replace"]:
+                            # Check if this is a significant change
+                            has_changed, change_type = NotificationOperations.has_workshop_changed_significantly(workshop_uuid)
+                            
+                            if has_changed and change_type:
+                                # Send update notifications
+                                for artist_id in artist_ids:
+                                    if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
+                                        asyncio.run(send_workshop_notifications(artist_id, workshop, change_type))
                         
                     except Exception as e:
                         print(f"Error processing workshop change: {e}")
+                        import traceback
+                        traceback.print_exc()
                         
         except Exception as e:
             print(f"Workshop notification watcher error: {e}")
+            import traceback
+            traceback.print_exc()
     
     # Start the watcher in a separate thread
     threading.Thread(target=workshop_notification_watcher, daemon=True).start()
+    
+    # Also start a reminder notification scheduler
+    def reminder_notification_scheduler():
+        """Periodically check for workshops that need 24-hour reminders."""
+        while True:
+            try:
+                # Sleep for 1 hour between checks
+                time_module.sleep(3600)
+                
+                client = get_mongo_client()
+                
+                # Get all workshops happening in the next 24-48 hours
+                current_time = datetime.utcnow()
+                tomorrow = current_time + timedelta(days=1)
+                day_after = current_time + timedelta(days=2)
+                
+                # Find workshops in the reminder window
+                workshops = client["discovery"]["workshops_v2"].find({
+                    "event_type": {"$nin": ["regulars"]}
+                })
+                
+                for workshop in workshops:
+                    workshop_uuid = workshop.get('uuid')
+                    if not workshop_uuid:
+                        continue
+                    
+                    artist_ids = workshop.get('artist_id_list', [])
+                    if not artist_ids:
+                        continue
+                    
+                    # Check each time detail
+                    for time_detail in workshop.get('time_details', []):
+                        try:
+                            workshop_date = datetime(
+                                year=time_detail.get('year'),
+                                month=time_detail.get('month'),
+                                day=time_detail.get('day')
+                            )
+                            
+                            # Check if in reminder window (24-48 hours)
+                            if tomorrow <= workshop_date <= day_after:
+                                # Get all users who have notifications enabled for any artist in this workshop
+                                for artist_id in artist_ids:
+                                    if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
+                                        notified_users = ReactionOperations.get_notified_users_of_artist(artist_id)
+                                        
+                                        # Check each user if they need a reminder
+                                        for user_id in notified_users:
+                                            if NotificationOperations.should_send_reminder(workshop_uuid, user_id):
+                                                # Send reminder notification
+                                                asyncio.run(send_workshop_notifications(artist_id, workshop, "reminder_24h"))
+                                                break  # Only send one reminder per workshop
+                        except Exception as e:
+                            print(f"Error checking workshop for reminder: {e}")
+                            continue
+                
+            except Exception as e:
+                print(f"Error in reminder notification scheduler: {e}")
+                import traceback
+                traceback.print_exc()
+    
+    # Start the reminder scheduler in a separate thread
+    threading.Thread(target=reminder_notification_scheduler, daemon=True).start()
 
 
 # Dependency for version validation
@@ -2205,14 +2458,20 @@ async def register_device_token(
     return {"message": "Device token registered successfully"}
 
 # Function to send push notifications when new workshops are added
-async def send_workshop_notifications(artist_id: str, workshop_data: dict):
+async def send_workshop_notifications(artist_id: str, workshop_data: dict, notification_type: str = "new_workshop"):
     """Send push notifications to users with notifications enabled when a new workshop is added.
     
     Args:
         artist_id: ID of the artist
         workshop_data: Workshop information
+        notification_type: Type of notification (new_workshop, schedule_change, price_drop, reopened, reminder_24h)
     """
     try:
+        workshop_uuid = workshop_data.get('uuid', '')
+        if not workshop_uuid:
+            print(f"Workshop UUID not found, skipping notification")
+            return
+            
         # Get all users who have notifications enabled for the artist
         notified_user_ids = ReactionOperations.get_notified_users_of_artist(artist_id)
         
@@ -2220,11 +2479,21 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
             print(f"No users with notifications enabled found for artist {artist_id}")
             return
         
-        # Get device tokens for notified users
-        device_tokens = PushNotificationOperations.get_device_tokens(notified_user_ids)
+        # Filter out users who have already received this notification
+        users_to_notify = []
+        for user_id in notified_user_ids:
+            if not NotificationOperations.has_notification_been_sent(user_id, workshop_uuid, notification_type):
+                users_to_notify.append(user_id)
+        
+        if not users_to_notify:
+            print(f"All users have already been notified about workshop {workshop_uuid} for notification type {notification_type}")
+            return
+        
+        # Get device tokens for users to notify
+        device_tokens = PushNotificationOperations.get_device_tokens(users_to_notify)
         
         if not device_tokens:
-            print(f"No device tokens found for notified users of artist {artist_id}")
+            print(f"No device tokens found for users to notify")
             return
         
         # Get artist name from database
@@ -2232,22 +2501,37 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
         artist = client["discovery"]["artists_v2"].find_one({"artist_id": artist_id})
         artist_name = artist.get("artist_name", "Your favorite artist") if artist else "Your favorite artist"
         
-        # Create notification content
-        title = f"🎉 {artist_name} is back!"
-        body = f"Your favorite artist is coming to Bengaluru! New workshop tickets are now available. Book ASAP before they run out! 💃"
+        # Create notification content based on type
+        if notification_type == "new_workshop":
+            title = f"🎉 {artist_name} is back!"
+            body = f"New workshop tickets are now available in Bengaluru! Book ASAP before they run out! 💃"
+        elif notification_type == "schedule_change":
+            title = f"📅 Schedule Update: {artist_name}"
+            body = f"The workshop schedule has been updated. Check the new timings!"
+        elif notification_type == "price_drop":
+            title = f"💰 Price Drop Alert: {artist_name}"
+            body = f"Great news! The workshop price has been reduced. Book now!"
+        elif notification_type == "reopened":
+            title = f"🎟️ Tickets Available Again: {artist_name}"
+            body = f"Previously sold-out workshop now has tickets available!"
+        elif notification_type == "reminder_24h":
+            title = f"⏰ Workshop Tomorrow: {artist_name}"
+            body = f"Don't forget! Your workshop is tomorrow. Get ready to dance! 🕺"
+        else:
+            title = f"Update: {artist_name}"
+            body = f"There's an update about the workshop. Check it out!"
         
         # Data for deep linking
         notification_data = {
             'artist_id': artist_id,
-            'workshop_id': workshop_data.get('uuid', ''),
-            'type': 'new_workshop'
+            'workshop_id': workshop_uuid,
+            'type': notification_type
         }
         
-        print(f"Sending push notification to {len(device_tokens)} devices:")
+        print(f"Sending {notification_type} notification to {len(users_to_notify)} users:")
         print(f"Title: {title}")
         print(f"Body: {body}")
-        print(f"Recipients: {notified_user_ids}")
-        print(f"Deep link data: {notification_data}")
+        print(f"Workshop UUID: {workshop_uuid}")
         
         # Send APNs notifications to iOS devices
         ios_tokens = [token for token in device_tokens if token.get('platform') == 'ios']
@@ -2261,7 +2545,8 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
             print(f"Sending to {len(ios_tokens)} iOS devices...")
             for token_data in ios_tokens:
                 device_token = token_data.get('device_token')
-                if device_token:
+                user_id = token_data.get('user_id')
+                if device_token and user_id:
                     try:
                         success = await apns_service.send_notification(
                             device_token=device_token,
@@ -2272,6 +2557,15 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
                         total_sent += 1
                         if success:
                             success_count += 1
+                            # Record that notification was sent
+                            NotificationOperations.record_notification_sent(
+                                user_id=user_id,
+                                workshop_uuid=workshop_uuid,
+                                artist_id=artist_id,
+                                notification_type=notification_type,
+                                title=title,
+                                body=body
+                            )
                         else:
                             # Mark token as inactive if send failed
                             PushNotificationOperations.deactivate_device_token(device_token)
@@ -2284,9 +2578,7 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
         if android_tokens:
             print(f"Android FCM notifications not implemented yet for {len(android_tokens)} devices")
             # TODO: Implement FCM for Android devices
-            # for token_data in android_tokens:
-            #     # Send FCM notification
-            #     pass
+            # Remember to record notification sent for Android users too
         
         print(f"✅ Notification sending complete: {success_count}/{total_sent} successful")
         
@@ -2299,19 +2591,72 @@ async def send_workshop_notifications(artist_id: str, workshop_data: dict):
 @app.post("/admin/api/send-test-notification")
 async def send_test_notification(
     artist_id: str = Body(..., embed=True),
+    workshop_uuid: Optional[str] = Body(None, embed=True),
+    notification_type: str = Body("new_workshop", embed=True),
     user_id: str = Depends(verify_admin_user)
 ):
     """Send test notification to users with notifications enabled for an artist.
     
     Args:
         artist_id: ID of the artist
+        workshop_uuid: Optional specific workshop UUID, otherwise uses a test UUID
+        notification_type: Type of notification to send (new_workshop, schedule_change, price_drop, reopened, reminder_24h)
         user_id: Admin user ID from JWT token
         
     Returns:
-        Success message
+        Success message with details
     """
-    await send_workshop_notifications(artist_id, {"uuid": "test-workshop-id"})
-    return {"message": f"Test notification sent to notified users of artist {artist_id}"}
+    # If no workshop UUID provided, create a test workshop data
+    if workshop_uuid:
+        # Get actual workshop data
+        client = get_mongo_client()
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        if not workshop:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workshop with UUID {workshop_uuid} not found"
+            )
+    else:
+        # Create test workshop data
+        workshop = {
+            "uuid": f"test-workshop-{datetime.utcnow().timestamp()}",
+            "artist_id_list": [artist_id],
+            "by": "Test Artist",
+            "song": "Test Song",
+            "studio_id": "test-studio",
+            "pricing_info": "₹1500",
+            "payment_link": "https://example.com/payment",
+            "event_type": "workshop",
+            "time_details": [{
+                "year": datetime.now().year,
+                "month": datetime.now().month,
+                "day": datetime.now().day + 1,
+                "start_time": "18:00",
+                "end_time": "20:00"
+            }]
+        }
+    
+    # Send notification
+    await send_workshop_notifications(artist_id, workshop, notification_type)
+    
+    # Get count of users notified
+    notified_users = ReactionOperations.get_notified_users_of_artist(artist_id)
+    
+    # Count how many were actually notified (not already sent)
+    users_actually_notified = 0
+    for user in notified_users:
+        if not NotificationOperations.has_notification_been_sent(user, workshop["uuid"], notification_type):
+            users_actually_notified += 1
+    
+    return {
+        "message": f"Test {notification_type} notification sent",
+        "artist_id": artist_id,
+        "workshop_uuid": workshop.get("uuid"),
+        "total_users_with_notifications": len(notified_users),
+        "users_actually_notified": users_actually_notified,
+        "users_already_notified": len(notified_users) - users_actually_notified,
+        "notification_type": notification_type
+    }
 
 # APNs Configuration
 APNS_SANDBOX_URL = "https://api.sandbox.push.apple.com"
