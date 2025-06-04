@@ -2,48 +2,40 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reaction.dart';
 import './reaction_service.dart';
 import 'auth_service.dart';
-
-/// Global function to handle background messages
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('🔔 Background message received: ${message.messageId}');
-  print('Background message data: ${message.data}');
-  
-  // Handle background message processing here if needed
-  // This runs when the app is in background or terminated
-}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  // Method channel for native iOS/Android communication
+  static const MethodChannel _channel = MethodChannel('nachna/notifications');
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   
   String? _deviceToken;
   bool _isInitialized = false;
+  bool _permissionsGranted = false;
+  String? _lastRegisteredToken;
   
   // Navigation callback for deep linking
   Function(String)? _onNotificationTap;
   
   // Stream controllers for handling notification events
-  final StreamController<RemoteMessage> _messageStreamController = StreamController<RemoteMessage>.broadcast();
+  final StreamController<Map<String, dynamic>> _messageStreamController = StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<String> _tokenStreamController = StreamController<String>.broadcast();
   
   // Getters
   String? get deviceToken => _deviceToken;
   bool get isInitialized => _isInitialized;
-  Stream<RemoteMessage> get messageStream => _messageStreamController.stream;
+  bool get permissionsGranted => _permissionsGranted;
+  Stream<Map<String, dynamic>> get messageStream => _messageStreamController.stream;
   Stream<String> get tokenStream => _tokenStreamController.stream;
 
   /// Initialize the notification service
@@ -53,25 +45,19 @@ class NotificationService {
     _onNotificationTap = onNotificationTap;
     
     try {
-      print('🚀 Initializing notification service...');
+      print('🚀 Initializing native notification service...');
+      
+      // Setup method channel handlers
+      _setupMethodChannelHandlers();
       
       // Initialize local notifications
       await _initializeLocalNotifications();
       
-      // Request permissions
-      await _requestPermissions();
-      
-      // Get device token
-      await _getDeviceToken();
-      
-      // Setup message handlers
-      _setupMessageHandlers();
-      
-      // Listen for token refresh
-      _setupTokenRefreshListener();
+      // Check current permission status
+      await _checkCurrentPermissionStatus();
       
       _isInitialized = true;
-      print('✅ Notification service initialized successfully');
+      print('✅ Native notification service initialized successfully');
       return _deviceToken;
       
     } catch (e) {
@@ -80,14 +66,241 @@ class NotificationService {
     }
   }
 
+  /// Setup method channel handlers for iOS/Android communication
+  void _setupMethodChannelHandlers() {
+    _channel.setMethodCallHandler((MethodCall call) async {
+      print('📱 Received method call: ${call.method}');
+      
+      switch (call.method) {
+        case 'onTokenRefresh':
+          await _handleTokenRefresh(call.arguments);
+          break;
+        case 'onNotificationReceived':
+          await _handleNotificationReceived(Map<String, dynamic>.from(call.arguments));
+          break;
+        case 'onNotificationTapped':
+          await _handleNotificationTapped(Map<String, dynamic>.from(call.arguments));
+          break;
+        case 'onPermissionStatusChanged':
+          await _handlePermissionStatusChanged(call.arguments);
+          break;
+        case 'onRegistrationError':
+          _handleRegistrationError(call.arguments);
+          break;
+        default:
+          print('⚠️ Unknown method call: ${call.method}');
+      }
+    });
+  }
+
+  /// Check current permission status and token
+  Future<void> _checkCurrentPermissionStatus() async {
+    try {
+      final result = await _channel.invokeMethod('checkPermissionStatus');
+      if (result != null && result is Map) {
+        final status = result['status'] as String?;
+        final token = result['token'] as String?;
+        final isRegistered = result['isRegistered'] as bool? ?? false;
+        
+        print('📋 Current permission status: $status');
+        print('📱 Is registered for notifications: $isRegistered');
+        
+        _permissionsGranted = (status == 'authorized' || status == 'provisional') && isRegistered;
+        
+        if (token != null && token.isNotEmpty) {
+          await _handleTokenReceived(token);
+        }
+      }
+    } catch (e) {
+      print('❌ Error checking permission status: $e');
+    }
+  }
+
+  /// Request permissions and get device token
+  Future<Map<String, dynamic>> requestPermissionsAndGetToken() async {
+    try {
+      print('📱 Requesting permissions and device token...');
+      
+      final result = await _channel.invokeMethod('requestPermissionsAndGetToken');
+      
+      if (result != null && result is Map) {
+        final success = result['success'] as bool? ?? false;
+        final token = result['token'] as String?;
+        final shouldOpenSettings = result['shouldOpenSettings'] as bool? ?? false;
+        final error = result['error'] as String?;
+        
+        if (success && token != null) {
+          await _handleTokenReceived(token);
+          _permissionsGranted = true;
+          
+          return {
+            'success': true,
+            'token': token,
+            'shouldOpenSettings': false,
+          };
+        } else {
+          print('❌ Permission request failed: $error');
+          return {
+            'success': false,
+            'error': error ?? 'Permission request failed',
+            'shouldOpenSettings': shouldOpenSettings,
+          };
+        }
+      }
+      
+      return {
+        'success': false,
+        'error': 'Invalid response from native platform',
+        'shouldOpenSettings': false,
+      };
+      
+    } catch (e) {
+      print('❌ Error requesting permissions: $e');
+      return {
+        'success': false,
+        'error': 'Failed to request permissions: $e',
+        'shouldOpenSettings': false,
+      };
+    }
+  }
+
+  /// Open device notification settings
+  Future<bool> openNotificationSettings() async {
+    try {
+      final result = await _channel.invokeMethod('openNotificationSettings');
+      return result as bool? ?? false;
+    } catch (e) {
+      print('❌ Error opening notification settings: $e');
+      return false;
+    }
+  }
+
+  /// Retry token registration (useful for troubleshooting)
+  Future<Map<String, dynamic>> retryTokenRegistration() async {
+    try {
+      final result = await _channel.invokeMethod('retryTokenRegistration');
+      if (result != null && result is Map) {
+        final success = result['success'] as bool? ?? false;
+        final token = result['token'] as String?;
+        
+        if (success && token != null) {
+          await _handleTokenReceived(token);
+        }
+        
+        return {
+          'success': success,
+          'token': token,
+        };
+      }
+      return {'success': false};
+    } catch (e) {
+      print('❌ Error retrying token registration: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Handle token refresh from native platform
+  Future<void> _handleTokenRefresh(dynamic arguments) async {
+    if (arguments is Map) {
+      final token = arguments['token'] as String?;
+      final isNewToken = arguments['isNewToken'] as bool? ?? true;
+      
+      if (token != null) {
+        print('📱 Token ${isNewToken ? 'received' : 'refreshed'}: ${token.substring(0, 20)}...');
+        await _handleTokenReceived(token);
+      }
+    }
+  }
+
+  /// Handle token received and register with server
+  Future<void> _handleTokenReceived(String token) async {
+    final previousToken = _deviceToken;
+    _deviceToken = token;
+    
+    // Store token locally
+    await _storeTokenLocally(token);
+    
+    // Register with server if token changed
+    if (previousToken != token) {
+      await _registerTokenWithServer(token);
+    }
+    
+    // Notify listeners
+    _tokenStreamController.add(token);
+  }
+
+  /// Handle notification received
+  Future<void> _handleNotificationReceived(Map<String, dynamic> arguments) async {
+    print('🔔 Notification received: $arguments');
+    _messageStreamController.add(arguments);
+    // Show local notification if app is in foreground
+    await _showLocalNotification(arguments);
+  }
+
+  /// Handle notification tapped
+  Future<void> _handleNotificationTapped(Map<String, dynamic> arguments) async {
+    print('📱 Notification tapped: $arguments');
+    // Extract artist_id for deep linking
+    final artistId = _extractArtistIdFromPayload(arguments);
+    if (artistId != null && _onNotificationTap != null) {
+      _onNotificationTap!(artistId);
+    }
+  }
+
+  /// Handle permission status changed
+  Future<void> _handlePermissionStatusChanged(dynamic arguments) async {
+    if (arguments is Map) {
+      final granted = arguments['granted'] as bool? ?? false;
+      final token = arguments['token'] as String?;
+      
+      print('📋 Permission status changed - granted: $granted');
+      _permissionsGranted = granted;
+      
+      if (granted && token != null) {
+        await _handleTokenReceived(token);
+      }
+    }
+  }
+
+  /// Handle registration error
+  void _handleRegistrationError(dynamic arguments) {
+    if (arguments is Map) {
+      final error = arguments['error'] as String?;
+      print('❌ Registration error: $error');
+    }
+  }
+
+  /// Extract artist ID from notification payload for deep linking
+  String? _extractArtistIdFromPayload(Map<String, dynamic> payload) {
+    // Check for artist_id in various possible locations
+    String? artistId = payload['artist_id'] as String?;
+    
+    if (artistId == null) {
+      // Check in nested data
+      final data = payload['data'] as Map?;
+      if (data != null) {
+        artistId = data['artist_id'] as String?;
+      }
+    }
+    
+    if (artistId == null) {
+      // Check for custom payload format: "artist|{artist_id}"
+      final customPayload = payload['custom'] as String?;
+      if (customPayload != null && customPayload.startsWith('artist|')) {
+        artistId = customPayload.substring(7); // Remove "artist|" prefix
+      }
+    }
+    
+    return artistId;
+  }
+
   /// Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-      requestCriticalPermission: false,
+      requestAlertPermission: false, // We handle permissions through native code
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     
     const initSettings = InitializationSettings(
@@ -117,63 +330,73 @@ class NotificationService {
     }
   }
 
-  /// Request notification permissions
-  Future<void> _requestPermissions() async {
+  /// Show local notification when app is in foreground
+  Future<void> _showLocalNotification(Map<String, dynamic> payload) async {
     try {
-      // Request Firebase messaging permissions
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
+      // Extract title and body from payload
+      String title = 'New Notification';
+      String body = 'You have a new notification';
+      
+      // Check for aps structure (iOS format)
+      final aps = payload['aps'] as Map?;
+      if (aps != null) {
+        final alert = aps['alert'] as Map?;
+        if (alert != null) {
+          title = alert['title'] as String? ?? title;
+          body = alert['body'] as String? ?? body;
+        }
+      } else {
+        // Check for direct title/body
+        title = payload['title'] as String? ?? title;
+        body = payload['body'] as String? ?? body;
+      }
+
+      const androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
       );
 
-      print('📋 Firebase permission status: ${settings.authorizationStatus}');
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
 
-      // Request additional permissions for Android
-      if (Platform.isAndroid) {
-        final status = await Permission.notification.request();
-        print('📋 Android notification permission: $status');
-      }
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
-      // Enable foreground notifications for iOS
-      if (Platform.isIOS) {
-        await _firebaseMessaging.setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-      }
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        notificationDetails,
+        payload: jsonEncode(payload),
+      );
     } catch (e) {
-      print('❌ Error requesting permissions: $e');
+      print('❌ Error showing local notification: $e');
     }
   }
 
-  /// Get and store device token
-  Future<void> _getDeviceToken() async {
+  /// Handle local notification tap
+  void _handleLocalNotificationTap(NotificationResponse response) {
     try {
-      // Get token for this app installation
-      _deviceToken = await _firebaseMessaging.getToken();
-      
-      if (_deviceToken != null) {
-        print('📱 Device token received: ${_deviceToken!.substring(0, 20)}...');
-        
-        // Store token locally
-        await _storeTokenLocally(_deviceToken!);
-        
-        // Register token with server
-        await _registerTokenWithServer(_deviceToken!);
-        
-        // Notify listeners
-        _tokenStreamController.add(_deviceToken!);
-      } else {
-        print('❌ Failed to get device token');
+      if (response.payload != null) {
+        final payload = jsonDecode(response.payload!);
+        if (payload is Map<String, dynamic>) {
+          final artistId = _extractArtistIdFromPayload(payload);
+          if (artistId != null && _onNotificationTap != null) {
+            _onNotificationTap!(artistId);
+          }
+        }
       }
     } catch (e) {
-      print('❌ Error getting device token: $e');
+      print('❌ Error handling local notification tap: $e');
     }
   }
 
@@ -195,201 +418,50 @@ class NotificationService {
   /// Register device token with server
   Future<void> _registerTokenWithServer(String token) async {
     try {
+      // Skip if we've already registered this exact token
+      if (_lastRegisteredToken == token) {
+        print('ℹ️ Device token already registered, skipping duplicate registration');
+        return;
+      }
+      
+      // Get auth token first
+      final authToken = await AuthService.getToken();
+      if (authToken == null) {
+        print('⚠️ No auth token available, skipping device token registration');
+        return;
+      }
+      
       final reactionService = ReactionService();
+      reactionService.setAuthToken(authToken);
       
       final platform = Platform.isIOS ? 'ios' : 'android';
-      final request = DeviceTokenRequest(
-        deviceToken: token,
-        platform: platform,
+      await reactionService.registerDeviceToken(
+        DeviceTokenRequest(
+          deviceToken: token,
+          platform: platform,
+        ),
       );
       
-      await reactionService.registerDeviceToken(request);
-      print('🌐 Device token registered with server');
-      
+      // Mark this token as successfully registered
+      _lastRegisteredToken = token;
+      print('✅ Device token registered with server successfully');
     } catch (e) {
       print('❌ Error registering token with server: $e');
-      // Don't throw error here as this shouldn't prevent app functionality
     }
   }
 
-  /// Setup message handlers
-  void _setupMessageHandlers() {
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    
-    // Handle background message taps (when app is in background)
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessageTap);
-    
-    // Handle message tap when app is launched from terminated state
-    _handleAppLaunchFromNotification();
-  }
-
-  /// Setup token refresh listener
-  void _setupTokenRefreshListener() {
-    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-      print('🔄 Token refreshed: ${newToken.substring(0, 20)}...');
-      _deviceToken = newToken;
-      
-      // Store new token locally
-      await _storeTokenLocally(newToken);
-      
-      // Register new token with server
-      await _registerTokenWithServer(newToken);
-      
-      // Notify listeners
-      _tokenStreamController.add(newToken);
-    });
-  }
-
-  /// Handle foreground messages
-  void _handleForegroundMessage(RemoteMessage message) async {
-    print('🔔 Foreground message received: ${message.notification?.title}');
-    print('Foreground message data: ${message.data}');
-    
-    // Show local notification for foreground messages
-    await _showLocalNotification(message);
-    
-    // Notify listeners
-    _messageStreamController.add(message);
-  }
-
-  /// Handle background message tap
-  void _handleBackgroundMessageTap(RemoteMessage message) {
-    print('👆 Background message tapped: ${message.data}');
-    _processDeepLink(message.data);
-  }
-
-  /// Handle app launch from notification (when app was terminated)
-  Future<void> _handleAppLaunchFromNotification() async {
-    try {
-      RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
-      if (initialMessage != null) {
-        print('🚀 App launched from notification: ${initialMessage.data}');
-        // Delay processing to ensure app is fully initialized
-        Future.delayed(const Duration(seconds: 1), () {
-          _processDeepLink(initialMessage.data);
-        });
-      }
-    } catch (e) {
-      print('❌ Error handling app launch from notification: $e');
-    }
-  }
-
-  /// Handle local notification tap
-  void _handleLocalNotificationTap(NotificationResponse response) {
-    print('👆 Local notification tapped: ${response.payload}');
-    if (response.payload != null) {
-      try {
-        // Parse payload as deep link data
-        final parts = response.payload!.split('|');
-        if (parts.length >= 2) {
-          final type = parts[0];
-          final artistId = parts[1];
-          if (type == 'artist' && _onNotificationTap != null) {
-            _onNotificationTap!(artistId);
-          }
-        }
-      } catch (e) {
-        print('❌ Error parsing notification payload: $e');
-      }
-    }
-  }
-
-  /// Show local notification for foreground messages
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    try {
-      const androidDetails = AndroidNotificationDetails(
-        'high_importance_channel',
-        'High Importance Notifications',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-        enableVibration: true,
-        playSound: true,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      // Create payload for deep linking
-      String? payload;
-      if (message.data.containsKey('artist_id')) {
-        payload = 'artist|${message.data['artist_id']}';
-      }
-
-      await _localNotifications.show(
-        message.hashCode,
-        message.notification?.title ?? 'Nachna',
-        message.notification?.body ?? 'New notification',
-        details,
-        payload: payload,
-      );
-    } catch (e) {
-      print('❌ Error showing local notification: $e');
-    }
-  }
-
-  /// Process deep link data
-  void _processDeepLink(Map<String, dynamic> data) {
-    try {
-      print('🔗 Processing deep link: $data');
-      
-      if (data.containsKey('artist_id') && _onNotificationTap != null) {
-        final artistId = data['artist_id'];
-        print('🎭 Navigating to artist: $artistId');
-        _onNotificationTap!(artistId);
-      }
-    } catch (e) {
-      print('❌ Error processing deep link: $e');
-    }
-  }
-
-  /// Manually register device token (useful when auth state changes)
-  Future<bool> registerDeviceToken() async {
+  /// Manually register current device token with server (useful after authentication)
+  Future<bool> registerCurrentDeviceToken() async {
     if (_deviceToken == null) {
-      await _getDeviceToken();
-    }
-    
-    if (_deviceToken != null) {
-      await _registerTokenWithServer(_deviceToken!);
-      return true;
-    }
-    
-    return false;
-  }
-
-  /// Check if notifications are enabled
-  Future<bool> areNotificationsEnabled() async {
-    try {
-      final settings = await _firebaseMessaging.getNotificationSettings();
-      return settings.authorizationStatus == AuthorizationStatus.authorized;
-    } catch (e) {
-      print('❌ Error checking notification status: $e');
+      print('⚠️ No device token available to register');
       return false;
     }
-  }
-
-  /// Request permissions again (useful when user initially declined)
-  Future<bool> requestPermissionsAgain() async {
+    
     try {
-      await _requestPermissions();
-      
-      // Get new token if we didn't have one
-      if (_deviceToken == null) {
-        await _getDeviceToken();
-      }
-      
-      return await areNotificationsEnabled();
+      await _registerTokenWithServer(_deviceToken!);
+      return true;
     } catch (e) {
-      print('❌ Error requesting permissions again: $e');
+      print('❌ Error in registerCurrentDeviceToken: $e');
       return false;
     }
   }

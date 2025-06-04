@@ -221,6 +221,11 @@ class DeviceTokenRequest(BaseModel):
     device_token: str
     platform: str = Field(..., pattern=r"^(ios|android)$")
 
+class ConfigRequest(BaseModel):
+    """Request model for app config with optional device token."""
+    device_token: Optional[str] = None
+    platform: Optional[str] = Field(None, pattern=r"^(ios|android)$")
+
 # Password hashing utilities
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
@@ -595,21 +600,42 @@ class PushNotificationOperations:
         """Register or update device token for a user."""
         client = get_mongo_client()
         
-        # Remove existing token if it exists for any user (tokens should be unique)
-        client["dance_app"]["device_tokens"].delete_many({"device_token": device_token})
+        # First, deactivate any other tokens for this device (in case it was used by another user)
+        client["dance_app"]["device_tokens"].update_many(
+            {"device_token": device_token, "user_id": {"$ne": user_id}},
+            {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+        )
         
-        # Insert new token
-        token_data = {
+        # Check if user already has a token entry for this platform
+        existing_token = client["dance_app"]["device_tokens"].find_one({
             "user_id": user_id,
-            "device_token": device_token,
-            "platform": platform,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-            "is_active": True
-        }
+            "platform": platform
+        })
         
-        result = client["dance_app"]["device_tokens"].insert_one(token_data)
-        return result.inserted_id is not None
+        if existing_token:
+            # Update existing token
+            result = client["dance_app"]["device_tokens"].update_one(
+                {"_id": existing_token["_id"]},
+                {"$set": {
+                    "device_token": device_token,
+                    "updated_at": datetime.utcnow(),
+                    "is_active": True
+                }}
+            )
+            return result.modified_count > 0
+        else:
+            # Insert new token entry
+            token_data = {
+                "user_id": user_id,
+                "device_token": device_token,
+                "platform": platform,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "is_active": True
+            }
+            
+            result = client["dance_app"]["device_tokens"].insert_one(token_data)
+            return result.inserted_id is not None
     
     @staticmethod
     def get_device_tokens(user_ids: List[str]) -> List[dict]:
@@ -2056,6 +2082,13 @@ async def create_reaction(
     Returns:
         Created/updated reaction
     """
+    # Check rate limit
+    if not check_rate_limit(user_id, "create_reaction"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please try again later."
+        )
+    
     try:
         reaction = ReactionOperations.create_or_update_reaction(
             user_id=user_id,
@@ -2087,6 +2120,13 @@ async def remove_reaction(
     Returns:
         Success message
     """
+    # Check rate limit
+    if not check_rate_limit(user_id, "remove_reaction"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please try again later."
+        )
+    
     success = ReactionOperations.soft_delete_reaction(
         reaction_id=reaction_data.reaction_id,
         user_id=user_id
@@ -2110,6 +2150,13 @@ async def get_user_reactions(user_id: str = Depends(verify_token)):
     Returns:
         User's reactions grouped by entity type
     """
+    # Check rate limit
+    if not check_rate_limit(user_id, "get_user_reactions"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please try again later."
+        )
+    
     return ReactionOperations.get_user_reactions(user_id)
 
 @app.get("/api/reactions/stats/{entity_type}/{entity_id}", response_model=ReactionStatsResponse)
@@ -2371,7 +2418,12 @@ class APNsService:
         }
         
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            # Use HTTP/2 with proper configuration
+            async with httpx.AsyncClient(
+                http2=True,
+                timeout=30.0,
+                verify=True
+            ) as client:
                 response = await client.post(
                     f"{self.base_url}/3/device/{device_token}",
                     headers=headers,
@@ -2396,6 +2448,8 @@ class APNsService:
             return False
         except Exception as e:
             print(f"❌ APNs exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
 
 # Initialize APNs service
@@ -2442,6 +2496,32 @@ async def test_apns_notification(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send test notification: {str(e)}"
         )
+
+# Rate limiting configuration
+RATE_LIMIT_WINDOW = 60  # 60 seconds
+RATE_LIMIT_MAX_REQUESTS = 30  # Max 30 requests per minute per user
+
+# Simple in-memory rate limiter
+rate_limit_store = defaultdict(list)
+
+def check_rate_limit(user_id: str, endpoint: str) -> bool:
+    """Check if user has exceeded rate limit for an endpoint."""
+    key = f"{user_id}:{endpoint}"
+    current_time = time_module.time()
+    
+    # Clean up old entries
+    rate_limit_store[key] = [
+        timestamp for timestamp in rate_limit_store[key]
+        if current_time - timestamp < RATE_LIMIT_WINDOW
+    ]
+    
+    # Check if limit exceeded
+    if len(rate_limit_store[key]) >= RATE_LIMIT_MAX_REQUESTS:
+        return False
+    
+    # Add current request
+    rate_limit_store[key].append(current_time)
+    return True
 
 if __name__ == "__main__":
     uvicorn.run(

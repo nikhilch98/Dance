@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
@@ -20,13 +19,10 @@ void main() async {
   // Performance optimizations
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // Initialize Firebase (still needed for other Firebase services if you use them)
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
-  // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
   runApp(const MyApp());
 }
@@ -85,6 +81,8 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  bool _hasRegisteredDeviceToken = false;
+  bool _hasLoadedReactions = false;
   
   @override
   void initState() {
@@ -158,10 +156,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
               final token = await AuthService.getToken();
               if (token != null) {
                 reactionProvider.setAuthToken(token);
-                reactionProvider.loadUserReactions();
                 
-                // Register device token with server after authentication
-                await NotificationService().registerDeviceToken();
+                // Load user reactions only once per authentication
+                if (!_hasLoadedReactions) {
+                  _hasLoadedReactions = true;
+                  reactionProvider.loadUserReactions();
+                }
+                
+                // Register device token with server now that we're authenticated (only once)
+                if (!_hasRegisteredDeviceToken) {
+                  _hasRegisteredDeviceToken = true;
+                  await NotificationService().registerCurrentDeviceToken();
+                }
               }
             });
             
@@ -178,6 +184,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 configProvider.clearConfig();
               });
             }
+            // Reset device token registration flag for next login
+            _hasRegisteredDeviceToken = false;
+            _hasLoadedReactions = false;
             return const LoginScreen();
         }
       },

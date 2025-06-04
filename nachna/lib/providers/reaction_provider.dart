@@ -27,13 +27,17 @@ class ReactionProvider with ChangeNotifier {
 
   /// Load user's reactions
   Future<void> loadUserReactions() async {
-    if (_isLoading) return;
+    if (_isLoading) return; // Prevent duplicate calls
     
     _setLoading(true);
     _setError(null);
     
     try {
       _userReactions = await _reactionService.getUserReactions();
+      
+      // Clear and rebuild active reactions cache from user reactions
+      _activeReactions.clear();
+      
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
