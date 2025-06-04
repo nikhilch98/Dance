@@ -1,0 +1,32 @@
+[Unit]
+Description=Nachna FastAPI Server
+After=network.target
+
+[Service]
+Type=exec
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/Dance
+Environment="PATH=/home/ec2-user/Dance/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/home/ec2-user/Dance"
+ExecStart=/home/ec2-user/Dance/venv/bin/python /home/ec2-user/Dance/server.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nachna-api
+
+[Install]
+WantedBy=multi-user.target 

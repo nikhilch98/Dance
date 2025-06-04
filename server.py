@@ -2758,16 +2758,21 @@ def check_rate_limit(user_id: str, endpoint: str) -> bool:
     return True
 
 if __name__ == "__main__":
+    # Production configuration with optimizations
     uvicorn.run(
         "server:app",
-        host="0.0.0.0",
+        host="127.0.0.1",  # Bind to localhost since NGINX will proxy
         port=8002,
         workers=4,  # Number of worker processes
         loop="uvloop",  # Use uvloop for better performance
         http="httptools",  # Use httptools for better performance
-        reload=True,  # Enable auto-reload during development
+        reload=False,  # Disable auto-reload in production
         access_log=False,  # Disable default access logs to prevent duplication with our custom middleware
         log_level="info",
-        proxy_headers=True,
-        forwarded_allow_ips="*",
+        proxy_headers=True,  # Trust proxy headers from NGINX
+        forwarded_allow_ips="127.0.0.1",  # Only trust localhost proxy
+        # Optimize worker settings
+        limit_concurrency=1000,  # Max concurrent connections
+        limit_max_requests=10000,  # Restart workers after this many requests to prevent memory leaks
+        timeout_keep_alive=5,  # Keep-alive timeout
     )
