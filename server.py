@@ -2274,7 +2274,7 @@ APNS_PRODUCTION_URL = "https://api.push.apple.com"
 
 # APNs Credentials - you can also load these from environment variables
 APNS_AUTH_KEY_ID = "W5H5A6ZUS2"
-APNS_TEAM_ID = "3N4P4C85F3"  # Your Apple Developer Team ID
+APNS_TEAM_ID = "TJ9YTH589R"  # Replace with your 10-character Team ID from Apple Developer Portal
 APNS_BUNDLE_ID = "com.nachna.nachna"  # Your app's bundle ID
 APNS_KEY_PATH = "./AuthKey_W5H5A6ZUS2.p8"
 
