@@ -76,15 +76,6 @@ from utils.utils import (
     ScreenshotManager,
 )
 
-# Import EventProcessor and related functions from populate_workshops
-sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-try:
-    from scripts.populate_workshops import EventProcessor, get_artists_data_script, EventSummary
-except ImportError:
-    # If scripts is not a package, try direct import
-    sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-    from populate_workshops import EventProcessor, get_artists_data_script, EventSummary
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1795,111 +1786,6 @@ class AnalyzeRequest(BaseModel):
 async def ai_analyzer_page(request: Request):
     """Serve the AI analyzer page."""
     return templates.TemplateResponse("website/ai_analyzer.html", {"request": request})
-
-# --- New AI Analyzer API Route ---
-@app.post("/ai/analyze")
-async def analyze_event_link(payload: AnalyzeRequest):
-    """Takes a URL and AI model choice, screenshots it, and runs AI analysis."""
-    # Use dev env for safety, adjust if needed. Use model from payload.
-    # Ensure ai_model is valid before creating config
-    if payload.ai_model not in ['openai', 'gemini']:
-         raise HTTPException(status_code=400, detail="Invalid AI model specified in request.")
-    cfg = config.Config(env="dev", ai_model=payload.ai_model)
-
-    artists_data = get_artists_data_script(cfg) # Fetch latest artists data
-
-    # Initialize the correct AI client based on selection
-    try:
-        if payload.ai_model == "openai":
-            if not cfg.openai_api_key:
-                 raise HTTPException(status_code=500, detail="OpenAI API key not configured.")
-            ai_client = OpenAI(api_key=cfg.openai_api_key)
-            # Use the specific model from config if available, else default
-            model_version = getattr(cfg, 'openai_model_version', "gpt-4o-2024-11-20")
-        elif payload.ai_model == "gemini":
-            if not cfg.gemini_api_key:
-                raise HTTPException(status_code=500, detail="Gemini API key not configured.")
-            # Note: The Gemini client setup might differ based on your specific library usage
-            # Assuming OpenAI library compatibility or adjust as needed
-            ai_client = OpenAI(api_key=cfg.gemini_api_key, base_url=cfg.gemini_base_url)
-            model_version = getattr(cfg, 'gemini_model_version', "gemini-2.5-flash-preview-04-17")
-        # No else needed due to check above
-    except Exception as e:
-         # Catch potential errors during client initialization (e.g., invalid key format)
-         print(f"Error initializing AI client: {e}")
-         raise HTTPException(status_code=500, detail=f"Failed to initialize AI client: {e}")
-
-    # Get mongo client safely
-    mongo_client = None
-    try:
-        # Use the same environment as Config for consistency
-        mongo_client = DatabaseManager.get_mongo_client(cfg.env)
-        mongo_client.admin.command("ping") # Verify connection
-    except Exception as e:
-        print(f"Warning: Failed to get MongoDB client for /ai/analyze: {e}. Proceeding without DB context for EventProcessor.")
-        # EventProcessor might not strictly need mongo_client for _analyze_with_ai
-
-    # Initialize EventProcessor
-    try:
-        processor = EventProcessor(client=ai_client, artists=artists_data, mongo_client=mongo_client, cfg=cfg)
-    except Exception as e:
-         print(f"Error initializing EventProcessor: {e}")
-         raise HTTPException(status_code=500, detail=f"Failed to initialize EventProcessor: {e}")
-
-    # Create a temporary file for the screenshot
-    screenshot_file = None
-    try:
-        # Use mkstemp for potentially safer temp file creation
-        fd, screenshot_path = tempfile.mkstemp(suffix=".png", prefix="analyze_")
-        os.close(fd) # Close the file descriptor immediately
-        screenshot_file = screenshot_path # Keep track for cleanup
-
-        print(f"Attempting screenshot for {payload.link} to {screenshot_path}")
-        # Capture screenshot
-        if not ScreenshotManager.capture_screenshot(str(payload.link), screenshot_path):
-            # Add more detail to screenshot failure
-            print(f"Screenshot capture failed for URL: {payload.link}")
-            raise HTTPException(status_code=500, detail=f"Failed to capture screenshot for the provided link. Check if the URL is accessible and valid.")
-
-        print(f"Screenshot captured. Analyzing with {payload.ai_model} model: {model_version}...")
-        # Analyze screenshot
-        # Use the internal _analyze_with_ai method which takes model_version
-        analysis_result: Optional[EventSummary] = await asyncio.to_thread(
-            processor._analyze_with_ai,
-            screenshot_path, artists_data, model_version
-        )
-        # analysis_result: Optional[EventSummary] = processor._analyze_with_ai(
-        #      screenshot_path, artists_data, model_version
-        # )
-
-        if analysis_result is None:
-             print(f"AI analysis returned None for {payload.link}")
-             raise HTTPException(status_code=500, detail="AI analysis failed or returned no result.")
-
-        print("Analysis complete.")
-        # Return the Pydantic model, FastAPI handles JSON conversion
-        return analysis_result
-
-    except HTTPException as http_exc:
-        # Re-raise HTTP exceptions directly
-        print(f"HTTPException during analysis: {http_exc.detail}")
-        raise http_exc
-    except Exception as e:
-        print(f"Error during analysis for {payload.link}: {e}")
-        import traceback
-        traceback.print_exc()
-        # Provide a more generic error message to the client
-        raise HTTPException(status_code=500, detail="An unexpected error occurred during analysis.")
-    finally:
-        # Clean up the temporary screenshot file
-        if screenshot_file and os.path.exists(screenshot_file):
-            try:
-                os.remove(screenshot_file)
-                print(f"Cleaned up screenshot: {screenshot_file}")
-            except Exception as e:
-                # Log cleanup error but don't prevent response
-                print(f"Error cleaning up screenshot {screenshot_file}: {e}")
-
 
 # Authentication API Routes
 @app.post("/api/auth/register", response_model=AuthResponse)
