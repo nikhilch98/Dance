@@ -26,6 +26,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -928,6 +929,10 @@ app = FastAPI(
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Add GZip middleware for response compression
+# minimum_size: Only compress responses larger than this many bytes (default 1000)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Security middleware
 app.add_middleware(

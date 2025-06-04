@@ -5,6 +5,7 @@ import '../models/artist.dart';
 import '../models/studio.dart';
 import '../models/workshop.dart';
 import './auth_service.dart';
+import './http_client_service.dart';
 
 class ApiService {
   // Set the base URL for the API - using production server
@@ -12,12 +13,18 @@ class ApiService {
   
   // Add timeout duration for network requests
   static const Duration requestTimeout = Duration(seconds: 10);
+  
+  // Get the HTTP client instance
+  http.Client get _httpClient => HttpClientService.instance.client;
 
   // Fetches all studios
   Future<List<Studio>> fetchStudios() async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/studios?version=v2'))
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/api/studios?version=v2'),
+            headers: HttpClientService.getHeaders(),
+          )
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
@@ -39,8 +46,11 @@ class ApiService {
         url += '&has_workshops=$hasWorkshops';
       }
       
-      final response = await http
-          .get(Uri.parse(url))
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: HttpClientService.getHeaders(),
+          )
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
@@ -57,9 +67,15 @@ class ApiService {
   // Fetches all workshops
   Future<List<WorkshopListItem>> fetchAllWorkshops() async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/workshops?version=v2'))
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/api/workshops?version=v2'),
+            headers: HttpClientService.getHeaders(),
+          )
           .timeout(requestTimeout);
+
+      // Log compression info in debug mode
+      HttpClientService.logCompressionInfo(response);
 
       if (response.statusCode == 200) {
         List<dynamic> body = json.decode(response.body);
@@ -75,8 +91,11 @@ class ApiService {
   // Fetches workshops by artist ID
   Future<List<WorkshopSession>> fetchWorkshopsByArtist(String artistId) async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/workshops_by_artist/$artistId?version=v2'))
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/api/workshops_by_artist/$artistId?version=v2'),
+            headers: HttpClientService.getHeaders(),
+          )
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
@@ -93,8 +112,11 @@ class ApiService {
   // Fetches workshops by studio ID
   Future<CategorizedWorkshopResponse> fetchWorkshopsByStudio(String studioId) async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/api/workshops_by_studio/$studioId?version=v2'))
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/api/workshops_by_studio/$studioId?version=v2'),
+            headers: HttpClientService.getHeaders(),
+          )
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
@@ -116,13 +138,10 @@ class ApiService {
         throw Exception('No authentication token found');
       }
 
-      final response = await http
+      final response = await HttpClientService.instance.client
           .get(
             Uri.parse('https://nachna.com/api/config'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: HttpClientService.getHeaders(authToken: token),
           )
           .timeout(requestTimeout);
 

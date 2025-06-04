@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/user.dart';
+import './http_client_service.dart';
 
 class AuthService {
   static const String _baseUrl = 'https://nachna.com/api/auth';
@@ -19,6 +20,9 @@ class AuthService {
       accessibility: KeychainAccessibility.first_unlock,
     ),
   );
+  
+  // Get the HTTP client instance
+  static http.Client get _httpClient => HttpClientService.instance.client;
 
   // Register new user
   static Future<AuthResponse> register({
@@ -26,11 +30,9 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: HttpClientService.getHeaders(),
         body: jsonEncode({
           'mobile_number': mobileNumber,
           'password': password,
@@ -57,11 +59,9 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: HttpClientService.getHeaders(),
         body: jsonEncode({
           'mobile_number': mobileNumber,
           'password': password,
@@ -90,12 +90,9 @@ class AuthService {
         throw AuthException('No authentication token found');
       }
 
-      final response = await http.get(
+      final response = await _httpClient.get(
         Uri.parse('$_baseUrl/profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: HttpClientService.getHeaders(authToken: token),
       );
 
       if (response.statusCode == 200) {
@@ -128,12 +125,9 @@ class AuthService {
       if (dateOfBirth != null) body['date_of_birth'] = dateOfBirth;
       if (gender != null) body['gender'] = gender;
 
-      final response = await http.put(
+      final response = await _httpClient.put(
         Uri.parse('$_baseUrl/profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: HttpClientService.getHeaders(authToken: token),
         body: jsonEncode(body),
       );
 
@@ -179,12 +173,9 @@ class AuthService {
       
       print("📦 Request body: $requestBody");
 
-      final response = await http.put(
+      final response = await _httpClient.put(
         Uri.parse('$_baseUrl/password'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: HttpClientService.getHeaders(authToken: token),
         body: requestBody,
       );
 
@@ -232,7 +223,11 @@ class AuthService {
         Uri.parse('$_baseUrl/profile-picture'),
       );
 
-      request.headers['Authorization'] = 'Bearer $token';
+      // Add headers with gzip support
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept-Encoding': 'gzip, deflate',
+      });
       
       // Determine content type based on file extension
       String contentType = 'image/jpeg';
@@ -305,12 +300,9 @@ class AuthService {
         throw AuthException('No authentication token found');
       }
 
-      final response = await http.delete(
+      final response = await _httpClient.delete(
         Uri.parse('$_baseUrl/profile-picture'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: HttpClientService.getHeaders(authToken: token),
       );
 
       if (response.statusCode == 200) {
