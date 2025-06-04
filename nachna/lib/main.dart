@@ -101,14 +101,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
     );
     
     if (deviceToken != null) {
-      print('✅ Notifications initialized with token: ${deviceToken.substring(0, 10)}...');
+      // Notifications initialized successfully
     } else {
-      print('❌ Failed to initialize notifications');
+      // Failed to initialize notifications
     }
   }
 
   void _handleNotificationTap(String artistId) {
-    print('🎭 Deep link: Navigating to artist $artistId');
+    // Deep link: Navigating to artist
     
     // Navigate to artists tab and then to specific artist
     _navigateToArtist(artistId);

@@ -39,29 +39,30 @@ class NotificationService {
   Stream<String> get tokenStream => _tokenStreamController.stream;
 
   /// Initialize the notification service
-  Future<String?> initialize({Function(String)? onNotificationTap}) async {
-    if (_isInitialized) return _deviceToken;
-    
+  Future<String?> initialize({
+    Function(String)? onNotificationTap,
+  }) async {
     _onNotificationTap = onNotificationTap;
     
     try {
-      print('🚀 Initializing native notification service...');
+      // Initialize native notification service
       
-      // Setup method channel handlers
-      _setupMethodChannelHandlers();
+      // Set up method call handler for notifications from native side
+      _channel.setMethodCallHandler(_handleMethodCall);
       
-      // Initialize local notifications
-      await _initializeLocalNotifications();
+      // Request permission and get device token
+      final result = await _channel.invokeMethod('initialize');
       
-      // Check current permission status
-      await _checkCurrentPermissionStatus();
+      if (result != null && result is Map) {
+        _deviceToken = result['deviceToken'];
+        _isInitialized = true;
+        // Native notification service initialized successfully
+        return _deviceToken;
+      }
       
-      _isInitialized = true;
-      print('✅ Native notification service initialized successfully');
-      return _deviceToken;
-      
+      return null;
     } catch (e) {
-      print('❌ Error initializing notification service: $e');
+      // Error initializing notification service
       return null;
     }
   }
@@ -69,7 +70,7 @@ class NotificationService {
   /// Setup method channel handlers for iOS/Android communication
   void _setupMethodChannelHandlers() {
     _channel.setMethodCallHandler((MethodCall call) async {
-      print('📱 Received method call: ${call.method}');
+      // Received method call
       
       switch (call.method) {
         case 'onTokenRefresh':
@@ -88,7 +89,7 @@ class NotificationService {
           _handleRegistrationError(call.arguments);
           break;
         default:
-          print('⚠️ Unknown method call: ${call.method}');
+          // Unknown method call
       }
     });
   }
@@ -102,8 +103,7 @@ class NotificationService {
         final token = result['token'] as String?;
         final isRegistered = result['isRegistered'] as bool? ?? false;
         
-        print('📋 Current permission status: $status');
-        print('📱 Is registered for notifications: $isRegistered');
+        // Current permission status checked
         
         _permissionsGranted = (status == 'authorized' || status == 'provisional') && isRegistered;
         
@@ -112,14 +112,14 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('❌ Error checking permission status: $e');
+      // Error checking permission status
     }
   }
 
   /// Request permissions and get device token
   Future<Map<String, dynamic>> requestPermissionsAndGetToken() async {
     try {
-      print('📱 Requesting permissions and device token...');
+      // Requesting permissions and device token
       
       final result = await _channel.invokeMethod('requestPermissionsAndGetToken');
       
@@ -139,7 +139,7 @@ class NotificationService {
             'shouldOpenSettings': false,
           };
         } else {
-          print('❌ Permission request failed: $error');
+          // Permission request failed
           return {
             'success': false,
             'error': error ?? 'Permission request failed',
@@ -155,7 +155,7 @@ class NotificationService {
       };
       
     } catch (e) {
-      print('❌ Error requesting permissions: $e');
+      // Error requesting permissions
       return {
         'success': false,
         'error': 'Failed to request permissions: $e',
@@ -167,10 +167,9 @@ class NotificationService {
   /// Open device notification settings
   Future<bool> openNotificationSettings() async {
     try {
-      final result = await _channel.invokeMethod('openNotificationSettings');
-      return result as bool? ?? false;
+      await _channel.invokeMethod('openNotificationSettings');
+      return true;
     } catch (e) {
-      print('❌ Error opening notification settings: $e');
       return false;
     }
   }
@@ -194,7 +193,7 @@ class NotificationService {
       }
       return {'success': false};
     } catch (e) {
-      print('❌ Error retrying token registration: $e');
+      // Error retrying token registration
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -206,7 +205,7 @@ class NotificationService {
       final isNewToken = arguments['isNewToken'] as bool? ?? true;
       
       if (token != null) {
-        print('📱 Token ${isNewToken ? 'received' : 'refreshed'}: ${token.substring(0, 20)}...');
+        // Token received/refreshed
         await _handleTokenReceived(token);
       }
     }
@@ -231,7 +230,7 @@ class NotificationService {
 
   /// Handle notification received
   Future<void> _handleNotificationReceived(Map<String, dynamic> arguments) async {
-    print('🔔 Notification received: $arguments');
+    // Notification received
     _messageStreamController.add(arguments);
     // Show local notification if app is in foreground
     await _showLocalNotification(arguments);
@@ -239,7 +238,7 @@ class NotificationService {
 
   /// Handle notification tapped
   Future<void> _handleNotificationTapped(Map<String, dynamic> arguments) async {
-    print('📱 Notification tapped: $arguments');
+    // Notification tapped
     // Extract artist_id for deep linking
     final artistId = _extractArtistIdFromPayload(arguments);
     if (artistId != null && _onNotificationTap != null) {
@@ -253,7 +252,7 @@ class NotificationService {
       final granted = arguments['granted'] as bool? ?? false;
       final token = arguments['token'] as String?;
       
-      print('📋 Permission status changed - granted: $granted');
+      // Permission status changed
       _permissionsGranted = granted;
       
       if (granted && token != null) {
@@ -266,7 +265,7 @@ class NotificationService {
   void _handleRegistrationError(dynamic arguments) {
     if (arguments is Map) {
       final error = arguments['error'] as String?;
-      print('❌ Registration error: $error');
+      // Registration error occurred
     }
   }
 
@@ -379,7 +378,7 @@ class NotificationService {
         payload: jsonEncode(payload),
       );
     } catch (e) {
-      print('❌ Error showing local notification: $e');
+      // Error showing local notification
     }
   }
 
@@ -396,7 +395,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('❌ Error handling local notification tap: $e');
+      // Error handling local notification tap
     }
   }
 
@@ -408,10 +407,10 @@ class NotificationService {
       
       if (previousToken != token) {
         await prefs.setString('device_token', token);
-        print('💾 Device token updated locally');
+        // Device token updated locally
       }
     } catch (e) {
-      print('❌ Error storing token locally: $e');
+      // Error storing token locally
     }
   }
 
@@ -420,14 +419,14 @@ class NotificationService {
     try {
       // Skip if we've already registered this exact token
       if (_lastRegisteredToken == token) {
-        print('ℹ️ Device token already registered, skipping duplicate registration');
+        // Device token already registered, skipping duplicate registration
         return;
       }
       
       // Get auth token first
       final authToken = await AuthService.getToken();
       if (authToken == null) {
-        print('⚠️ No auth token available, skipping device token registration');
+        // No auth token available, skipping device token registration
         return;
       }
       
@@ -444,16 +443,16 @@ class NotificationService {
       
       // Mark this token as successfully registered
       _lastRegisteredToken = token;
-      print('✅ Device token registered with server successfully');
+      // Device token registered with server successfully
     } catch (e) {
-      print('❌ Error registering token with server: $e');
+      // Error registering token with server
     }
   }
 
   /// Manually register current device token with server (useful after authentication)
   Future<bool> registerCurrentDeviceToken() async {
     if (_deviceToken == null) {
-      print('⚠️ No device token available to register');
+      // No device token available to register
       return false;
     }
     
@@ -461,7 +460,7 @@ class NotificationService {
       await _registerTokenWithServer(_deviceToken!);
       return true;
     } catch (e) {
-      print('❌ Error in registerCurrentDeviceToken: $e');
+      // Error in registerCurrentDeviceToken
       return false;
     }
   }
@@ -470,5 +469,66 @@ class NotificationService {
   void dispose() {
     _messageStreamController.close();
     _tokenStreamController.close();
+  }
+
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onNotificationReceived':
+        final arguments = call.arguments as Map<dynamic, dynamic>;
+        // Notification received
+        // You can handle the notification here if needed
+        break;
+        
+      case 'onNotificationTapped':
+        final arguments = call.arguments as Map<dynamic, dynamic>;
+        // Notification tapped
+        
+        // Extract artist_id from notification data
+        final artistId = arguments['artist_id'] as String?;
+        if (artistId != null && _onNotificationTap != null) {
+          _onNotificationTap!(artistId);
+        }
+        break;
+        
+      default:
+        throw PlatformException(
+          code: 'Unimplemented',
+          details: 'Notification service method ${call.method} not implemented',
+        );
+    }
+  }
+
+  Future<bool> isRegisteredForNotifications() async {
+    try {
+      final result = await _channel.invokeMethod('isRegisteredForNotifications');
+      // Is registered for notifications
+      return result == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _localNotifications.show(
+        0,
+        title,
+        body,
+        const NotificationDetails(
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: data != null ? jsonEncode(data) : null,
+      );
+    } catch (e) {
+      // Error showing local notification
+    }
   }
 } 
