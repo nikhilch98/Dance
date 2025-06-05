@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/global_config.dart';
@@ -1678,6 +1679,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   }
 
   Widget _buildTokenDetailRow(String label, String value, IconData icon, Color color) {
+    // Determine if this value is copyable (non-empty and not "Not set")
+    final bool isCopyable = value.isNotEmpty && value != 'Not set' && !value.startsWith('●');
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -1726,9 +1730,92 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               ],
             ),
           ),
+          if (isCopyable) ...[
+            const SizedBox(width: 8),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _copyToClipboard(context, label, _getFullValueForCopy(label, value)),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.copy,
+                    color: Colors.white.withOpacity(0.8),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _getFullValueForCopy(String label, String displayValue) {
+    // Get the full token value for copying (not the truncated display version)
+    final configProvider = context.read<GlobalConfigProvider>();
+    
+    switch (label) {
+      case 'Device Token':
+        return configProvider.deviceToken ?? '';
+      case 'Auth Token':
+        return configProvider.authToken ?? '';
+      case 'User ID':
+        return configProvider.userId ?? '';
+      case 'Last Updated':
+        return configProvider.lastUpdated?.toIso8601String() ?? '';
+      default:
+        return displayValue;
+    }
+  }
+
+  void _copyToClipboard(BuildContext context, String label, String value) {
+    if (value.isEmpty) return;
+    
+    Clipboard.setData(ClipboardData(text: value)).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '$label copied to clipboard!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    });
   }
 
   Widget _buildRawConfigCard(GlobalConfigProvider configProvider) {

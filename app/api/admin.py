@@ -215,37 +215,63 @@ async def admin_send_test_notification(
     user_id: str = Depends(verify_admin_user)
 ):
     """Send a test notification to users following a specific artist or all users."""
+    print(f"🔍 [ADMIN] Test notification request from user {user_id}")
+    print(f"🔍 [ADMIN] Payload: artist_id={payload.artist_id}, title='{payload.title}', body='{payload.body}'")
+    
     try:
+        print("🔍 [ADMIN] Step 1: Importing required modules...")
         from app.services.notifications import NotificationService
         from app.database.reactions import ReactionOperations
-        from app.database.push_notifications import PushNotificationOperations
+        from app.database.notifications import PushNotificationOperations
+        print("✅ [ADMIN] Modules imported successfully")
         
+        print("🔍 [ADMIN] Step 2: Initializing notification service...")
         notification_service = NotificationService()
+        print("✅ [ADMIN] NotificationService initialized")
         
         if payload.artist_id:
+            print(f"🔍 [ADMIN] Step 3a: Getting users following artist {payload.artist_id}...")
             # Send to users following the specific artist
-            notified_user_ids = ReactionOperations.get_notified_users_of_artist(payload.artist_id)
+            try:
+                notified_user_ids = ReactionOperations.get_notified_users_of_artist(payload.artist_id)
+                print(f"✅ [ADMIN] Found {len(notified_user_ids) if notified_user_ids else 0} users following artist")
+            except Exception as e:
+                print(f"❌ [ADMIN] Error getting users following artist: {e}")
+                raise
             
             if not notified_user_ids:
+                print("⚠️ [ADMIN] No users found following the artist")
                 return {
                     "success": False,
                     "message": f"No users found following artist {payload.artist_id} with notifications enabled."
                 }
             
-            # Get artist name
-            client = get_mongo_client()
-            artist = client["discovery"]["artists_v2"].find_one({"artist_id": payload.artist_id})
-            artist_name = artist.get("artist_name", "Unknown Artist") if artist else "Unknown Artist"
+            print("🔍 [ADMIN] Step 3b: Getting artist name...")
+            try:
+                client = get_mongo_client()
+                artist = client["discovery"]["artists_v2"].find_one({"artist_id": payload.artist_id})
+                artist_name = artist.get("artist_name", "Unknown Artist") if artist else "Unknown Artist"
+                print(f"✅ [ADMIN] Artist name: {artist_name}")
+            except Exception as e:
+                print(f"❌ [ADMIN] Error getting artist name: {e}")
+                artist_name = "Unknown Artist"
             
             title = payload.title or f"Test from {artist_name}"
             body = payload.body or f"This is a test notification for followers of {artist_name}."
             
         else:
-            # Send to all users with device tokens
-            all_tokens = PushNotificationOperations.get_all_active_device_tokens()
-            notified_user_ids = [token["user_id"] for token in all_tokens if token.get("user_id")]
+            print("🔍 [ADMIN] Step 3a: Getting all users with device tokens...")
+            try:
+                all_tokens = PushNotificationOperations.get_all_active_device_tokens()
+                print(f"✅ [ADMIN] Found {len(all_tokens)} active device tokens")
+                notified_user_ids = [token["user_id"] for token in all_tokens if token.get("user_id")]
+                print(f"✅ [ADMIN] Extracted {len(notified_user_ids)} unique user IDs")
+            except Exception as e:
+                print(f"❌ [ADMIN] Error getting all active device tokens: {e}")
+                raise
             
             if not notified_user_ids:
+                print("⚠️ [ADMIN] No users with active device tokens found")
                 return {
                     "success": False,
                     "message": "No users with active device tokens found."
@@ -254,26 +280,38 @@ async def admin_send_test_notification(
             title = payload.title or "Admin Test Notification"
             body = payload.body or "This is a test notification from Nachna admin."
         
-        # Get device tokens for the users
-        device_tokens = PushNotificationOperations.get_device_tokens(notified_user_ids)
+        print(f"🔍 [ADMIN] Step 4: Getting device tokens for {len(notified_user_ids)} users...")
+        try:
+            device_tokens = PushNotificationOperations.get_device_tokens(notified_user_ids)
+            print(f"✅ [ADMIN] Found {len(device_tokens)} device tokens")
+        except Exception as e:
+            print(f"❌ [ADMIN] Error getting device tokens: {e}")
+            raise
         
         if not device_tokens:
+            print("⚠️ [ADMIN] No device tokens found for target users")
             return {
                 "success": False,
                 "message": "No device tokens found for the target users."
             }
         
-        # Send notifications
+        print("🔍 [ADMIN] Step 5: Filtering iOS tokens...")
         ios_tokens = [token for token in device_tokens if token.get('platform') == 'ios']
+        print(f"✅ [ADMIN] Found {len(ios_tokens)} iOS tokens out of {len(device_tokens)} total")
         
         success_count = 0
         total_sent = 0
         
+        print(f"🔍 [ADMIN] Step 6: Sending notifications to {len(ios_tokens)} iOS devices...")
+        print(f"🔍 [ADMIN] Notification title: '{title}'")
+        print(f"🔍 [ADMIN] Notification body: '{body}'")
+        
         # Send to iOS devices using APNs
         if ios_tokens:
-            for token_data in ios_tokens:
+            for i, token_data in enumerate(ios_tokens):
                 device_token = token_data.get('device_token')
                 if device_token:
+                    print(f"🔍 [ADMIN] Sending to device {i+1}/{len(ios_tokens)}: {device_token[:10]}...")
                     try:
                         success = await notification_service.apns_service.send_notification(
                             device_token=device_token,
@@ -284,8 +322,18 @@ async def admin_send_test_notification(
                         total_sent += 1
                         if success:
                             success_count += 1
+                            print(f"✅ [ADMIN] Successfully sent to device {i+1}")
+                        else:
+                            print(f"❌ [ADMIN] Failed to send to device {i+1}")
                     except Exception as e:
-                        print(f"Error sending to iOS device {device_token[:10]}...: {e}")
+                        print(f"❌ [ADMIN] Error sending to iOS device {device_token[:10]}...: {e}")
+                else:
+                    print(f"⚠️ [ADMIN] Skipping token {i+1} - no device_token field")
+        else:
+            print("⚠️ [ADMIN] No iOS tokens to send to")
+        
+        print(f"✅ [ADMIN] Step 7: Notification sending complete")
+        print(f"✅ [ADMIN] Results: {success_count}/{total_sent} successful sends")
         
         return {
             "success": True,
@@ -300,6 +348,10 @@ async def admin_send_test_notification(
         }
         
     except Exception as e:
+        print(f"❌ [ADMIN] CRITICAL ERROR in send_test_notification: {e}")
+        print(f"❌ [ADMIN] Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ [ADMIN] Traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to send test notification: {str(e)}"
