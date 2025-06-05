@@ -593,8 +593,8 @@ class NotificationService {
       print('[NotificationService] Local device token: ${_deviceToken?.substring(0, 20)}...');
       
       // Call config API with device token
-      final configResponse = await AuthService.getConfigWithDeviceToken(
-        deviceToken: _deviceToken!,
+      final configResponse = await AuthService.syncDeviceTokenWithServer(
+        localDeviceToken: _deviceToken!,
         platform: platform,
       );
       
@@ -602,22 +602,18 @@ class NotificationService {
       
       // Check if the response indicates the token was updated
       final isAdmin = configResponse['is_admin'] ?? false;
-      final serverDeviceToken = configResponse['current_device_token'];
-      final tokenUpdated = configResponse['device_token_updated'] ?? false;
+      final serverDeviceToken = configResponse['device_token'];
+      final syncStatus = configResponse['token_sync_status'];
       
       print('[NotificationService] Server device token: ${serverDeviceToken?.substring(0, 20) ?? 'null'}...');
-      print('[NotificationService] Token updated: $tokenUpdated');
+      print('[NotificationService] Sync status: $syncStatus');
       
-      if (tokenUpdated) {
+      if (syncStatus == 'matched' || syncStatus == 'updated') {
         print('[NotificationService] ✅ Device token synchronized via config API');
         _lastRegisteredToken = _deviceToken;
         return true;
-      } else if (serverDeviceToken == _deviceToken) {
-        print('[NotificationService] ✅ Device tokens already match, no sync needed');
-        _lastRegisteredToken = _deviceToken;
-        return true;
       } else {
-        print('[NotificationService] ⚠️ Config API did not update token, falling back to direct registration');
+        print('[NotificationService] ⚠️ Config API sync failed or incomplete, falling back to direct registration');
         return await _fallbackDeviceTokenSync();
       }
       

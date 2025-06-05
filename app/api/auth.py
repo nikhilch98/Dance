@@ -359,4 +359,61 @@ async def delete_account(user_id: str = Depends(verify_token)):
                 detail="Account deletion failed."
             )
             
-    return {"message": "Account deleted successfully"} 
+    return {"message": "Account deleted successfully"}
+
+
+@router.get("/config")
+async def get_config_with_device_token_sync(
+    device_token: Optional[str] = None,
+    platform: Optional[str] = None,
+    user_id: str = Depends(verify_token)
+):
+    """Get app configuration with device token synchronization."""
+    from app.database.notifications import PushNotificationOperations
+    
+    # Get current user
+    user = UserOperations.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Get current device token from database
+    current_server_token = PushNotificationOperations.get_device_token_given_user_id(user_id)
+    
+    # Initialize response data
+    response_data = {
+        "is_admin": user.get("is_admin", False),
+        "device_token": current_server_token,
+        "token_sync_status": "no_sync_needed"
+    }
+    
+    # If device token and platform are provided, perform sync
+    if device_token and platform:
+        print(f"[Config API] Syncing device token for user {user_id}")
+        print(f"[Config API] Client token: {device_token[:20] if device_token else 'None'}...")
+        print(f"[Config API] Server token: {current_server_token[:20] if current_server_token else 'None'}...")
+        
+        if current_server_token != device_token:
+            # Tokens don't match, update server token
+            print(f"[Config API] Device tokens mismatch, updating server token")
+            success = PushNotificationOperations.register_device_token(
+                user_id=user_id,
+                device_token=device_token,
+                platform=platform
+            )
+            
+            if success:
+                response_data["device_token"] = device_token
+                response_data["token_sync_status"] = "updated"
+                print(f"[Config API] Device token updated successfully")
+            else:
+                response_data["token_sync_status"] = "update_failed"
+                print(f"[Config API] Failed to update device token")
+        else:
+            # Tokens match, no update needed
+            response_data["token_sync_status"] = "matched"
+            print(f"[Config API] Device tokens already match")
+    
+    return response_data 

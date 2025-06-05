@@ -89,8 +89,9 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _hasLoadedReactions = false;
   bool _hasRegisteredDeviceToken = false;
+  bool _hasLoadedReactions = false;
+  bool _hasRefreshedConfigThisSession = false;
   bool _hasShownNotificationDialog = false;
   
   @override
@@ -224,10 +225,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
             );
             
           case AuthState.authenticated:
-            // Load config when authenticated
-            if (!configProvider.isLoaded && configProvider.state != ConfigState.loading) {
+            // Refresh config once per session on app startup to sync device token
+            if (!_hasRefreshedConfigThisSession && configProvider.state != ConfigState.loading) {
+              _hasRefreshedConfigThisSession = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                configProvider.loadConfig();
+                print('[AuthWrapper] Refreshing config once per session to sync device token');
+                configProvider.refreshConfig();
               });
             }
             
@@ -242,7 +245,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   reactionProvider.loadUserReactions();
                 }
                 
-                // Device token sync now happens during AuthProvider.initializeAuth()
+                // Device token sync now happens during ConfigProvider.loadConfig()
                 // so we don't need to do it here anymore
                 _hasRegisteredDeviceToken = true; // Mark as handled
               }
@@ -259,9 +262,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
           case AuthState.unauthenticated:
           case AuthState.error:
             print('[AuthWrapper] Handling unauthenticated state - should show LoginScreen');
-            // Reset device token registration flag when user becomes unauthenticated
+            // Reset session flags when user becomes unauthenticated
             _hasRegisteredDeviceToken = false;
             _hasLoadedReactions = false;
+            _hasRefreshedConfigThisSession = false;
             
             // Clear other providers when user becomes unauthenticated
             WidgetsBinding.instance.addPostFrameCallback((_) {

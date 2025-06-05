@@ -108,10 +108,35 @@ class AuthService {
     }
   }
 
-  // Get app config with device token sync
-  static Future<Map<String, dynamic>> getConfigWithDeviceToken({
-    String? deviceToken,
-    String? platform,
+  // Get app config with device token sync via auth config API
+  static Future<Map<String, dynamic>> getAuthConfig() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      final response = await _httpClient.get(
+        Uri.parse('$_baseUrl/config'),
+        headers: HttpClientService.getHeaders(authToken: token),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        final error = jsonDecode(response.body);
+        throw AuthException(error['detail'] ?? 'Failed to get auth config');
+      }
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Network error: $e');
+    }
+  }
+
+  // Sync device token with server (used by GlobalConfig)
+  static Future<Map<String, dynamic>> syncDeviceTokenWithServer({
+    required String localDeviceToken,
+    required String platform,
   }) async {
     try {
       final token = await getToken();
@@ -119,30 +144,66 @@ class AuthService {
         throw AuthException('No authentication token found');
       }
 
-      // Prepare request body with device token if provided
-      Map<String, dynamic>? requestBody;
-      if (deviceToken != null && platform != null) {
-        requestBody = {
-          'device_token': deviceToken,
-          'platform': platform,
-        };
-      }
+      print('[AuthService] Syncing device token with server...');
+      print('[AuthService] Local device token: ${localDeviceToken.substring(0, 20)}...');
 
-      final response = await _httpClient.post(
-        Uri.parse('$_baseUrl/config'),
+      // Build URL with query parameters for device token sync
+      final uri = Uri.parse('$_baseUrl/config').replace(queryParameters: {
+        'device_token': localDeviceToken,
+        'platform': platform,
+      });
+
+      final response = await _httpClient.get(
+        uri,
         headers: HttpClientService.getHeaders(authToken: token),
-        body: requestBody != null ? jsonEncode(requestBody) : null,
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final responseData = jsonDecode(response.body);
+        print('[AuthService] Device token sync response: ${responseData['token_sync_status']}');
+        return responseData;
       } else {
         final error = jsonDecode(response.body);
-        throw AuthException(error['detail'] ?? 'Failed to get config');
+        throw AuthException(error['detail'] ?? 'Failed to sync device token');
       }
     } catch (e) {
+      print('[AuthService] Error syncing device token: $e');
       if (e is AuthException) rethrow;
-      throw AuthException('Network error: $e');
+      throw AuthException('Device token sync failed: ${e.toString()}');
+    }
+  }
+
+  // Register device token with server
+  static Future<bool> registerDeviceToken({
+    required String deviceToken,
+    String platform = 'ios',
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      final response = await _httpClient.post(
+        Uri.parse('https://nachna.com/api/notifications/register-token'),
+        headers: HttpClientService.getHeaders(authToken: token),
+        body: jsonEncode({
+          'device_token': deviceToken,
+          'platform': platform,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('[AuthService] Device token registered successfully');
+        return true;
+      } else {
+        final error = jsonDecode(response.body);
+        print('[AuthService] Failed to register device token: ${error['detail']}');
+        return false;
+      }
+    } catch (e) {
+      print('[AuthService] Error registering device token: $e');
+      return false;
     }
   }
 

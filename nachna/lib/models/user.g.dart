@@ -95,8 +95,10 @@ Map<String, dynamic> _$PasswordUpdateToJson(PasswordUpdate instance) =>
 
 AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       isAdmin: json['is_admin'] as bool,
+      deviceToken: json['device_token'] as String?,
     );
 
 Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'is_admin': instance.isAdmin,
+      'device_token': instance.deviceToken,
     };

@@ -169,6 +169,68 @@ class GlobalConfig {
     print('[GlobalConfig] ===== FULL SYNC COMPLETE =====');
   }
 
+  /// Cross-check device token with server and register if different
+  Future<bool> crossCheckDeviceTokenWithServer() async {
+    print('[GlobalConfig] ===== CROSS-CHECKING DEVICE TOKEN WITH SERVER =====');
+    
+    try {
+      // Only proceed if we have both auth token and device token
+      if (_authToken == null || _userId == null) {
+        print('[GlobalConfig] No auth token or user ID - skipping device token cross-check');
+        return false;
+      }
+      
+      if (_deviceToken == null) {
+        print('[GlobalConfig] No local device token - skipping cross-check');
+        return false;
+      }
+      
+      // Call the sync method to cross-check and register if needed
+      final result = await AuthService.syncDeviceTokenWithServer(
+        localDeviceToken: _deviceToken!,
+        platform: 'ios', // TODO: Detect platform dynamically if needed
+      );
+      
+      final syncStatus = result['token_sync_status'] as String?;
+      final serverDeviceToken = result['device_token'] as String?;
+      
+      print('[GlobalConfig] Device token sync result: $syncStatus');
+      
+      // Update local device token if server has a different one
+      if (serverDeviceToken != null && serverDeviceToken != _deviceToken) {
+        await updateDeviceToken(serverDeviceToken);
+      }
+      
+      return syncStatus == 'matched' || syncStatus == 'updated';
+    } catch (e) {
+      print('[GlobalConfig] Error cross-checking device token: $e');
+      return false;
+    }
+  }
+
+  /// Enhanced sync that includes device token cross-checking with server
+  Future<void> syncWithServerDeviceTokenCheck() async {
+    print('[GlobalConfig] ===== SYNCING WITH SERVER DEVICE TOKEN CHECK =====');
+    
+    try {
+      // First do local sync
+      await syncAuthTokenIfNeeded();
+      await syncDeviceTokenIfNeeded();
+      
+      // Then cross-check with server if authenticated
+      if (_authToken != null && _userId != null && _deviceToken != null) {
+        final success = await crossCheckDeviceTokenWithServer();
+        if (success) {
+          print('[GlobalConfig] Device token successfully synced with server');
+        } else {
+          print('[GlobalConfig] Device token sync with server failed or was skipped');
+        }
+      }
+    } catch (e) {
+      print('[GlobalConfig] Error during server sync with device token check: $e');
+    }
+  }
+
   /// Persist config to shared preferences
   Future<void> _persistConfig() async {
     try {

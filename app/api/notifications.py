@@ -30,20 +30,4 @@ async def register_device_token(
     return {"message": "Device token registered successfully"}
 
 
-@router.get("/config")
-async def get_config(user_id: str = Depends(verify_token)):
-    """Get app configuration for authenticated user."""
-    from app.database.users import UserOperations
-    
-    # Get current user
-    user = UserOperations.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    device_token = PushNotificationOperations.get_device_token_given_user_id(user_id)
-    return {
-        "is_admin": user.get("is_admin", False),
-        "device_token": device_token    
-    } 
+ 

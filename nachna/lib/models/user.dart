@@ -167,9 +167,13 @@ class PasswordUpdate {
 class AppConfig {
   @JsonKey(name: 'is_admin')
   final bool isAdmin;
+  
+  @JsonKey(name: 'device_token')
+  final String? deviceToken;
 
   AppConfig({
     required this.isAdmin,
+    this.deviceToken,
   });
 
   factory AppConfig.fromJson(Map<String, dynamic> json) => _$AppConfigFromJson(json);
