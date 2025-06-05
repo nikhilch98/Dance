@@ -434,6 +434,40 @@ class AuthService {
     
     return cleaned;
   }
+
+  // Delete user account
+  static Future<void> deleteAccount() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      final response = await _httpClient.delete(
+        Uri.parse('$_baseUrl/account'),
+        headers: HttpClientService.getHeaders(authToken: token),
+      );
+
+      if (response.statusCode == 200) {
+        // Account deleted successfully on the server
+        await _clearAuthData(); // Clear local token and user data
+      } else {
+        final error = jsonDecode(response.body);
+        throw AuthException(error['detail'] ?? 'Account deletion failed');
+      }
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Network error during account deletion: $e');
+    }
+  }
+
+  // Clear all stored authentication data
+  static Future<void> _clearAuthData() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _userKey);
+    // Also ensure the HttpClientService clears its cached token if any
+    HttpClientService.instance.clearToken();
+  }
 }
 
 // Custom exception class for authentication errors

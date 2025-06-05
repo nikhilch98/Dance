@@ -396,6 +396,45 @@ class UserOperations:
         )
         return result.modified_count > 0
 
+    @staticmethod
+    def delete_user_account(user_id: str) -> bool:
+        """Delete a user account.
+        
+        Moves user data to users_deleted, deletes profile picture, 
+        device tokens, and then removes user from users collection.
+        """
+        client = get_mongo_client()
+        db = client["dance_app"]
+        
+        user = db["users"].find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return False  # User not found
+        
+        # 1. Copy user to users_deleted collection
+        user_deleted_data = user.copy()
+        user_deleted_data["deleted_at"] = datetime.utcnow()
+        db["users_deleted"].insert_one(user_deleted_data)
+        
+        # 2. Delete profile picture from profile_pictures collection
+        if user.get("profile_picture_id"):
+            try:
+                db["profile_pictures"].delete_one({"_id": ObjectId(user.get("profile_picture_id"))})
+            except Exception as e:
+                logger.error(f"Error deleting profile picture for user {user_id}: {e}")
+                # Continue with deletion even if picture removal fails
+        
+        # 3. Delete device tokens from device_tokens collection
+        try:
+            db["device_tokens"].delete_many({"user_id": user_id})
+        except Exception as e:
+            logger.error(f"Error deleting device tokens for user {user_id}: {e}")
+            # Continue with deletion
+            
+        # 4. Delete user from users collection
+        result = db["users"].delete_one({"_id": ObjectId(user_id)})
+        
+        return result.deleted_count > 0
+
 def format_user_profile(user_data: dict) -> UserProfile:
     """Format user data to UserProfile model."""
     return UserProfile(
@@ -2756,6 +2795,47 @@ def check_rate_limit(user_id: str, endpoint: str) -> bool:
     # Add current request
     rate_limit_store[key].append(current_time)
     return True
+
+@app.delete("/api/auth/account")
+async def delete_account(user_id: str = Depends(verify_token)):
+    """Delete user account.
+    
+    Args:
+        user_id: User ID from JWT token
+        
+    Returns:
+        Success message
+    """
+    success = UserOperations.delete_user_account(user_id)
+    if not success:
+        # This could mean user not found or deletion failed internally
+        # UserOperations.delete_user_account returns False if user not found initially.
+        # If found but deletion steps fail, it might still return True based on final users.delete_one.
+        # For simplicity, if success is False, we'll assume user wasn't found or main deletion step failed.
+        user_exists = UserOperations.get_user_by_id(user_id) # Check if it was a "not found" issue
+        if not user_exists:
+             # If user was already not in 'users' table (e.g. deleted in a previous call)
+             # or if the users_deleted collection also does not have them (this check is not done here),
+             # it might be more accurate to return a 404.
+             # However, to keep it simple, if the operation didn't succeed as expected,
+             # we can return a generic failure.
+             # Let's check if they are in users_deleted to confirm deletion.
+            client = get_mongo_client()
+            deleted_user = client["dance_app"]["users_deleted"].find_one({"_id": ObjectId(user_id)})
+            if deleted_user: # Already deleted
+                return {"message": "Account already deleted."} # Or return 200 OK
+
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, # Or 500 if internal error suspected
+                detail="User not found or account deletion failed."
+            )
+        else: # User exists but operation failed for other reasons
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Account deletion failed."
+            )
+            
+    return {"message": "Account deleted successfully"}
 
 if __name__ == "__main__":
     # Production configuration with optimizations

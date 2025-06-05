@@ -177,17 +177,55 @@ class _AuthWrapperState extends State<AuthWrapper> {
             return const ProfileSetupScreen();
             
           case AuthState.unauthenticated:
-          case AuthState.error:
-            // Clear config on logout
+            // Clear config and reset flags when unauthenticated (e.g., after logout)
             if (configProvider.isLoaded) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 configProvider.clearConfig();
               });
             }
-            // Reset device token registration flag for next login
             _hasRegisteredDeviceToken = false;
             _hasLoadedReactions = false;
             return const LoginScreen();
+
+          case AuthState.error: // For errors during initial auth, login, register
+            // Clear config and reset flags as we are navigating to login
+            if (configProvider.isLoaded) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                configProvider.clearConfig();
+              });
+            }
+            _hasRegisteredDeviceToken = false;
+            _hasLoadedReactions = false;
+            return const LoginScreen();
+
+          case AuthState.authenticatedError: // For errors AFTER user is already authenticated
+            // User remains authenticated, so we stay on HomeScreen.
+            // The specific screen (e.g., ProfileScreen) should handle showing the error message.
+            
+            // Ensure essential data (like config) is loaded if it wasn't due to an early error.
+            if (!configProvider.isLoaded && configProvider.state != ConfigState.loading) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                configProvider.loadConfig();
+              });
+            }
+            
+            // If an error occurred before reactions were loaded in this session, try to load them.
+            // We check _hasLoadedReactions (from AuthWrapperState) which is set to true
+            // in the AuthState.authenticated block after the first attempt to load reactions.
+            if (authProvider.user != null && !_hasLoadedReactions && !reactionProvider.isLoading) {
+                 WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    // Ensure ReactionService has the token (it should, but as a safeguard)
+                    final token = await AuthService.getToken();
+                    if (token != null) {
+                       reactionProvider.setAuthToken(token);
+                       // Attempt to load reactions. If this also fails, an error will be set in ReactionProvider.
+                       await reactionProvider.loadUserReactions();
+                       // We don't set _hasLoadedReactions = true here; that's done in the main AuthState.authenticated flow
+                       // to ensure it's only set after a successful initiation of loading.
+                    }
+                 });
+            }
+            return const HomeScreen(); // Stay on HomeScreen
         }
       },
     );

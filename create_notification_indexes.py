@@ -23,9 +23,9 @@ def create_notification_indexes():
     # This is the most important index for preventing duplicates
     collection.create_index(
         [
-            ("user_id", ASCENDING),
+        ("user_id", ASCENDING),
             ("workshop_uuid", ASCENDING),
-            ("notification_type", ASCENDING),
+        ("notification_type", ASCENDING),
             ("is_sent", ASCENDING)
         ],
         name="user_workshop_type_sent_idx",
@@ -99,4 +99,4 @@ def create_notification_indexes():
         print(f"- {index['name']}: {index['key']}")
 
 if __name__ == "__main__":
-    create_notification_indexes() 
+    create_notification_indexes()

@@ -27,6 +27,16 @@ class HttpClientService {
   
   http.Client get client => _client;
   
+  // Method to clear any cached token (if implemented in the future)
+  void clearToken() {
+    // Currently, the token is not cached directly within this service.
+    // It's passed to getHeaders each time. 
+    // This method is a placeholder if caching strategy changes.
+    if (kDebugMode) {
+      debugPrint('HttpClientService: clearToken() called. No local token cache to clear in current implementation.');
+    }
+  }
+  
   // Helper method to create headers with gzip support
   static Map<String, String> getHeaders({String? authToken}) {
     final headers = <String, String>{

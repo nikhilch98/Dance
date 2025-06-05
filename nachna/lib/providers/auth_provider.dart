@@ -10,6 +10,7 @@ enum AuthState {
   unauthenticated,
   profileIncomplete,
   error,
+  authenticatedError,
 }
 
 class AuthProvider with ChangeNotifier {
@@ -146,7 +147,7 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
       return true;
     } catch (e) {
-      _setError(e.toString());
+      _setAuthenticatedError('Failed to update profile: $e');
       _setLoading(false);
       return false;
     }
@@ -157,26 +158,18 @@ class AuthProvider with ChangeNotifier {
     required String currentPassword,
     required String newPassword,
   }) async {
-    print("🔄 AuthProvider.updatePassword: Starting password update flow");
-    print("📊 Current state: $_state");
-    print("📊 Is loading: $_isLoading");
-    
     _setLoading(true);
     
     try {
-      print("📞 AuthProvider: Calling AuthService.updatePassword");
       await AuthService.updatePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
       
-      print("✅ AuthProvider: AuthService.updatePassword completed successfully");
       _setLoading(false);
       return true;
     } catch (e) {
-      print("❌ AuthProvider: AuthService.updatePassword failed with error: $e");
-      print("❌ Error type: ${e.runtimeType}");
-      _setError(e.toString());
+      _setAuthenticatedError('Failed to update password: $e');
       _setLoading(false);
       return false;
     }
@@ -188,14 +181,17 @@ class AuthProvider with ChangeNotifier {
       final currentUser = await AuthService.getCurrentUser();
       _user = currentUser;
       
-      // Update state based on profile completeness
       if (currentUser.profileComplete) {
         _setState(AuthState.authenticated);
       } else {
         _setState(AuthState.profileIncomplete);
       }
     } catch (e) {
-      _setError('Failed to refresh profile: $e');
+      if (_state == AuthState.authenticated || _state == AuthState.profileIncomplete) {
+        _setAuthenticatedError('Failed to refresh profile: $e');
+      } else {
+        _setError('Failed to refresh profile: $e');
+      }
     }
   }
 
@@ -212,6 +208,22 @@ class AuthProvider with ChangeNotifier {
     }
     
     _setLoading(false);
+  }
+
+  // Delete user account
+  Future<bool> deleteAccount() async {
+    _setLoading(true);
+    try {
+      await AuthService.deleteAccount();
+      _user = null;
+      _setState(AuthState.unauthenticated);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setAuthenticatedError('Account deletion failed: $e');
+      _setLoading(false);
+      return false;
+    }
   }
 
   // Helper methods with performance optimization
@@ -233,6 +245,13 @@ class AuthProvider with ChangeNotifier {
   void _setError(String error) {
     _errorMessage = error;
     _state = AuthState.error;
+    _isLoading = false;
+    _notifyListenersDebounced();
+  }
+
+  void _setAuthenticatedError(String error) {
+    _errorMessage = error;
+    _state = AuthState.authenticatedError;
     _isLoading = false;
     _notifyListenersDebounced();
   }

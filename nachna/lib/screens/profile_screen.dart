@@ -214,6 +214,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           // Profile Information
                           _buildProfileInfo(user),
                           
+                          const SizedBox(height: 24), // Added spacing before delete button
+
+                          // Delete Account Button
+                          _buildDeleteAccountSection(authProvider), // Pass AuthProvider
+
                           const SizedBox(height: 100), // Bottom padding
                         ],
                       ),
@@ -915,6 +920,167 @@ class _ProfileScreenState extends State<ProfileScreen>
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+    );
+  }
+
+  Widget _buildDeleteAccountSection(AuthProvider authProvider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          Divider(color: Colors.white.withOpacity(0.2), height: 40),
+          GestureDetector(
+            onTap: () => _showDeleteAccountConfirmationDialog(authProvider),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.red.withOpacity(0.1), // Subtle red background
+                border: Border.all(
+                  color: Colors.red.withOpacity(0.4), // Red border
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.delete_forever_outlined,
+                    color: Colors.red[400],
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Delete Account',
+                    style: TextStyle(
+                      color: Colors.red[400],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountConfirmationDialog(AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must explicitly choose an action
+      builder: (BuildContext dialogContext) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.85),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1.5),
+            ),
+            title: const Text(
+              'Delete Account?',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              'Are you sure you want to delete your account? This action is irreversible and all your data will be removed.',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+            actions: <Widget>[
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.red.withOpacity(0.2),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop(); // Close the confirmation dialog
+                  
+                  // Show loading indicator
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                          SizedBox(width: 20),
+                          Text('Deleting account...', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                      backgroundColor: Color(0xFF0F3460),
+                      duration: Duration(seconds: 60), // Keep open while processing
+                    ),
+                  );
+
+                  final success = await authProvider.deleteAccount();
+                  
+                  // Hide loading indicator
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                  if (success) {
+                    // Navigate to login screen or initial screen after deletion
+                    // The AuthProvider state change should handle this navigation via a listener in a higher widget (e.g., main.dart or a wrapper)
+                    // For now, just show a success message. The navigation should ideally be handled by observing AuthState.unauthenticated.
+                     if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Account deleted successfully.'),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                        // AuthProvider should now be in unauthenticated state, triggering navigation
+                        // For example, in your main.dart or a wrapper widget that listens to AuthProvider state:
+                        // if (authProvider.state == AuthState.unauthenticated) {
+                        //   Navigator.of(context).pushAndRemoveUntil(
+                        //     MaterialPageRoute(builder: (context) => LoginScreen()), // Or your initial route
+                        //     (Route<dynamic> route) => false,
+                        //   );
+                        // }
+                     }
+                  } else {
+                     if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(authProvider.errorMessage ?? 'Failed to delete account. Please try again.'),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                     }
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 } 
