@@ -42,27 +42,38 @@ class NotificationService {
   Future<String?> initialize({
     Function(String)? onNotificationTap,
   }) async {
+    print('[NotificationService] ===== INITIALIZING NOTIFICATION SERVICE =====');
     _onNotificationTap = onNotificationTap;
     
     try {
-      // Initialize native notification service
-      
+      print('[NotificationService] Setting up method call handler...');
       // Set up method call handler for notifications from native side
       _channel.setMethodCallHandler(_handleMethodCall);
       
+      print('[NotificationService] Requesting native initialization...');
       // Request permission and get device token
       final result = await _channel.invokeMethod('initialize');
       
       if (result != null && result is Map) {
-        _deviceToken = result['deviceToken'];
-        _isInitialized = true;
-        // Native notification service initialized successfully
-        return _deviceToken;
+        final deviceToken = result['deviceToken'] as String?;
+        print('[NotificationService] Native initialization result: ${result.keys.toList()}');
+        print('[NotificationService] Device token received: ${deviceToken?.substring(0, 20) ?? 'null'}...');
+        
+        if (deviceToken != null) {
+          await _handleTokenReceived(deviceToken);
+          _isInitialized = true;
+          print('[NotificationService] ✅ Notification service initialized successfully');
+          return _deviceToken;
+        } else {
+          print('[NotificationService] ❌ No device token in initialization result');
+        }
+      } else {
+        print('[NotificationService] ❌ Invalid initialization result: $result');
       }
       
       return null;
     } catch (e) {
-      // Error initializing notification service
+      print('[NotificationService] ❌ Error initializing notification service: $e');
       return null;
     }
   }
@@ -213,19 +224,30 @@ class NotificationService {
 
   /// Handle token received and register with server
   Future<void> _handleTokenReceived(String token) async {
+    print('[NotificationService] === HANDLING TOKEN RECEIVED ===');
+    print('[NotificationService] New token: ${token.substring(0, 20)}...');
+    
     final previousToken = _deviceToken;
+    print('[NotificationService] Previous token: ${previousToken?.substring(0, 20) ?? 'null'}...');
+    
     _deviceToken = token;
+    print('[NotificationService] Device token stored in memory');
     
     // Store token locally
     await _storeTokenLocally(token);
+    print('[NotificationService] Device token stored locally');
     
-    // Register with server if token changed
+    // Only register with server if we have auth token and token changed
     if (previousToken != token) {
+      print('[NotificationService] Token changed, attempting server registration...');
       await _registerTokenWithServer(token);
+    } else {
+      print('[NotificationService] Token unchanged, skipping server registration');
     }
     
     // Notify listeners
     _tokenStreamController.add(token);
+    print('[NotificationService] Token listeners notified');
   }
 
   /// Handle notification received
@@ -417,16 +439,21 @@ class NotificationService {
   /// Register device token with server
   Future<void> _registerTokenWithServer(String token) async {
     try {
+      print('[NotificationService] === REGISTERING TOKEN WITH SERVER ===');
+      print('[NotificationService] Token: ${token.substring(0, 20)}...');
+      print('[NotificationService] Last registered: ${_lastRegisteredToken?.substring(0, 20) ?? 'null'}...');
+      
       // Skip if we've already registered this exact token
       if (_lastRegisteredToken == token) {
-        // Device token already registered, skipping duplicate registration
+        print('[NotificationService] Device token already registered, skipping duplicate registration');
         return;
       }
       
       // Get auth token first
       final authToken = await AuthService.getToken();
+      print('[NotificationService] Auth token available: ${authToken != null}');
       if (authToken == null) {
-        // No auth token available, skipping device token registration
+        print('[NotificationService] No auth token available, skipping device token registration');
         return;
       }
       
@@ -434,6 +461,8 @@ class NotificationService {
       reactionService.setAuthToken(authToken);
       
       final platform = Platform.isIOS ? 'ios' : 'android';
+      print('[NotificationService] Platform: $platform');
+      
       await reactionService.registerDeviceToken(
         DeviceTokenRequest(
           deviceToken: token,
@@ -443,9 +472,9 @@ class NotificationService {
       
       // Mark this token as successfully registered
       _lastRegisteredToken = token;
-      // Device token registered with server successfully
+      print('[NotificationService] ✅ Device token registered with server successfully');
     } catch (e) {
-      // Error registering token with server
+      print('[NotificationService] ❌ Error registering token with server: $e');
     }
   }
 
@@ -629,11 +658,33 @@ class NotificationService {
   Future<bool> isRegisteredForNotifications() async {
     try {
       final result = await _channel.invokeMethod('isRegisteredForNotifications');
-      // Is registered for notifications
+      print('[NotificationService] Is registered for notifications: $result');
       return result == true;
     } catch (e) {
+      print('[NotificationService] Error checking registration status: $e');
       return false;
     }
+  }
+
+  /// Debug method to force device token sync
+  Future<bool> debugSyncDeviceToken() async {
+    print('[NotificationService] ===== DEBUG: FORCE SYNC DEVICE TOKEN =====');
+    print('[NotificationService] Current device token: ${_deviceToken?.substring(0, 20) ?? 'null'}...');
+    print('[NotificationService] Last registered token: ${_lastRegisteredToken?.substring(0, 20) ?? 'null'}...');
+    
+    if (_deviceToken == null) {
+      print('[NotificationService] No device token available - trying to get one...');
+      final result = await retryTokenRegistration();
+      print('[NotificationService] Retry token registration result: $result');
+      
+      if (!result['success']) {
+        print('[NotificationService] Failed to get device token');
+        return false;
+      }
+    }
+    
+    // Force sync via config API
+    return await syncDeviceTokenViaConfig();
   }
 
   Future<void> showLocalNotification({

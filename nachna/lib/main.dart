@@ -10,6 +10,7 @@ import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
 import './services/auth_service.dart';
 import './services/notification_service.dart';
+import './services/global_config.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
@@ -35,6 +36,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Global Config
+  print('🌐 Initializing Global Config...');
+  await GlobalConfig().initialize();
+  print('🌐 Global Config initialized');
 
   runApp(const MyApp());
 }
@@ -92,7 +98,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // Initialize notifications first
       await _initializeNotifications();
       
-      // Then initialize auth (which will sync device token if authenticated)
+      // Perform initial sync of global config
+      await _initialGlobalConfigSync();
+      
+      // Then initialize auth
       if (mounted) {
         Provider.of<AuthProvider>(context, listen: false).initializeAuth();
       }
@@ -109,6 +118,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print('[AuthWrapper] Notifications initialized successfully with token: ${deviceToken.substring(0, 20)}...');
     } else {
       print('[AuthWrapper] Failed to initialize notifications');
+    }
+  }
+
+  Future<void> _initialGlobalConfigSync() async {
+    print('[AuthWrapper] Starting initial global config sync...');
+    try {
+      await GlobalConfig().fullSync();
+      print('[AuthWrapper] Initial global config sync completed');
+    } catch (e) {
+      print('[AuthWrapper] Error during initial global config sync: $e');
     }
   }
 

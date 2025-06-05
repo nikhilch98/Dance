@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/global_config.dart';
 import '../models/artist.dart';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
@@ -2075,4 +2076,6 @@ class _ArtistNotificationTestWidgetState extends State<_ArtistNotificationTestWi
       ],
     );
   }
+
+
 } 

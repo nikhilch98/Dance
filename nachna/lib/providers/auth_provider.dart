@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../services/global_config.dart';
 import '../main.dart';
 import 'dart:async';
 
@@ -54,8 +55,8 @@ class AuthProvider with ChangeNotifier {
           _user = storedUser;
           _state = storedUser.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete;
           
-          // Sync device token with server during app startup
-          await _syncDeviceTokenOnStartup();
+          // Sync global config on successful authentication
+          await _syncGlobalConfigOnAuth();
         } else {
           _state = AuthState.unauthenticated;
         }
@@ -120,6 +121,10 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = null;
       _internalLoading = false;
       _debounceTimer?.cancel();
+      
+      // Sync global config after successful login
+      await _syncGlobalConfigOnAuth();
+      
       notifyListeners();
       return true;
     } catch (e) {
@@ -193,8 +198,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Unregister device token before logout
-      await _unregisterDeviceToken();
+      // Clear global config on logout
+      await _clearGlobalConfigOnLogout();
       
       await AuthService.logout();
       _user = null;
@@ -219,8 +224,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Unregister device token before account deletion
-      await _unregisterDeviceToken();
+      // Clear global config before account deletion
+      await _clearGlobalConfigOnLogout();
       
       // Call the deletion API
       await AuthService.deleteAccount();
@@ -328,28 +333,27 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Helper method to sync device token during app startup via config API
-  Future<void> _syncDeviceTokenOnStartup() async {
+  /// Helper method to sync global config after authentication
+  Future<void> _syncGlobalConfigOnAuth() async {
     try {
-      print('[AuthProvider] Syncing device token during startup via config API...');
-      await NotificationService().syncDeviceTokenViaConfig();
-      print('[AuthProvider] Device token sync completed');
+      print('[AuthProvider] Syncing global config after authentication...');
+      await GlobalConfig().fullSync();
+      print('[AuthProvider] Global config sync completed');
     } catch (e) {
-      print('[AuthProvider] Error syncing device token: $e');
+      print('[AuthProvider] Error syncing global config: $e');
       // Don't throw error - continue with app initialization
     }
   }
 
-  /// Helper method to unregister device token
-  Future<void> _unregisterDeviceToken() async {
+  /// Helper method to clear global config on logout
+  Future<void> _clearGlobalConfigOnLogout() async {
     try {
-      print('[AuthProvider] Unregistering device token...');
-      await NotificationService().unregisterDeviceToken();
-      NotificationService().clearDeviceTokenState();
-      print('[AuthProvider] Device token unregistered successfully');
+      print('[AuthProvider] Clearing global config on logout...');
+      await GlobalConfig().clearConfig();
+      print('[AuthProvider] Global config cleared successfully');
     } catch (e) {
-      print('[AuthProvider] Error unregistering device token: $e');
-      // Don't throw error - continue with logout even if device token unregistration fails
+      print('[AuthProvider] Error clearing global config: $e');
+      // Don't throw error - continue with logout
     }
   }
 } 
