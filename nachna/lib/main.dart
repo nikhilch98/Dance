@@ -258,8 +258,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
             
           case AuthState.unauthenticated:
           case AuthState.error:
+            print('[AuthWrapper] Handling unauthenticated state - should show LoginScreen');
             // Reset device token registration flag when user becomes unauthenticated
             _hasRegisteredDeviceToken = false;
+            _hasLoadedReactions = false;
+            
+            // Clear other providers when user becomes unauthenticated
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              print('[AuthWrapper] Clearing config provider after logout');
+              configProvider.clearConfig();
+              // Note: ReactionProvider doesn't need explicit clearing as it relies on auth token
+            });
+            
             return const LoginScreen();
 
           case AuthState.authenticatedError:

@@ -192,6 +192,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
       ),
       child: Column(
         children: [
+          // Logout button in top-right corner
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: _showLogoutDialog,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: Colors.white.withOpacity(0.8),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: screenHeight * 0.02), // 2% of screen height
           // Progress Indicator
           Container(
             width: clampedIconSize,
@@ -995,6 +1021,58 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Logout',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              
+              // Try regular logout first
+              try {
+                print('[ProfileSetupScreen] Attempting regular logout...');
+                await authProvider.logout().timeout(
+                  const Duration(seconds: 10),
+                  onTimeout: () {
+                    print('[ProfileSetupScreen] Regular logout timed out, using force logout');
+                    authProvider.forceLogout();
+                  },
+                );
+                print('[ProfileSetupScreen] Logout completed');
+              } catch (e) {
+                print('[ProfileSetupScreen] Regular logout failed: $e, using force logout');
+                authProvider.forceLogout();
+              }
+            },
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Color(0xFFFF006E)),
+            ),
+          ),
+        ],
       ),
     );
   }

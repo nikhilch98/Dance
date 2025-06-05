@@ -192,28 +192,65 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    print('[AuthProvider] Starting logout process...');
     _state = AuthState.loading;
     _internalLoading = true;
     _debounceTimer?.cancel();
     notifyListeners();
 
     try {
-      // Clear global config on logout
-      await _clearGlobalConfigOnLogout();
+      print('[AuthProvider] Step 1: Clearing auth data from storage...');
+      // Clear auth data first (local storage) with very short timeout
+      // If this fails, we'll still continue with logout to ensure user gets logged out
+      try {
+        await AuthService.logout().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            print('[AuthProvider] WARNING: AuthService.logout() timed out - continuing with logout anyway');
+          },
+        );
+        print('[AuthProvider] Step 1 completed: Auth service logout completed');
+      } catch (storageError) {
+        print('[AuthProvider] WARNING: Storage clearing failed: $storageError - continuing with logout anyway');
+        // Don't let storage errors block logout
+      }
       
-      await AuthService.logout();
+      print('[AuthProvider] Step 2: Clearing global config...');
+      // Clear global config on logout with timeout and error handling
+      try {
+        await _clearGlobalConfigOnLogout().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            print('[AuthProvider] WARNING: GlobalConfig.clearConfig() timed out - continuing with logout anyway');
+          },
+        );
+        print('[AuthProvider] Step 2 completed: Global config cleared');
+      } catch (configError) {
+        print('[AuthProvider] WARNING: Global config clearing failed: $configError - continuing with logout anyway');
+        // Don't let global config errors block logout
+      }
+      
+      print('[AuthProvider] Step 3: Clearing local state...');
+      // Clear all local state - this always succeeds
       _user = null;
-      _state = AuthState.unauthenticated;
       _errorMessage = null;
-    } catch (e) {
-      _user = null;
-      _state = AuthState.unauthenticated;
-      _errorMessage = 'Logout API call failed: $e. Logged out locally.';
-    } finally {
       _internalLoading = false;
-      _debounceTimer?.cancel();
-      notifyListeners();
+      _state = AuthState.unauthenticated;
+      
+      print('[AuthProvider] Logout completed successfully');
+    } catch (e) {
+      print('[AuthProvider] Logout error: $e');
+      // Even if there's an error, clear local state to ensure logout
+      _user = null;
+      _errorMessage = null;
+      _internalLoading = false;
+      _state = AuthState.unauthenticated;
     }
+    
+    // Always notify listeners at the end
+    _debounceTimer?.cancel();
+    notifyListeners();
+    print('[AuthProvider] Logout process completed, state: $_state');
   }
 
   Future<bool> deleteAccount() async {
@@ -221,26 +258,48 @@ class AuthProvider with ChangeNotifier {
     
     // Set loading state
     _state = AuthState.loading;
+    _internalLoading = true;
+    _debounceTimer?.cancel();
     notifyListeners();
 
     try {
-      // Clear global config before account deletion
-      await _clearGlobalConfigOnLogout();
+      print('[AuthProvider] Step 1: Calling delete account API...');
+      // Call the deletion API first with timeout
+      await AuthService.deleteAccount().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Account deletion API timed out');
+        },
+      );
+      print('[AuthProvider] Step 1 completed: Account deletion API call successful');
       
-      // Call the deletion API
-      await AuthService.deleteAccount();
-      print('[AuthProvider] Account deletion API call successful');
+      print('[AuthProvider] Step 2: Clearing global config after deletion...');
+      // Clear global config after successful deletion with timeout and error handling
+      try {
+        await _clearGlobalConfigOnLogout().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('[AuthProvider] WARNING: GlobalConfig.clearConfig() timed out during account deletion');
+          },
+        );
+        print('[AuthProvider] Step 2 completed: Global config cleared after account deletion');
+      } catch (configError) {
+        print('[AuthProvider] WARNING: Global config clearing failed during account deletion: $configError');
+        // Don't let global config errors block account deletion
+      }
       
+      print('[AuthProvider] Step 3: Clearing local state after deletion...');
       // Clear all local data
       _user = null;
       _errorMessage = null;
       _internalLoading = false;
       
-      // Set to unauthenticated state
+      // Set to unauthenticated state to trigger navigation to login screen
       _state = AuthState.unauthenticated;
       print('[AuthProvider] AuthProvider state set to unauthenticated');
       
-      // Notify listeners
+      // Notify listeners to trigger navigation
+      _debounceTimer?.cancel();
       notifyListeners();
       print('[AuthProvider] Listeners notified of state change');
       
@@ -250,6 +309,7 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = 'Account deletion failed: $e';
       _state = AuthState.authenticatedError;
       _internalLoading = false;
+      _debounceTimer?.cancel();
       notifyListeners();
       return false;
     }
@@ -279,8 +339,6 @@ class AuthProvider with ChangeNotifier {
     _debounceTimer?.cancel();
     notifyListeners();
   }
-
-
 
   void _setAuthenticatedError(String error) {
     _errorMessage = error;
@@ -355,5 +413,40 @@ class AuthProvider with ChangeNotifier {
       print('[AuthProvider] Error clearing global config: $e');
       // Don't throw error - continue with logout
     }
+  }
+
+  // Force logout (immediate, bypasses all async operations)
+  void forceLogout() {
+    print('[AuthProvider] Force logout - immediate state clear');
+    _debounceTimer?.cancel();
+    
+    // Immediately clear all state
+    _user = null;
+    _errorMessage = null;
+    _internalLoading = false;
+    _state = AuthState.unauthenticated;
+    
+    // Notify listeners immediately
+    notifyListeners();
+    print('[AuthProvider] Force logout completed, state: $_state');
+    
+    // Try to clear storage in background (fire and forget)
+    Future.microtask(() async {
+      try {
+        print('[AuthProvider] Background: Attempting to clear auth storage...');
+        await AuthService.logout().timeout(const Duration(seconds: 1));
+        print('[AuthProvider] Background: Auth storage cleared');
+      } catch (e) {
+        print('[AuthProvider] Background: Failed to clear auth storage: $e');
+      }
+      
+      try {
+        print('[AuthProvider] Background: Attempting to clear global config...');
+        await _clearGlobalConfigOnLogout().timeout(const Duration(seconds: 1));
+        print('[AuthProvider] Background: Global config cleared');
+      } catch (e) {
+        print('[AuthProvider] Background: Failed to clear global config: $e');
+      }
+    });
   }
 } 

@@ -7,7 +7,6 @@ import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
-import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -97,6 +96,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.user;
+        final authState = authProvider.state;
+        
+        // If user is null and we're in unauthenticated state, let AuthWrapper handle navigation
+        // Don't show loading screen during logout
+        if (user == null && authState == AuthState.unauthenticated) {
+          // Return empty container and let AuthWrapper navigate to login
+          return const SizedBox.shrink();
+        }
+        
+        // If user is null but we're not in unauthenticated state, show loading
         if (user == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -881,18 +890,22 @@ class _ProfileScreenState extends State<ProfileScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
-        ),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              await authProvider.logout();
+              
+              // Use forceLogout() directly to avoid loading state that causes white screen
+              print('[ProfileScreen] Using force logout to avoid loading state');
+              authProvider.forceLogout();
+              print('[ProfileScreen] Force logout completed');
             },
             child: const Text(
               'Logout',
               style: TextStyle(color: Color(0xFFFF006E)),
             ),
-        ),
+          ),
         ],
       ),
     );
@@ -1059,9 +1072,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     try {
-      // Call deletion API directly
-      await AuthService.deleteAccount();
-      print('[ProfileScreen] Account deletion API successful');
+      // Use AuthProvider's deleteAccount method which handles API call, global config clearing, and state management
+      final success = await authProvider.deleteAccount();
       
       // Close loading dialog
       if (mounted && isDeletionInProgress) {
@@ -1069,17 +1081,23 @@ class _ProfileScreenState extends State<ProfileScreen>
         isDeletionInProgress = false;
       }
       
-      // Clear auth provider state
-      authProvider.clearAuthState();
-      
-      print('[ProfileScreen] Auth state cleared, navigating to login');
-      
-      // Navigate directly to login screen
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
+      if (success) {
+        print('[ProfileScreen] Account deletion successful - AuthWrapper will handle navigation to login');
+        // AuthWrapper will automatically navigate to LoginScreen when state becomes unauthenticated
+      } else {
+        // Show error message if deletion failed
+        if (mounted) {
+          final errorMessage = authProvider.errorMessage ?? 'Account deletion failed';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       }
       
     } catch (e) {
