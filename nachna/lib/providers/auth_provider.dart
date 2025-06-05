@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
+import '../main.dart';
 import 'dart:async';
 
 enum AuthState {
@@ -17,175 +19,164 @@ class AuthProvider with ChangeNotifier {
   AuthState _state = AuthState.initial;
   User? _user;
   String? _errorMessage;
-  bool _isLoading = false;
-  static const Duration _debounceDelay = Duration(milliseconds: 100); // Add debouncing for performance
+  bool _internalLoading = false;
+  static const Duration _debounceDelay = Duration(milliseconds: 100);
   Timer? _debounceTimer;
+  bool _isDisposed = false;
 
   // Getters
   AuthState get state => _state;
   User? get user => _user;
   String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _state == AuthState.loading;
+  bool get isInternalLoading => _internalLoading;
   bool get isAuthenticated => _state == AuthState.authenticated;
   bool get isProfileComplete => _user?.profileComplete ?? false;
 
   @override
   void dispose() {
+    _isDisposed = true;
     _debounceTimer?.cancel();
     super.dispose();
   }
 
-  // Initialize authentication state
   Future<void> initializeAuth() async {
-    _setState(AuthState.loading);
-    
+    _state = AuthState.loading;
+    _internalLoading = true;
+    _debounceTimer?.cancel();
+    notifyListeners();
+
     try {
       final isAuth = await AuthService.isAuthenticated();
       if (isAuth) {
         final storedUser = await AuthService.getStoredUser();
         if (storedUser != null) {
           _user = storedUser;
+          _state = storedUser.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete;
           
-          // Check if profile is complete
-          if (storedUser.profileComplete) {
-            _setState(AuthState.authenticated);
-          } else {
-            _setState(AuthState.profileIncomplete);
-          }
+          // Sync device token with server during app startup
+          await _syncDeviceTokenOnStartup();
         } else {
-          _setState(AuthState.unauthenticated);
+          _state = AuthState.unauthenticated;
         }
       } else {
-        _setState(AuthState.unauthenticated);
+        _state = AuthState.unauthenticated;
       }
+      _errorMessage = null;
     } catch (e) {
       _setError('Failed to initialize authentication: $e');
+      return;
     }
+    _internalLoading = false;
+    _debounceTimer?.cancel();
+    notifyListeners();
   }
 
-  // Register new user
   Future<bool> register({
     required String mobileNumber,
     required String password,
   }) async {
-    _setLoading(true);
-    
+    _state = AuthState.loading;
+    _internalLoading = true;
+    _debounceTimer?.cancel();
+    notifyListeners();
+
     try {
       final authResponse = await AuthService.register(
         mobileNumber: mobileNumber,
         password: password,
       );
-      
       _user = authResponse.user;
-      
-      // After registration, user needs to complete profile
-      _setState(AuthState.profileIncomplete);
-      _setLoading(false);
+      _state = AuthState.profileIncomplete;
+      _errorMessage = null;
+      _internalLoading = false;
+      _debounceTimer?.cancel();
+      notifyListeners();
       return true;
     } catch (e) {
       _setError(e.toString());
-      _setLoading(false);
       return false;
     }
   }
 
-  // Login user
   Future<bool> login({
     required String mobileNumber,
     required String password,
   }) async {
-    _setLoading(true);
-    
+    print('[AuthProvider] Starting login with mobile: $mobileNumber');
+    _state = AuthState.loading;
+    _internalLoading = true;
+    _debounceTimer?.cancel();
+    notifyListeners();
+
     try {
       final authResponse = await AuthService.login(
         mobileNumber: mobileNumber,
         password: password,
       );
-      
+      print('[AuthProvider] Login successful');
       _user = authResponse.user;
-      
-      // Check if profile is complete
-      if (authResponse.user.profileComplete) {
-        _setState(AuthState.authenticated);
-      } else {
-        _setState(AuthState.profileIncomplete);
-      }
-      
-      _setLoading(false);
+      _state = authResponse.user.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete;
+      _errorMessage = null;
+      _internalLoading = false;
+      _debounceTimer?.cancel();
+      notifyListeners();
       return true;
     } catch (e) {
+      print('[AuthProvider] Login failed with error: $e');
       _setError(e.toString());
-      _setLoading(false);
+      print('[AuthProvider] After _setError - state: $_state, errorMessage: $_errorMessage');
       return false;
     }
   }
 
-  // Update user profile
   Future<bool> updateProfile({
     String? name,
     String? dateOfBirth,
     String? gender,
   }) async {
-    _setLoading(true);
-    
+    _setInternalLoading(true);
     try {
       final updatedUser = await AuthService.updateProfile(
         name: name,
         dateOfBirth: dateOfBirth,
         gender: gender,
       );
-      
       _user = updatedUser;
-      
-      // Check if profile is now complete
-      if (updatedUser.profileComplete) {
-        _setState(AuthState.authenticated);
-      } else {
-        _setState(AuthState.profileIncomplete);
-      }
-      
-      _setLoading(false);
+      _setState(updatedUser.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete);
+      _setInternalLoading(false);
       return true;
     } catch (e) {
+      _setInternalLoading(false);
       _setAuthenticatedError('Failed to update profile: $e');
-      _setLoading(false);
       return false;
     }
   }
 
-  // Update password
   Future<bool> updatePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
-    _setLoading(true);
-    
+    _setInternalLoading(true);
     try {
       await AuthService.updatePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
-      
-      _setLoading(false);
+      _setInternalLoading(false);
       return true;
     } catch (e) {
+      _setInternalLoading(false);
       _setAuthenticatedError('Failed to update password: $e');
-      _setLoading(false);
       return false;
     }
   }
 
-  // Refresh user profile
   Future<void> refreshProfile() async {
     try {
       final currentUser = await AuthService.getCurrentUser();
       _user = currentUser;
-      
-      if (currentUser.profileComplete) {
-        _setState(AuthState.authenticated);
-      } else {
-        _setState(AuthState.profileIncomplete);
-      }
+      _setState(currentUser.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete);
     } catch (e) {
       if (_state == AuthState.authenticated || _state == AuthState.profileIncomplete) {
         _setAuthenticatedError('Failed to refresh profile: $e');
@@ -195,49 +186,83 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Logout user
   Future<void> logout() async {
-    _setLoading(true);
-    
+    _state = AuthState.loading;
+    _internalLoading = true;
+    _debounceTimer?.cancel();
+    notifyListeners();
+
     try {
+      // Unregister device token before logout
+      await _unregisterDeviceToken();
+      
       await AuthService.logout();
       _user = null;
-      _setState(AuthState.unauthenticated);
+      _state = AuthState.unauthenticated;
+      _errorMessage = null;
     } catch (e) {
-      _setError('Logout failed: $e');
+      _user = null;
+      _state = AuthState.unauthenticated;
+      _errorMessage = 'Logout API call failed: $e. Logged out locally.';
+    } finally {
+      _internalLoading = false;
+      _debounceTimer?.cancel();
+      notifyListeners();
     }
-    
-    _setLoading(false);
   }
 
-  // Delete user account
   Future<bool> deleteAccount() async {
-    _setLoading(true);
+    print('[AuthProvider] Starting account deletion');
+    
+    // Set loading state
+    _state = AuthState.loading;
+    notifyListeners();
+
     try {
+      // Unregister device token before account deletion
+      await _unregisterDeviceToken();
+      
+      // Call the deletion API
       await AuthService.deleteAccount();
+      print('[AuthProvider] Account deletion API call successful');
+      
+      // Clear all local data
       _user = null;
-      _setState(AuthState.unauthenticated);
-      _setLoading(false);
+      _errorMessage = null;
+      _internalLoading = false;
+      
+      // Set to unauthenticated state
+      _state = AuthState.unauthenticated;
+      print('[AuthProvider] AuthProvider state set to unauthenticated');
+      
+      // Notify listeners
+      notifyListeners();
+      print('[AuthProvider] Listeners notified of state change');
+      
       return true;
     } catch (e) {
-      _setAuthenticatedError('Account deletion failed: $e');
-      _setLoading(false);
+      print('[AuthProvider] Account deletion failed: $e');
+      _errorMessage = 'Account deletion failed: $e';
+      _state = AuthState.authenticatedError;
+      _internalLoading = false;
+      notifyListeners();
       return false;
     }
   }
 
-  // Helper methods with performance optimization
   void _setState(AuthState newState) {
     if (_state != newState) {
       _state = newState;
-      _errorMessage = null;
+      if (newState != AuthState.error && newState != AuthState.authenticatedError) {
+        _errorMessage = null;
+      }
       _notifyListenersDebounced();
     }
   }
 
-  void _setLoading(bool loading) {
-    if (_isLoading != loading) {
-      _isLoading = loading;
+  void _setInternalLoading(bool loading) {
+    if (_internalLoading != loading) {
+      _internalLoading = loading;
       _notifyListenersDebounced();
     }
   }
@@ -245,47 +270,86 @@ class AuthProvider with ChangeNotifier {
   void _setError(String error) {
     _errorMessage = error;
     _state = AuthState.error;
-    _isLoading = false;
-    _notifyListenersDebounced();
+    _internalLoading = false;
+    _debounceTimer?.cancel();
+    notifyListeners();
   }
+
+
 
   void _setAuthenticatedError(String error) {
     _errorMessage = error;
     _state = AuthState.authenticatedError;
-    _isLoading = false;
-    _notifyListenersDebounced();
+    _internalLoading = false;
+    _debounceTimer?.cancel();
+    notifyListeners();
   }
 
-  // Debounced notifyListeners for better performance
   void _notifyListenersDebounced() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDelay, () {
+      if (_isDisposed) return;
       notifyListeners();
     });
   }
 
-  // Clear error message with immediate notification for UX
   void clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
-      notifyListeners(); // Immediate notification for clearing errors
+      if (_state == AuthState.error && _user == null) {
+         _setState(AuthState.unauthenticated);
+      } else if (_state == AuthState.authenticatedError && _user != null) {
+         _setState(_user!.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete);
+      } else {
+         notifyListeners();
+      }
     }
   }
 
-  // Helper method to check if profile update is needed
   bool shouldUpdateProfile() {
     return _state == AuthState.profileIncomplete && _user != null;
   }
 
-  // Helper method to get missing profile fields
   List<String> getMissingProfileFields() {
     if (_user == null) return [];
-    
     final missing = <String>[];
     if (_user!.name == null || _user!.name!.isEmpty) missing.add('Name');
     if (_user!.dateOfBirth == null || _user!.dateOfBirth!.isEmpty) missing.add('Date of Birth');
     if (_user!.gender == null || _user!.gender!.isEmpty) missing.add('Gender');
-    
     return missing;
+  }
+
+  void clearAuthState() {
+    print('[AuthProvider] Clearing auth state');
+    _user = null;
+    _errorMessage = null;
+    _internalLoading = false;
+    _state = AuthState.unauthenticated;
+    notifyListeners();
+  }
+
+  /// Helper method to sync device token during app startup via config API
+  Future<void> _syncDeviceTokenOnStartup() async {
+    try {
+      print('[AuthProvider] Syncing device token during startup via config API...');
+      await NotificationService().syncDeviceTokenViaConfig();
+      print('[AuthProvider] Device token sync completed');
+    } catch (e) {
+      print('[AuthProvider] Error syncing device token: $e');
+      // Don't throw error - continue with app initialization
+    }
+  }
+
+  /// Helper method to unregister device token
+  Future<void> _unregisterDeviceToken() async {
+    try {
+      print('[AuthProvider] Unregistering device token...');
+      await NotificationService().unregisterDeviceToken();
+      NotificationService().clearDeviceTokenState();
+      print('[AuthProvider] Device token unregistered successfully');
+    } catch (e) {
+      print('[AuthProvider] Error unregistering device token: $e');
+      // Don't throw error - continue with logout even if device token unregistration fails
+    }
   }
 } 

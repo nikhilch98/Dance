@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
@@ -241,23 +242,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                     SizedBox(height: screenHeight * 0.025), // 2.5% of screen height
                     
                     // Mobile Number Field
-                    _buildTextField(
-                      controller: _mobileController,
-                      label: 'Mobile Number',
-                      hint: '9876543210',
-                      icon: Icons.phone_android,
-                      keyboardType: TextInputType.phone,
+                    _buildMobileNumberField(
                       screenHeight: screenHeight,
                       screenWidth: screenWidth,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your mobile number';
-                        }
-                        if (!AuthService.isValidMobileNumber(value)) {
-                          return 'Please enter a valid 10-digit mobile number';
-                        }
-                        return null;
-                      },
                     ),
                     
                     SizedBox(height: fieldSpacing),
@@ -364,6 +351,82 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileNumberField({
+    required double screenHeight,
+    required double screenWidth,
+  }) {
+    return TextFormField(
+      controller: _mobileController,
+      keyboardType: TextInputType.number,
+      style: const TextStyle(color: Colors.white),
+      maxLength: 10,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(10),
+      ],
+      onChanged: (value) {
+        if (value.length == 10) {
+          // Auto-dismiss keyboard after 10 digits
+          FocusScope.of(context).unfocus();
+        }
+      },
+      textInputAction: TextInputAction.next,
+      onFieldSubmitted: (value) {
+        // Move to password field
+        FocusScope.of(context).nextFocus();
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your mobile number';
+        }
+        if (!AuthService.isValidMobileNumber(value)) {
+          return 'Please enter a valid 10-digit mobile number';
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: 'Mobile Number',
+        hintText: '9876543210',
+        prefixIcon: const Icon(Icons.phone_android, color: Color(0xFF00D4FF)),
+        counterText: '', // Hide the character counter
+        labelStyle: TextStyle(
+          color: Colors.white.withOpacity(0.8),
+          fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+        ),
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.5),
+          fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+        ),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: screenHeight * 0.015,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF00D4FF), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
       ),
     );

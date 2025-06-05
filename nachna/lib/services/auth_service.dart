@@ -108,6 +108,44 @@ class AuthService {
     }
   }
 
+  // Get app config with device token sync
+  static Future<Map<String, dynamic>> getConfigWithDeviceToken({
+    String? deviceToken,
+    String? platform,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw AuthException('No authentication token found');
+      }
+
+      // Prepare request body with device token if provided
+      Map<String, dynamic>? requestBody;
+      if (deviceToken != null && platform != null) {
+        requestBody = {
+          'device_token': deviceToken,
+          'platform': platform,
+        };
+      }
+
+      final response = await _httpClient.post(
+        Uri.parse('$_baseUrl/config'),
+        headers: HttpClientService.getHeaders(authToken: token),
+        body: requestBody != null ? jsonEncode(requestBody) : null,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        final error = jsonDecode(response.body);
+        throw AuthException(error['detail'] ?? 'Failed to get config');
+      }
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Network error: $e');
+    }
+  }
+
   // Update user profile
   static Future<User> updateProfile({
     String? name,

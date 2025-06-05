@@ -7,6 +7,7 @@ import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -970,7 +971,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showDeleteAccountConfirmationDialog(AuthProvider authProvider) {
     showDialog(
       context: context,
-      barrierDismissible: false, // User must explicitly choose an action
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
@@ -1017,64 +1018,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 onPressed: () async {
-                  Navigator.of(dialogContext).pop(); // Close the confirmation dialog
-                  
-                  // Show loading indicator
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-                          SizedBox(width: 20),
-                          Text('Deleting account...', style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                      backgroundColor: Color(0xFF0F3460),
-                      duration: Duration(seconds: 60), // Keep open while processing
-                    ),
-                  );
-
-                  final success = await authProvider.deleteAccount();
-                  
-                  // Hide loading indicator
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                  if (success) {
-                    // Navigate to login screen or initial screen after deletion
-                    // The AuthProvider state change should handle this navigation via a listener in a higher widget (e.g., main.dart or a wrapper)
-                    // For now, just show a success message. The navigation should ideally be handled by observing AuthState.unauthenticated.
-                     if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Account deleted successfully.'),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            margin: const EdgeInsets.all(16),
-                          ),
-                        );
-                        // AuthProvider should now be in unauthenticated state, triggering navigation
-                        // For example, in your main.dart or a wrapper widget that listens to AuthProvider state:
-                        // if (authProvider.state == AuthState.unauthenticated) {
-                        //   Navigator.of(context).pushAndRemoveUntil(
-                        //     MaterialPageRoute(builder: (context) => LoginScreen()), // Or your initial route
-                        //     (Route<dynamic> route) => false,
-                        //   );
-                        // }
-                     }
-                  } else {
-                     if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(authProvider.errorMessage ?? 'Failed to delete account. Please try again.'),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            margin: const EdgeInsets.all(16),
-                          ),
-                        );
-                     }
-                  }
+                  Navigator.of(dialogContext).pop(); // Close dialog
+                  await _handleAccountDeletion(authProvider);
                 },
               ),
             ],
@@ -1082,5 +1027,82 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
       },
     );
+  }
+
+  Future<void> _handleAccountDeletion(AuthProvider authProvider) async {
+    print('[ProfileScreen] Starting account deletion process');
+    
+    // Show loading overlay
+    bool isDeletionInProgress = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: Container(
+          color: Colors.black.withOpacity(0.8),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Colors.white),
+                SizedBox(height: 16),
+                Text(
+                  'Deleting Account...',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Call deletion API directly
+      await AuthService.deleteAccount();
+      print('[ProfileScreen] Account deletion API successful');
+      
+      // Close loading dialog
+      if (mounted && isDeletionInProgress) {
+        Navigator.of(context).pop();
+        isDeletionInProgress = false;
+      }
+      
+      // Clear auth provider state
+      authProvider.clearAuthState();
+      
+      print('[ProfileScreen] Auth state cleared, navigating to login');
+      
+      // Navigate directly to login screen
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+      
+    } catch (e) {
+      print('[ProfileScreen] Account deletion failed: $e');
+      
+      // Close loading dialog
+      if (mounted && isDeletionInProgress) {
+        Navigator.of(context).pop();
+        isDeletionInProgress = false;
+      }
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
   }
 } 

@@ -107,4 +107,45 @@ class ReactionService {
       throw Exception('Error registering device token: $e');
     }
   }
+
+  /// Get current device token from server
+  Future<String?> getCurrentDeviceToken() async {
+    try {
+      final response = await _httpClient.get(
+        Uri.parse('$baseUrl/notifications/device-token'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['device_token'] as String?;
+      } else if (response.statusCode == 404) {
+        // No device token registered for this user
+        return null;
+      } else {
+        throw Exception('Failed to get device token: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error getting device token: $e');
+    }
+  }
+
+  /// Unregister device token from push notifications
+  Future<void> unregisterDeviceToken(String deviceToken) async {
+    try {
+      final response = await _httpClient.delete(
+        Uri.parse('$baseUrl/notifications/unregister-token'),
+        headers: _headers,
+        body: json.encode({
+          'device_token': deviceToken,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to unregister device token: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error unregistering device token: $e');
+    }
+  }
 } 

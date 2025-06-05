@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui';
+import 'dart:io';
+import 'dart:ui' as ui;
 import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
@@ -16,18 +20,28 @@ import './screens/artist_detail_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  // Performance optimizations
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase (still needed for other Firebase services if you use them)
+  // Configure error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    print('Global error caught: $error');
+    return true;
+  };
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  
   const MyApp({super.key});
 
   @override
@@ -39,15 +53,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReactionProvider()),
       ],
       child: MaterialApp(
-        title: 'Dance Workshop App',
+        title: 'Nachna',
+        navigatorKey: navigatorKey,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF00D4FF),
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-          // Performance optimizations
+          primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: const AuthWrapper(),
@@ -60,13 +69,6 @@ class MyApp extends StatelessWidget {
           '/admin': (context) => const AdminScreen(),
         },
         debugShowCheckedModeBanner: false,
-        // Performance optimizations
-        builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), // Prevent text scaling issues
-            child: child!,
-          );
-        },
       ),
     );
   }
@@ -80,48 +82,46 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  bool _hasRegisteredDeviceToken = false;
   bool _hasLoadedReactions = false;
+  bool _hasRegisteredDeviceToken = false;
   
   @override
   void initState() {
     super.initState();
-    // Initialize authentication state
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AuthProvider>(context, listen: false).initializeAuth();
-      _initializeNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialize notifications first
+      await _initializeNotifications();
+      
+      // Then initialize auth (which will sync device token if authenticated)
+      if (mounted) {
+        Provider.of<AuthProvider>(context, listen: false).initializeAuth();
+      }
     });
   }
 
   Future<void> _initializeNotifications() async {
-    // Initialize notification service with deep link handler
+    print('[AuthWrapper] Starting notification initialization...');
     final deviceToken = await NotificationService().initialize(
       onNotificationTap: _handleNotificationTap,
     );
     
     if (deviceToken != null) {
-      // Notifications initialized successfully
+      print('[AuthWrapper] Notifications initialized successfully with token: ${deviceToken.substring(0, 20)}...');
     } else {
-      // Failed to initialize notifications
+      print('[AuthWrapper] Failed to initialize notifications');
     }
   }
 
   void _handleNotificationTap(String artistId) {
-    // Deep link: Navigating to artist
-    
-    // Navigate to artists tab and then to specific artist
     _navigateToArtist(artistId);
   }
 
   void _navigateToArtist(String artistId) {
-    // First ensure we're on the home screen
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)), // Artists tab
+      MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
       (route) => false,
     );
     
-    // Then navigate to specific artist after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -138,10 +138,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     return Consumer3<AuthProvider, ConfigProvider, ReactionProvider>(
       builder: (context, authProvider, configProvider, reactionProvider, child) {
+        print('[AuthWrapper] Build triggered. AuthState: ${authProvider.state}, User: ${authProvider.user?.userId ?? 'none'}');
+
         switch (authProvider.state) {
           case AuthState.initial:
           case AuthState.loading:
-            return const LoadingScreen();
+            return const Scaffold(
+              backgroundColor: Color(0xFF0A0A0F),
+              body: Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
             
           case AuthState.authenticated:
             // Load config when authenticated
@@ -151,23 +158,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
               });
             }
             
-            // Initialize reaction provider with auth token
+            // Initialize reaction provider
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               final token = await AuthService.getToken();
               if (token != null) {
                 reactionProvider.setAuthToken(token);
                 
-                // Load user reactions only once per authentication
                 if (!_hasLoadedReactions) {
                   _hasLoadedReactions = true;
                   reactionProvider.loadUserReactions();
                 }
                 
-                // Register device token with server now that we're authenticated (only once)
-                if (!_hasRegisteredDeviceToken) {
-                  _hasRegisteredDeviceToken = true;
-                  await NotificationService().registerCurrentDeviceToken();
-                }
+                // Device token sync now happens during AuthProvider.initializeAuth()
+                // so we don't need to do it here anymore
+                _hasRegisteredDeviceToken = true; // Mark as handled
               }
             });
             
@@ -177,55 +181,39 @@ class _AuthWrapperState extends State<AuthWrapper> {
             return const ProfileSetupScreen();
             
           case AuthState.unauthenticated:
-            // Clear config and reset flags when unauthenticated (e.g., after logout)
-            if (configProvider.isLoaded) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                configProvider.clearConfig();
-              });
-            }
+          case AuthState.error:
+            // Reset device token registration flag when user becomes unauthenticated
             _hasRegisteredDeviceToken = false;
-            _hasLoadedReactions = false;
             return const LoginScreen();
 
-          case AuthState.error: // For errors during initial auth, login, register
-            // Clear config and reset flags as we are navigating to login
-            if (configProvider.isLoaded) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                configProvider.clearConfig();
-              });
-            }
-            _hasRegisteredDeviceToken = false;
-            _hasLoadedReactions = false;
-            return const LoginScreen();
-
-          case AuthState.authenticatedError: // For errors AFTER user is already authenticated
-            // User remains authenticated, so we stay on HomeScreen.
-            // The specific screen (e.g., ProfileScreen) should handle showing the error message.
-            
-            // Ensure essential data (like config) is loaded if it wasn't due to an early error.
+          case AuthState.authenticatedError:
+            // Ensure config is loaded
             if (!configProvider.isLoaded && configProvider.state != ConfigState.loading) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 configProvider.loadConfig();
               });
             }
             
-            // If an error occurred before reactions were loaded in this session, try to load them.
-            // We check _hasLoadedReactions (from AuthWrapperState) which is set to true
-            // in the AuthState.authenticated block after the first attempt to load reactions.
+            // Try to reload reactions if not loaded
             if (authProvider.user != null && !_hasLoadedReactions && !reactionProvider.isLoading) {
-                 WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    // Ensure ReactionService has the token (it should, but as a safeguard)
-                    final token = await AuthService.getToken();
-                    if (token != null) {
-                       reactionProvider.setAuthToken(token);
-                       // Attempt to load reactions. If this also fails, an error will be set in ReactionProvider.
-                       await reactionProvider.loadUserReactions();
-                       // We don't set _hasLoadedReactions = true here; that's done in the main AuthState.authenticated flow
-                       // to ensure it's only set after a successful initiation of loading.
-                    }
-                 });
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                final token = await AuthService.getToken();
+                if (token != null) {
+                  reactionProvider.setAuthToken(token);
+                  await reactionProvider.loadUserReactions();
+                }
+              });
             }
-            return const HomeScreen(); // Stay on HomeScreen
+            
+            return const HomeScreen();
+            
+          default:
+            return const Scaffold(
+              backgroundColor: Color(0xFF0A0A0F),
+              body: Center(
+                child: Text('Unknown State', style: TextStyle(color: Colors.white)),
+              ),
+            );
         }
       },
     );
@@ -254,7 +242,6 @@ class LoadingScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
               Icon(
                 Icons.music_note,
                 size: 80,
@@ -262,7 +249,6 @@ class LoadingScreen extends StatelessWidget {
               ),
               SizedBox(height: 24),
               
-              // App Title
               Text(
                 'Dance Workshop',
                 style: TextStyle(
@@ -284,10 +270,8 @@ class LoadingScreen extends StatelessWidget {
               
               SizedBox(height: 32),
               
-              // Loading Indicator
               CircularProgressIndicator(
-                color: Color(0xFF00D4FF),
-                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF)),
               ),
             ],
           ),

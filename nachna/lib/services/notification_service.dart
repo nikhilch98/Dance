@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reaction.dart';
 import './reaction_service.dart';
-import 'auth_service.dart';
+import './auth_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -463,6 +463,134 @@ class NotificationService {
       // Error in registerCurrentDeviceToken
       return false;
     }
+  }
+
+  /// Unregister device token from server (call on logout/account deletion)
+  Future<bool> unregisterDeviceToken() async {
+    if (_deviceToken == null) {
+      print('[NotificationService] No device token to unregister');
+      return true; // Consider it successful if no token exists
+    }
+    
+    try {
+      // Get auth token first
+      final authToken = await AuthService.getToken();
+      if (authToken == null) {
+        print('[NotificationService] No auth token available for device token unregistration');
+        return false;
+      }
+      
+      final reactionService = ReactionService();
+      reactionService.setAuthToken(authToken);
+      
+      await reactionService.unregisterDeviceToken(_deviceToken!);
+      
+      // Clear the last registered token since it's now unregistered
+      _lastRegisteredToken = null;
+      print('[NotificationService] Device token unregistered successfully');
+      return true;
+    } catch (e) {
+      print('[NotificationService] Error unregistering device token: $e');
+      return false;
+    }
+  }
+
+  /// Synchronize device token with server via config API during app startup
+  Future<bool> syncDeviceTokenViaConfig() async {
+    print('[NotificationService] ===== STARTING DEVICE TOKEN SYNC VIA CONFIG =====');
+    print('[NotificationService] Local device token available: ${_deviceToken != null}');
+    
+    if (_deviceToken == null) {
+      print('[NotificationService] No local device token to sync - waiting for device token...');
+      return false;
+    }
+    
+    try {
+      // Get platform
+      final platform = Platform.isIOS ? 'ios' : 'android';
+      print('[NotificationService] Platform: $platform');
+      print('[NotificationService] Local device token: ${_deviceToken?.substring(0, 20)}...');
+      
+      // Call config API with device token
+      final configResponse = await AuthService.getConfigWithDeviceToken(
+        deviceToken: _deviceToken!,
+        platform: platform,
+      );
+      
+      print('[NotificationService] Config API response: $configResponse');
+      
+      // Check if the response indicates the token was updated
+      final isAdmin = configResponse['is_admin'] ?? false;
+      final serverDeviceToken = configResponse['current_device_token'];
+      final tokenUpdated = configResponse['device_token_updated'] ?? false;
+      
+      print('[NotificationService] Server device token: ${serverDeviceToken?.substring(0, 20) ?? 'null'}...');
+      print('[NotificationService] Token updated: $tokenUpdated');
+      
+      if (tokenUpdated) {
+        print('[NotificationService] ✅ Device token synchronized via config API');
+        _lastRegisteredToken = _deviceToken;
+        return true;
+      } else if (serverDeviceToken == _deviceToken) {
+        print('[NotificationService] ✅ Device tokens already match, no sync needed');
+        _lastRegisteredToken = _deviceToken;
+        return true;
+      } else {
+        print('[NotificationService] ⚠️ Config API did not update token, falling back to direct registration');
+        return await _fallbackDeviceTokenSync();
+      }
+      
+    } catch (e) {
+      print('[NotificationService] ❌ Error syncing device token via config: $e');
+      print('[NotificationService] Falling back to direct device token sync...');
+      return await _fallbackDeviceTokenSync();
+    }
+  }
+
+  /// Fallback device token sync using direct registration API
+  Future<bool> _fallbackDeviceTokenSync() async {
+    try {
+      // Get auth token first
+      final authToken = await AuthService.getToken();
+      if (authToken == null) {
+        print('[NotificationService] No auth token available for fallback sync');
+        return false;
+      }
+      
+      final reactionService = ReactionService();
+      reactionService.setAuthToken(authToken);
+      
+      // Register the current device token directly
+      final platform = Platform.isIOS ? 'ios' : 'android';
+      print('[NotificationService] Fallback: Registering device token for platform: $platform');
+      
+      await reactionService.registerDeviceToken(
+        DeviceTokenRequest(
+          deviceToken: _deviceToken!,
+          platform: platform,
+        ),
+      );
+      
+      // Mark this token as successfully registered
+      _lastRegisteredToken = _deviceToken;
+      print('[NotificationService] ✅ Device token synchronized via fallback method');
+      return true;
+      
+    } catch (e) {
+      print('[NotificationService] ❌ Error in fallback device token sync: $e');
+      return false;
+    }
+  }
+
+  /// Legacy method - keep for backwards compatibility
+  Future<bool> syncDeviceTokenWithServer() async {
+    return await syncDeviceTokenViaConfig();
+  }
+
+  /// Clear device token state (call on logout to reset registration flags)
+  void clearDeviceTokenState() {
+    _lastRegisteredToken = null;
+    print('[NotificationService] Device token state cleared');
   }
 
   /// Dispose resources
