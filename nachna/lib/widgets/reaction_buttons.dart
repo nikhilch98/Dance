@@ -170,7 +170,18 @@ class ArtistReactionButtons extends StatelessWidget {
       await reactionProvider.toggleArtistReaction(artistId, reactionType);
       
       if (reactionProvider.error != null) {
-        _showErrorSnackBar(context, reactionProvider.error!);
+        String errorMessage = reactionProvider.error!;
+        
+        // Check for authentication errors
+        if (errorMessage.contains('Not authenticated') || errorMessage.contains('401')) {
+          errorMessage = 'Please log in again to continue';
+        } else if (errorMessage.contains('422')) {
+          errorMessage = 'Invalid request. Please try again.';
+        } else if (errorMessage.contains('Failed to create reaction')) {
+          errorMessage = 'Unable to update reaction. Please check your connection.';
+        }
+        
+        _showErrorSnackBar(context, errorMessage);
       }
     } catch (e) {
       _showErrorSnackBar(context, 'Failed to update reaction');
@@ -183,6 +194,7 @@ class ArtistReactionButtons extends StatelessWidget {
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
       ),
     );
   }
