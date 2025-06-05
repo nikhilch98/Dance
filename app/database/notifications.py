@@ -77,6 +77,17 @@ class PushNotificationOperations:
         )
         
         return result.modified_count > 0
+    
+    @staticmethod
+    def get_all_active_device_tokens() -> List[dict]:
+        """Get all active device tokens for sending test notifications to all users."""
+        client = get_mongo_client()
+        
+        tokens = list(client["dance_app"]["device_tokens"].find({
+            "is_active": True
+        }))
+        
+        return tokens
 
 
 class NotificationOperations:
