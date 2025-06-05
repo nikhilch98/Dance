@@ -43,6 +43,7 @@ class UserProfile(BaseModel):
     is_admin: Optional[bool] = False
     created_at: datetime
     updated_at: datetime
+    device_token: Optional[str] = None
 
 
 class AuthResponse(BaseModel):

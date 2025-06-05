@@ -8,6 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from functools import wraps
 
 from app.config.settings import get_settings
+from app.database.notifications import PushNotificationOperations
 from app.database.users import UserOperations
 from app.models.auth import UserProfile
 
@@ -60,8 +61,9 @@ def verify_admin_user(user_id: str = Depends(verify_token)):
 
 def format_user_profile(user_data: dict) -> UserProfile:
     """Format user data to UserProfile model."""
+    user_id = str(user_data["_id"])
     return UserProfile(
-        user_id=str(user_data["_id"]),
+        user_id=user_id,
         mobile_number=user_data["mobile_number"],
         name=user_data.get("name"),
         date_of_birth=user_data.get("date_of_birth"),
@@ -71,7 +73,8 @@ def format_user_profile(user_data: dict) -> UserProfile:
         profile_complete=user_data.get("profile_complete", False),
         is_admin=user_data.get("is_admin", False),
         created_at=user_data["created_at"],
-        updated_at=user_data["updated_at"]
+        updated_at=user_data["updated_at"],
+        device_token=PushNotificationOperations.get_device_token_given_user_id(user_id)
     )
 
 

@@ -55,6 +55,18 @@ class PushNotificationOperations:
             return result.inserted_id is not None
     
     @staticmethod
+    def get_device_token_given_user_id(user_id: str) -> Optional[str]:
+        """Get active device tokens for multiple users."""
+        client = get_mongo_client()
+        
+        token = client["dance_app"]["device_tokens"].find_one({
+            "user_id": user_id,
+            "is_active": True
+        })
+        
+        return token["device_token"] if token else None
+    
+    @staticmethod
     def get_device_tokens(user_ids: List[str]) -> List[dict]:
         """Get active device tokens for multiple users."""
         client = get_mongo_client()
