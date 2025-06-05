@@ -907,7 +907,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
-                  validImageUrls[0]!,
+                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return _buildDefaultAvatar(workshop.by);
@@ -952,20 +952,20 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     ),
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    validImageUrls[i]!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildSmallDefaultAvatar(workshop.by, i);
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildSmallDefaultAvatar(workshop.by, i);
-                    },
+                                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildSmallDefaultAvatar(workshop.by, i);
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return _buildSmallDefaultAvatar(workshop.by, i);
+                      },
+                    ),
                   ),
-                ),
               ),
             ),
           // Show count if more than 3 artists

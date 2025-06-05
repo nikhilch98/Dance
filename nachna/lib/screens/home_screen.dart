@@ -36,6 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<ConfigProvider>(
       builder: (context, configProvider, child) {
+        // Ensure config is loaded when HomeScreen is built
+        if (configProvider.state == ConfigState.initial) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            configProvider.loadConfig();
+          });
+        }
+        
         final isAdmin = configProvider.isAdmin;
         
         // Define screens based on admin status

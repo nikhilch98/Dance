@@ -23,15 +23,25 @@ class ConfigProvider with ChangeNotifier {
 
   // Load configuration
   Future<void> loadConfig() async {
-    if (_state == ConfigState.loading) return; // Prevent multiple concurrent loads
+    print('[ConfigProvider] loadConfig called - current state: $_state');
+    if (_state == ConfigState.loading) {
+      print('[ConfigProvider] Already loading, skipping...');
+      return; // Prevent multiple concurrent loads
+    }
     
+    print('[ConfigProvider] Setting state to loading...');
     _setState(ConfigState.loading);
     
     try {
+      print('[ConfigProvider] Calling ApiService.getConfig()...');
       final configData = await ApiService.getConfig();
+      print('[ConfigProvider] Config data received: $configData');
       _config = AppConfig.fromJson(configData);
+      print('[ConfigProvider] Config parsed - isAdmin: ${_config?.isAdmin}');
       _setState(ConfigState.loaded);
+      print('[ConfigProvider] Config loaded successfully');
     } catch (e) {
+      print('[ConfigProvider] Config loading failed: $e');
       _setError('Failed to load configuration: $e');
     }
   }

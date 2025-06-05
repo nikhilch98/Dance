@@ -267,7 +267,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   borderRadius: BorderRadius.circular(18),
                                   child: _artist?.imageUrl != null
                                       ? Image.network(
-                                          'https://nachna.com/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
+                                          'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
                                             return _buildArtistIcon();

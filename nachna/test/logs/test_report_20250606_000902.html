@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nachna API Test Report - 20250606_000902</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .summary { background: #ecf0f1; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .success { color: #27ae60; }
+        .failure { color: #e74c3c; }
+        .test-list { margin: 20px 0; }
+        .test-item { margin: 5px 0; padding: 5px; border-left: 3px solid #3498db; }
+        .timestamp { color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <h1 class="header">🚀 Nachna API Integration Test Report</h1>
+    
+    <div class="summary">
+        <h2>📊 Test Summary</h2>
+        <p><strong>Timestamp:</strong> <span class="timestamp">2025-06-06T00:09:06.048983</span></p>
+        <p><strong>Total Tests:</strong> 25</p>
+        <p class="success"><strong>Passed:</strong> 24</p>
+        <p class="failure"><strong>Failed:</strong> 1</p>
+        <p><strong>Success Rate:</strong> 96.0%</p>
+    </div>
+    
+    <div class="test-list">
+        <h2 class="success">✅ Passed Tests (24)</h2>
+        <div class="test-item">POST /api/auth/register - User already exists (expected)</div><div class="test-item">POST /api/auth/login - Token obtained</div><div class="test-item">GET /api/auth/profile - Profile fetched</div><div class="test-item">GET /api/auth/config - Endpoint not found (skipped)</div><div class="test-item">PUT /api/auth/profile - Profile updated</div><div class="test-item">GET /api/artists?version=v2 - Found 77 artists</div><div class="test-item">GET /api/artists (with workshops) - Found 21 artists</div><div class="test-item">GET /api/studios?version=v2 - Found 4 studios</div><div class="test-item">GET /api/workshops?version=v2 - Found 55 workshops</div><div class="test-item">GET /api/config - Config fetched</div><div class="test-item">POST /api/reactions - Reaction created/exists</div><div class="test-item">GET /api/user/reactions - Found 4 total reactions</div><div class="test-item">POST /api/notifications/register-token - Device token registered</div><div class="test-item">GET /api/notifications/device-token - No device token found</div><div class="test-item">GET /admin/api/missing_artist_sessions - Found 1 missing artist sessions</div><div class="test-item">GET /admin/api/missing_song_sessions - Found 1 missing song sessions</div><div class="test-item">POST /admin/api/send-test-notification - Test notification sent successfully</div><div class="test-item">Invalid credentials - 401 Unauthorized</div><div class="test-item">Unauthorized access - 403 Forbidden (not authenticated)</div><div class="test-item">404 error - 404 Not Found</div><div class="test-item">Performance /api/artists?version=v2 - 80ms</div><div class="test-item">Performance /api/studios?version=v2 - 40ms</div><div class="test-item">Performance /api/workshops?version=v2 - 42ms</div><div class="test-item">Passed: 23</div>
+    </div>
+    
+    <div class="test-list">
+        <h2 class="failure">❌ Failed Tests (1)</h2>
+        <div class="test-item">Failed: 0</div>
+    </div>
+    
+    <div style="margin-top: 40px; border-top: 1px solid #bdc3c7; padding-top: 20px;">
+        <h3>📋 Raw Output</h3>
+        <pre style="background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 5px; overflow-x: auto;">🚀 Starting API Integration Tests for Nachna App
+📍 Base URL: https://nachna.com
+======================================================================
+
+🔐 Testing Authentication APIs
+----------------------------------------
+✅ POST /api/auth/register - User already exists (expected)
+✅ POST /api/auth/login - Token obtained
+✅ GET /api/auth/profile - Profile fetched
+✅ GET /api/auth/config - Endpoint not found (skipped)
+✅ PUT /api/auth/profile - Profile updated
+
+📊 Testing Data Fetching APIs
+----------------------------------------
+✅ GET /api/artists?version=v2 - Found 77 artists
+✅ GET /api/artists (with workshops) - Found 21 artists
+✅ GET /api/studios?version=v2 - Found 4 studios
+✅ GET /api/workshops?version=v2 - Found 55 workshops
+✅ GET /api/config - Config fetched
+
+❤️ Testing Reaction APIs
+----------------------------------------
+✅ POST /api/reactions - Reaction created/exists
+✅ GET /api/user/reactions - Found 4 total reactions
+
+🔔 Testing Notification APIs
+----------------------------------------
+✅ POST /api/notifications/register-token - Device token registered
+✅ GET /api/notifications/device-token - No device token found
+
+👑 Testing Admin APIs
+----------------------------------------
+✅ GET /admin/api/missing_artist_sessions - Found 1 missing artist sessions
+✅ GET /admin/api/missing_song_sessions - Found 1 missing song sessions
+✅ POST /admin/api/send-test-notification - Test notification sent successfully
+
+🚨 Testing Error Handling
+----------------------------------------
+✅ Invalid credentials - 401 Unauthorized
+✅ Unauthorized access - 403 Forbidden (not authenticated)
+✅ 404 error - 404 Not Found
+
+⚡ Testing Performance
+----------------------------------------
+✅ Performance /api/artists?version=v2 - 80ms
+✅ Performance /api/studios?version=v2 - 40ms
+✅ Performance /api/workshops?version=v2 - 42ms
+
+======================================================================
+📊 TEST SUMMARY
+======================================================================
+✅ Passed: 23
+❌ Failed: 0
+📈 Total: 23
+🎯 Success Rate: 100.0%
+
+🏁 API Integration Tests completed
+</pre>
+    </div>
+</body>
+</html>

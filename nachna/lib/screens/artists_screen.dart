@@ -444,7 +444,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                             borderRadius: BorderRadius.circular(16),
                             child: artist.imageUrl != null
                                 ? Image.network(
-                                    'https://nachna.com/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
+                                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {

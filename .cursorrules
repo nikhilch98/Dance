@@ -474,6 +474,56 @@ Remember: Consistency is key. When implementing new features or making changes, 
 4. **Backward** compatible
 5. **Performance** conscious
 
+## 🧪 API TESTING REQUIREMENTS
+
+### MANDATORY: When Adding New API Endpoints
+**CRITICAL RULE**: Every new API call in the Flutter app MUST have corresponding tests in `nachna/test/api_integration_test.py`
+
+#### Required Steps:
+1. **Identify the new API endpoint** (method + path)
+2. **Add test case** following the existing pattern in the test file
+3. **Include both success and error scenarios**
+4. **Update API documentation** in the test file header
+5. **Add any new test constants** to `ApiTestConfig` class
+
+#### Test Case Template:
+```python
+try:
+    response = self.make_request('POST', '/api/new/endpoint', {
+        'param1': 'value1',
+        'param2': 'value2'
+    }, auth_required=True)  # Set auth_required if needed
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert 'expected_field' in data
+    
+    self.log_test_result("POST /api/new/endpoint", True, "Description of success")
+except Exception as e:
+    self.log_test_result("POST /api/new/endpoint", False, str(e))
+```
+
+#### Groups for Test Organization:
+- **Authentication APIs**: Login, register, profile, password, etc.
+- **Data Fetching APIs**: Artists, studios, workshops, config
+- **Reaction APIs**: Like, follow, notification preferences
+- **Notification APIs**: Device token management
+- **Admin APIs**: Workshop management, test notifications
+- **Error Handling Tests**: Invalid auth, 404s, validation errors
+- **Performance Tests**: Response time validation
+
+#### Running Tests:
+```bash
+# Run all tests
+python scripts/run_api_tests.py
+
+# Run specific test group
+python scripts/run_api_tests.py --group auth
+
+# Run with verbose output and generate report
+python scripts/run_api_tests.py --verbose --report
+```
+
 ## ⚠️ EMERGENCY PROTOCOLS
 
 ### If Something Breaks:
