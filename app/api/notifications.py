@@ -42,7 +42,8 @@ async def get_config(user_id: str = Depends(verify_token)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+    device_token = PushNotificationOperations.get_device_token_given_user_id(user_id)
     return {
-        "is_admin": user.get("is_admin", False)
+        "is_admin": user.get("is_admin", False),
+        "device_token": device_token    
     } 
