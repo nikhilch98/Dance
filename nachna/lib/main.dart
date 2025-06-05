@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:io';
@@ -8,9 +7,12 @@ import 'dart:ui' as ui;
 import './providers/auth_provider.dart';
 import './providers/config_provider.dart';
 import './providers/reaction_provider.dart';
+import './providers/global_config_provider.dart';
 import './services/auth_service.dart';
 import './services/notification_service.dart';
 import './services/global_config.dart';
+import './services/first_launch_service.dart';
+import './widgets/notification_permission_dialog.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
 import './screens/register_screen.dart';
@@ -18,7 +20,7 @@ import './screens/profile_setup_screen.dart';
 import './screens/profile_screen.dart';
 import './screens/admin_screen.dart';
 import './screens/artist_detail_screen.dart';
-import 'firebase_options.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,9 +35,7 @@ void main() async {
     return true;
   };
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Firebase removed - using native iOS push notifications
 
   // Initialize Global Config
   print('🌐 Initializing Global Config...');
@@ -57,6 +57,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ConfigProvider()),
         ChangeNotifierProvider(create: (_) => ReactionProvider()),
+        ChangeNotifierProvider(create: (_) => GlobalConfigProvider()),
       ],
       child: MaterialApp(
         title: 'Nachna',
@@ -90,16 +91,20 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _hasLoadedReactions = false;
   bool _hasRegisteredDeviceToken = false;
+  bool _hasShownNotificationDialog = false;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Initialize notifications first
+      // Initialize notifications first (without requesting permission yet)
       await _initializeNotifications();
       
       // Perform initial sync of global config
       await _initialGlobalConfigSync();
+      
+      // Mark first launch as completed if needed
+      await _handleFirstLaunch();
       
       // Then initialize auth
       if (mounted) {
@@ -128,6 +133,55 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print('[AuthWrapper] Initial global config sync completed');
     } catch (e) {
       print('[AuthWrapper] Error during initial global config sync: $e');
+    }
+  }
+
+  Future<void> _handleFirstLaunch() async {
+    print('[AuthWrapper] Checking first launch status...');
+    try {
+      final isFirstLaunch = await FirstLaunchService().isFirstLaunch();
+      if (isFirstLaunch) {
+        print('[AuthWrapper] First launch detected - marking as completed');
+        await FirstLaunchService().markFirstLaunchCompleted();
+      }
+    } catch (e) {
+      print('[AuthWrapper] Error handling first launch: $e');
+    }
+  }
+
+  Future<void> _showNotificationPermissionIfNeeded() async {
+    if (_hasShownNotificationDialog) return;
+    
+    try {
+      final shouldShow = await FirstLaunchService().shouldRequestNotificationPermission();
+      
+      if (shouldShow && mounted) {
+        print('[AuthWrapper] Showing notification permission dialog...');
+        _hasShownNotificationDialog = true;
+        
+        // Wait a bit for the home screen to fully load
+        await Future.delayed(const Duration(milliseconds: 1500));
+        
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => NotificationPermissionDialog(
+              onPermissionGranted: () {
+                print('[AuthWrapper] Notification permission granted');
+              },
+              onPermissionDenied: () {
+                print('[AuthWrapper] Notification permission denied');
+              },
+              onDismissed: () {
+                print('[AuthWrapper] Notification permission dialog dismissed');
+              },
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('[AuthWrapper] Error showing notification permission dialog: $e');
     }
   }
 
@@ -192,6 +246,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 // so we don't need to do it here anymore
                 _hasRegisteredDeviceToken = true; // Mark as handled
               }
+              
+              // Show notification permission dialog if appropriate
+              await _showNotificationPermissionIfNeeded();
             });
             
             return const HomeScreen();

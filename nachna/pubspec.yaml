@@ -65,9 +65,7 @@ dependencies:
   # Image picker
   image_picker: ^1.1.2
 
-  # Push notifications
-  firebase_messaging: ^15.1.6
-  firebase_core: ^3.7.0
+  # Push notifications (iOS native implementation)
   flutter_local_notifications: ^18.0.1
 
   # Permission handling

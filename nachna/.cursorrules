@@ -1,0 +1,137 @@
+# Nachna Flutter App - iOS Only Development Rules
+
+## 🍎 iOS-ONLY PROJECT NOTICE
+**CRITICAL**: This Flutter project is exclusively for iOS development. Do not suggest, implement, or consider Android-specific features, configurations, or dependencies.
+
+## Platform-Specific Guidelines
+
+### ✅ iOS Development ONLY
+- This app targets iPhone and iPad devices exclusively
+- Use iOS-native features and APIs when appropriate
+- Follow Apple's Human Interface Guidelines
+- Implement iOS-specific UI patterns and behaviors
+- Use iOS-native push notifications (APNs) via method channels
+- Follow iOS app store guidelines and requirements
+
+### ❌ DO NOT Consider Android
+- No Android-specific dependencies or configurations
+- No Android platform files or directories
+- No Android Studio or Gradle configurations
+- No Google Play Store considerations
+- No Android-specific UI patterns or Material Design beyond basic Flutter Material widgets
+
+## Push Notification Architecture
+
+### Native iOS Implementation
+- Uses **native iOS APNs** (Apple Push Notification service)
+- Implemented via **Flutter Method Channels** for iOS-Swift communication
+- **NO Firebase Messaging** - pure native iOS approach
+- Uses `UserNotifications` framework in iOS Swift code
+- Device token management through native iOS APIs
+
+### Key Components:
+1. **iOS AppDelegate.swift**: Handles all push notification logic
+2. **Flutter Method Channel**: `nachna/notifications` for Dart-Swift communication
+3. **iOS Entitlements**: Configured for push notifications
+4. **iOS Info.plist**: Contains notification permissions and background modes
+
+### Implementation Patterns:
+- Permission requests handled by iOS native code
+- Token generation via iOS `didRegisterForRemoteNotificationsWithDeviceToken`
+- Notification handling via `UNUserNotificationCenterDelegate`
+- Background notification processing via iOS background modes
+- Settings integration via iOS `UIApplication.openSettingsURLString`
+
+## Development Environment
+
+### Required Tools (iOS Only):
+- Xcode (latest stable version)
+- iOS Simulator or physical iOS devices for testing
+- Apple Developer Account for push notification certificates
+- CocoaPods for iOS dependency management
+- Flutter SDK with iOS toolchain
+
+### Excluded Tools:
+- Android Studio (not needed)
+- Android SDK (not needed)
+- Firebase Console (replaced with native iOS)
+- Google Services (not applicable)
+
+## Architecture Preferences
+
+### State Management:
+- Use Provider pattern for state management
+- Follow the existing `AuthProvider`, `ConfigProvider`, `GlobalConfigProvider` patterns
+- Implement reactive UI updates through ChangeNotifier
+
+### UI/UX:
+- Follow the established glassmorphism design language
+- Use the defined color palette and gradients
+- Implement proper iOS-style navigation and transitions
+- Support both portrait and landscape orientations
+- Follow iOS accessibility guidelines
+
+### Code Organization:
+- Maintain the established folder structure in `lib/`
+- iOS-specific code goes in `ios/` directory only
+- Use method channels for iOS-Flutter communication
+- Keep business logic in Dart, platform integration in Swift
+
+## Push Notification Workflow
+
+### Development Process:
+1. Configure APNs certificates in Apple Developer Console
+2. Update iOS project with proper signing and capabilities
+3. Test push notifications with iOS Simulator and physical devices
+4. Use native iOS tools for debugging notification delivery
+5. Implement server-side APNs integration (not Firebase FCM)
+
+### Testing Strategy:
+- Test on multiple iOS device sizes (iPhone, iPad)
+- Test notification permissions in various states
+- Test background notification delivery
+- Test notification tap handling and deep linking
+- Use iOS-specific testing tools and approaches
+
+## Dependencies Management
+
+### Allowed Dependencies:
+- iOS-native Flutter plugins
+- Pure Dart packages
+- Flutter core packages
+- iOS-compatible third-party packages
+
+### Prohibited Dependencies:
+- Android-specific packages
+- Firebase packages (except if absolutely necessary and iOS-compatible)
+- Google Services packages
+- Cross-platform packages that require Android configuration
+
+## Security & Privacy
+
+### iOS-Specific Requirements:
+- Follow Apple's App Store privacy requirements
+- Implement proper iOS keychain integration
+- Use iOS-native secure storage approaches
+- Follow iOS-specific authentication patterns
+- Respect iOS user privacy controls
+
+## Performance Guidelines
+
+### iOS Optimization:
+- Optimize for iOS Metal rendering
+- Use iOS-native image caching when appropriate
+- Follow iOS memory management best practices
+- Implement iOS-specific background task handling
+- Optimize for various iOS device performance levels
+
+## Deployment & Distribution
+
+### iOS App Store Only:
+- Prepare for iOS App Store submission exclusively
+- Follow iOS versioning conventions
+- Use iOS-specific build configurations
+- Implement iOS-specific screenshot and metadata requirements
+- No Google Play Store considerations
+
+Remember: Every feature, suggestion, and implementation should be viewed through the lens of iOS-first development. This is not a cross-platform project - it's an iOS-native Flutter application. 

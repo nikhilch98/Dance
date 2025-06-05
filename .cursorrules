@@ -285,3 +285,265 @@ For all testing and development purposes, use the following test user:
 3. **Permissions**: Request only necessary permissions
 
 Remember: Consistency is key. When implementing new features or making changes, always refer back to these guidelines to ensure the app maintains its cohesive design language and user experience. 
+
+# Nachna App - Cursor Development Rules
+
+## 🚨 CRITICAL: NO BREAKING CHANGES POLICY
+
+### RULE #1: PRESERVE ALL EXISTING FUNCTIONALITY
+- **NEVER modify existing API endpoints** without explicit user request
+- **NEVER change existing database operations** that are working
+- **NEVER modify existing models/schemas** that break backward compatibility
+- **NEVER alter existing authentication/authorization flows**
+- **NEVER change existing middleware behavior**
+- **NEVER modify existing service implementations** unless specifically requested
+
+### RULE #2: ADDITIVE-ONLY DEVELOPMENT
+- **ALWAYS add new features as separate modules/functions**
+- **ALWAYS extend existing classes/interfaces, never modify them**
+- **ALWAYS create new API routes instead of modifying existing ones**
+- **ALWAYS add new database operations instead of changing existing ones**
+- **ALWAYS add new models alongside existing ones**
+
+### RULE #3: BACKWARD COMPATIBILITY GUARANTEE
+- **ALWAYS maintain existing API response formats**
+- **ALWAYS keep existing database schema compatible**
+- **ALWAYS preserve existing function signatures**
+- **ALWAYS maintain existing import paths**
+- **ALWAYS keep existing configuration options working**
+
+### RULE #4: TESTING BEFORE CHANGES
+- **ALWAYS verify existing functionality works before making changes**
+- **ALWAYS test all existing API endpoints after modifications**
+- **ALWAYS check database operations still function**
+- **ALWAYS verify authentication flows remain intact**
+- **ALWAYS test the server starts and responds correctly**
+
+### RULE #5: PROJECT STRUCTURE ENFORCEMENT
+- **ALWAYS follow the established project structure:**
+  ```
+  Project Root/
+  ├── app/                    # FastAPI SERVER CODE ONLY
+  │   ├── config/             # Settings and constants
+  │   ├── models/             # Pydantic models
+  │   ├── database/           # Database operations
+  │   ├── services/           # Business logic
+  │   ├── middleware/         # Request processing
+  │   ├── api/                # Route handlers
+  │   └── main.py             # Application factory
+  ├── nachna/                 # FLUTTER CLIENT CODE ONLY
+  │   ├── lib/                # Flutter Dart code
+  │   ├── android/            # Android platform code
+  │   ├── ios/                # iOS platform code
+  │   ├── web/                # Web platform code
+  │   ├── pubspec.yaml        # Flutter dependencies
+  │   └── ...                 # Other Flutter files
+  ├── utils/                  # Shared utilities
+  ├── static/                 # Static web assets
+  └── ...                     # Other project files
+  ```
+- **CRITICAL**: Server code goes in `app/` folder ONLY
+- **CRITICAL**: Flutter code goes in `nachna/` folder ONLY
+- **NEVER mix server and client code in the same directory**
+- **ALWAYS add new server features in appropriate `app/` modules**
+- **ALWAYS add new Flutter features in appropriate `nachna/` directories**
+- **NEVER create monolithic files**
+- **ALWAYS maintain separation of concerns**
+
+### RULE #6: EXISTING CODE PRESERVATION
+- **NEVER delete existing functions/classes without explicit permission**
+- **NEVER modify existing imports that other modules depend on**
+- **NEVER change existing environment variables or configuration**
+- **NEVER alter existing error handling patterns**
+- **NEVER modify existing logging/monitoring behavior**
+
+### RULE #7: DATABASE INTEGRITY
+- **NEVER modify existing MongoDB collections directly**
+- **NEVER change existing database operation signatures**
+- **NEVER alter existing data models that affect storage**
+- **ALWAYS preserve existing indexes and constraints**
+- **ALWAYS maintain existing data relationships**
+
+### RULE #8: API CONTRACT PRESERVATION
+- **NEVER change existing endpoint URLs**
+- **NEVER modify existing request/response formats**
+- **NEVER alter existing HTTP status codes**
+- **NEVER change existing authentication requirements**
+- **NEVER modify existing rate limiting behavior**
+
+### RULE #9: DEPLOYMENT SAFETY
+- **ALWAYS ensure the server can start after changes**
+- **ALWAYS verify all existing routes are accessible**
+- **ALWAYS check that existing integrations work (APNs, MongoDB, etc.)**
+- **ALWAYS maintain existing performance characteristics**
+- **ALWAYS preserve existing security measures**
+
+### RULE #10: DEPENDENCY MANAGEMENT
+- **NEVER update dependencies without explicit approval**
+- **NEVER add conflicting dependencies**
+- **NEVER remove existing dependencies that are in use**
+- **ALWAYS use existing utility functions when possible**
+- **ALWAYS follow existing patterns for new dependencies**
+
+### RULE #11: CLIENT-SERVER SEPARATION
+- **CRITICAL**: `app/` folder contains FastAPI server code ONLY
+- **CRITICAL**: `nachna/` folder contains Flutter client code ONLY
+- **NEVER add Flutter code to the `app/` folder**
+- **NEVER add server code to the `nachna/` folder**
+- **ALWAYS respect the client-server boundary**
+- **Server dependencies**: Add to `requirements.txt` (Python packages only)
+- **Client dependencies**: Add to `nachna/pubspec.yaml` (Dart packages only)
+- **Shared utilities**: Use `utils/` folder for code used by both client and server
+- **Static assets**: Use `static/` folder for web assets served by the server
+
+## 🔧 DEVELOPMENT GUIDELINES
+
+### When Adding New Features:
+1. **FIRST**: Analyze existing codebase to understand patterns
+2. **SECOND**: Design new feature to complement, not replace existing functionality
+3. **THIRD**: Create new modules/functions following existing architecture
+4. **FOURTH**: Add new routes/endpoints with different paths
+5. **FIFTH**: Test that ALL existing functionality still works
+6. **SIXTH**: Document the new feature without changing existing docs
+
+### When Fixing Bugs:
+1. **FIRST**: Identify the minimal change needed
+2. **SECOND**: Ensure the fix doesn't break other functionality
+3. **THIRD**: Test the specific bug fix
+4. **FOURTH**: Test all related functionality
+5. **FIFTH**: Verify no side effects on other features
+
+### When Refactoring:
+1. **FIRST**: Get explicit approval for refactoring scope
+2. **SECOND**: Ensure all existing functionality is preserved
+3. **THIRD**: Maintain all existing interfaces and contracts
+4. **FOURTH**: Test extensively before and after refactoring
+5. **FIFTH**: Verify performance hasn't degraded
+
+## 🛡️ PROTECTION MECHANISMS
+
+### Code Review Checklist:
+- [ ] All existing API endpoints still work
+- [ ] Database operations maintain same behavior
+- [ ] Authentication/authorization unchanged
+- [ ] No breaking changes to models/schemas
+- [ ] Server starts successfully
+- [ ] All existing integrations functional
+- [ ] Performance metrics maintained
+- [ ] Security measures preserved
+
+### Testing Requirements:
+- [ ] Run server and verify startup
+- [ ] Test all existing API endpoints
+- [ ] Verify database connections
+- [ ] Check authentication flows
+- [ ] Test notification systems
+- [ ] Verify admin functionality
+- [ ] Check caching behavior
+- [ ] Test error handling
+
+### Rollback Plan:
+- **ALWAYS have a rollback strategy**
+- **ALWAYS keep working versions available**
+- **ALWAYS document what was changed**
+- **ALWAYS be able to revert quickly**
+
+## 🚀 IMPLEMENTATION STRATEGY
+
+### For New Features:
+1. **Determine if it's server or client feature**:
+   - Server features: API endpoints, database operations, business logic → `app/` folder
+   - Client features: UI, user interactions, mobile functionality → `nachna/` folder
+2. **Extend** existing architecture in the appropriate folder
+3. **Add** new modules/endpoints in correct location
+4. **Supplement** existing functionality
+5. **Enhance** user experience
+6. **Maintain** backward compatibility
+
+### For Bug Fixes:
+1. **Minimal** impact changes
+2. **Targeted** fixes only
+3. **Preserve** existing behavior
+4. **Test** thoroughly
+5. **Document** changes
+
+### For Improvements:
+1. **Additive** enhancements
+2. **Optional** features
+3. **Configurable** behavior
+4. **Backward** compatible
+5. **Performance** conscious
+
+## ⚠️ EMERGENCY PROTOCOLS
+
+### If Something Breaks:
+1. **IMMEDIATELY** stop and assess impact
+2. **QUICKLY** identify what changed
+3. **RAPIDLY** revert problematic changes
+4. **THOROUGHLY** test the revert
+5. **CAREFULLY** re-implement with safer approach
+
+### If Unsure:
+1. **ASK** the user for clarification
+2. **RESEARCH** existing implementations
+3. **PROPOSE** multiple safe approaches
+4. **GET** approval before proceeding
+5. **IMPLEMENT** with maximum caution
+
+## 📋 MANDATORY CHECKS
+
+Before ANY code change:
+- [ ] Will this break existing API endpoints?
+- [ ] Will this affect database operations?
+- [ ] Will this change authentication behavior?
+- [ ] Will this modify existing models?
+- [ ] Will this impact performance?
+- [ ] Will this affect other developers?
+- [ ] Will this require migration scripts?
+- [ ] Will this break existing integrations?
+- [ ] Am I putting server code in the `app/` folder?
+- [ ] Am I putting Flutter code in the `nachna/` folder?
+- [ ] Am I respecting the client-server separation?
+
+## 🎯 SUCCESS CRITERIA
+
+A change is successful ONLY if:
+- [ ] ALL existing functionality works
+- [ ] Server starts without errors
+- [ ] API endpoints respond correctly
+- [ ] Database operations function
+- [ ] Authentication flows work
+- [ ] No performance degradation
+- [ ] No security vulnerabilities introduced
+- [ ] All integrations remain functional
+
+## 📚 REFERENCE IMPLEMENTATION
+
+### Current Working Architecture:
+- **FastAPI**: Modular route structure
+- **MongoDB**: Database operations via utils
+- **Authentication**: JWT-based with decorators
+- **Notifications**: APNs integration with watchers
+- **Caching**: Redis-like caching system
+- **Admin**: Separate admin endpoints
+- **Middleware**: Logging, CORS, version validation
+
+### DO NOT MODIFY:
+- Core authentication system
+- Database connection management
+- Existing API response formats
+- Middleware pipeline
+- APNs notification system
+- Caching mechanisms
+- Admin functionality
+- Error handling patterns
+
+### SAFE TO EXTEND:
+- New API endpoints with different routes
+- New database operations with new names
+- New models for new features
+- New services for new functionality
+- New middleware for new requirements
+- New utilities for new needs
+
+Remember: **WORKING CODE IS SACRED** - Preserve it at all costs! 

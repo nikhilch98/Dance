@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/global_config.dart';
+import '../services/notification_service.dart';
+import '../providers/global_config_provider.dart';
 import '../models/artist.dart';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
@@ -28,10 +31,14 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadMissingSongSessions();
     _loadMissingArtistSessions();
     _loadAllArtists();
+    // Initialize the global config provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GlobalConfigProvider>().initialize();
+    });
   }
 
   @override
@@ -663,6 +670,22 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             ],
                           ),
                         ),
+                        const Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.settings, size: 18),
+                              SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Config',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -677,6 +700,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     _buildMissingSongsTab(),
                     _buildMissingArtistsTab(),
                     _buildNotificationsTab(),
+                    _buildConfigTab(),
                   ],
                 ),
               ),
@@ -1112,6 +1136,679 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         ),
       ),
     );
+  }
+
+  Widget _buildConfigTab() {
+    return Consumer<GlobalConfigProvider>(
+      builder: (context, configProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.15),
+                        Colors.white.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.settings,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Global Configuration',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Current app configuration and tokens',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (configProvider.isLoading)
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF00D4FF),
+                                strokeWidth: 2,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Control Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: configProvider.isLoading 
+                                  ? null 
+                                  : () async {
+                                      await configProvider.fullSync();
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('✅ Configuration synced successfully'),
+                                            backgroundColor: Colors.green,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.sync, size: 18),
+                              label: const Text(
+                                'Sync Config',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: configProvider.isLoading 
+                                  ? null 
+                                  : () {
+                                      configProvider.debugPrintConfig();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('📋 Config printed to console'),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8B5CF6),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.bug_report, size: 18),
+                              label: const Text(
+                                'Debug Log',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Reset First Launch Button
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: configProvider.isLoading 
+                                  ? null 
+                                  : () async {
+                                      await configProvider.resetFirstLaunchStatus();
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text('🔄 First launch status reset! Restart app to test notification dialog.'),
+                                            backgroundColor: Colors.orange,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF006E),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text(
+                                'Reset First Launch',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Debug Token Button
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: configProvider.isLoading 
+                                  ? null 
+                                  : () async {
+                                      try {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text('🔍 Requesting device token... Check console for logs.'),
+                                            backgroundColor: Colors.blue,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        );
+                                        
+                                        final result = await NotificationService().requestPermissionsAndGetToken();
+                                        
+                                        if (mounted) {
+                                          final success = result['success'] as bool? ?? false;
+                                          final token = result['token'] as String?;
+                                          final error = result['error'] as String?;
+                                          
+                                          if (success && token != null) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('✅ Token received: ${token.substring(0, 20)}...'),
+                                                backgroundColor: Colors.green,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('❌ Failed: ${error ?? "Unknown error"}'),
+                                                backgroundColor: Colors.red,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('❌ Error: $e'),
+                                              backgroundColor: Colors.red,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3B82F6),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.bug_report, size: 18),
+                              label: const Text(
+                                'Debug Token Request',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Status Summary
+                _buildConfigStatusCard(configProvider),
+                
+                const SizedBox(height: 20),
+                
+                // Token Details
+                _buildTokenDetailsCard(configProvider),
+                
+                const SizedBox(height: 20),
+                
+                // Raw Config Display
+                _buildRawConfigCard(configProvider),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConfigStatusCard(GlobalConfigProvider configProvider) {
+    final status = configProvider.getStatusSummary();
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Configuration Status',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatusItem(
+                  'Device Token',
+                  status['hasDeviceToken'] as bool,
+                  Icons.phone_android,
+                ),
+              ),
+              Expanded(
+                child: _buildStatusItem(
+                  'Auth Token',
+                  status['hasAuthToken'] as bool,
+                  Icons.lock,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatusItem(
+                  'User ID',
+                  status['hasUserId'] as bool,
+                  Icons.person,
+                ),
+              ),
+              Expanded(
+                child: _buildStatusItem(
+                  'Notifications',
+                  status['notificationsEnabled'] as bool,
+                  Icons.notifications,
+                ),
+              ),
+            ],
+          ),
+          
+          if (status['lastSyncAge'] != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withOpacity(0.1),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Last sync: ${status['lastSyncAge']} minutes ago',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusItem(String label, bool isActive, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isActive 
+            ? Colors.green.withOpacity(0.2)
+            : Colors.red.withOpacity(0.2),
+        border: Border.all(
+          color: isActive 
+              ? Colors.green.withOpacity(0.4)
+              : Colors.red.withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: isActive ? Colors.green : Colors.red,
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Icon(
+            isActive ? Icons.check_circle : Icons.cancel,
+            color: isActive ? Colors.green : Colors.red,
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTokenDetailsCard(GlobalConfigProvider configProvider) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.token,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Token Details',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          _buildTokenDetailRow(
+            'Device Token',
+            configProvider.formatTokenForDisplay(configProvider.deviceToken),
+            Icons.phone_android,
+            Colors.blue,
+          ),
+          
+          _buildTokenDetailRow(
+            'Auth Token',
+            configProvider.formatTokenForDisplay(configProvider.authToken),
+            Icons.lock,
+            Colors.purple,
+          ),
+          
+          _buildTokenDetailRow(
+            'User ID',
+            configProvider.userId ?? 'Not set',
+            Icons.person,
+            Colors.green,
+          ),
+          
+          _buildTokenDetailRow(
+            'Last Updated',
+            configProvider.formatDateForDisplay(configProvider.lastUpdated),
+            Icons.update,
+            Colors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTokenDetailRow(String label, String value, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: color.withOpacity(0.2),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRawConfigCard(GlobalConfigProvider configProvider) {
+    final configData = configProvider.getConfigForAdmin();
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.code,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Raw Configuration Data',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.black.withOpacity(0.3),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: SelectableText(
+              _formatConfigDataForDisplay(configData),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatConfigDataForDisplay(Map<String, dynamic> config) {
+    final buffer = StringBuffer();
+    config.forEach((key, value) {
+      if (value != null) {
+        buffer.writeln('$key: $value');
+      } else {
+        buffer.writeln('$key: null');
+      }
+    });
+    return buffer.toString();
   }
 
   Widget _buildSessionCard(Map<String, dynamic> session, IconData icon, Color accentColor, {bool showAssignButton = false, bool showAssignSongButton = false}) {

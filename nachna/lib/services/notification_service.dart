@@ -43,6 +43,9 @@ class NotificationService {
     Function(String)? onNotificationTap,
   }) async {
     print('[NotificationService] ===== INITIALIZING NOTIFICATION SERVICE =====');
+    print('[NotificationService] 🔍 Platform: ${Platform.isIOS ? 'iOS' : Platform.isAndroid ? 'Android' : 'Other'}');
+    print('[NotificationService] 🔍 Running on physical device: ${!Platform.environment.containsKey('FLUTTER_TEST')}');
+    
     _onNotificationTap = onNotificationTap;
     
     try {
@@ -54,18 +57,34 @@ class NotificationService {
       // Request permission and get device token
       final result = await _channel.invokeMethod('initialize');
       
+      print('[NotificationService] 🔍 Raw native result: $result');
+      print('[NotificationService] 🔍 Result type: ${result.runtimeType}');
+      
       if (result != null && result is Map) {
         final deviceToken = result['deviceToken'] as String?;
-        print('[NotificationService] Native initialization result: ${result.keys.toList()}');
-        print('[NotificationService] Device token received: ${deviceToken?.substring(0, 20) ?? 'null'}...');
+        final isAuthorized = result['isAuthorized'] as bool?;
+        final authStatus = result['authorizationStatus'] as String?;
         
-        if (deviceToken != null) {
+        print('[NotificationService] Native initialization result keys: ${result.keys.toList()}');
+        print('[NotificationService] 🔍 Authorization status: $authStatus');
+        print('[NotificationService] 🔍 Is authorized: $isAuthorized');
+        print('[NotificationService] 🔍 Device token received: ${deviceToken != null ? '${deviceToken.substring(0, 20)}... (${deviceToken.length} chars)' : 'null'}');
+        
+        if (deviceToken != null && deviceToken.isNotEmpty) {
           await _handleTokenReceived(deviceToken);
           _isInitialized = true;
-          print('[NotificationService] ✅ Notification service initialized successfully');
+          print('[NotificationService] ✅ Notification service initialized successfully with token');
           return _deviceToken;
         } else {
           print('[NotificationService] ❌ No device token in initialization result');
+          print('[NotificationService] 🔍 This could mean:');
+          print('[NotificationService] 🔍   1. Running in iOS Simulator (tokens only work on physical devices)');
+          print('[NotificationService] 🔍   2. Permissions not granted');
+          print('[NotificationService] 🔍   3. App not properly signed for push notifications');
+          print('[NotificationService] 🔍   4. No internet connection');
+          
+          // Try to get more info about the current state
+          await _debugCurrentState();
         }
       } else {
         print('[NotificationService] ❌ Invalid initialization result: $result');
@@ -74,7 +93,40 @@ class NotificationService {
       return null;
     } catch (e) {
       print('[NotificationService] ❌ Error initializing notification service: $e');
+      print('[NotificationService] ❌ Stack trace: ${StackTrace.current}');
       return null;
+    }
+  }
+
+  /// Debug current notification state
+  Future<void> _debugCurrentState() async {
+    try {
+      print('[NotificationService] 🔍 === DEBUGGING CURRENT STATE ===');
+      
+      final result = await _channel.invokeMethod('checkPermissionStatus');
+      print('[NotificationService] 🔍 Permission check result: $result');
+      
+      if (result != null && result is Map) {
+        final status = result['status'] as String?;
+        final token = result['token'] as String?;
+        final isRegistered = result['isRegistered'] as bool?;
+        final canRequest = result['canRequest'] as bool?;
+        
+        print('[NotificationService] 🔍 Permission status: $status');
+        print('[NotificationService] 🔍 Is registered for notifications: $isRegistered');
+        print('[NotificationService] 🔍 Can request permissions: $canRequest');
+        print('[NotificationService] 🔍 Stored token: ${token != null ? '${token.substring(0, 20)}...' : 'null'}');
+        
+        if (status == 'notDetermined') {
+          print('[NotificationService] 💡 Permissions not yet requested - need to call requestPermissionsAndGetToken()');
+        } else if (status == 'denied') {
+          print('[NotificationService] 💡 Permissions denied - user needs to enable in Settings');
+        } else if (status == 'authorized' && token == null) {
+          print('[NotificationService] 💡 Permissions granted but no token - possible simulator or signing issue');
+        }
+      }
+    } catch (e) {
+      print('[NotificationService] ❌ Error debugging state: $e');
     }
   }
 
