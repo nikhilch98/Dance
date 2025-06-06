@@ -65,6 +65,17 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          scaffoldBackgroundColor: const Color(0xFF0A0A0F),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            type: BottomNavigationBarType.fixed,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+          ),
         ),
         home: const AuthWrapper(),
         routes: {

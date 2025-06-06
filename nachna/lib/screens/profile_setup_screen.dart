@@ -132,38 +132,24 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     opacity: _fadeAnimation,
                     child: SlideTransition(
                       position: _slideAnimation,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            physics: const ClampingScrollPhysics(),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
-                              ),
-                              child: IntrinsicHeight(
-                                child: Column(
-                                  children: [
-                                    // Header
-                                    _buildHeader(screenHeight, screenWidth),
-                                    
-                                    // Profile Picture Section
-                                    _buildProfilePictureSection(screenHeight, screenWidth),
-                                    
-                                    // Profile Form
-                                    Expanded(
-                                      child: _buildForm(screenHeight, screenWidth),
-                                    ),
-                                    
-                                    // Skip/Complete Button
-                                    _buildActionButtons(screenHeight, screenWidth),
-                                    
-                                    SizedBox(height: screenHeight * 0.015), // 1.5% of screen height
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                      child: Column(
+                        children: [
+                          // Header
+                          _buildHeader(screenHeight, screenWidth),
+                          
+                          // Profile Picture Section
+                          _buildProfilePictureSection(screenHeight, screenWidth),
+                          
+                          // Profile Form
+                          Expanded(
+                            child: _buildForm(screenHeight, screenWidth),
+                          ),
+                          
+                          // Skip/Complete Button
+                          _buildActionButtons(screenHeight, screenWidth),
+                          
+                          SizedBox(height: screenHeight * 0.005), // Reduced from 0.01
+                        ],
                       ),
                     ),
                   );
@@ -177,47 +163,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   }
 
   Widget _buildHeader(double screenHeight, double screenWidth) {
-    final topPadding = screenHeight * 0.025; // 2.5% of screen height
-    final iconSize = screenWidth * 0.16; // 16% of screen width
-    final clampedIconSize = iconSize.clamp(60.0, 85.0);
-    final titleSize = screenWidth * 0.065; // 6.5% of screen width
-    final clampedTitleSize = titleSize.clamp(22.0, 30.0);
+    final topPadding = screenHeight * 0.015; // Reduced from 0.025
+    final iconSize = screenWidth * 0.14; // Reduced from 0.16
+    final clampedIconSize = iconSize.clamp(50.0, 70.0); // Reduced max size
+    final titleSize = screenWidth * 0.055; // Reduced from 0.065
+    final clampedTitleSize = titleSize.clamp(18.0, 24.0); // Reduced sizes
     
     return Container(
       padding: EdgeInsets.fromLTRB(
         screenWidth * 0.06, // 6% horizontal padding
         topPadding,
         screenWidth * 0.06,
-        screenHeight * 0.015, // 1.5% bottom padding
+        screenHeight * 0.01, // Reduced from 0.015
       ),
       child: Column(
         children: [
-          // Logout button in top-right corner
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: _showLogoutDialog,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white.withOpacity(0.1),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: Colors.white.withOpacity(0.8),
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          SizedBox(height: screenHeight * 0.02), // 2% of screen height
+          SizedBox(height: screenHeight * 0.01), // Reduced from 0.02
           // Progress Indicator
           Container(
             width: clampedIconSize,
@@ -242,7 +203,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             ),
           ),
           
-          SizedBox(height: screenHeight * 0.02), // 2% of screen height
+          SizedBox(height: screenHeight * 0.015), // Reduced from 0.02
           
           // Title
           Text(
@@ -252,17 +213,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
               fontSize: clampedTitleSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              height: 1.2,
+              height: 1.1, // Reduced from 1.2
             ),
           ),
           
-          SizedBox(height: screenHeight * 0.008), // 0.8% of screen height
+          SizedBox(height: screenHeight * 0.005), // Reduced from 0.008
           
           // Subtitle
           Text(
             'Help us personalize your dance experience',
             style: TextStyle(
-              fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+              fontSize: (screenWidth * 0.032).clamp(11.0, 13.0), // Reduced from 0.037
               color: Colors.white.withOpacity(0.7),
             ),
           ),
@@ -274,17 +235,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   Widget _buildProfilePictureSection(double screenHeight, double screenWidth) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.045),
-      padding: EdgeInsets.all(screenWidth * 0.045),
+      padding: EdgeInsets.all(screenWidth * 0.025), // Reduced from 0.035
       child: Column(
         children: [
           // Profile Picture
           Stack(
             children: [
               Container(
-                width: screenWidth * 0.25, // 25% of screen width
-                height: screenWidth * 0.25,
+                width: screenWidth * 0.2, // Reduced from 0.22
+                height: screenWidth * 0.2,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.125),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.1),
                   gradient: _profilePictureUrl == null
                       ? const LinearGradient(
                           colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
@@ -300,7 +261,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                 ),
                 child: _profilePictureUrl != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.125),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.1),
                         child: Image.network(
                           'https://nachna.com$_profilePictureUrl',
                           fit: BoxFit.cover,
@@ -321,37 +282,33 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                 bottom: 0,
                 right: 0,
                 child: GestureDetector(
-                  onTap: _showImagePickerDialog,
+                  onTap: _isUploadingImage ? null : _showImagePickerDialog,
                   child: Container(
-                    width: screenWidth * 0.08, // 8% of screen width
-                    height: screenWidth * 0.08,
+                    width: screenWidth * 0.07, // Reduced from 0.08
+                    height: screenWidth * 0.07,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                      ),
+                      color: const Color(0xFF00D4FF),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
                       border: Border.all(color: Colors.white, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF3B82F6).withOpacity(0.3),
+                          color: Colors.black.withOpacity(0.2),
                           blurRadius: 8,
-                          spreadRadius: 1,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: _isUploadingImage
-                        ? SizedBox(
-                            width: screenWidth * 0.04,
-                            height: screenWidth * 0.04,
-                            child: const CircularProgressIndicator(
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Icon(
-                            Icons.camera_alt_rounded,
+                            Icons.camera_alt,
                             color: Colors.white,
-                            size: screenWidth * 0.04,
+                            size: screenWidth * 0.035, // Reduced from 0.04
                           ),
                   ),
                 ),
@@ -359,22 +316,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             ],
           ),
           
-          SizedBox(height: screenHeight * 0.015),
+          SizedBox(height: screenHeight * 0.01), // Reduced from 0.015
           
-          // Upload Text
+          // Profile Picture Label
           Text(
             'Add Profile Picture',
             style: TextStyle(
-              fontSize: (screenWidth * 0.035).clamp(12.0, 14.0),
-              color: Colors.white.withOpacity(0.7),
+              fontSize: (screenWidth * 0.035).clamp(12.0, 14.0), // Reduced from 0.04
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
           
           Text(
             '(Optional)',
             style: TextStyle(
-              fontSize: (screenWidth * 0.03).clamp(10.0, 12.0),
-              color: Colors.white.withOpacity(0.5),
+              fontSize: (screenWidth * 0.028).clamp(10.0, 12.0), // Reduced from 0.032
+              color: Colors.white.withOpacity(0.6),
             ),
           ),
         ],
@@ -410,101 +368,99 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
 
   Widget _buildForm(double screenHeight, double screenWidth) {
     final horizontalPadding = screenWidth * 0.045; // 4.5% of screen width
-    final fieldSpacing = screenHeight * 0.022; // 2.2% of screen height
+    final fieldSpacing = screenHeight * 0.012; // Reduced from 0.015
     
-    return SingleChildScrollView(
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: EdgeInsets.all(screenWidth * 0.045), // 4.5% padding
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: EdgeInsets.all(screenWidth * 0.03), // Reduced from 0.035
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
               ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tell us about yourself',
-                      style: TextStyle(
-                        fontSize: (screenWidth * 0.05).clamp(18.0, 22.0),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tell us about yourself',
+                    style: TextStyle(
+                      fontSize: (screenWidth * 0.042).clamp(15.0, 18.0), // Reduced from 0.048
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    
-                    SizedBox(height: screenHeight * 0.025), // 2.5% of screen height
-                    
-                    // Name Field
-                    _buildTextField(
-                      controller: _nameController,
-                      label: 'Full Name',
-                      hint: 'Enter your full name',
-                      icon: Icons.person,
-                      screenHeight: screenHeight,
-                      screenWidth: screenWidth,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        if (value.trim().length < 2) {
-                          return 'Name must be at least 2 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    SizedBox(height: fieldSpacing),
-                    
-                    // Date of Birth Field
-                    _buildDateField(screenHeight, screenWidth),
-                    
-                    SizedBox(height: fieldSpacing),
-                    
-                    // Gender Field
-                    _buildGenderField(screenHeight, screenWidth),
-                    
-                    SizedBox(height: screenHeight * 0.025), // 2.5% of screen height
-                    
-                    // Error Message
-                    Consumer<AuthProvider>(
-                      builder: (context, authProvider, child) {
-                        if (authProvider.errorMessage != null) {
-                          return Container(
-                            padding: EdgeInsets.all(screenWidth * 0.025),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
-                              ),
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.015), // Reduced from 0.02
+                  
+                  // Name Field
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'Full Name',
+                    hint: 'Enter your full name',
+                    icon: Icons.person,
+                    screenHeight: screenHeight,
+                    screenWidth: screenWidth,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your name';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Name must be at least 2 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  SizedBox(height: fieldSpacing),
+                  
+                  // Date of Birth Field
+                  _buildDateField(screenHeight, screenWidth),
+                  
+                  SizedBox(height: fieldSpacing),
+                  
+                  // Gender Field
+                  _buildGenderField(screenHeight, screenWidth),
+                  
+                  SizedBox(height: screenHeight * 0.015), // Reduced from 0.02
+                  
+                  // Error Message
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      if (authProvider.errorMessage != null) {
+                        return Container(
+                          padding: EdgeInsets.all(screenWidth * 0.02), // Reduced from 0.025
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.red.withOpacity(0.3),
                             ),
-                            child: Text(
-                              authProvider.errorMessage!,
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: (screenWidth * 0.032).clamp(11.0, 13.0),
-                              ),
-                              textAlign: TextAlign.center,
+                          ),
+                          child: Text(
+                            authProvider.errorMessage!,
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: (screenWidth * 0.03).clamp(10.0, 12.0), // Reduced from 0.032
                             ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -544,7 +500,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         fillColor: Colors.white.withOpacity(0.1),
         contentPadding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.04,
-          vertical: screenHeight * 0.015,
+          vertical: screenHeight * 0.012, // Reduced from 0.015
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -685,13 +641,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
 
   Widget _buildActionButtons(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.045),
+      padding: EdgeInsets.all(screenWidth * 0.035), // Reduced from 0.045
       child: Row(
         children: [
           // Skip Button
           Expanded(
             child: Container(
-              height: screenHeight * 0.06, // 6% of screen height
+              height: screenHeight * 0.055, // Reduced from 0.06
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withOpacity(0.3)),
@@ -705,7 +661,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     child: Text(
                       'Skip for now',
                       style: TextStyle(
-                        fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+                        fontSize: (screenWidth * 0.034).clamp(12.0, 14.0), // Reduced from 0.037
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -724,7 +680,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             child: Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
                 return Container(
-                  height: screenHeight * 0.06, // 6% of screen height
+                  height: screenHeight * 0.055, // Reduced from 0.06
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: const LinearGradient(
@@ -752,7 +708,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                             : Text(
                                 'Complete Profile',
                                 style: TextStyle(
-                                  fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+                                  fontSize: (screenWidth * 0.034).clamp(12.0, 14.0), // Reduced from 0.037
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -1021,58 +977,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Logout',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Are you sure you want to logout?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              
-              // Try regular logout first
-              try {
-                print('[ProfileSetupScreen] Attempting regular logout...');
-                await authProvider.logout().timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    print('[ProfileSetupScreen] Regular logout timed out, using force logout');
-                    authProvider.forceLogout();
-                  },
-                );
-                print('[ProfileSetupScreen] Logout completed');
-              } catch (e) {
-                print('[ProfileSetupScreen] Regular logout failed: $e, using force logout');
-                authProvider.forceLogout();
-              }
-            },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Color(0xFFFF006E)),
-            ),
-          ),
-        ],
       ),
     );
   }

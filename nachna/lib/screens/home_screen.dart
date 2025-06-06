@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/config_provider.dart';
 import './studios_screen.dart';
@@ -34,6 +35,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Configure system UI overlay style
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
+    
     return Consumer<ConfigProvider>(
       builder: (context, configProvider, child) {
         // Ensure config is loaded when HomeScreen is built
@@ -56,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFF0A0A0F),
+          extendBody: true, // This extends the body behind the bottom nav
           body: Center(
             child: screens.elementAt(_selectedIndex),
           ),
@@ -88,6 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   height: 80,
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent, // Ensure transparent background
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
