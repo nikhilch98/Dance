@@ -304,14 +304,31 @@ class NotificationService:
                 print(f"No users with notifications enabled found for artist {artist_id}")
                 return
             
-            # Filter out users who have already received this notification
+            # Log recent notification statistics for this artist
+            recent_stats = NotificationOperations.get_recent_notification_stats(artist_id, days=7)
+            print(f"📊 Recent notification stats for artist {artist_id}:")
+            print(f"   - Total notifications in last 7 days: {recent_stats['total_notifications']}")
+            print(f"   - Unique users notified: {recent_stats['unique_users_notified']}")
+            print(f"   - Notification types: {recent_stats['notification_types']}")
+            
+            # Filter out users who have already received this specific notification
             users_to_notify = []
             for user_id in notified_user_ids:
+                # Check if this specific workshop notification has been sent
                 if not NotificationOperations.has_notification_been_sent(user_id, workshop_uuid, notification_type):
-                    users_to_notify.append(user_id)
+                    # For reminder notifications, always send regardless of recent notifications
+                    # For other notifications, check if any notification for this artist has been sent in the last week
+                    if notification_type == "reminder_24h":
+                        users_to_notify.append(user_id)
+                    elif not NotificationOperations.has_artist_notification_been_sent_recently(user_id, artist_id, days=7):
+                        users_to_notify.append(user_id)
+                    else:
+                        print(f"Skipping notification for user {user_id} - already notified about artist {artist_id} within last 7 days")
+                else:
+                    print(f"Skipping notification for user {user_id} - already notified about workshop {workshop_uuid}")
             
             if not users_to_notify:
-                print(f"All users have already been notified about workshop {workshop_uuid} for notification type {notification_type}")
+                print(f"All users have either been notified about workshop {workshop_uuid} or received artist {artist_id} notifications within the last week")
                 return
             
             # Get device tokens for users to notify
@@ -353,10 +370,11 @@ class NotificationService:
                 'type': notification_type
             }
             
-            print(f"Sending {notification_type} notification to {len(users_to_notify)} users:")
+            print(f"Sending {notification_type} notification to {len(users_to_notify)} users (filtered from {len(notified_user_ids)} total):")
             print(f"Title: {title}")
             print(f"Body: {body}")
             print(f"Workshop UUID: {workshop_uuid}")
+            print(f"Artist ID: {artist_id}")
             
             # Send APNs notifications to iOS devices
             ios_tokens = [token for token in device_tokens if token.get('platform') == 'ios']
@@ -403,6 +421,7 @@ class NotificationService:
                 print(f"Android FCM notifications not implemented yet for {len(android_tokens)} devices")
             
             print(f"✅ Notification sending complete: {success_count}/{total_sent} successful")
+            print(f"📊 Filtered out {len(notified_user_ids) - len(users_to_notify)} users due to recent notifications")
             
         except Exception as e:
             print(f"❌ Error sending workshop notifications: {str(e)}")

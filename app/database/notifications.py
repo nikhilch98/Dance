@@ -120,6 +120,56 @@ class NotificationOperations:
         return existing_notification is not None
     
     @staticmethod
+    def has_artist_notification_been_sent_recently(user_id: str, artist_id: str, days: int = 7) -> bool:
+        """Check if any notification has been sent for the same user and artist within the specified days."""
+        client = get_mongo_client()
+        
+        # Calculate the cutoff date
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        
+        # Check if any notification was sent for this user-artist combination within the timeframe
+        existing_notification = client["dance_app"]["notification_history"].find_one({
+            "user_id": user_id,
+            "artist_id": artist_id,
+            "is_sent": True,
+            "sent_at": {"$gte": cutoff_date}
+        })
+        
+        return existing_notification is not None
+    
+    @staticmethod
+    def get_recent_notification_stats(artist_id: str, days: int = 7) -> dict:
+        """Get statistics about recent notifications for an artist."""
+        client = get_mongo_client()
+        
+        # Calculate the cutoff date
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        
+        # Get all recent notifications for this artist
+        recent_notifications = list(client["dance_app"]["notification_history"].find({
+            "artist_id": artist_id,
+            "is_sent": True,
+            "sent_at": {"$gte": cutoff_date}
+        }))
+        
+        # Count unique users who received notifications
+        unique_users = set(notif["user_id"] for notif in recent_notifications)
+        
+        # Count by notification type
+        type_counts = {}
+        for notif in recent_notifications:
+            notif_type = notif.get("notification_type", "unknown")
+            type_counts[notif_type] = type_counts.get(notif_type, 0) + 1
+        
+        return {
+            "total_notifications": len(recent_notifications),
+            "unique_users_notified": len(unique_users),
+            "notification_types": type_counts,
+            "period_days": days,
+            "cutoff_date": cutoff_date
+        }
+    
+    @staticmethod
     def record_notification_sent(user_id: str, workshop_uuid: str, artist_id: str, notification_type: str, title: str, body: str) -> bool:
         """Record that a notification has been sent."""
         client = get_mongo_client()
