@@ -55,7 +55,8 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             time_year=time_details["year"],
             time_month=time_details["month"],
             time_day=time_details["day"],
-            time_day_full_string=get_formatted_date_with_day(time_details)[1]
+            time_day_full_string=get_formatted_date_with_day(time_details)[1],
+            choreo_insta_link=workshop["choreo_insta_link"],
         ))
     return event_details
 
@@ -122,6 +123,7 @@ class DatabaseOperations:
             date=workshop.date_with_day,
             time=workshop.time_str,
             event_type=workshop.event_type,
+            choreo_insta_link=workshop.choreo_insta_link,
         )
             for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True)
         ]
@@ -207,6 +209,7 @@ class DatabaseOperations:
                         pricing_info=workshop.get("pricing_info"),
                         timestamp_epoch=get_timestamp_epoch(time_detail),
                         event_type=workshop.get("event_type"),
+                        choreo_insta_link=workshop.get("choreo_insta_link"),
                     )
                 )
 
@@ -292,6 +295,7 @@ class DatabaseOperations:
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
                         event_type=x.event_type,
+                        choreo_insta_link=x.choreo_insta_link,
                     ) for x in sorted_workshops_raw]
                 )
             )
@@ -309,6 +313,7 @@ class DatabaseOperations:
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
                         event_type=x.event_type,
+                        choreo_insta_link=x.choreo_insta_link,
                     ) for x in sorted(
             temp_post_this_week,
             key=lambda x: x.timestamp_epoch, 

@@ -29,6 +29,7 @@ class WorkshopListItem(BaseModel):
     date: Optional[str]
     time: Optional[str]
     event_type: Optional[str]
+    choreo_insta_link: Optional[HttpUrl]
 
 
 class Artist(BaseModel):
@@ -59,6 +60,7 @@ class WorkshopSession(BaseModel):
     pricing_info: Optional[str]
     timestamp_epoch: int
     event_type: Optional[str]
+    choreo_insta_link: Optional[HttpUrl]
 
 
 class DaySchedule(BaseModel):
@@ -93,3 +95,4 @@ class EventDetails(BaseModel):
     time_month: Optional[int]
     time_day: Optional[int]
     time_day_full_string: Optional[str] 
+    choreo_insta_link: Optional[HttpUrl]
