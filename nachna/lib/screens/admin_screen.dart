@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../services/first_launch_service.dart';
 import '../services/admin_service.dart';
 import '../models/app_insights.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -47,16 +48,22 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   String? _selectedArtistId;
   bool _isArtistNotificationLoading = false;
   
+  // Instagram Links state
+  List<Map<String, dynamic>> missingInstagramLinkWorkshops = [];
+  bool isLoadingInstagramLinks = false;
+  String? instagramLinksError;
+  
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadMissingArtistSessions();
     _loadMissingSongSessions();
     _loadAllArtists();
     _loadAppInsights();
+    _loadMissingInstagramLinks();
     // Initialize the global config provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GlobalConfigProvider>().initialize();
@@ -633,6 +640,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: TabBar(
                       controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
                       indicator: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         gradient: const LinearGradient(
@@ -749,6 +758,22 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(Icons.link, size: 18),
+                              SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Instagram Links',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Icon(Icons.analytics, size: 18),
                               SizedBox(width: 6),
                               Flexible(
@@ -775,6 +800,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     _buildMissingArtistsTab(),
                     _buildNotificationsTab(),
                     _buildConfigTab(),
+                    _buildInstagramLinksTab(),
                     _buildInsightsTab(),
                   ],
                 ),
@@ -2631,16 +2657,16 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Widget _APNsTestForm() {
     return StatefulBuilder(
       builder: (context, setState) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2650,9 +2676,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 children: [
                   const Text(
                     'Device Token',
-                    style: TextStyle(
+        style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+          fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -2922,16 +2948,16 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Widget _ArtistNotificationTestWidget({required List<Artist> allArtists}) {
     return StatefulBuilder(
       builder: (context, setState) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2981,7 +3007,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         items: allArtists.map((Artist artist) {
                           return DropdownMenuItem<String>(
                             value: artist.id,
-                            child: Text(
+      child: Text(
                               artist.name,
                               style: const TextStyle(color: Colors.white),
                               maxLines: 1,
@@ -3009,7 +3035,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     'Notification Title (Optional)',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+          fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -3215,6 +3241,468 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         );
       },
     );
+  }
+  /// Load workshops with missing Instagram links
+  Future<void> _loadMissingInstagramLinks() async {
+    setState(() {
+      isLoadingInstagramLinks = true;
+      instagramLinksError = null;
+    });
+
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('No authentication token');
+
+      final response = await http.get(
+        Uri.parse('https://nachna.com/admin/api/workshops/missing-instagram-links'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            missingInstagramLinkWorkshops = data.cast<Map<String, dynamic>>();
+          });
+        }
+      } else {
+        throw Exception('Failed to load workshops missing Instagram links (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          instagramLinksError = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingInstagramLinks = false;
+        });
+      }
+    }
+  }
+
+  /// Update Instagram link for a workshop
+  Future<void> _updateInstagramLink(String workshopUuid, String instagramLink) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('No authentication token');
+
+      final response = await http.put(
+        Uri.parse('https://nachna.com/admin/api/workshops/$workshopUuid/instagram-link'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'choreo_insta_link': instagramLink,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Instagram link updated successfully!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          // Refresh the list
+          _loadMissingInstagramLinks();
+        }
+      } else {
+        throw Exception('Failed to update Instagram link (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Build Instagram Links tab
+  Widget _buildInstagramLinksTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isLoadingInstagramLinks)
+            Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.white.withOpacity(0.05),
+                      ],
+                    ),
+                  ),
+                  child: const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4081)),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            )
+          else if (instagramLinksError != null)
+            Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.withOpacity(0.1),
+                        Colors.red.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.red.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading Instagram links',
+                        style: TextStyle(
+                          color: Colors.red.withOpacity(0.9),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        instagramLinksError!,
+                        style: TextStyle(
+                          color: Colors.red.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadMissingInstagramLinks,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else if (missingInstagramLinkWorkshops.isEmpty)
+            Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.withOpacity(0.1),
+                        Colors.green.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.green.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'All workshops have Instagram links!',
+                        style: TextStyle(
+                          color: Colors.green.withOpacity(0.9),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No workshops are missing Instagram links.',
+                        style: TextStyle(
+                          color: Colors.green.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: missingInstagramLinkWorkshops.length,
+                itemBuilder: (context, index) {
+                  final workshop = missingInstagramLinkWorkshops[index];
+                  return _buildInstagramLinkWorkshopCard(workshop);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual workshop card for Instagram links
+  Widget _buildInstagramLinkWorkshopCard(Map<String, dynamic> workshop) {
+    final TextEditingController linkController = TextEditingController();
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Workshop Info
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.link,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            workshop['workshop_name'] ?? 'Unknown Workshop',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'By: ${workshop['by'] ?? 'Unknown Artist'}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Artist Instagram Link Button
+                if (workshop['artist_instagram_links'] != null && 
+                    (workshop['artist_instagram_links'] as List).isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Artist Instagram:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: (workshop['artist_instagram_links'] as List).map<Widget>((link) {
+                          return ElevatedButton.icon(
+                            onPressed: () => _launchInstagramUrl(link.toString()),
+                            icon: const Icon(Icons.open_in_new, size: 16),
+                            label: Text(
+                              'Open Artist IG',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE1306C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                
+                // Instagram Link Input
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: linkController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Paste Instagram link here...',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Paste Button
+                    ElevatedButton(
+                      onPressed: () async {
+                        // Get clipboard data
+                        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+                        if (clipboardData?.text != null) {
+                          linkController.text = clipboardData!.text!;
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9C27B0),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Icon(Icons.paste, size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    // Submit Button
+                    ElevatedButton(
+                      onPressed: () {
+                        if (linkController.text.trim().isNotEmpty) {
+                          _updateInstagramLink(workshop['uuid'], linkController.text.trim());
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter an Instagram link'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE91E63),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Icon(Icons.check, size: 20),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Launch Instagram URL
+  Future<void> _launchInstagramUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch $url');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open Instagram: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

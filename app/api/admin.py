@@ -406,4 +406,115 @@ async def get_app_insights(user_id: str = Depends(verify_admin_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get app insights: {str(e)}"
+        )
+
+
+@router.get("/api/workshops/missing-instagram-links")
+async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_admin_user)):
+    """Get all workshops that are missing Instagram links."""
+    try:
+        client = get_mongo_client()
+        
+        # Find workshops where choreo_insta_link is None or empty
+        workshops = list(client["discovery"]["workshops_v2"].find({
+            "$or": [
+                {"choreo_insta_link": None},
+                {"choreo_insta_link": ""},
+                {"choreo_insta_link": {"$exists": False}}
+            ]
+        }))
+        
+        # Enrich with artist Instagram links
+        result = []
+        for workshop in workshops:
+            # Get artist Instagram links
+            artist_instagram_links = []
+            artist_id_list = workshop.get("artist_id_list", [])
+            
+            if artist_id_list:
+                for artist_id in artist_id_list:
+                    if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
+                        artist = client["discovery"]["artists_v2"].find_one({"artist_id": artist_id})
+                        if artist and artist.get("instagram_link"):
+                            artist_instagram_links.append(artist["instagram_link"])
+            
+            workshop_data = {
+                "uuid": workshop.get("uuid"),
+                "workshop_name": workshop.get("workshop_name"),
+                "by": workshop.get("by"),
+                "artist_id_list": artist_id_list,
+                "artist_instagram_links": artist_instagram_links,
+                "current_choreo_link": workshop.get("choreo_insta_link"),
+                "created_at": workshop.get("created_at"),
+                "updated_at": workshop.get("updated_at")
+            }
+            result.append(workshop_data)
+        
+        # Sort by created_at descending (newest first)
+        result.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        return result
+        
+    except Exception as e:
+        logging.error(f"Error getting workshops missing Instagram links: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get workshops missing Instagram links: {str(e)}"
+        )
+
+
+class UpdateInstagramLinkPayload(BaseModel):
+    """Payload for updating workshop Instagram link."""
+    choreo_insta_link: str
+
+
+@router.put("/api/workshops/{workshop_uuid}/instagram-link")
+async def update_workshop_instagram_link(
+    workshop_uuid: str,
+    payload: UpdateInstagramLinkPayload = Body(...),
+    user_id: str = Depends(verify_admin_user)
+):
+    """Update the Instagram link for a specific workshop."""
+    try:
+        client = get_mongo_client()
+        
+        # Validate that the workshop exists
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        if not workshop:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workshop with UUID {workshop_uuid} not found."
+            )
+        
+        # Update the Instagram link
+        result = client["discovery"]["workshops_v2"].update_one(
+            {"uuid": workshop_uuid},
+            {
+                "$set": {
+                    "choreo_insta_link": payload.choreo_insta_link,
+                    "updated_at": datetime.utcnow().isoformat()
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to update workshop Instagram link."
+            )
+        
+        return {
+            "success": True,
+            "message": f"Instagram link updated successfully for workshop {workshop_uuid}.",
+            "workshop_uuid": workshop_uuid,
+            "choreo_insta_link": payload.choreo_insta_link
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error updating workshop Instagram link: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update workshop Instagram link: {str(e)}"
         ) 
