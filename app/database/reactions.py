@@ -97,6 +97,36 @@ class ReactionOperations:
         return result.modified_count > 0
     
     @staticmethod
+    def soft_delete_reaction_by_entity(user_id: str, entity_id: str, entity_type: EntityType, reaction_type: ReactionType) -> bool:
+        """Soft delete a reaction by entity and reaction type, ensuring the user owns it."""
+        client = get_mongo_client()
+        
+        # Only allow artist reactions
+        if entity_type != EntityType.ARTIST:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only artist reactions are supported"
+            )
+        
+        result = client["dance_app"]["reactions"].update_one(
+            {
+                "user_id": user_id,
+                "entity_id": entity_id,
+                "entity_type": entity_type.value,
+                "reaction": reaction_type.value,
+                "is_deleted": {"$ne": True}
+            },
+            {
+                "$set": {
+                    "is_deleted": True,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        return result.modified_count > 0
+    
+    @staticmethod
     def get_user_reactions(user_id: str) -> UserReactionsResponse:
         """Get all active reactions for a specific user."""
         client = get_mongo_client()
