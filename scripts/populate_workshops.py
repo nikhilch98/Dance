@@ -112,6 +112,7 @@ class EventProcessor:
                 ],
                 "updated_at": time.time(),
                 "version": version,
+                "choreo_insta_link": None,
             }
 
             return event_data # Return event_data
@@ -335,6 +336,7 @@ class StudioProcessor:
                                 "artist_id_list": event_detail["artist_id_list"], # Use event_detail
                                 "updated_at": time.time(),
                                 "version": self.version,
+                                "choreo_insta_link": event_detail["choreo_insta_link"],
                             }
 
                             # Check if the event is in the past using the first time_details entry
