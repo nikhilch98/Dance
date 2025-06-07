@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     apns_team_id: str = "TJ9YTH589R"
     apns_bundle_id: str = "com.nachna.nachna"
     apns_key_path: str = "./AuthKey_W5H5A6ZUS2.p8"
-    apns_use_sandbox: bool = False
+    apns_use_sandbox: bool = True
     
     # Rate Limiting
     rate_limit_window: int = 60  # seconds

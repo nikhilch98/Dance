@@ -169,7 +169,7 @@ def test_reactions_delete_api():
             data = user_reactions_data["data"]
             liked_artists = data.get("liked_artists", [])
             notified_artists = data.get("notified_artists", [])
-                else:
+        else:
             print(f"❌ Unexpected user reactions format: {user_reactions_data}")
             return
             
@@ -177,18 +177,16 @@ def test_reactions_delete_api():
         print(f"   Liked artists: {len(liked_artists)} - {liked_artists}")
         print(f"   Notified artists: {len(notified_artists)} - {notified_artists}")
             
-            # Check if our test artist was properly removed
-            if artist_id not in liked_artists:
-                print(f"✅ LIKE deletion verified - artist {artist_id} not in liked list")
-            else:
-                print(f"❌ LIKE deletion failed - artist {artist_id} still in liked list")
-                
-            if artist_id not in notified_artists:
-                print(f"✅ NOTIFY deletion verified - artist {artist_id} not in notified list")
-            else:
-                print(f"❌ NOTIFY deletion failed - artist {artist_id} still in notified list")
+        # Check if our test artist was properly removed
+        if artist_id not in liked_artists:
+            print(f"✅ LIKE deletion verified - artist {artist_id} not in liked list")
         else:
-            print(f"❌ Failed to get user reactions: {user_reactions_data}")
+            print(f"❌ LIKE deletion failed - artist {artist_id} still in liked list")
+            
+        if artist_id not in notified_artists:
+            print(f"✅ NOTIFY deletion verified - artist {artist_id} not in notified list")
+        else:
+            print(f"❌ NOTIFY deletion failed - artist {artist_id} still in notified list")
     else:
         print(f"❌ Failed to get user reactions: {user_reactions_response.status_code}")
     
@@ -205,28 +203,26 @@ def test_reactions_delete_api():
     create_response = requests.post(f"{BASE_URL}/reactions", headers=headers, json=test_payload)
     if create_response.status_code == 200:
         create_data = create_response.json()
-        if create_data.get("success") and "data" in create_data:
-            reaction_id = create_data["data"].get("reaction_id")
-            if reaction_id:
-                print(f"✅ Created test reaction with ID: {reaction_id}")
-                
-                # Now try to delete it using the old endpoint
-                old_delete_payload = {
-                    "reaction_id": reaction_id
-                }
-                
-                old_delete_response = requests.delete(f"{BASE_URL}/reactions", headers=headers, json=old_delete_payload)
-                print(f"Old delete status: {old_delete_response.status_code}")
-                print(f"Old delete response: {old_delete_response.text}")
-                
-                if old_delete_response.status_code == 200:
-                    print(f"✅ Old DELETE endpoint working")
-                else:
-                    print(f"❌ Old DELETE endpoint failed")
+        # The API returns the reaction directly, not wrapped in success/data
+        reaction_id = create_data.get("id")
+        if reaction_id:
+            print(f"✅ Created test reaction with ID: {reaction_id}")
+            
+            # Now try to delete it using the old endpoint
+            old_delete_payload = {
+                "reaction_id": reaction_id
+            }
+            
+            old_delete_response = requests.delete(f"{BASE_URL}/reactions", headers=headers, json=old_delete_payload)
+            print(f"Old delete status: {old_delete_response.status_code}")
+            print(f"Old delete response: {old_delete_response.text}")
+            
+            if old_delete_response.status_code == 200:
+                print(f"✅ Old DELETE endpoint working")
             else:
-                print(f"⚠️ No reaction_id in response: {create_data}")
+                print(f"❌ Old DELETE endpoint failed")
         else:
-            print(f"⚠️ Failed to create test reaction: {create_data}")
+            print(f"⚠️ No reaction ID in response: {create_data}")
     else:
         print(f"⚠️ Failed to create test reaction: {create_response.status_code}")
     
