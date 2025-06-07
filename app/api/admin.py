@@ -366,7 +366,7 @@ async def admin_send_test_notification(
         ) 
 
 
-@router.get("/app-insights")
+@router.get("/api/app-insights")
 async def get_app_insights(user_id: str = Depends(verify_admin_user)):
     """Get application insights and statistics."""
     try:
