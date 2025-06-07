@@ -500,7 +500,6 @@ async def update_workshop_instagram_link(
             {
                 "$set": {
                     "choreo_insta_link": payload.choreo_insta_link,
-                    "updated_at": datetime.utcnow().isoformat()
                 }
             }
         )

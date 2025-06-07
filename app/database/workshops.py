@@ -36,7 +36,7 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             
         # Use artist_id_list directly
         artist_id_list = workshop.get("artist_id_list", [])
-        
+        date_with_day, time_day_full_string = get_formatted_date_with_day(time_details)
         event_details.append(EventDetails(
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
@@ -49,13 +49,13 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             pricing_info=workshop["pricing_info"],
             updated_at=workshop["updated_at"],
             date_without_day=date_without_day,
-            date_with_day=get_formatted_date_with_day(time_details)[0],
+            date_with_day=date_with_day,
             time_str=get_formatted_time(time_details),
             timestamp_epoch=get_timestamp_epoch(time_details),
             time_year=time_details["year"],
             time_month=time_details["month"],
             time_day=time_details["day"],
-            time_day_full_string=get_formatted_date_with_day(time_details)[1],
+            time_day_full_string=time_day_full_string,
             choreo_insta_link=workshop["choreo_insta_link"],
         ))
     return event_details
