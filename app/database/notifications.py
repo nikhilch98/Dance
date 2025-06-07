@@ -175,14 +175,7 @@ class NotificationOperations:
         """Get the total count of all notifications sent."""
         client = get_mongo_client()
         
-        try:
-            # Count all notifications in the notifications collection
-            total_count = client["dance_app"]["notifications"].count_documents({})
-            return total_count
-            
-        except Exception as e:
-            print(f"Error getting total notifications sent: {e}")
-            return 0
+        return client["dance_app"]["notification_history"].count_documents({})
     
     @staticmethod
     def get_recent_artist_notification_stats(artist_id: str, days: int = 7) -> dict:

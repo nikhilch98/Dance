@@ -339,11 +339,4 @@ class DatabaseOperations:
         """Get the total count of workshops in the database."""
         client = get_mongo_client()
         
-        try:
-            # Count all workshops in the workshops collection
-            total_count = client["dance_app"]["workshops"].count_documents({})
-            return total_count
-            
-        except Exception as e:
-            print(f"Error getting total workshop count: {e}")
-            return 0 
+        return client["discovery"]["workshops_v2"].count_documents({})
