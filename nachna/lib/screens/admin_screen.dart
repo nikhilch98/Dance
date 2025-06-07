@@ -2121,7 +2121,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            session['song'] ?? session['workshop_name'] ?? 'Unknown Workshop',
+                            session['workshop_name'] ?? session['song'] ?? 'Unknown Workshop',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -3533,7 +3533,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            workshop['workshop_name'] ?? 'Unknown Workshop',
+                            workshop['workshop_name'] ?? workshop['song'] ?? 'Unknown Workshop',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,

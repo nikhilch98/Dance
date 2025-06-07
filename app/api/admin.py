@@ -442,6 +442,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
             workshop_data = {
                 "uuid": workshop.get("uuid"),
                 "workshop_name": workshop.get("workshop_name"),
+                "song": workshop.get("song"),
                 "by": workshop.get("by"),
                 "artist_id_list": artist_id_list,
                 "artist_instagram_links": artist_instagram_links,
