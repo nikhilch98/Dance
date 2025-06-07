@@ -97,29 +97,6 @@ class ReactionOperations:
         return result.modified_count > 0
     
     @staticmethod
-    def soft_delete_reaction_by_entity(user_id: str, entity_id: str, entity_type: EntityType, reaction_type: ReactionType) -> bool:
-        """Soft delete a reaction by entity and reaction type, ensuring the user owns it."""
-        client = get_mongo_client()
-        
-        result = client["dance_app"]["reactions"].update_one(
-            {
-                "user_id": user_id,
-                "entity_id": entity_id,
-                "entity_type": entity_type.value,
-                "reaction_type": reaction_type.value,
-                "is_deleted": {"$ne": True}
-            },
-            {
-                "$set": {
-                    "is_deleted": True,
-                    "updated_at": datetime.utcnow()
-                }
-            }
-        )
-        
-        return result.modified_count > 0
-    
-    @staticmethod
     def get_user_reactions(user_id: str) -> UserReactionsResponse:
         """Get all active reactions for a specific user."""
         client = get_mongo_client()
@@ -217,33 +194,8 @@ class ReactionOperations:
         """Get the total count of distinct reactions (user, entity combinations) by type."""
         client = get_mongo_client()
         
-        try:
-            # Count distinct user-entity combinations for the given reaction and entity type
-            # Only count non-deleted reactions
-            pipeline = [
-                {
-                    "$match": {
-                        "reaction_type": reaction_type.value,
-                        "entity_type": entity_type.value,
-                        "is_deleted": {"$ne": True}
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": {
-                            "user_id": "$user_id",
-                            "entity_id": "$entity_id"
-                        }
-                    }
-                },
-                {
-                    "$count": "total"
-                }
-            ]
-            
-            result = list(client["dance_app"]["reactions"].aggregate(pipeline))
-            return result[0]["total"] if result else 0
-            
-        except Exception as e:
-            print(f"Error getting total reaction count: {e}")
-            return 0 
+        return client["dance_app"]["reactions"].count_documents({
+            "reaction": reaction_type.value,
+            "entity_type": entity_type.value,
+            "is_deleted": {"$ne": True}
+        })
