@@ -440,7 +440,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
                             artist_instagram_links.append(artist["instagram_link"])
             
             workshop_data = {
-                "uuid": workshop.get("uuid"),
+                "workshop_id": str(workshop["_id"]),
                 "workshop_name": workshop.get("workshop_name"),
                 "song": workshop.get("song"),
                 "by": workshop.get("by"),
@@ -467,27 +467,36 @@ class UpdateInstagramLinkPayload(BaseModel):
     choreo_insta_link: str
 
 
-@router.put("/api/workshops/{workshop_uuid}/instagram-link")
+@router.put("/api/workshops/{workshop_id}/instagram-link")
 async def update_workshop_instagram_link(
-    workshop_uuid: str,
+    workshop_id: str,
     payload: UpdateInstagramLinkPayload = Body(...),
     user_id: str = Depends(verify_admin_user)
 ):
     """Update the Instagram link for a specific workshop."""
     try:
+        from bson import ObjectId
         client = get_mongo_client()
         
-        # Validate that the workshop exists
-        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        # Validate that the workshop exists using MongoDB _id
+        try:
+            object_id = ObjectId(workshop_id)
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid workshop ID format: {workshop_id}"
+            )
+            
+        workshop = client["discovery"]["workshops_v2"].find_one({"_id": object_id})
         if not workshop:
             raise HTTPException(
                 status_code=404,
-                detail=f"Workshop with UUID {workshop_uuid} not found."
+                detail=f"Workshop with ID {workshop_id} not found."
             )
         
         # Update the Instagram link
         result = client["discovery"]["workshops_v2"].update_one(
-            {"uuid": workshop_uuid},
+            {"_id": object_id},
             {
                 "$set": {
                     "choreo_insta_link": payload.choreo_insta_link,
@@ -504,8 +513,8 @@ async def update_workshop_instagram_link(
         
         return {
             "success": True,
-            "message": f"Instagram link updated successfully for workshop {workshop_uuid}.",
-            "workshop_uuid": workshop_uuid,
+            "message": f"Instagram link updated successfully for workshop {workshop_id}.",
+            "workshop_id": workshop_id,
             "choreo_insta_link": payload.choreo_insta_link
         }
         

@@ -3287,13 +3287,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   }
 
   /// Update Instagram link for a workshop
-  Future<void> _updateInstagramLink(String workshopUuid, String instagramLink) async {
+  Future<void> _updateInstagramLink(String workshopId, String instagramLink) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) throw Exception('No authentication token');
 
-      final response = await http.put(
-        Uri.parse('https://nachna.com/admin/api/workshops/$workshopUuid/instagram-link'),
+              final response = await http.put(
+          Uri.parse('https://nachna.com/admin/api/workshops/$workshopId/instagram-link'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -3654,7 +3654,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     ElevatedButton(
                       onPressed: () {
                         if (linkController.text.trim().isNotEmpty) {
-                          _updateInstagramLink(workshop['uuid'], linkController.text.trim());
+                          _updateInstagramLink(workshop['workshop_id'], linkController.text.trim());
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
