@@ -425,6 +425,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
         }))
         
         # Enrich with artist Instagram links
+        artist_map = {artist["artist_id"]: artist for artist in client["discovery"]["artists_v2"].find({}, {"_id": 0, "artist_id": 1, "instagram_link": 1})}
         result = []
         for workshop in workshops:
             # Get artist Instagram links
@@ -434,7 +435,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
             if artist_id_list:
                 for artist_id in artist_id_list:
                     if artist_id and artist_id not in [None, "", "TBA", "tba", "N/A", "n/a"]:
-                        artist = client["discovery"]["artists_v2"].find_one({"artist_id": artist_id})
+                        artist = artist_map.get(artist_id)
                         if artist and artist.get("instagram_link"):
                             artist_instagram_links.append(artist["instagram_link"])
             
@@ -444,14 +445,11 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
                 "by": workshop.get("by"),
                 "artist_id_list": artist_id_list,
                 "artist_instagram_links": artist_instagram_links,
-                "current_choreo_link": workshop.get("choreo_insta_link"),
-                "created_at": workshop.get("created_at"),
-                "updated_at": workshop.get("updated_at")
             }
             result.append(workshop_data)
         
         # Sort by created_at descending (newest first)
-        result.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        result.sort(key=lambda x: x.get("uuid", ""), reverse=True)
         
         return result
         
