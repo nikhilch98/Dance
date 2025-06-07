@@ -51,12 +51,17 @@ class ReactionProvider with ChangeNotifier {
     _setError(null);
     
     try {
-      // Check if user already has this reaction
-      final existingReactionId = _getExistingReactionId(artistId, reactionType);
+      // Check if user already has this reaction by checking the simplified lists
+      bool hasReaction = false;
+      if (reactionType == ReactionType.LIKE) {
+        hasReaction = isArtistLiked(artistId);
+      } else if (reactionType == ReactionType.NOTIFY) {
+        hasReaction = isArtistNotified(artistId);
+      }
       
-      if (existingReactionId != null) {
-        // Remove existing reaction
-        await removeReaction(existingReactionId);
+      if (hasReaction) {
+        // Remove existing reaction - we need to find and delete it
+        await removeReactionByEntity(artistId, reactionType);
         return null;
       } else {
         // Create new reaction
@@ -82,7 +87,31 @@ class ReactionProvider with ChangeNotifier {
     }
   }
 
-  /// Remove a reaction by ID
+  /// Remove a reaction by entity and reaction type (for unlike/unfollow)
+  Future<bool> removeReactionByEntity(String artistId, ReactionType reactionType) async {
+    _setError(null);
+    
+    try {
+      // Use the new API endpoint that deletes by entity and reaction type
+      final success = await _reactionService.deleteReactionByEntity(
+        artistId, 
+        EntityType.ARTIST, 
+        reactionType
+      );
+      
+      if (success) {
+        // Refresh user reactions to update the UI
+        await loadUserReactions();
+      }
+      
+      return success;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  /// Remove a reaction by ID (kept for backward compatibility)
   Future<bool> removeReaction(String reactionId) async {
     _setError(null);
     

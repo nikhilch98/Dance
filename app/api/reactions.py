@@ -10,6 +10,7 @@ from app.models.reactions import (
     ReactionResponse,
     UserReactionsResponse,
     ReactionStatsResponse,
+    ReactionType,
 )
 from app.services.auth import verify_token
 from app.services.rate_limiting import check_rate_limit
@@ -78,6 +79,37 @@ async def remove_reaction(
     success = ReactionOperations.soft_delete_reaction(
         reaction_id=reaction_data.reaction_id,
         user_id=user_id
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reaction not found or already deleted"
+        )
+    
+    return {"message": "Reaction removed successfully"}
+
+
+@router.delete("/reactions/by-entity")
+async def remove_reaction_by_entity(
+    entity_id: str,
+    entity_type: EntityType,
+    reaction_type: ReactionType,
+    user_id: str = Depends(verify_token)
+):
+    """Soft delete a user reaction by entity and reaction type."""
+    # Check rate limit
+    if not check_rate_limit(user_id, "remove_reaction"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please try again later."
+        )
+    
+    success = ReactionOperations.soft_delete_reaction_by_entity(
+        user_id=user_id,
+        entity_id=entity_id,
+        entity_type=entity_type,
+        reaction_type=reaction_type
     )
     
     if not success:

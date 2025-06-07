@@ -65,6 +65,28 @@ class ReactionService {
     }
   }
 
+  /// Soft delete a reaction by entity and reaction type
+  Future<bool> deleteReactionByEntity(String entityId, EntityType entityType, ReactionType reactionType) async {
+    try {
+      final headers = await _freshHeaders;
+      final uri = Uri.parse('$baseUrl/reactions/by-entity').replace(queryParameters: {
+        'entity_id': entityId,
+        'entity_type': entityType.name,
+        'reaction_type': reactionType.name,
+      });
+      
+      final response = await _httpClient.delete(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception('Failed to delete reaction by entity: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete reaction by entity: $e');
+    }
+  }
+
   /// Get user's reactions
   Future<UserReactionsResponse> getUserReactions() async {
     try {
