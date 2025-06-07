@@ -7,12 +7,14 @@ class NotificationPermissionDialog extends StatefulWidget {
   final VoidCallback? onPermissionGranted;
   final VoidCallback? onPermissionDenied;
   final VoidCallback? onDismissed;
+  final String? userId;
 
   const NotificationPermissionDialog({
     super.key,
     this.onPermissionGranted,
     this.onPermissionDenied,
     this.onDismissed,
+    this.userId,
   });
 
   @override
@@ -66,7 +68,7 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
 
     try {
       // Mark that we've requested permission (regardless of outcome)
-      await FirstLaunchService().markNotificationPermissionRequested();
+      await FirstLaunchService().markNotificationPermissionRequested(userId: widget.userId);
       
       // Request permission from the system
       final result = await NotificationService().requestPermissionsAndGetToken();
@@ -107,7 +109,7 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
   }
 
   Future<void> _skip() async {
-    await FirstLaunchService().markNotificationPermissionRequested();
+    await FirstLaunchService().markNotificationPermissionRequested(userId: widget.userId);
     widget.onDismissed?.call();
     await _animateOut();
     if (mounted) Navigator.of(context).pop(false);

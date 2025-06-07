@@ -10,6 +10,10 @@ import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:nachna/services/auth_service.dart';
+import '../providers/auth_provider.dart';
+import '../services/first_launch_service.dart';
+import '../services/admin_service.dart';
+import '../models/app_insights.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -19,27 +23,64 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStateMixin {
-  bool isLoadingSongs = false;
-  bool isLoadingArtists = false;
-  String? songsError;
-  String? artistsError;
-  List<Map<String, dynamic>> missingSongSessions = [];
   List<Map<String, dynamic>> missingArtistSessions = [];
+  List<Map<String, dynamic>> missingSongSessions = [];
   List<Artist> allArtists = [];
+  String? artistsError;
+  String? songsError;
+  bool isLoadingArtists = false;
+  bool isLoadingSongs = false;
+
+  // App Insights state
+  AppInsights? appInsights;
+  bool isLoadingInsights = false;
+  String? insightsError;
   
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _loadMissingSongSessions();
+    _tabController = TabController(length: 5, vsync: this);
     _loadMissingArtistSessions();
+    _loadMissingSongSessions();
     _loadAllArtists();
+    _loadAppInsights();
     // Initialize the global config provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GlobalConfigProvider>().initialize();
     });
+  }
+
+  /// Load application insights and statistics
+  Future<void> _loadAppInsights() async {
+    if (mounted) {
+      setState(() {
+        isLoadingInsights = true;
+        insightsError = null;
+      });
+    }
+
+    try {
+      final data = await AdminService.getAppInsights();
+      if (data != null && mounted) {
+        setState(() {
+          appInsights = AppInsights.fromJson(data);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          insightsError = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingInsights = false;
+        });
+      }
+    }
   }
 
   @override
@@ -687,6 +728,22 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             ],
                           ),
                         ),
+                        const Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.analytics, size: 18),
+                              SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Insights',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -702,6 +759,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     _buildMissingArtistsTab(),
                     _buildNotificationsTab(),
                     _buildConfigTab(),
+                    _buildInsightsTab(),
                   ],
                 ),
               ),
@@ -1326,6 +1384,78 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                               icon: const Icon(Icons.refresh, size: 18),
                               label: const Text(
                                 'Reset First Launch',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Reset Notification Permission for Current User Button
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: configProvider.isLoading 
+                                  ? null 
+                                  : () async {
+                                      try {
+                                        // Get current user ID
+                                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                        final userId = authProvider.user?.userId;
+                                        
+                                        if (userId == null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('❌ No user logged in'),
+                                              backgroundColor: Colors.red,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        
+                                        // Reset notification permission for this user
+                                        await FirstLaunchService().resetNotificationPermissionForUser(userId);
+                                        
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('🔔 Notification permission reset for user: $userId\nRestart app to see permission dialog.'),
+                                              backgroundColor: Colors.orange,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('❌ Error resetting notification permission: $e'),
+                                              backgroundColor: Colors.red,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF8C00),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.notifications_off, size: 18),
+                              label: const Text(
+                                'Reset User Notifications',
                                 style: TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -2122,6 +2252,403 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       ),
     );
   }
+
+  Widget _buildInsightsTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.15),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00D4FF), Color(0xFF0099CC)],
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.analytics,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'App Insights',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Application statistics and metrics',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isLoadingInsights)
+                        const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF00D4FF),
+                            strokeWidth: 2,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Refresh Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoadingInsights ? null : _loadAppInsights,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text(
+                        'Refresh Insights',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Error State
+            if (insightsError != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.red.withOpacity(0.1),
+                      Colors.red.withOpacity(0.05),
+                    ],
+                  ),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.redAccent),
+                        SizedBox(width: 8),
+                        Text(
+                          'Error Loading Insights',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      insightsError!,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
+            // Insights Cards
+            if (appInsights != null) ...[
+              // User Statistics
+              _buildInsightCard(
+                title: 'Total Users',
+                value: appInsights!.totalUsers.toString(),
+                icon: Icons.people,
+                color: const Color(0xFF3B82F6),
+                description: 'Registered users in the app',
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Engagement Statistics
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInsightCard(
+                      title: 'Total Likes',
+                      value: appInsights!.totalLikes.toString(),
+                      icon: Icons.favorite,
+                      color: const Color(0xFFFF006E),
+                      description: 'User-Artist likes',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildInsightCard(
+                      title: 'Total Follows',
+                      value: appInsights!.totalFollows.toString(),
+                      icon: Icons.notifications_active,
+                      color: const Color(0xFF10B981),
+                      description: 'User-Artist follows',
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Content Statistics
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildInsightCard(
+                      title: 'Workshops',
+                      value: appInsights!.totalWorkshops.toString(),
+                      icon: Icons.event,
+                      color: const Color(0xFF8B5CF6),
+                      description: 'Total workshops',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildInsightCard(
+                      title: 'Notifications',
+                      value: appInsights!.totalNotificationsSent.toString(),
+                      icon: Icons.send,
+                      color: const Color(0xFFFF8C00),
+                      description: 'Notifications sent',
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Last Updated
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withOpacity(0.1),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.update,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Last updated: ${_formatDateTime(appInsights!.lastUpdated)}',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInsightCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: color.withOpacity(0.2),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(String isoString) {
+    try {
+      final dateTime = DateTime.parse(isoString);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inHours < 1) {
+        return '${difference.inMinutes}m ago';
+      } else if (difference.inDays < 1) {
+        return '${difference.inHours}h ago';
+      } else {
+        return '${difference.inDays}d ago';
+      }
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
+  Widget _APNsTestWidget() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: const Text(
+        'APNs Test Widget - Implementation needed',
+        style: TextStyle(
+          color: Colors.white70,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _ArtistNotificationTestWidget({required List<Artist> allArtists}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'Artist Notification Test Widget - ${allArtists.length} artists available',
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
 }
 
 class _AssignArtistDialog extends StatefulWidget {
@@ -2140,65 +2667,20 @@ class _AssignArtistDialog extends StatefulWidget {
 }
 
 class _AssignArtistDialogState extends State<_AssignArtistDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  List<Artist> filteredArtists = [];
-  Set<String> selectedArtistIds = {};
-
-  @override
-  void initState() {
-    super.initState();
-    filteredArtists = widget.allArtists;
-    _searchController.addListener(_filterArtists);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterArtists);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterArtists() {
-    final query = _searchController.text.toLowerCase();
-    if (mounted) {
-      setState(() {
-        if (query.isEmpty) {
-          filteredArtists = widget.allArtists;
-        } else {
-          filteredArtists = widget.allArtists.where((artist) {
-            return artist.name.toLowerCase().contains(query);
-          }).toList();
-        }
-      });
-    }
-  }
-
-  void _toggleArtistSelection(String artistId) {
-    setState(() {
-      if (selectedArtistIds.contains(artistId)) {
-        selectedArtistIds.remove(artistId);
-      } else {
-        selectedArtistIds.add(artistId);
-      }
-    });
-  }
-
-  List<Artist> get selectedArtists {
-    return widget.allArtists.where((artist) => selectedArtistIds.contains(artist.id)).toList();
-  }
+  List<String> selectedArtistIds = [];
+  List<Artist> selectedArtists = [];
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        margin: const EdgeInsets.all(16),
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8, // Limit to 80% of screen height
-          maxWidth: MediaQuery.of(context).size.width * 0.9,   // Limit to 90% of screen width
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -2213,38 +2695,28 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Fixed Header
-                Padding(
+                // Header
+                Container(
                   padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
-                      // Header Row
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_add,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
+                      const Icon(
+                        Icons.person_add,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
                               'Assign Artist',
                               style: TextStyle(
                                 color: Colors.white,
@@ -2252,200 +2724,92 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Workshop Info
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.session['song'] ?? 'Unknown Workshop',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                             const SizedBox(height: 4),
                             Text(
-                              '📅 ${widget.session['date']} • 📍 ${widget.session['studio_name']}',
+                              'Select artists for this workshop',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withOpacity(0.7),
                                 fontSize: 14,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      
-                      // Search Bar
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white.withOpacity(0.1),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1,
-                          ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
                         ),
-                        child: TextField(
-                          controller: _searchController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Search artists...',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                            ),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Colors.white.withOpacity(0.6),
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(
-                                      Icons.clear,
-                                      color: Colors.white.withOpacity(0.6),
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Results count and selected count
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${filteredArtists.length} artist${filteredArtists.length != 1 ? 's' : ''} found',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          if (selectedArtistIds.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: const Color(0xFFFF006E).withOpacity(0.2),
-                                border: Border.all(color: const Color(0xFFFF006E)),
-                              ),
-                              child: Text(
-                                '${selectedArtistIds.length} selected',
-                                style: const TextStyle(
-                                  color: Color(0xFFFF006E),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
                       ),
                     ],
                   ),
                 ),
                 
-                // Scrollable Artist List
-                Flexible(
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
-                    child: filteredArtists.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Text(
-                                'No artists found matching "${_searchController.text}"',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 16,
-                                ),
-                                textAlign: TextAlign.center,
+                // Artist List
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: widget.allArtists.length,
+                    itemBuilder: (context, index) {
+                      final artist = widget.allArtists[index];
+                      final isSelected = selectedArtistIds.contains(artist.id);
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: isSelected 
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.white.withOpacity(0.1),
+                          border: Border.all(
+                            color: isSelected 
+                                ? const Color(0xFF00D4FF)
+                                : Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFF00D4FF),
+                            child: Text(
+                              artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: filteredArtists.length,
-                            itemBuilder: (context, index) {
-                              final artist = filteredArtists[index];
-                              final isSelected = selectedArtistIds.contains(artist.id);
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: isSelected 
-                                      ? const Color(0xFFFF006E).withOpacity(0.2)
-                                      : Colors.white.withOpacity(0.1),
-                                  border: isSelected 
-                                      ? Border.all(color: const Color(0xFFFF006E))
-                                      : null,
-                                ),
-                                child: ListTile(
-                                  leading: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Checkbox(
-                                        value: isSelected,
-                                        onChanged: (bool? value) {
-                                          _toggleArtistSelection(artist.id);
-                                        },
-                                        activeColor: const Color(0xFFFF006E),
-                                        checkColor: Colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      CircleAvatar(
-                                        backgroundColor: const Color(0xFFFF006E),
-                                        child: Text(
-                                          artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  title: Text(
-                                    artist.name,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: isSelected ? 16 : 14,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    _toggleArtistSelection(artist.id);
-                                  },
-                                ),
-                              );
-                            },
                           ),
+                          title: Text(
+                            artist.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF00D4FF),
+                                )
+                              : const Icon(
+                                  Icons.circle_outlined,
+                                  color: Colors.white54,
+                                ),
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                selectedArtistIds.remove(artist.id);
+                                selectedArtists.removeWhere((a) => a.id == artist.id);
+                              } else {
+                                selectedArtistIds.add(artist.id);
+                                selectedArtists.add(artist);
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
                 
@@ -2486,380 +2850,4 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
       ),
     );
   }
-}
-
-// APNs Test Widget
-class _APNsTestWidget extends StatefulWidget {
-  @override
-  State<_APNsTestWidget> createState() => _APNsTestWidgetState();
-}
-
-class _APNsTestWidgetState extends State<_APNsTestWidget> {
-  final TextEditingController _tokenController = TextEditingController();
-  final TextEditingController _titleController = TextEditingController(text: 'Test Notification');
-  final TextEditingController _bodyController = TextEditingController(text: 'This is a test notification from Nachna!');
-  bool _isSending = false;
-
-  Future<void> _sendTestNotification() async {
-    if (_tokenController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Please enter a device token'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSending = true;
-    });
-
-    try {
-      final token = await AuthService.getToken();
-      if (token == null) throw Exception('No authentication token');
-
-      final response = await http.post(
-        Uri.parse('https://nachna.com/admin/api/test-apns'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'device_token': _tokenController.text.trim(),
-          'title': _titleController.text.trim(),
-          'body': _bodyController.text.trim(),
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Test notification sent successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        throw Exception('Failed to send notification (${response.statusCode})');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Device Token Input
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: _tokenController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Enter device token...',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-              prefixIcon: Icon(Icons.key, color: Colors.white.withOpacity(0.6)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // Title Input
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: _titleController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Notification title...',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-              prefixIcon: Icon(Icons.title, color: Colors.white.withOpacity(0.6)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // Body Input
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: _bodyController,
-            style: const TextStyle(color: Colors.white),
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Notification body...',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-              prefixIcon: Icon(Icons.message, color: Colors.white.withOpacity(0.6)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Send Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _isSending ? null : _sendTestNotification,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D4FF),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: _isSending
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Send Test Notification',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _tokenController.dispose();
-    _titleController.dispose();
-    _bodyController.dispose();
-    super.dispose();
-  }
-}
-
-// Artist Notification Test Widget
-class _ArtistNotificationTestWidget extends StatefulWidget {
-  final List<Artist> allArtists;
-
-  const _ArtistNotificationTestWidget({required this.allArtists});
-
-  @override
-  State<_ArtistNotificationTestWidget> createState() => _ArtistNotificationTestWidgetState();
-}
-
-class _ArtistNotificationTestWidgetState extends State<_ArtistNotificationTestWidget> {
-  Artist? _selectedArtist;
-  bool _isSending = false;
-
-  Future<void> _sendArtistNotification() async {
-    if (_selectedArtist == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Please select an artist'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSending = true;
-    });
-
-    try {
-      final token = await AuthService.getToken();
-      if (token == null) throw Exception('No authentication token');
-
-      final response = await http.post(
-        Uri.parse('https://nachna.com/admin/api/send-test-notification'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'artist_id': _selectedArtist!.id,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Notification sent to all users following ${_selectedArtist!.name}!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        throw Exception('Failed to send notification (${response.statusCode})');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Artist Dropdown
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white.withOpacity(0.1),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<Artist>(
-              value: _selectedArtist,
-              hint: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Select an artist...',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6)),
-                ),
-              ),
-              isExpanded: true,
-              dropdownColor: const Color(0xFF1A1A2E),
-              icon: Icon(Icons.arrow_drop_down, color: Colors.white.withOpacity(0.6)),
-              style: const TextStyle(color: Colors.white),
-              items: widget.allArtists.map((artist) {
-                return DropdownMenuItem<Artist>(
-                  value: artist,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(artist.name),
-                  ),
-                );
-              }).toList(),
-              onChanged: (Artist? newValue) {
-                setState(() {
-                  _selectedArtist = newValue;
-                });
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Info Box
-        if (_selectedArtist != null)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.blue.withOpacity(0.1),
-              border: Border.all(
-                color: Colors.blue.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.withOpacity(0.8)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'This will send a notification to all users who have enabled notifications for ${_selectedArtist!.name}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 16),
-        
-        // Send Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _isSending ? null : _sendArtistNotification,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9C27B0),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: _isSending
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Send Artist Notification',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
 } 

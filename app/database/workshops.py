@@ -315,4 +315,35 @@ class DatabaseOperations:
         )]
         return CategorizedWorkshopResponse(
             this_week=final_this_week, post_this_week=sorted_post_this_week
-        ) 
+        )
+
+    @staticmethod
+    def get_workshops_missing_songs():
+        """Get workshops that are missing song information."""
+        client = get_mongo_client()
+        
+        # Find workshops where song_name is null, empty, or missing
+        workshops = client["dance_app"]["workshops"].find({
+            "$or": [
+                {"song_name": {"$exists": False}},
+                {"song_name": None},
+                {"song_name": ""},
+                {"song_name": {"$regex": "^\\s*$"}}  # Only whitespace
+            ]
+        })
+        
+        return list(workshops)
+
+    @staticmethod
+    def get_total_workshop_count() -> int:
+        """Get the total count of workshops in the database."""
+        client = get_mongo_client()
+        
+        try:
+            # Count all workshops in the workshops collection
+            total_count = client["dance_app"]["workshops"].count_documents({})
+            return total_count
+            
+        except Exception as e:
+            print(f"Error getting total workshop count: {e}")
+            return 0 

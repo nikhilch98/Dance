@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from bson import ObjectId
 
 from utils.utils import get_mongo_client
@@ -138,36 +138,81 @@ class NotificationOperations:
         return existing_notification is not None
     
     @staticmethod
-    def get_recent_notification_stats(artist_id: str, days: int = 7) -> dict:
-        """Get statistics about recent notifications for an artist."""
+    def get_recent_notification_stats(timeframe_days: int = 7) -> Dict[str, int]:
+        """Get statistics about recent notifications sent."""
         client = get_mongo_client()
         
-        # Calculate the cutoff date
+        cutoff_date = datetime.utcnow() - timedelta(days=timeframe_days)
+        
+        try:
+            # Count total notifications sent in timeframe
+            total_sent = client["dance_app"]["notifications"].count_documents({
+                "sent_at": {"$gte": cutoff_date}
+            })
+            
+            # Count unique users who received notifications
+            unique_users_pipeline = [
+                {"$match": {"sent_at": {"$gte": cutoff_date}}},
+                {"$group": {"_id": "$user_id"}},
+                {"$count": "unique_users"}
+            ]
+            
+            unique_users_result = list(client["dance_app"]["notifications"].aggregate(unique_users_pipeline))
+            unique_users = unique_users_result[0]["unique_users"] if unique_users_result else 0
+            
+            return {
+                "total_sent": total_sent,
+                "unique_users": unique_users,
+                "timeframe_days": timeframe_days
+            }
+            
+        except Exception as e:
+            print(f"Error getting notification stats: {e}")
+            return {"total_sent": 0, "unique_users": 0, "timeframe_days": timeframe_days}
+
+    @staticmethod
+    def get_total_notifications_sent() -> int:
+        """Get the total count of all notifications sent."""
+        client = get_mongo_client()
+        
+        try:
+            # Count all notifications in the notifications collection
+            total_count = client["dance_app"]["notifications"].count_documents({})
+            return total_count
+            
+        except Exception as e:
+            print(f"Error getting total notifications sent: {e}")
+            return 0
+    
+    @staticmethod
+    def get_recent_artist_notification_stats(artist_id: str, days: int = 7) -> dict:
+        """Get recent notification statistics for a specific artist."""
+        client = get_mongo_client()
+        
         cutoff_date = datetime.utcnow() - timedelta(days=days)
         
-        # Get all recent notifications for this artist
-        recent_notifications = list(client["dance_app"]["notification_history"].find({
-            "artist_id": artist_id,
-            "is_sent": True,
-            "sent_at": {"$gte": cutoff_date}
-        }))
-        
-        # Count unique users who received notifications
-        unique_users = set(notif["user_id"] for notif in recent_notifications)
-        
-        # Count by notification type
-        type_counts = {}
-        for notif in recent_notifications:
-            notif_type = notif.get("notification_type", "unknown")
-            type_counts[notif_type] = type_counts.get(notif_type, 0) + 1
-        
-        return {
-            "total_notifications": len(recent_notifications),
-            "unique_users_notified": len(unique_users),
-            "notification_types": type_counts,
-            "period_days": days,
-            "cutoff_date": cutoff_date
-        }
+        try:
+            # Count notifications sent for this artist in the timeframe
+            count = client["dance_app"]["notifications"].count_documents({
+                "artist_id": artist_id,
+                "sent_at": {"$gte": cutoff_date}
+            })
+            
+            return {
+                "artist_id": artist_id,
+                "notifications_sent": count,
+                "timeframe_days": days,
+                "cutoff_date": cutoff_date.isoformat()
+            }
+            
+        except Exception as e:
+            print(f"Error getting recent notification stats for artist {artist_id}: {e}")
+            return {
+                "artist_id": artist_id,
+                "notifications_sent": 0,
+                "timeframe_days": days,
+                "error": str(e)
+            }
     
     @staticmethod
     def record_notification_sent(user_id: str, workshop_uuid: str, artist_id: str, notification_type: str, title: str, body: str) -> bool:

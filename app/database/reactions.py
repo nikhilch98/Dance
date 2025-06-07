@@ -106,7 +106,7 @@ class ReactionOperations:
                 "user_id": user_id,
                 "entity_id": entity_id,
                 "entity_type": entity_type.value,
-                "reaction": reaction_type.value,
+                "reaction_type": reaction_type.value,
                 "is_deleted": {"$ne": True}
             },
             {
@@ -210,4 +210,40 @@ class ReactionOperations:
             "entity_id": entity_id,
             "entity_type": entity_type.value,
             "is_deleted": {"$ne": True}
-        }) 
+        })
+    
+    @staticmethod
+    def get_total_reaction_count(reaction_type: ReactionType, entity_type: EntityType) -> int:
+        """Get the total count of distinct reactions (user, entity combinations) by type."""
+        client = get_mongo_client()
+        
+        try:
+            # Count distinct user-entity combinations for the given reaction and entity type
+            # Only count non-deleted reactions
+            pipeline = [
+                {
+                    "$match": {
+                        "reaction_type": reaction_type.value,
+                        "entity_type": entity_type.value,
+                        "is_deleted": {"$ne": True}
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "user_id": "$user_id",
+                            "entity_id": "$entity_id"
+                        }
+                    }
+                },
+                {
+                    "$count": "total"
+                }
+            ]
+            
+            result = list(client["dance_app"]["reactions"].aggregate(pipeline))
+            return result[0]["total"] if result else 0
+            
+        except Exception as e:
+            print(f"Error getting total reaction count: {e}")
+            return 0 

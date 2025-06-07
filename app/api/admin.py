@@ -1,16 +1,24 @@
 """Admin API routes."""
 
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from app.services.auth import verify_admin_user
 from app.models.admin import AssignArtistPayload, AssignSongPayload
 from utils.utils import get_mongo_client
+from app.database.reactions import ReactionOperations
+from app.database.users import UserOperations
+from app.database.notifications import NotificationOperations
+from app.database.workshops import DatabaseOperations
+from app.models.reactions import ReactionType, EntityType
+from app.services.notifications import NotificationService
+import json
+import logging
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -355,4 +363,47 @@ async def admin_send_test_notification(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to send test notification: {str(e)}"
+        ) 
+
+
+@router.get("/app-insights")
+async def get_app_insights(user_id: str = Depends(verify_admin_user)):
+    """Get application insights and statistics."""
+    try:
+        # Get total distinct users
+        total_users = UserOperations.get_total_user_count()
+        
+        # Get total distinct likes (user, artist combinations)
+        total_likes = ReactionOperations.get_total_reaction_count(
+            reaction_type=ReactionType.LIKE,
+            entity_type=EntityType.ARTIST
+        )
+        
+        # Get total distinct follows (user, artist combinations)
+        total_follows = ReactionOperations.get_total_reaction_count(
+            reaction_type=ReactionType.NOTIFY,
+            entity_type=EntityType.ARTIST
+        )
+        
+        # Get additional statistics
+        total_workshops = DatabaseOperations.get_total_workshop_count()
+        total_notifications_sent = NotificationOperations.get_total_notifications_sent()
+        
+        return {
+            "success": True,
+            "data": {
+                "total_users": total_users,
+                "total_likes": total_likes,
+                "total_follows": total_follows,
+                "total_workshops": total_workshops,
+                "total_notifications_sent": total_notifications_sent,
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Error getting app insights: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get app insights: {str(e)}"
         ) 

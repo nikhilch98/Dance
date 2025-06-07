@@ -151,3 +151,41 @@ class UserOperations:
         result = db["users"].delete_one({"_id": ObjectId(user_id)})
         
         return result.deleted_count > 0 
+
+    @staticmethod
+    def delete_user(user_id: str) -> bool:
+        """Delete a user and all their associated data."""
+        client = get_mongo_client()
+        
+        try:
+            # Delete user document
+            user_result = client["dance_app"]["users"].delete_one({"_id": ObjectId(user_id)})
+            
+            # Delete user's reactions
+            client["dance_app"]["reactions"].delete_many({"user_id": user_id})
+            
+            # Delete user's device tokens
+            client["dance_app"]["device_tokens"].delete_many({"user_id": user_id})
+            
+            # Delete user's profile picture if exists
+            client["dance_app"]["profile_pictures"].delete_many({"user_id": user_id})
+            
+            return user_result.deleted_count > 0
+            
+        except Exception as e:
+            print(f"Error deleting user: {e}")
+            return False
+
+    @staticmethod
+    def get_total_user_count() -> int:
+        """Get the total count of distinct users in the database."""
+        client = get_mongo_client()
+        
+        try:
+            # Count all users in the users collection
+            total_count = client["dance_app"]["users"].count_documents({})
+            return total_count
+            
+        except Exception as e:
+            print(f"Error getting total user count: {e}")
+            return 0 

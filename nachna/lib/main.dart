@@ -165,10 +165,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (_hasShownNotificationDialog) return;
     
     try {
-      final shouldShow = await FirstLaunchService().shouldRequestNotificationPermission();
+      // Get the current user ID from AuthProvider
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.userId;
+      
+      if (userId == null) {
+        print('[AuthWrapper] No user ID available for notification permission check');
+        return;
+      }
+      
+      final shouldShow = await FirstLaunchService().shouldRequestNotificationPermission(userId: userId);
       
       if (shouldShow && mounted) {
-        print('[AuthWrapper] Showing notification permission dialog...');
+        print('[AuthWrapper] Showing notification permission dialog for user: $userId');
         _hasShownNotificationDialog = true;
         
         // Wait a bit for the home screen to fully load
@@ -179,18 +188,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
             context: context,
             barrierDismissible: false,
             builder: (context) => NotificationPermissionDialog(
+              userId: userId,
               onPermissionGranted: () {
-                print('[AuthWrapper] Notification permission granted');
+                print('[AuthWrapper] Notification permission granted for user: $userId');
               },
               onPermissionDenied: () {
-                print('[AuthWrapper] Notification permission denied');
+                print('[AuthWrapper] Notification permission denied for user: $userId');
               },
               onDismissed: () {
-                print('[AuthWrapper] Notification permission dialog dismissed');
+                print('[AuthWrapper] Notification permission dialog dismissed for user: $userId');
               },
             ),
           );
         }
+      } else {
+        print('[AuthWrapper] Not showing notification dialog for user: $userId (shouldShow: $shouldShow)');
       }
     } catch (e) {
       print('[AuthWrapper] Error showing notification permission dialog: $e');
@@ -277,6 +289,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             _hasRegisteredDeviceToken = false;
             _hasLoadedReactions = false;
             _hasRefreshedConfigThisSession = false;
+            _hasShownNotificationDialog = false; // Reset notification dialog flag
             
             // Clear other providers when user becomes unauthenticated
             WidgetsBinding.instance.addPostFrameCallback((_) {
