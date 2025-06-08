@@ -27,6 +27,8 @@ class WorkshopListItem {
   final String? time;
   @JsonKey(name: 'event_type')
   final String? eventType;
+  @JsonKey(name: 'choreo_insta_link')
+  final String? choreoInstaLink;
 
   WorkshopListItem({
     required this.uuid,
@@ -43,6 +45,7 @@ class WorkshopListItem {
     this.date,
     this.time,
     this.eventType,
+    this.choreoInstaLink,
   });
 
   factory WorkshopListItem.fromJson(Map<String, dynamic> json) => _$WorkshopListItemFromJson(json);
@@ -67,6 +70,8 @@ class WorkshopSession {
   final int timestampEpoch;
   @JsonKey(name: 'event_type')
   final String? eventType;
+  @JsonKey(name: 'choreo_insta_link')
+  final String? choreoInstaLink;
 
   // Getter for unique workshop ID
   String get id => timestampEpoch.toString();
@@ -82,6 +87,7 @@ class WorkshopSession {
     this.pricingInfo,
     required this.timestampEpoch,
     this.eventType,
+    this.choreoInstaLink,
   });
 
   factory WorkshopSession.fromJson(Map<String, dynamic> json) => _$WorkshopSessionFromJson(json);

@@ -26,6 +26,7 @@ WorkshopListItem _$WorkshopListItemFromJson(Map<String, dynamic> json) =>
       date: json['date'] as String?,
       time: json['time'] as String?,
       eventType: json['event_type'] as String?,
+      choreoInstaLink: json['choreo_insta_link'] as String?,
     );
 
 Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
@@ -44,6 +45,7 @@ Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
       'date': instance.date,
       'time': instance.time,
       'event_type': instance.eventType,
+      'choreo_insta_link': instance.choreoInstaLink,
     };
 
 WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
@@ -60,6 +62,7 @@ WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
       pricingInfo: json['pricing_info'] as String?,
       timestampEpoch: (json['timestamp_epoch'] as num).toInt(),
       eventType: json['event_type'] as String?,
+      choreoInstaLink: json['choreo_insta_link'] as String?,
     );
 
 Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
@@ -74,6 +77,7 @@ Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
       'pricing_info': instance.pricingInfo,
       'timestamp_epoch': instance.timestampEpoch,
       'event_type': instance.eventType,
+      'choreo_insta_link': instance.choreoInstaLink,
     };
 
 DaySchedule _$DayScheduleFromJson(Map<String, dynamic> json) => DaySchedule(

@@ -802,6 +802,53 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     
                     const SizedBox(width: 8),
                     
+                    // Instagram Icon (if choreo link is available)
+                    if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () async {
+                            final uri = Uri.parse(workshop.choreoInstaLink!);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            } else {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Could not open Instagram link'),
+                                    backgroundColor: Colors.red.withOpacity(0.8),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFE1306C), Color(0xFFC13584)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFE1306C).withOpacity(0.3),
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    
                     // Register Button (vertically aligned with main content)
                     SizedBox(
                       width: 65,

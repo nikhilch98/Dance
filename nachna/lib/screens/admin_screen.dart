@@ -3196,7 +3196,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                           _selectedArtistId == null 
                               ? 'Select an Artist First'
                               : 'Send Test Artist Notification',
-                          style: const TextStyle(
+        style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -3399,8 +3399,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         instagramLinksError!,
                         style: TextStyle(
                           color: Colors.red.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
+          fontSize: 14,
+        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
