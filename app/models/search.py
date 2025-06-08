@@ -1,0 +1,35 @@
+"""Search-related data models."""
+
+from typing import List, Optional
+from pydantic import BaseModel, HttpUrl
+from datetime import datetime
+
+
+class SearchUserResult(BaseModel):
+    """User search result model."""
+    user_id: str
+    name: str
+    profile_picture_url: Optional[str] = None
+    created_at: datetime
+
+
+class SearchArtistResult(BaseModel):
+    """Artist search result model."""
+    id: str
+    name: str
+    image_url: Optional[HttpUrl] = None
+    instagram_link: HttpUrl
+
+
+class SearchWorkshopResult(BaseModel):
+    """Workshop search result model."""
+    uuid: str
+    song: Optional[str]
+    artist_names: List[str]
+    studio_name: str
+    date: str
+    time: str
+    timestamp_epoch: int
+    payment_link: HttpUrl
+    pricing_info: Optional[str] = None
+    event_type: Optional[str] = None 

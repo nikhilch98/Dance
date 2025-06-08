@@ -36,6 +36,9 @@ from .admin import (
     AnalyzeRequest,
 )
 
+# Search models
+from .search import SearchUserResult, SearchArtistResult, SearchWorkshopResult
+
 __all__ = [
     # Auth models
     "UserRegistration",
@@ -65,6 +68,10 @@ __all__ = [
     "DaySchedule",
     "CategorizedWorkshopResponse",
     "EventDetails",
+    # Search models
+    "SearchUserResult",
+    "SearchArtistResult",
+    "SearchWorkshopResult",
     # Admin models
     "AssignArtistPayload",
     "AssignSongPayload",

@@ -6,6 +6,7 @@ from .reactions import router as reactions_router
 from .notifications import router as notifications_router
 from .admin import router as admin_router
 from .web import router as web_router
+from .search import router as search_router
 
 __all__ = [
     "auth_router",
@@ -14,4 +15,5 @@ __all__ = [
     "notifications_router",
     "admin_router",
     "web_router",
+    "search_router",
 ] 

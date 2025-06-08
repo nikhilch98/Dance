@@ -17,6 +17,7 @@ from app.api import (
     notifications_router,
     admin_router,
     web_router,
+    search_router,
 )
 from app.services.notifications import notification_service
 from utils.utils import DatabaseManager, start_cache_invalidation_watcher
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(workshops_router, prefix="/api", tags=["Workshops"])
     app.include_router(reactions_router, prefix="/api", tags=["Reactions"])
     app.include_router(notifications_router, prefix="/api", tags=["Notifications"])
+    app.include_router(search_router, prefix="/api", tags=["Search"])
     app.include_router(admin_router, prefix="/admin", tags=["Admin"])
     app.include_router(web_router, tags=["Web"])
 

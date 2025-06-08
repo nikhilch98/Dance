@@ -32,7 +32,7 @@ python scripts/run_api_tests.py --group auth
 python scripts/run_api_tests.py --verbose --report
 
 # Test against local development server
-python scripts/run_api_tests.py --base-url http://localhost:8000
+python scripts/run_api_tests.py --base-url http://localhost:8002
 ```
 
 ## 📊 Test Coverage

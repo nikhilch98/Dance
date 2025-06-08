@@ -126,6 +126,7 @@ class ApiTestRunner:
             # Run test groups
             self.test_authentication_apis()
             self.test_data_fetching_apis()
+            self.test_search_apis()
             self.test_reaction_apis()
             self.test_notification_apis()
             self.test_admin_apis()
@@ -374,6 +375,144 @@ class ApiTestRunner:
             self.log_test_result("GET /api/profile-picture/{picture_id}", True, "Profile picture not found (expected)")
         except Exception as e:
             self.log_test_result("GET /api/profile-picture/{picture_id}", False, str(e))
+    
+    def test_search_apis(self):
+        """Test search-related APIs"""
+        print("\n🔍 Testing Search APIs")
+        print("-" * 40)
+        
+        # Test search users
+        try:
+            response = self.make_request('GET', '/api/search/users?q=test&limit=10&version=v2', auth_required=True)
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            data = response.json()
+            if not isinstance(data, list):
+                raise Exception(f"Expected list but got {type(data)}: {data}")
+            
+            # Validate user search result structure if results exist
+            if data:
+                user_result = data[0]
+                if 'user_id' not in user_result:
+                    raise Exception(f"Missing 'user_id' in user result: {user_result}")
+                if 'name' not in user_result:
+                    raise Exception(f"Missing 'name' in user result: {user_result}")
+                if 'created_at' not in user_result:
+                    raise Exception(f"Missing 'created_at' in user result: {user_result}")
+            
+            self.log_test_result("GET /api/search/users", True, f"Found {len(data)} users")
+        except Exception as e:
+            self.log_test_result("GET /api/search/users", False, str(e))
+        
+        # Test search artists
+        try:
+            response = self.make_request('GET', '/api/search/artists?q=an&limit=10&version=v2', auth_required=True)
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            data = response.json()
+            if not isinstance(data, list):
+                raise Exception(f"Expected list but got {type(data)}: {data}")
+            
+            # Validate artist search result structure if results exist
+            if data:
+                artist_result = data[0]
+                if 'id' not in artist_result:
+                    raise Exception(f"Missing 'id' in artist result: {artist_result}")
+                if 'name' not in artist_result:
+                    raise Exception(f"Missing 'name' in artist result: {artist_result}")
+                if 'instagram_link' not in artist_result:
+                    raise Exception(f"Missing 'instagram_link' in artist result: {artist_result}")
+            
+            self.log_test_result("GET /api/search/artists", True, f"Found {len(data)} artists")
+        except Exception as e:
+            self.log_test_result("GET /api/search/artists", False, str(e))
+        
+        # Test search workshops
+        try:
+            response = self.make_request('GET', '/api/search/workshops?q=dance&limit=10&version=v2', auth_required=True)
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            data = response.json()
+            if not isinstance(data, list):
+                raise Exception(f"Expected list but got {type(data)}: {data}")
+            
+            # Validate workshop search result structure if results exist
+            if data:
+                workshop_result = data[0]
+                if 'uuid' not in workshop_result:
+                    raise Exception(f"Missing 'uuid' in workshop result: {workshop_result}")
+                if 'artist_names' not in workshop_result:
+                    raise Exception(f"Missing 'artist_names' in workshop result: {workshop_result}")
+                if 'studio_name' not in workshop_result:
+                    raise Exception(f"Missing 'studio_name' in workshop result: {workshop_result}")
+                if 'date' not in workshop_result:
+                    raise Exception(f"Missing 'date' in workshop result: {workshop_result}")
+                if 'time' not in workshop_result:
+                    raise Exception(f"Missing 'time' in workshop result: {workshop_result}")
+                if 'payment_link' not in workshop_result:
+                    raise Exception(f"Missing 'payment_link' in workshop result: {workshop_result}")
+            
+            self.log_test_result("GET /api/search/workshops", True, f"Found {len(data)} workshops")
+        except Exception as e:
+            self.log_test_result("GET /api/search/workshops", False, str(e))
+        
+        # Test search with empty query (should return validation error)
+        try:
+            response = self.make_request('GET', '/api/search/users?q=&limit=10&version=v2', auth_required=True)
+            
+            # Should return 422 for validation error (query too short)
+            if response.status_code != 422:
+                raise Exception(f"Expected 422 but got {response.status_code}: {response.text}")
+            
+            self.log_test_result("GET /api/search/users (empty query)", True, "Validation error as expected")
+        except Exception as e:
+            self.log_test_result("GET /api/search/users (empty query)", False, str(e))
+        
+        # Test search with single character (should return validation error)
+        try:
+            response = self.make_request('GET', '/api/search/artists?q=a&limit=10&version=v2', auth_required=True)
+            
+            # Should return 422 for validation error (query too short)
+            if response.status_code != 422:
+                raise Exception(f"Expected 422 but got {response.status_code}: {response.text}")
+            
+            self.log_test_result("GET /api/search/artists (short query)", True, "Validation error as expected")
+        except Exception as e:
+            self.log_test_result("GET /api/search/artists (short query)", False, str(e))
+        
+        # Test search with special characters
+        try:
+            special_query = "test@#$%"
+            response = self.make_request('GET', f'/api/search/workshops?q={special_query}&limit=10&version=v2', auth_required=True)
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            data = response.json()
+            if not isinstance(data, list):
+                raise Exception(f"Expected list but got {type(data)}: {data}")
+            
+            self.log_test_result("GET /api/search/workshops (special chars)", True, "Handled special characters")
+        except Exception as e:
+            self.log_test_result("GET /api/search/workshops (special chars)", False, str(e))
+        
+        # Test search without authentication
+        try:
+            response = self.make_request('GET', '/api/search/users?q=test&limit=10&version=v2', auth_required=False)
+            
+            # Should return 401 for unauthorized
+            if response.status_code != 401:
+                raise Exception(f"Expected 401 but got {response.status_code}: {response.text}")
+            
+            self.log_test_result("GET /api/search/users (no auth)", True, "Unauthorized as expected")
+        except Exception as e:
+            self.log_test_result("GET /api/search/users (no auth)", False, str(e))
     
     def test_reaction_apis(self):
         """Test reaction-related APIs"""

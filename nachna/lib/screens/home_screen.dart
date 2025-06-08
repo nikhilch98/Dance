@@ -7,6 +7,7 @@ import './artists_screen.dart';
 import './workshops_screen.dart';
 import './profile_screen.dart';
 import './admin_screen.dart';
+import './search_screen.dart';
 import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
@@ -69,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
           body: Center(
             child: screens.elementAt(_selectedIndex),
           ),
+          floatingActionButton: _buildSearchButton(),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
           bottomNavigationBar: Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -203,6 +206,49 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchButton() {
+    return Container(
+      margin: const EdgeInsets.only(top: 50, right: 10),
+      child: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SearchScreen()),
+          );
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+            ),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D4FF).withOpacity(0.3),
+                offset: const Offset(0, 4),
+                blurRadius: 12,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.search,
+            color: Colors.white,
+            size: 24,
+          ),
         ),
       ),
     );
