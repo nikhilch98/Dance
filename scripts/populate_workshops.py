@@ -112,7 +112,6 @@ class EventProcessor:
                 ],
                 "updated_at": time.time(),
                 "version": version,
-                "choreo_insta_link": None,
             }
 
             return event_data # Return event_data
@@ -336,7 +335,7 @@ class StudioProcessor:
                                 "artist_id_list": event_detail["artist_id_list"], # Use event_detail
                                 "updated_at": time.time(),
                                 "version": self.version,
-                                "choreo_insta_link": event_detail["choreo_insta_link"],
+                                "choreo_insta_link": None,
                             }
 
                             # Check if the event is in the past using the first time_details entry
@@ -417,10 +416,10 @@ def parse_arguments():
         required=True,
         choices=[
             "all",
-            "dance_n_addiction",
-            "dance.inn.bangalore",
-            "vins.dance.co",
-            "manifestbytmn",
+            "dna",
+            "danceinn",
+            "vins",
+            "manifest",
         ],
         help="Specify the studio to populate workshops for",
     )
@@ -489,11 +488,18 @@ def main():
     ]
 
     # Filter studios based on command-line argument
+    studio_arg_map = {
+        "dna": "dance_n_addiction",
+        "danceinn": "dance.inn.bangalore",
+        "vins": "vins.dance.co",
+        "manifest": "manifestbytmn",
+        "all": "all",
+    }
     studios = (
         all_studios
         if args.studio == "all"
         else [
-            studio for studio in all_studios if studio.config.studio_id == args.studio
+            studio for studio in all_studios if studio.config.studio_id == studio_arg_map[args.studio]
         ]
     )
 
