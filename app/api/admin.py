@@ -509,7 +509,7 @@ async def update_workshop_instagram_link(
                 "$set": {
                     "choreo_insta_link": payload.choreo_insta_link,
                     "artist_id_list": workshop.get("artist_id_list", []),
-                    "song": workshop.get("song", ""),
+                    "song": workshop.get("song", "").lower() if workshop.get("song") else "",
                 }
             },
             upsert=True
