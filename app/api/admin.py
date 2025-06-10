@@ -201,7 +201,7 @@ def admin_assign_song_to_session(
         {"_id": ObjectId(workshop_uuid)},
         {
             "$set": {
-                "song": payload.song,
+                "song": payload.song.lower() if payload.song else None,
             }
         },
     )
