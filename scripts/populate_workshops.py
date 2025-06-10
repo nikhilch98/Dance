@@ -332,7 +332,7 @@ class StudioProcessor:
                                 "by": event_detail["by"].lower() if event_detail["by"] else None, # Use event_detail
                                 "song": event_detail["song"].lower() if event_detail["song"] else None, # Use event_detail
                                 "pricing_info": event_detail["pricing_info"], # Use event_detail
-                                "artist_id_list": event_detail["artist_id_list"].sort(), # Use event_detail
+                                "artist_id_list": sorted(event_detail["artist_id_list"]), # Use event_detail
                                 "updated_at": time.time(),
                                 "version": self.version,
                                 "choreo_insta_link": None,
