@@ -503,6 +503,16 @@ async def update_workshop_instagram_link(
                 }
             }
         )
+        client["discovery"]["choreo_links"].update_one(
+            {"choreo_insta_link": payload.choreo_insta_link},
+            {
+                "$set": {
+                    "choreo_insta_link": payload.choreo_insta_link,
+                    "artist_id_list": workshop.get("artist_id_list", []),
+                    "song": workshop.get("song", ""),
+                }
+            }
+        )
         
         if result.modified_count == 0:
             raise HTTPException(
