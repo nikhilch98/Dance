@@ -329,8 +329,8 @@ class StudioProcessor:
                                 "uuid": event_data["uuid"], # Use event_data
                                 "event_type": event_data["event_type"], # Add event_type
                                 "time_details": event_detail["time_details"], # Use event_detail
-                                "by": event_detail["by"], # Use event_detail
-                                "song": event_detail["song"], # Use event_detail
+                                "by": event_detail["by"].lower() if event_detail["by"] else None, # Use event_detail
+                                "song": event_detail["song"].lower() if event_detail["song"] else None, # Use event_detail
                                 "pricing_info": event_detail["pricing_info"], # Use event_detail
                                 "artist_id_list": event_detail["artist_id_list"], # Use event_detail
                                 "updated_at": time.time(),
