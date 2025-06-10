@@ -337,6 +337,10 @@ class StudioProcessor:
                                 "version": self.version,
                                 "choreo_insta_link": None,
                             }
+                            if event_detail["song"] and event_detail["artist_id_list"]:
+                                choreo_link = self.mongo_client["discovery"]["choreo_links"].find_one({"song": event_detail["song"].lower(), "artist_id_list": event_detail["artist_id_list"]})
+                                if choreo_link:
+                                    inserted_data["choreo_insta_link"] = choreo_link["choreo_insta_link"]
 
                             # Check if the event is in the past using the first time_details entry
                             is_past_event = False
