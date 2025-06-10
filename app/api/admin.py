@@ -511,7 +511,8 @@ async def update_workshop_instagram_link(
                     "artist_id_list": workshop.get("artist_id_list", []),
                     "song": workshop.get("song", ""),
                 }
-            }
+            },
+            upsert=True
         )
         
         if result.modified_count == 0:
