@@ -2,10 +2,8 @@
 
 import os
 from functools import lru_cache
-try:
-    from pydantic_settings import BaseSettings
-except ImportError:
-    from pydantic import BaseSettings
+# Use v1 BaseSettings for compatibility
+from pydantic.v1 import BaseSettings
 
 
 class Settings(BaseSettings):

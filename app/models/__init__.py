@@ -1,10 +1,9 @@
 """Data models for the Nachna API."""
 
 from .auth import (
-    UserRegistration,
-    UserLogin,
+    SendOTPRequest,
+    VerifyOTPRequest,
     ProfileUpdate,
-    PasswordUpdate,
     UserProfile,
     AuthResponse,
     DeviceTokenRequest,
@@ -41,10 +40,9 @@ from .search import SearchUserResult, SearchArtistResult, SearchWorkshopResult
 
 __all__ = [
     # Auth models
-    "UserRegistration",
-    "UserLogin", 
+    "SendOTPRequest",
+    "VerifyOTPRequest", 
     "ProfileUpdate",
-    "PasswordUpdate",
     "UserProfile",
     "AuthResponse",
     "DeviceTokenRequest",
