@@ -96,35 +96,32 @@ class AuthResponse {
 }
 
 @JsonSerializable()
-class UserRegistration {
+class SendOTPRequest {
   @JsonKey(name: 'mobile_number')
   final String mobileNumber;
-  
-  final String password;
 
-  UserRegistration({
+  SendOTPRequest({
     required this.mobileNumber,
-    required this.password,
   });
 
-  factory UserRegistration.fromJson(Map<String, dynamic> json) => _$UserRegistrationFromJson(json);
-  Map<String, dynamic> toJson() => _$UserRegistrationToJson(this);
+  factory SendOTPRequest.fromJson(Map<String, dynamic> json) => _$SendOTPRequestFromJson(json);
+  Map<String, dynamic> toJson() => _$SendOTPRequestToJson(this);
 }
 
 @JsonSerializable()
-class UserLogin {
+class VerifyOTPRequest {
   @JsonKey(name: 'mobile_number')
   final String mobileNumber;
   
-  final String password;
+  final String otp;
 
-  UserLogin({
+  VerifyOTPRequest({
     required this.mobileNumber,
-    required this.password,
+    required this.otp,
   });
 
-  factory UserLogin.fromJson(Map<String, dynamic> json) => _$UserLoginFromJson(json);
-  Map<String, dynamic> toJson() => _$UserLoginToJson(this);
+  factory VerifyOTPRequest.fromJson(Map<String, dynamic> json) => _$VerifyOTPRequestFromJson(json);
+  Map<String, dynamic> toJson() => _$VerifyOTPRequestToJson(this);
 }
 
 @JsonSerializable()
@@ -146,22 +143,7 @@ class ProfileUpdate {
   Map<String, dynamic> toJson() => _$ProfileUpdateToJson(this);
 }
 
-@JsonSerializable()
-class PasswordUpdate {
-  @JsonKey(name: 'current_password')
-  final String currentPassword;
-  
-  @JsonKey(name: 'new_password')
-  final String newPassword;
 
-  PasswordUpdate({
-    required this.currentPassword,
-    required this.newPassword,
-  });
-
-  factory PasswordUpdate.fromJson(Map<String, dynamic> json) => _$PasswordUpdateFromJson(json);
-  Map<String, dynamic> toJson() => _$PasswordUpdateToJson(this);
-}
 
 @JsonSerializable()
 class AppConfig {

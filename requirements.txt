@@ -19,7 +19,7 @@ pytz
 # Authentication dependencies
 PyJWT
 python-jose[cryptography]
-passlib[bcrypt]
+twilio
 python-multipart
 colorama
 httpx[http2]

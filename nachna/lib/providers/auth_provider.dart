@@ -73,9 +73,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> register({
+  Future<bool> sendOTP({
     required String mobileNumber,
-    required String password,
   }) async {
     _state = AuthState.loading;
     _internalLoading = true;
@@ -83,12 +82,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final authResponse = await AuthService.register(
-        mobileNumber: mobileNumber,
-        password: password,
-      );
-      _user = authResponse.user;
-      _state = AuthState.profileIncomplete;
+      await AuthService.sendOTP(mobileNumber: mobileNumber);
       _errorMessage = null;
       _internalLoading = false;
       _debounceTimer?.cancel();
@@ -100,22 +94,22 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> login({
+  Future<bool> verifyOTPAndLogin({
     required String mobileNumber,
-    required String password,
+    required String otp,
   }) async {
-    print('[AuthProvider] Starting login with mobile: $mobileNumber');
+    print('[AuthProvider] Starting OTP verification with mobile: $mobileNumber');
     _state = AuthState.loading;
     _internalLoading = true;
     _debounceTimer?.cancel();
     notifyListeners();
 
     try {
-      final authResponse = await AuthService.login(
+      final authResponse = await AuthService.verifyOTPAndLogin(
         mobileNumber: mobileNumber,
-        password: password,
+        otp: otp,
       );
-      print('[AuthProvider] Login successful');
+      print('[AuthProvider] OTP verification successful');
       _user = authResponse.user;
       _state = authResponse.user.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete;
       _errorMessage = null;
@@ -128,7 +122,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('[AuthProvider] Login failed with error: $e');
+      print('[AuthProvider] OTP verification failed with error: $e');
       _setError(e.toString());
       print('[AuthProvider] After _setError - state: $_state, errorMessage: $_errorMessage');
       return false;
@@ -158,24 +152,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updatePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    _setInternalLoading(true);
-    try {
-      await AuthService.updatePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-      _setInternalLoading(false);
-      return true;
-    } catch (e) {
-      _setInternalLoading(false);
-      _setAuthenticatedError('Failed to update password: $e');
-      return false;
-    }
-  }
+
 
   Future<void> refreshProfile() async {
     try {

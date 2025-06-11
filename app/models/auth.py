@@ -5,16 +5,15 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class UserRegistration(BaseModel):
-    """User registration request model."""
-    mobile_number: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
-    password: str = Field(..., min_length=6)
+class SendOTPRequest(BaseModel):
+    """Send OTP request model."""
+    mobile_number: str = Field(..., pattern=r"^\d{10}$", description="10-digit mobile number without country code")
 
 
-class UserLogin(BaseModel):
-    """User login request model."""
-    mobile_number: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
-    password: str
+class VerifyOTPRequest(BaseModel):
+    """Verify OTP request model."""
+    mobile_number: str = Field(..., pattern=r"^\d{10}$", description="10-digit mobile number without country code")
+    otp: str = Field(..., pattern=r"^\d{6}$", description="6-digit OTP code")
 
 
 class ProfileUpdate(BaseModel):
@@ -24,10 +23,7 @@ class ProfileUpdate(BaseModel):
     gender: Optional[str] = Field(None, pattern=r"^(male|female|other)$")
 
 
-class PasswordUpdate(BaseModel):
-    """Password update request model."""
-    current_password: str
-    new_password: str = Field(..., min_length=6)
+
 
 
 class UserProfile(BaseModel):

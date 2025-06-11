@@ -4,45 +4,33 @@ from datetime import datetime
 from typing import Optional
 from bson import ObjectId
 from fastapi import HTTPException, status
-from passlib.context import CryptContext
+
 import logging
 
 from utils.utils import get_mongo_client
 
 logger = logging.getLogger(__name__)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
 
-
-def get_password_hash(password: str) -> str:
-    """Generate password hash."""
-    return pwd_context.hash(password)
 
 
 class UserOperations:
     """Database operations for user management."""
     
     @staticmethod
-    def create_user(mobile_number: str, password: str) -> dict:
-        """Create a new user."""
+    def create_or_get_user(mobile_number: str) -> dict:
+        """Create a new user or get existing user by mobile number."""
         client = get_mongo_client()
         
         # Check if user already exists
         existing_user = client["dance_app"]["users"].find_one({"mobile_number": mobile_number})
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this mobile number already exists"
-            )
+            return existing_user
         
         # Create new user
         user_data = {
             "mobile_number": mobile_number,
-            "password_hash": get_password_hash(password),
             "name": None,
             "date_of_birth": None,
             "gender": None,
@@ -57,14 +45,10 @@ class UserOperations:
         return user_data
     
     @staticmethod
-    def authenticate_user(mobile_number: str, password: str) -> Optional[dict]:
-        """Authenticate user credentials."""
+    def get_user_by_mobile(mobile_number: str) -> Optional[dict]:
+        """Get user by mobile number."""
         client = get_mongo_client()
-        user = client["dance_app"]["users"].find_one({"mobile_number": mobile_number})
-        
-        if not user or not verify_password(password, user["password_hash"]):
-            return None
-        return user
+        return client["dance_app"]["users"].find_one({"mobile_number": mobile_number})
     
     @staticmethod
     def get_user_by_id(user_id: str) -> Optional[dict]:
@@ -99,19 +83,7 @@ class UserOperations:
         )
         return result.modified_count > 0
     
-    @staticmethod
-    def update_user_password(user_id: str, new_password: str) -> bool:
-        """Update user password."""
-        client = get_mongo_client()
-        
-        result = client["dance_app"]["users"].update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {
-                "password_hash": get_password_hash(new_password),
-                "updated_at": datetime.utcnow()
-            }}
-        )
-        return result.modified_count > 0
+
 
     @staticmethod
     def delete_user_account(user_id: str) -> bool:

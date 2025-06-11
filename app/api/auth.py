@@ -14,11 +14,10 @@ from app.database.users import UserOperations
 from app.models.auth import (
     AuthResponse,
     DeviceTokenRequest,
-    PasswordUpdate,
     ProfileUpdate,
-    UserLogin,
+    SendOTPRequest,
     UserProfile,
-    UserRegistration,
+    VerifyOTPRequest,
 )
 from app.services.auth import (
     create_access_token,
@@ -26,76 +25,74 @@ from app.services.auth import (
     verify_admin_user,
     verify_token,
 )
+from app.services.twilio_service import get_twilio_service
 from utils.utils import get_mongo_client
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=AuthResponse)
-async def register_user(user_data: UserRegistration):
-    """Register a new user."""
+@router.post("/send-otp")
+async def send_otp(otp_request: SendOTPRequest):
+    """Send OTP to mobile number."""
     try:
-        # Create user
-        new_user = UserOperations.create_user(
-            mobile_number=user_data.mobile_number,
-            password=user_data.password
+        # Send OTP using Twilio
+        result = get_twilio_service().send_otp(otp_request.mobile_number)
+        
+        if result["success"]:
+            return {"message": result["message"]}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["message"]
+            )
+    except Exception as e:
+        print(f"Send OTP error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send OTP"
         )
+
+
+@router.post("/verify-otp", response_model=AuthResponse)
+async def verify_otp_and_login(otp_request: VerifyOTPRequest):
+    """Verify OTP and login/register user."""
+    try:
+        # Verify OTP using Twilio
+        result = get_twilio_service().verify_otp(otp_request.mobile_number, otp_request.otp)
+        
+        if not result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["message"]
+            )
+        
+        # Create or get user
+        user = UserOperations.create_or_get_user(otp_request.mobile_number)
         
         # Create access token
         access_token_expires = timedelta(minutes=30 * 24 * 60)  # 30 days
         access_token = create_access_token(
-            data={"sub": str(new_user["_id"])},
+            data={"sub": str(user["_id"])},
             expires_delta=access_token_expires
         )
         
         # Format user profile
-        user_profile = format_user_profile(new_user)
+        user_profile = format_user_profile(user)
         
         return AuthResponse(
             access_token=access_token,
             token_type="bearer",
             user=user_profile
         )
+        
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Registration error: {str(e)}")
+        print(f"OTP verification error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed"
+            detail="OTP verification failed"
         )
-
-
-@router.post("/login", response_model=AuthResponse)
-async def login_user(user_data: UserLogin):
-    """Login user."""
-    # Authenticate user
-    user = UserOperations.authenticate_user(
-        mobile_number=user_data.mobile_number,
-        password=user_data.password
-    )
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid mobile number or password"
-        )
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=30 * 24 * 60)  # 30 days
-    access_token = create_access_token(
-        data={"sub": str(user["_id"])},
-        expires_delta=access_token_expires
-    )
-    
-    # Format user profile
-    user_profile = format_user_profile(user)
-    
-    return AuthResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_profile
-    )
 
 
 @router.get("/profile", response_model=UserProfile)
@@ -147,37 +144,7 @@ async def update_user_profile(
     return format_user_profile(updated_user)
 
 
-@router.put("/password")
-async def update_user_password(
-    password_data: PasswordUpdate,
-    user_id: str = Depends(verify_token)
-):
-    """Update user password."""
-    # Get current user
-    user = UserOperations.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    # Verify current password
-    from app.database.users import verify_password
-    if not verify_password(password_data.current_password, user["password_hash"]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect"
-        )
-    
-    # Update password
-    success = UserOperations.update_user_password(user_id, password_data.new_password)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Password update failed"
-        )
-    
-    return {"message": "Password updated successfully"}
+
 
 
 @router.post("/profile-picture")

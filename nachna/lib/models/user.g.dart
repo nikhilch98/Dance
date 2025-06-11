@@ -45,26 +45,26 @@ Map<String, dynamic> _$AuthResponseToJson(AuthResponse instance) =>
       'user': instance.user,
     };
 
-UserRegistration _$UserRegistrationFromJson(Map<String, dynamic> json) =>
-    UserRegistration(
+SendOTPRequest _$SendOTPRequestFromJson(Map<String, dynamic> json) =>
+    SendOTPRequest(
       mobileNumber: json['mobile_number'] as String,
-      password: json['password'] as String,
     );
 
-Map<String, dynamic> _$UserRegistrationToJson(UserRegistration instance) =>
+Map<String, dynamic> _$SendOTPRequestToJson(SendOTPRequest instance) =>
     <String, dynamic>{
       'mobile_number': instance.mobileNumber,
-      'password': instance.password,
     };
 
-UserLogin _$UserLoginFromJson(Map<String, dynamic> json) => UserLogin(
+VerifyOTPRequest _$VerifyOTPRequestFromJson(Map<String, dynamic> json) =>
+    VerifyOTPRequest(
       mobileNumber: json['mobile_number'] as String,
-      password: json['password'] as String,
+      otp: json['otp'] as String,
     );
 
-Map<String, dynamic> _$UserLoginToJson(UserLogin instance) => <String, dynamic>{
+Map<String, dynamic> _$VerifyOTPRequestToJson(VerifyOTPRequest instance) =>
+    <String, dynamic>{
       'mobile_number': instance.mobileNumber,
-      'password': instance.password,
+      'otp': instance.otp,
     };
 
 ProfileUpdate _$ProfileUpdateFromJson(Map<String, dynamic> json) =>
@@ -79,18 +79,6 @@ Map<String, dynamic> _$ProfileUpdateToJson(ProfileUpdate instance) =>
       'name': instance.name,
       'date_of_birth': instance.dateOfBirth,
       'gender': instance.gender,
-    };
-
-PasswordUpdate _$PasswordUpdateFromJson(Map<String, dynamic> json) =>
-    PasswordUpdate(
-      currentPassword: json['current_password'] as String,
-      newPassword: json['new_password'] as String,
-    );
-
-Map<String, dynamic> _$PasswordUpdateToJson(PasswordUpdate instance) =>
-    <String, dynamic>{
-      'current_password': instance.currentPassword,
-      'new_password': instance.newPassword,
     };
 
 AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(

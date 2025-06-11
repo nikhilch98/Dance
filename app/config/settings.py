@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     apns_key_path: str = "./AuthKey_W5H5A6ZUS2.p8"
     apns_use_sandbox: bool = False
     
+    # Twilio Configuration
+    twilio_account_sid: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    twilio_auth_token: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    twilio_verify_service_sid: str = os.getenv("TWILIO_VERIFY_SERVICE_SID", "")
+    
     # Rate Limiting
     rate_limit_window: int = 60  # seconds
     rate_limit_max_requests: int = 30

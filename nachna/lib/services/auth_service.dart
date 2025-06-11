@@ -24,28 +24,25 @@ class AuthService {
   // Get the HTTP client instance
   static http.Client get _httpClient => HttpClientService.instance.client;
 
-  // Register new user
-  static Future<AuthResponse> register({
+  // Send OTP to mobile number
+  static Future<String> sendOTP({
     required String mobileNumber,
-    required String password,
   }) async {
     try {
       final response = await _httpClient.post(
-        Uri.parse('$_baseUrl/register'),
+        Uri.parse('$_baseUrl/send-otp'),
         headers: HttpClientService.getHeaders(),
         body: jsonEncode({
           'mobile_number': mobileNumber,
-          'password': password,
         }),
       );
 
       if (response.statusCode == 200) {
-        final authResponse = AuthResponse.fromJson(jsonDecode(response.body));
-        await _saveAuthData(authResponse);
-        return authResponse;
+        final data = jsonDecode(response.body);
+        return data['message'] ?? 'OTP sent successfully';
       } else {
         final error = jsonDecode(response.body);
-        throw AuthException(error['detail'] ?? 'Registration failed');
+        throw AuthException(error['detail'] ?? 'Failed to send OTP');
       }
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -53,18 +50,18 @@ class AuthService {
     }
   }
 
-  // Login user
-  static Future<AuthResponse> login({
+  // Verify OTP and login/register user
+  static Future<AuthResponse> verifyOTPAndLogin({
     required String mobileNumber,
-    required String password,
+    required String otp,
   }) async {
     try {
       final response = await _httpClient.post(
-        Uri.parse('$_baseUrl/login'),
+        Uri.parse('$_baseUrl/verify-otp'),
         headers: HttpClientService.getHeaders(),
         body: jsonEncode({
           'mobile_number': mobileNumber,
-          'password': password,
+          'otp': otp,
         }),
       );
 
@@ -74,7 +71,7 @@ class AuthService {
         return authResponse;
       } else {
         final error = jsonDecode(response.body);
-        throw AuthException(error['detail'] ?? 'Login failed');
+        throw AuthException(error['detail'] ?? 'OTP verification failed');
       }
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -244,70 +241,7 @@ class AuthService {
     }
   }
 
-  // Update password
-  static Future<void> updatePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    print("🔄 AuthService.updatePassword: Starting password update");
-    print("🔗 Base URL: $_baseUrl");
-    print("🎯 Endpoint: $_baseUrl/password");
-    
-    try {
-      final token = await getToken();
-      print("🎫 Token available: ${token != null}");
-      
-      if (token == null) {
-        print("❌ AuthService.updatePassword: No token found");
-        throw AuthException('No authentication token found');
-      }
 
-      print("📤 Sending request with current password length: ${currentPassword.length}");
-      print("📤 Sending request with new password length: ${newPassword.length}");
-      
-      final requestBody = jsonEncode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
-      });
-      
-      print("📦 Request body: $requestBody");
-
-      final response = await _httpClient.put(
-        Uri.parse('$_baseUrl/password'),
-        headers: HttpClientService.getHeaders(authToken: token),
-        body: requestBody,
-      );
-
-      print("📊 Response status code: ${response.statusCode}");
-      print("📄 Response body: ${response.body}");
-      print("📋 Response headers: ${response.headers}");
-
-      if (response.statusCode != 200) {
-        print("❌ AuthService.updatePassword: HTTP error ${response.statusCode}");
-        try {
-          final error = jsonDecode(response.body);
-          print("❌ Error details: $error");
-          throw AuthException(error['detail'] ?? 'Password update failed');
-        } catch (e) {
-          print("❌ Failed to parse error response: $e");
-          throw AuthException('Password update failed with status ${response.statusCode}');
-        }
-      }
-      
-      print("✅ AuthService.updatePassword: Password update successful");
-    } catch (e) {
-      print("❌ AuthService.updatePassword: Exception occurred: $e");
-      print("❌ Exception type: ${e.runtimeType}");
-      
-      if (e is AuthException) {
-        print("❌ Re-throwing AuthException: ${e.message}");
-        rethrow;
-      }
-      
-      print("❌ Throwing new AuthException for: $e");
-      throw AuthException('Network error: $e');
-    }
-  }
 
   // Upload profile picture
   static Future<String> uploadProfilePicture(File imageFile) async {
