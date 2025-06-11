@@ -105,7 +105,7 @@ class DatabaseOperations:
             workshops_cursor.sort(key=lambda x: x.timestamp_epoch)
         return workshops_cursor
 
-    def get_all_workshops() -> List[WorkshopListItem]:
+    def get_all_workshops(search_query: Optional[str] = None) -> List[WorkshopListItem]:
         """Fetch all workshops from the database."""
         client = get_mongo_client()
         studios = list(client["discovery"]["studios"].find({}))
@@ -133,7 +133,7 @@ class DatabaseOperations:
             event_type=workshop.event_type,
             choreo_insta_link=workshop.choreo_insta_link,
         )
-            for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True)
+            for workshop in DatabaseOperations.get_workshops(sort_by_timestamp=True, search_query=search_query)
         ]
         return workshops
 
