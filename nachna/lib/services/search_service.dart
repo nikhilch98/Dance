@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/search.dart';
+import '../models/workshop.dart';
 import './auth_service.dart';
 import './http_client_service.dart';
 
@@ -76,7 +77,7 @@ class SearchService {
   }
 
   // Search workshops by song name or artist name
-  Future<List<SearchWorkshopResult>> searchWorkshops(String query, {int limit = 20}) async {
+  Future<List<WorkshopListItem>> searchWorkshops(String query, {int limit = 20}) async {
     if (query.trim().length < 2) {
       return [];
     }
@@ -89,14 +90,14 @@ class SearchService {
 
       final response = await _httpClient
           .get(
-            Uri.parse('$baseUrl/api/search/workshops?q=${Uri.encodeComponent(query)}&limit=$limit&version=v2'),
+            Uri.parse('$baseUrl/api/search/workshops?q=${Uri.encodeComponent(query)}&version=v2'),
             headers: HttpClientService.getHeaders(authToken: token),
           )
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         List<dynamic> body = json.decode(response.body);
-        return body.map((dynamic item) => SearchWorkshopResult.fromJson(item)).toList();
+        return body.map((dynamic item) => WorkshopListItem.fromJson(item)).toList();
       } else {
         throw Exception('Failed to search workshops: ${response.statusCode}');
       }

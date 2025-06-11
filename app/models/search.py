@@ -26,10 +26,14 @@ class SearchWorkshopResult(BaseModel):
     uuid: str
     song: Optional[str]
     artist_names: List[str]
+    artist_id_list: Optional[List[str]] = None
+    artist_image_urls: Optional[List[Optional[str]]] = None
+    studio_id: Optional[str] = None
     studio_name: str
     date: str
     time: str
     timestamp_epoch: int
     payment_link: HttpUrl
     pricing_info: Optional[str] = None
-    event_type: Optional[str] = None 
+    event_type: Optional[str] = None
+    choreo_insta_link: Optional[str] = None 

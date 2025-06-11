@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/search.dart';
 import '../services/search_service.dart';
+import '../screens/artist_detail_screen.dart';
+import '../models/workshop.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -22,7 +25,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   
   // Search results
   List<SearchArtistResult> _artistResults = [];
-  List<SearchWorkshopResult> _workshopResults = [];
+  List<WorkshopListItem> _workshopResults = [];
   List<SearchUserResult> _userResults = [];
   
   // Loading states
@@ -87,7 +90,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
       setState(() {
         _artistResults = results[0] as List<SearchArtistResult>;
-        _workshopResults = results[1] as List<SearchWorkshopResult>;
+        _workshopResults = results[1] as List<WorkshopListItem>;
         _userResults = results[2] as List<SearchUserResult>;
         _isSearching = false;
       });
@@ -487,114 +490,143 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildArtistCard(SearchArtistResult artist) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
-          ],
+    return GestureDetector(
+      onTap: () {
+        // Navigate to artist detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ArtistDetailScreen(artistId: artist.id),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.15),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1.5,
+          ),
         ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Artist Image
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: artist.imageUrl != null
-                        ? null
-                        : const LinearGradient(
-                            colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                          ),
-                  ),
-                  child: artist.imageUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            artist.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Artist Image
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: artist.imageUrl != null
+                          ? null
+                          : const LinearGradient(
+                              colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                            ),
+                    ),
+                    child: artist.imageUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                                    ),
                                   ),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 30,
-                                ),
-                              );
-                            },
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 30,
                           ),
-                        )
-                      : const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                ),
-                const SizedBox(width: 16),
-                // Artist Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        artist.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '@${artist.id}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-                // Instagram Icon
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE1306C), Color(0xFFFD1D1D)],
+                  const SizedBox(width: 16),
+                  // Artist Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          artist.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '@${artist.id}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 20,
+                  // Instagram Icon
+                  GestureDetector(
+                    onTap: () async {
+                      // Prevent artist detail screen navigation when tapping Instagram icon
+                      await _launchInstagram(artist.instagramLink);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          'instagram-icon.png',
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to camera icon with Instagram colors
+                            return const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -602,127 +634,161 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildWorkshopCard(SearchWorkshopResult workshop) {
+  Widget _buildWorkshopCard(WorkshopListItem workshop) {
+    // Workshop is already in the correct format from the API
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
+            Colors.white.withOpacity(0.12),
+            Colors.white.withOpacity(0.06),
           ],
         ),
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          color: Colors.white.withOpacity(0.15),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Workshop Header
+                // Header Row with Artist Name and Date Badge
                 Row(
                   children: [
+                    // Artist Name (Main Title)
+                    Expanded(
+                      child: Text(
+                        workshop.by?.isNotEmpty == true && workshop.by != 'TBA' 
+                            ? toTitleCase(workshop.by!) 
+                            : 'Dance Workshop',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    
+                    // Date Badge (aligned with artist name)
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                         ),
                       ),
-                      child: const Icon(
-                        Icons.event,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (workshop.song != null) ...[
-                            Text(
-                              workshop.song!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                          ],
-                          Text(
-                            workshop.artistNames.join(', '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        workshop.date ?? 'TBA',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Workshop Details
+                
+                const SizedBox(height: 8),
+                
+                // Main Content Row with register button
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Artist Avatars (using actual images from search results)
+                    _buildArtistAvatars(workshop),
+                    
+                    const SizedBox(width: 10),
+                    
+                    // Workshop Details
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Song Name
+                          if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
+                            Text(
+                              toTitleCase(workshop.song!),
+                              style: const TextStyle(
+                                color: Color(0xFF00D4FF),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          
+                          const SizedBox(height: 2),
+                          
+                          // Studio
                           Row(
                             children: [
                               Icon(
-                                Icons.business,
-                                color: const Color(0xFF00D4FF),
-                                size: 16,
+                                Icons.business_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 12,
                               ),
-                              const SizedBox(width: 6),
-                              Flexible(
+                              const SizedBox(width: 4),
+                              Expanded(
                                 child: Text(
-                                  workshop.studioName,
+                                  toTitleCase(workshop.studioName),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 12,
-                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          
+                          const SizedBox(height: 2),
+                          
+                          // Time
                           Row(
                             children: [
                               Icon(
-                                Icons.calendar_today,
-                                color: const Color(0xFF00D4FF),
-                                size: 16,
+                                Icons.access_time_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 12,
                               ),
-                              const SizedBox(width: 6),
-                              Flexible(
+                              const SizedBox(width: 4),
+                              Expanded(
                                 child: Text(
-                                  '${workshop.date} • ${workshop.time}',
+                                  workshop.time ?? 'TBA',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 12,
-                                  ),
                                 ),
                               ),
                             ],
@@ -730,29 +796,86 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         ],
                       ),
                     ),
-                    if (workshop.pricingInfo != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: const Color(0xFF10B981).withOpacity(0.2),
-                          border: Border.all(
-                            color: const Color(0xFF10B981),
-                            width: 1,
+                    
+                    const SizedBox(width: 8),
+                    
+                    // Instagram Icon (if choreo link is available)
+                    if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty) ...[
+                      GestureDetector(
+                        onTap: () async {
+                          await _launchInstagram(workshop.choreoInstaLink!);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          workshop.pricingInfo!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF10B981),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.asset(
+                              'instagram-icon.png',
+                              width: 16,
+                              height: 16,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                     ],
+                    
+                    // Register Button
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri.parse(workshop.paymentLink);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Could not open registration link'),
+                                backgroundColor: Colors.red.withOpacity(0.8),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'Register',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -897,5 +1020,238 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       final years = (difference.inDays / 365).floor();
       return '$years year${years > 1 ? 's' : ''} ago';
     }
+  }
+
+  // Helper method to handle Instagram linking
+  Future<void> _launchInstagram(String instagramUrl) async {
+    try {
+      // Extract Instagram username from URL format: https://www.instagram.com/{username}/
+      String? username;
+      if (instagramUrl.contains('instagram.com/')) {
+        final parts = instagramUrl.split('instagram.com/');
+        if (parts.length > 1) {
+          // Remove trailing slash and any query parameters
+          username = parts[1].split('/')[0].split('?')[0];
+        }
+      }
+      
+      if (username != null && username.isNotEmpty) {
+        final appUrl = 'instagram://user?username=$username';
+        final webUrl = 'https://instagram.com/$username';
+
+        if (await canLaunchUrl(Uri.parse(appUrl))) {
+          await launchUrl(Uri.parse(appUrl));
+        } else {
+          await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        }
+      } else {
+        // Fallback to original URL if username extraction fails
+        final webUrl = Uri.parse(instagramUrl);
+        if (await canLaunchUrl(webUrl)) {
+          await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not launch $instagramUrl'),
+                backgroundColor: Colors.red.withOpacity(0.8),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening Instagram: $e'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+          ),
+        );
+      }
+    }
+  }
+
+  // Helper method to convert text to title case
+  String toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
+  // Helper method to build artist avatars
+  Widget _buildArtistAvatars(WorkshopListItem workshop) {
+    final artistImageUrls = workshop.artistImageUrls ?? [];
+    final validImageUrls = artistImageUrls.where((url) => url != null && url.isNotEmpty).toList();
+    
+    // If no valid images or only one artist, show single avatar
+    if (validImageUrls.length <= 1) {
+      return Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: validImageUrls.isEmpty
+              ? const LinearGradient(
+                  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                )
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00D4FF).withOpacity(0.2),
+              blurRadius: 6,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: validImageUrls.isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildDefaultAvatar(workshop.by);
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildDefaultAvatar(workshop.by);
+                  },
+                ),
+              )
+            : _buildDefaultAvatar(workshop.by),
+      );
+    }
+    
+    // Multiple artists - show overlapping avatars
+    final maxAvatars = validImageUrls.length > 3 ? 3 : validImageUrls.length;
+    final avatarSize = 36.0;
+    final overlapOffset = 24.0;
+    
+    return SizedBox(
+      width: avatarSize + (maxAvatars - 1) * overlapOffset,
+      height: 42,
+      child: Stack(
+        children: [
+          for (int i = 0; i < maxAvatars; i++)
+            Positioned(
+              left: i * overlapOffset,
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00D4FF).withOpacity(0.2),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildSmallDefaultAvatar(workshop.by, i);
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildSmallDefaultAvatar(workshop.by, i);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          // Show count if more than 3 artists
+          if (validImageUrls.length > 3)
+            Positioned(
+              right: 0,
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFF1A1A2E).withOpacity(0.9),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '+${validImageUrls.length - 2}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(String? instructorName) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          instructorName?.isNotEmpty == true 
+              ? instructorName![0].toUpperCase() 
+              : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+    final colors = [
+      [const Color(0xFF00D4FF), const Color(0xFF9C27B0)],
+      [const Color(0xFFFF006E), const Color(0xFF8338EC)],
+      [const Color(0xFF06FFA5), const Color(0xFF00D4FF)],
+    ];
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        gradient: LinearGradient(
+          colors: colors[index % colors.length],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          instructorName?.isNotEmpty == true 
+              ? instructorName![0].toUpperCase() 
+              : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 } 

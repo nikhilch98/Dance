@@ -56,6 +56,15 @@ class SearchWorkshopResult {
   @JsonKey(name: 'artist_names')
   final List<String> artistNames;
   
+  @JsonKey(name: 'artist_id_list')
+  final List<String>? artistIdList;
+  
+  @JsonKey(name: 'artist_image_urls')
+  final List<String?>? artistImageUrls;
+  
+  @JsonKey(name: 'studio_id')
+  final String? studioId;
+  
   @JsonKey(name: 'studio_name')
   final String studioName;
   
@@ -73,11 +82,17 @@ class SearchWorkshopResult {
   
   @JsonKey(name: 'event_type')
   final String? eventType;
+  
+  @JsonKey(name: 'choreo_insta_link')
+  final String? choreoInstaLink;
 
   SearchWorkshopResult({
     required this.uuid,
     this.song,
     required this.artistNames,
+    this.artistIdList,
+    this.artistImageUrls,
+    this.studioId,
     required this.studioName,
     required this.date,
     required this.time,
@@ -85,6 +100,7 @@ class SearchWorkshopResult {
     required this.paymentLink,
     this.pricingInfo,
     this.eventType,
+    this.choreoInstaLink,
   });
 
   factory SearchWorkshopResult.fromJson(Map<String, dynamic> json) => _$SearchWorkshopResultFromJson(json);

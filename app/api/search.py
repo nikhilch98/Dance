@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.database.search import SearchOperations
 from app.models.search import SearchUserResult, SearchArtistResult, SearchWorkshopResult
+from app.models.workshops import WorkshopListItem
 from app.services.auth import verify_token
 from app.middleware.version import validate_version
 
@@ -69,10 +70,9 @@ async def search_artists(
         )
 
 
-@router.get("/search/workshops", response_model=List[SearchWorkshopResult])
+@router.get("/search/workshops", response_model=List[WorkshopListItem])
 async def search_workshops(
     q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
     user_id: str = Depends(verify_token),
     version: str = Depends(validate_version)
 ):
@@ -88,7 +88,7 @@ async def search_workshops(
         List of workshop search results sorted by timestamp
     """
     try:
-        results = SearchOperations.search_workshops(query=q, limit=limit)
+        results = SearchOperations.search_workshops(query=q)
         return results
     except Exception as e:
         print(f"Workshop search error: {str(e)}")

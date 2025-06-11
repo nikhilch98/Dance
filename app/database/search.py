@@ -4,7 +4,9 @@ from typing import List, Optional
 from datetime import datetime
 import re
 
+from app.database.workshops import DatabaseOperations
 from app.models.search import SearchUserResult, SearchArtistResult, SearchWorkshopResult
+from app.models.workshops import WorkshopListItem
 from utils.utils import get_mongo_client
 
 
@@ -103,7 +105,7 @@ class SearchOperations:
         return sorted(results, key=lambda x: x.name.lower())
     
     @staticmethod
-    def search_workshops(query: str, limit: int = 20) -> List[SearchWorkshopResult]:
+    def search_workshops(query: str) -> List[WorkshopListItem]:
         """Search workshops by song name or artist name, sorted by time.
         
         Args:
@@ -116,83 +118,4 @@ class SearchOperations:
         if not query or len(query.strip()) < 2:
             return []
             
-        client = get_mongo_client()
-        
-        # Create case-insensitive regex pattern
-        pattern = re.compile(re.escape(query.strip()), re.IGNORECASE)
-        
-        # Get all artists for name lookup
-        artists_dict = {}
-        for artist in client["discovery"]["artists_v2"].find():
-            artists_dict[artist["artist_id"]] = artist["artist_name"]
-        
-        # Get all studios for name lookup
-        studios_dict = {}
-        for studio in client["discovery"]["studios_v2"].find():
-            studios_dict[studio["studio_id"]] = studio["studio_name"]
-        
-        # Search workshops by song name or artist names
-        workshops_cursor = client["discovery"]["workshops_v2"].find({
-            "$or": [
-                {"song": {"$regex": pattern}},
-                {"by": {"$regex": pattern}}
-            ]
-        }).limit(limit * 2)  # Get more to account for filtering
-        
-        results = []
-        for workshop in workshops_cursor:
-            # Get artist names
-            artist_names = []
-            artist_id_list = workshop.get("artist_id_list", [])
-            for artist_id in artist_id_list:
-                if artist_id in artists_dict:
-                    artist_names.append(artists_dict[artist_id])
-            
-            # If no artist names from list, use 'by' field
-            if not artist_names and workshop.get("by"):
-                artist_names = [workshop["by"]]
-            
-            # Get studio name
-            studio_name = studios_dict.get(workshop.get("studio_id", ""), "Unknown Studio")
-            
-            # Process each time detail
-            for time_detail in workshop.get("time_details", []):
-                if not time_detail:
-                    continue
-                
-                try:
-                    # Format date and time
-                    day = time_detail.get("day")
-                    month = time_detail.get("month")
-                    year = time_detail.get("year")
-                    start_time = time_detail.get("start_time", "")
-                    
-                    if not all([day, month, year]):
-                        continue
-                    
-                    # Create timestamp for sorting
-                    workshop_datetime = datetime(year, month, day)
-                    timestamp_epoch = int(workshop_datetime.timestamp())
-                    
-                    # Format date string
-                    date_str = workshop_datetime.strftime("%d %b %Y")
-                    
-                    results.append(SearchWorkshopResult(
-                        uuid=workshop["uuid"],
-                        song=workshop.get("song"),
-                        artist_names=artist_names,
-                        studio_name=studio_name,
-                        date=date_str,
-                        time=start_time,
-                        timestamp_epoch=timestamp_epoch,
-                        payment_link=workshop["payment_link"],
-                        pricing_info=workshop.get("pricing_info"),
-                        event_type=workshop.get("event_type")
-                    ))
-                except Exception as e:
-                    # Skip workshops with invalid time details
-                    continue
-        
-        # Sort by timestamp (most recent first) and limit results
-        results.sort(key=lambda x: x.timestamp_epoch, reverse=True)
-        return results[:limit] 
+        return DatabaseOperations.get_all_workshops(search_query=query)

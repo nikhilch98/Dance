@@ -1,6 +1,7 @@
 """Workshop database operations."""
 
 from datetime import datetime, timedelta
+import re
 from typing import List, Optional, Dict
 from collections import defaultdict
 
@@ -70,7 +71,8 @@ class DatabaseOperations:
         event_type_blacklist: Optional[List[str]] = ["regulars"],
         sort_by_timestamp: bool = True,
         song_whitelist: Optional[List[str]] = [],
-        artist_id_whitelist: Optional[List[str]] = []
+        artist_id_whitelist: Optional[List[str]] = [],
+        search_query: Optional[str] = None
     ) -> List[EventDetails]:
         """Fetch all workshops from the database.
 
@@ -88,6 +90,12 @@ class DatabaseOperations:
         if artist_id_whitelist:
             # Only use artist_id_list field
             filter["artist_id_list"] = {"$in": artist_id_whitelist}
+        if search_query:
+            pattern = re.compile(re.escape(search_query.strip()), re.IGNORECASE)
+            filter["$or"] = [
+                {"song": {"$regex": pattern}},
+                {"by": {"$regex": pattern}}
+            ]
 
         # Build a mapping from studio_id to studio_name
         workshops_cursor: List[EventDetails] = []

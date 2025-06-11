@@ -46,6 +46,13 @@ SearchWorkshopResult _$SearchWorkshopResultFromJson(
       artistNames: (json['artist_names'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),
+      artistIdList: (json['artist_id_list'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      artistImageUrls: (json['artist_image_urls'] as List<dynamic>?)
+          ?.map((e) => e as String?)
+          .toList(),
+      studioId: json['studio_id'] as String?,
       studioName: json['studio_name'] as String,
       date: json['date'] as String,
       time: json['time'] as String,
@@ -53,6 +60,7 @@ SearchWorkshopResult _$SearchWorkshopResultFromJson(
       paymentLink: json['payment_link'] as String,
       pricingInfo: json['pricing_info'] as String?,
       eventType: json['event_type'] as String?,
+      choreoInstaLink: json['choreo_insta_link'] as String?,
     );
 
 Map<String, dynamic> _$SearchWorkshopResultToJson(
@@ -61,6 +69,9 @@ Map<String, dynamic> _$SearchWorkshopResultToJson(
       'uuid': instance.uuid,
       'song': instance.song,
       'artist_names': instance.artistNames,
+      'artist_id_list': instance.artistIdList,
+      'artist_image_urls': instance.artistImageUrls,
+      'studio_id': instance.studioId,
       'studio_name': instance.studioName,
       'date': instance.date,
       'time': instance.time,
@@ -68,4 +79,5 @@ Map<String, dynamic> _$SearchWorkshopResultToJson(
       'payment_link': instance.paymentLink,
       'pricing_info': instance.pricingInfo,
       'event_type': instance.eventType,
+      'choreo_insta_link': instance.choreoInstaLink,
     };
