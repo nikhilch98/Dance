@@ -105,7 +105,7 @@ class SearchOperations:
         return sorted(results, key=lambda x: x.name.lower())
     
     @staticmethod
-    def search_workshops(query: str) -> List[WorkshopListItem]:
+    def search_workshops(search_query: str) -> List[WorkshopListItem]:
         """Search workshops by song name or artist name, sorted by time.
         
         Args:
@@ -115,7 +115,7 @@ class SearchOperations:
         Returns:
             List of workshop search results sorted by timestamp
         """
-        if not query or len(query.strip()) < 2:
+        if not search_query or len(search_query.strip()) < 2:
             return []
             
-        return DatabaseOperations.get_all_workshops(search_query=query)
+        return DatabaseOperations.get_all_workshops(search_query=search_query)

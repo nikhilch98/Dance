@@ -88,7 +88,7 @@ async def search_workshops(
         List of workshop search results sorted by timestamp
     """
     try:
-        results = SearchOperations.search_workshops(query=q)
+        results = SearchOperations.search_workshops(search_query=q)
         return results
     except Exception as e:
         print(f"Workshop search error: {str(e)}")
