@@ -7,6 +7,7 @@ import '../models/search.dart';
 import '../services/search_service.dart';
 import '../screens/artist_detail_screen.dart';
 import '../models/workshop.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,7 +20,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   final TextEditingController _searchController = TextEditingController();
   final SearchService _searchService = SearchService();
   
-  late TabController _tabController;
+  TabController? _tabController;
   Timer? _debounceTimer;
   
   // Search results
@@ -30,21 +31,30 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   // Loading states
   bool _isSearching = false;
   String _currentQuery = '';
+  bool _showTabs = false;
+  bool _showResults = false;
+  
+  // Recent searches
+  List<String> _recentSearches = [];
+  
+  // Search focus
+  FocusNode _searchFocusNode = FocusNode();
   
 
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _searchController.addListener(_onSearchChanged);
+    _loadRecentSearches();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _tabController.dispose();
+    _tabController?.dispose();
     _debounceTimer?.cancel();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -52,6 +62,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final query = _searchController.text.trim();
     
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    
+    if (query.isEmpty) {
+      setState(() {
+        _showTabs = false;
+        _showResults = false;
+        _artistResults.clear();
+        _workshopResults.clear();
+        _userResults.clear();
+        _isSearching = false;
+      });
+      return;
+    }
     
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       if (query != _currentQuery) {
@@ -61,6 +83,58 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
+  Future<void> _loadRecentSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final searches = prefs.getStringList('recent_searches') ?? [];
+      setState(() {
+        _recentSearches = searches;
+      });
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _saveRecentSearch(String query) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Remove if already exists
+      _recentSearches.remove(query);
+      
+      // Add to the beginning
+      _recentSearches.insert(0, query);
+      
+      // Keep only last 10 searches
+      if (_recentSearches.length > 10) {
+        _recentSearches = _recentSearches.take(10).toList();
+      }
+      
+      await prefs.setStringList('recent_searches', _recentSearches);
+      setState(() {});
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _removeRecentSearch(String query) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _recentSearches.remove(query);
+      await prefs.setStringList('recent_searches', _recentSearches);
+      setState(() {});
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  void _performSearchFromRecent(String query) {
+    _searchController.text = query;
+    _currentQuery = query;
+    _performSearch(query);
+    _saveRecentSearch(query);
+  }
+
   Future<void> _performSearch(String query) async {
     if (query.length < 2) {
       setState(() {
@@ -68,12 +142,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         _workshopResults.clear();
         _userResults.clear();
         _isSearching = false;
+        _showTabs = false;
+        _showResults = false;
       });
       return;
     }
 
     setState(() {
       _isSearching = true;
+      _showResults = true;
     });
 
     try {
@@ -84,15 +161,38 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         _searchService.searchUsers(query),
       ]);
 
+      final artistResults = results[0] as List<SearchArtistResult>;
+      final workshopResults = results[1] as List<WorkshopListItem>;
+      final userResults = results[2] as List<SearchUserResult>;
+
+      // Save recent search only if we got results
+      if (artistResults.isNotEmpty || workshopResults.isNotEmpty || userResults.isNotEmpty) {
+        _saveRecentSearch(query);
+      }
+
+      // Determine which tabs to show based on results
+      final availableTabs = <String>[];
+      if (artistResults.isNotEmpty) availableTabs.add('Artists');
+      if (workshopResults.isNotEmpty) availableTabs.add('Workshops');
+      if (userResults.isNotEmpty) availableTabs.add('Users');
+
+      // Create tab controller only if we have tabs to show
+      _tabController?.dispose();
+      _tabController = availableTabs.isNotEmpty 
+          ? TabController(length: availableTabs.length, vsync: this)
+          : null;
+
       setState(() {
-        _artistResults = results[0] as List<SearchArtistResult>;
-        _workshopResults = results[1] as List<WorkshopListItem>;
-        _userResults = results[2] as List<SearchUserResult>;
+        _artistResults = artistResults;
+        _workshopResults = workshopResults;
+        _userResults = userResults;
         _isSearching = false;
+        _showTabs = availableTabs.isNotEmpty;
       });
     } catch (e) {
       setState(() {
         _isSearching = false;
+        _showTabs = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -129,8 +229,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             children: [
               _buildHeader(),
               _buildSearchBar(),
-              _buildTabBar(),
-              Expanded(child: _buildTabBarView()),
+              if (_showTabs && _tabController != null) _buildTabBar(),
+              Expanded(child: _buildMainContent()),
             ],
           ),
         ),
@@ -139,45 +239,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.15),
-                    Colors.white.withOpacity(0.05),
-                  ],
-                ),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1.5,
-                ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Search',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
+    return const Padding(
+      padding: EdgeInsets.all(20),
+      child: Text(
+        'Search',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -205,6 +276,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -252,6 +324,110 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildTabBar() {
+    final availableTabs = <Widget>[];
+    
+    if (_artistResults.isNotEmpty) {
+      availableTabs.add(
+        Tab(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.people_rounded, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Artists',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_artistResults.length}',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (_workshopResults.isNotEmpty) {
+      availableTabs.add(
+        Tab(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.event_rounded, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Workshops',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_workshopResults.length}',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (_userResults.isNotEmpty) {
+      availableTabs.add(
+        Tab(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.person_rounded, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Users',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_userResults.length}',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Container(
@@ -292,101 +468,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 fontWeight: FontWeight.normal,
                 fontSize: 14,
               ),
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.people_rounded, size: 18),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Artists',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_artistResults.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${_artistResults.length}',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.event_rounded, size: 18),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Workshops',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_workshopResults.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${_workshopResults.length}',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.person_rounded, size: 18),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Users',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_userResults.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${_userResults.length}',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+              tabs: availableTabs,
             ),
           ),
         ),
@@ -394,7 +476,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildTabBarView() {
+  Widget _buildMainContent() {
     if (_isSearching) {
       return const Center(
         child: CircularProgressIndicator(
@@ -403,19 +485,129 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       );
     }
 
-    if (_currentQuery.isEmpty || _currentQuery.length < 2) {
-      return _buildEmptyState('Start typing to search...');
+    // Show recent searches when search bar is empty
+    if (_currentQuery.isEmpty) {
+      return _buildRecentSearches();
+    }
+
+    // Show no results if search was performed but no results
+    if (_showResults && !_showTabs) {
+      return _buildEmptyState('No results found for "$_currentQuery"');
+    }
+
+    // Show tabs with results
+    if (_showTabs && _tabController != null) {
+      return _buildDynamicTabBarView();
+    }
+
+    return _buildEmptyState('Start typing to search...');
+  }
+
+  Widget _buildRecentSearches() {
+    if (_recentSearches.isEmpty) {
+      return _buildEmptyState('No recent searches');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(20),
+          child: Text(
+            'Recent Searches',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: _recentSearches.length,
+            itemBuilder: (context, index) {
+              final search = _recentSearches[index];
+              return _buildRecentSearchItem(search);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentSearchItem(String search) {
+    return GestureDetector(
+      onTap: () => _performSearchFromRecent(search),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.1),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.history,
+              color: Colors.white.withOpacity(0.7),
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                search,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 16,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _removeRecentSearch(search),
+              child: Icon(
+                Icons.close,
+                color: Colors.white.withOpacity(0.5),
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDynamicTabBarView() {
+    final availableViews = <Widget>[];
+    
+    if (_artistResults.isNotEmpty) {
+      availableViews.add(_buildArtistsList());
+    }
+    if (_workshopResults.isNotEmpty) {
+      availableViews.add(_buildWorkshopsList());
+    }
+    if (_userResults.isNotEmpty) {
+      availableViews.add(_buildUsersList());
     }
 
     return TabBarView(
       controller: _tabController,
-      children: [
-        _buildArtistsList(),
-        _buildWorkshopsList(),
-        _buildUsersList(),
-      ],
+      children: availableViews,
     );
   }
+
+
 
   Widget _buildEmptyState(String message) {
     return Center(
@@ -787,20 +979,32 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty) ...[
                       GestureDetector(
                         onTap: () async {
-                          await _launchInstagram(workshop.choreoInstaLink!);
+                          final uri = Uri.parse(workshop.choreoInstaLink!);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Could not open Instagram link'),
+                                  backgroundColor: Colors.red.withOpacity(0.8),
+                                ),
+                              );
+                            }
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+                              colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                                color: const Color(0xFFE1306C).withOpacity(0.3),
                                 offset: const Offset(0, 2),
-                                blurRadius: 4,
+                                blurRadius: 6,
                               ),
                             ],
                           ),
