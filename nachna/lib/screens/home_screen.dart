@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const StudiosScreen(),
           const ArtistsScreen(),
           const WorkshopsScreen(),
+          const SearchScreen(),
           if (isAdmin) const AdminScreen(),
           const ProfileScreen(),
         ];
@@ -70,8 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           body: Center(
             child: screens.elementAt(_selectedIndex),
           ),
-          floatingActionButton: _buildSearchButton(),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+
           bottomNavigationBar: Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildNavItem(
                         icon: Icons.business_rounded,
@@ -126,17 +126,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         index: 2,
                         gradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                       ),
+                      _buildNavItem(
+                        icon: Icons.search_rounded,
+                        label: 'Search',
+                        index: 3,
+                        gradient: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                      ),
                       if (isAdmin)
                         _buildNavItem(
                           icon: Icons.admin_panel_settings_rounded,
                           label: 'Admin',
-                          index: 3,
+                          index: 4,
                           gradient: const [Color(0xFFFF4081), Color(0xFFE91E63)],
                         ),
                       _buildNavItem(
                         icon: Icons.person_rounded,
                         label: 'Profile',
-                        index: isAdmin ? 4 : 3,
+                        index: isAdmin ? 5 : 4,
                         gradient: const [Color(0xFF10B981), Color(0xFF059669)],
                       ),
                     ],
@@ -163,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
+          horizontal: isSelected ? 12 : 8,
           vertical: 8,
         ),
         decoration: BoxDecoration(
@@ -200,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 label,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -211,46 +217,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSearchButton() {
-    return Container(
-      margin: const EdgeInsets.only(top: 50, right: 10),
-      child: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SearchScreen()),
-          );
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-            ),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00D4FF).withOpacity(0.3),
-                offset: const Offset(0, 4),
-                blurRadius: 12,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.search,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
+
 } 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,10 +31,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _isSearching = false;
   String _currentQuery = '';
   
-  // Tab indices
-  static const int _artistsTab = 0;
-  static const int _workshopsTab = 1;
-  static const int _usersTab = 2;
+
 
   @override
   void initState() {
@@ -598,31 +594,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       // Prevent artist detail screen navigation when tapping Instagram icon
                       await _launchInstagram(artist.instagramLink);
                     },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.asset(
-                          'instagram-icon.png',
-                          width: 20,
-                          height: 20,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to camera icon with Instagram colors
-                            return const Icon(
-                              Icons.camera_alt_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            );
-                          },
-                        ),
-                      ),
+                    child: Image.asset(
+                      'instagram-icon.png',
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to camera icon
+                        return const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -799,7 +783,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     
                     const SizedBox(width: 8),
                     
-                    // Instagram Icon (if choreo link is available)
+                    // Video Play Icon (if choreo link is available)
                     if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty) ...[
                       GestureDetector(
                         onTap: () async {
@@ -810,24 +794,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                              colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Image.asset(
-                              'instagram-icon.png',
-                              width: 16,
-                              height: 16,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.camera_alt_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                );
-                              },
-                            ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 16,
                           ),
                         ),
                       ),
