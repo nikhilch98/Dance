@@ -18,9 +18,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   final _nameController = TextEditingController();
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+
   
   String? _selectedGender;
   DateTime? _selectedDate;
@@ -28,9 +26,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _localProfilePictureUrl;
   
   bool _isEditingProfile = false;
-  bool _obscureCurrentPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -85,9 +80,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   void dispose() {
     _animationController.dispose();
     _nameController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -490,26 +482,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildProfileActions(User user) {
-    return Row(
-        children: [
-        Expanded(
-          child: _buildActionButton(
-            'Edit Profile',
-            Icons.edit_rounded,
-            const Color(0xFF3B82F6),
-            () => _navigateToEditProfile(),
-          ),
-            ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            'Change Password',
-            Icons.lock_rounded,
-            const Color(0xFF8B5CF6),
-            () => _showChangePasswordDialog(),
-            ),
+    return Center(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.5,
+        child: _buildActionButton(
+          'Edit Profile',
+          Icons.edit_rounded,
+          const Color(0xFF3B82F6),
+          () => _navigateToEditProfile(),
         ),
-        ],
+      ),
     );
   }
 
@@ -865,10 +847,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     Navigator.pushNamed(context, '/profile-setup');
   }
 
-  void _showChangePasswordDialog() {
-    // Implementation for change password dialog
-    // This would be similar to the existing implementation
-  }
+
 
   void _showLogoutDialog() {
     showDialog(

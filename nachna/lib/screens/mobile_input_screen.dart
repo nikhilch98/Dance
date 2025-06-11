@@ -156,7 +156,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
           
           // Title
           Text(
-            'Enter Mobile Number',
+            'Welcome to Nachna',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: clampedTitleSize,
@@ -170,10 +170,12 @@ class _MobileInputScreenState extends State<MobileInputScreen>
           
           // Subtitle
           Text(
-            'We\'ll send you a verification code',
+            'Enter your mobile number to get started\nWe\'ll send you a secure verification code',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
               color: Colors.white.withOpacity(0.7),
+              height: 1.4,
             ),
           ),
         ],
@@ -267,6 +269,8 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _sendOTP(),
                     decoration: InputDecoration(
                       hintText: 'Mobile Number',
                       hintStyle: TextStyle(
@@ -342,7 +346,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                         ),
                       )
                     : Text(
-                        'Send OTP',
+                        'Continue',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: (screenWidth * 0.045).clamp(16.0, 18.0),
@@ -360,6 +364,10 @@ class _MobileInputScreenState extends State<MobileInputScreen>
 
   void _sendOTP() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isSendingOTP) return; // Prevent multiple calls
+
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
 
     setState(() {
       _isSendingOTP = true;
@@ -368,36 +376,46 @@ class _MobileInputScreenState extends State<MobileInputScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final mobileNumber = _mobileController.text.trim();
     
-    final success = await authProvider.sendOTP(mobileNumber: mobileNumber);
-    
-    setState(() {
-      _isSendingOTP = false;
-    });
+    try {
+      final success = await authProvider.sendOTP(mobileNumber: mobileNumber);
+      
+      if (mounted) {
+        setState(() {
+          _isSendingOTP = false;
+        });
 
-    if (success) {
-      // Navigate to OTP verification screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => OTPVerificationScreen(
-            mobileNumber: mobileNumber,
-          ),
-        ),
-      );
-    } else {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            authProvider.errorMessage ?? 'Failed to send OTP',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+        if (success) {
+          // Navigate to OTP verification screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => OTPVerificationScreen(
+                mobileNumber: mobileNumber,
+              ),
+            ),
+          );
+        } else {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                authProvider.errorMessage ?? 'Failed to send OTP',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSendingOTP = false;
+        });
+      }
     }
   }
 } 

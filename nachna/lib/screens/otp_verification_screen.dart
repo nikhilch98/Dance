@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../main.dart';
+import './mobile_input_screen.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String mobileNumber;
@@ -28,6 +30,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  // Timer for resend OTP
+  Timer? _resendTimer;
+  int _resendCountdown = 30;
+  bool _canResend = false;
 
   @override
   void initState() {
@@ -59,11 +66,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes[0].requestFocus();
     });
+    
+    // Start resend timer
+    _startResendTimer();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _resendTimer?.cancel();
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -167,7 +178,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: () => Navigator.of(context).pop(),
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const MobileInputScreen(),
+                        ),
+                      );
+                    },
                     child: const Icon(
                       Icons.arrow_back_ios_rounded,
                       color: Colors.white,
@@ -249,9 +266,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   Widget _buildOTPFields(double screenHeight, double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(6, (index) {
+      child: AutofillGroup(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(6, (index) {
           return Container(
             width: screenWidth * 0.12,
             height: screenWidth * 0.12,
@@ -280,6 +298,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                     controller: _otpControllers[index],
                     focusNode: _focusNodes[index],
                     keyboardType: TextInputType.number,
+                    autofillHints: index == 0 ? [AutofillHints.oneTimeCode] : null,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(1),
@@ -296,12 +315,19 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                     ),
                     onChanged: (value) {
                       if (value.isNotEmpty) {
+                        // Check if this is a paste operation (6 digits)
+                        if (value.length > 1) {
+                          _handlePastedOTP(value);
+                          return;
+                        }
+                        
                         // Move to next field
                         if (index < 5) {
                           _focusNodes[index + 1].requestFocus();
                         } else {
-                          // Last field, dismiss keyboard
+                          // Last field, dismiss keyboard and auto-verify
                           FocusScope.of(context).unfocus();
+                          _autoVerifyIfComplete();
                         }
                       }
                     },
@@ -315,6 +341,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             ),
           );
         }),
+        ),
       ),
     );
   }
@@ -369,7 +396,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                           ),
                         )
                       : Text(
-                          'Verify & Continue',
+                          'Verify & Login',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: (screenWidth * 0.045).clamp(16.0, 18.0),
@@ -400,14 +427,18 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             ),
           ),
           GestureDetector(
-            onTap: _resendOTP,
+            onTap: _canResend ? _resendOTP : null,
             child: Text(
-              'Resend',
+              _canResend ? 'Resend' : 'Resend in ${_resendCountdown}s',
               style: TextStyle(
                 fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
-                color: const Color(0xFF00D4FF),
+                color: _canResend 
+                    ? const Color(0xFF00D4FF) 
+                    : Colors.white.withOpacity(0.5),
                 fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
+                decoration: _canResend 
+                    ? TextDecoration.underline 
+                    : TextDecoration.none,
                 decorationColor: const Color(0xFF00D4FF),
               ),
             ),
@@ -418,6 +449,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   }
 
   void _verifyOTP() async {
+    if (_isVerifying) return; // Prevent multiple calls
+    
     final otp = _otpControllers.map((controller) => controller.text).join();
     
     if (otp.length != 6) {
@@ -425,33 +458,49 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
       return;
     }
 
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isVerifying = true;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.verifyOTPAndLogin(
-      mobileNumber: widget.mobileNumber,
-      otp: otp,
-    );
-    
-    setState(() {
-      _isVerifying = false;
-    });
-
-    if (success) {
-      // Navigate to main app
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const MyApp()),
-        (route) => false,
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.verifyOTPAndLogin(
+        mobileNumber: widget.mobileNumber,
+        otp: otp,
       );
-    } else {
-      _showErrorMessage(authProvider.errorMessage ?? 'OTP verification failed');
-      _clearOTPFields();
+      
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+
+        if (success) {
+          // Navigate to main app
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MyApp()),
+            (route) => false,
+          );
+        } else {
+          _showErrorMessage(authProvider.errorMessage ?? 'OTP verification failed');
+          _clearOTPFields();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+        _showErrorMessage('Verification failed. Please try again.');
+      }
     }
   }
 
   void _resendOTP() async {
+    if (!_canResend) return;
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.sendOTP(mobileNumber: widget.mobileNumber);
     
@@ -459,6 +508,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
       _showSuccessMessage('OTP sent successfully');
       _clearOTPFields();
       _focusNodes[0].requestFocus();
+      
+      // Restart the timer
+      _startResendTimer();
     } else {
       _showErrorMessage(authProvider.errorMessage ?? 'Failed to resend OTP');
     }
@@ -500,5 +552,62 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
         ),
       ),
     );
+  }
+
+  void _handlePastedOTP(String pastedText) {
+    // Extract only digits from pasted text
+    final digits = pastedText.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    if (digits.length >= 6) {
+      // Fill the OTP fields with the first 6 digits
+      for (int i = 0; i < 6; i++) {
+        _otpControllers[i].text = digits[i];
+      }
+      
+      // Dismiss keyboard and auto-verify
+      FocusScope.of(context).unfocus();
+      _autoVerifyIfComplete();
+    }
+  }
+
+  void _autoVerifyIfComplete() {
+    final isComplete = _otpControllers.every((controller) => controller.text.isNotEmpty);
+    if (isComplete && !_isVerifying) {
+      // Add a small delay to ensure UI updates
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _verifyOTP();
+        }
+      });
+    }
+  }
+
+  void _startResendTimer() {
+    // Cancel any existing timer
+    _resendTimer?.cancel();
+    
+    // Reset countdown and disable resend
+    setState(() {
+      _resendCountdown = 30;
+      _canResend = false;
+    });
+    
+    // Start new timer
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _resendCountdown--;
+        });
+        
+        if (_resendCountdown <= 0) {
+          setState(() {
+            _canResend = true;
+          });
+          timer.cancel();
+        }
+      } else {
+        timer.cancel();
+      }
+    });
   }
 } 
