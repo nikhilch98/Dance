@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../services/notification_service.dart';
 import '../services/first_launch_service.dart';
+import '../utils/responsive_utils.dart';
 
 class NotificationPermissionDialog extends StatefulWidget {
   final VoidCallback? onPermissionGranted;
@@ -131,10 +132,10 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(24),
+        margin: ResponsiveUtils.paddingLarge(context),
+        padding: ResponsiveUtils.paddingXLarge(context),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -145,56 +146,60 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1.5,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: ResponsiveUtils.paddingLarge(context),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(50),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSize(context)),
                     gradient: const LinearGradient(
                       colors: [Color(0xFFFF006E), Color(0xFFDC2626)],
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.settings,
                     color: Colors.white,
-                    size: 32,
+                    size: ResponsiveUtils.iconLarge(context),
                   ),
                 ),
                 
-                const SizedBox(height: 20),
+                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                 
-                const Text(
+                Text(
                   'Open Settings?',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: ResponsiveUtils.h3(context),
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 
-                const SizedBox(height: 12),
+                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                 
                 Text(
                   'To enable notifications, please open Settings and turn on notifications for Nachna.',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
-                    fontSize: 16,
+                    fontSize: ResponsiveUtils.body2(context),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 
-                const SizedBox(height: 24),
+                SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                 
                 Row(
                   children: [
@@ -207,20 +212,22 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                           });
                         },
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingMedium(context)),
                         ),
                         child: Text(
                           'Later',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
-                            fontSize: 16,
+                            fontSize: ResponsiveUtils.body2(context),
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                     
-                    const SizedBox(width: 12),
+                    SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                     
                     Expanded(
                       child: ElevatedButton(
@@ -233,18 +240,20 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00D4FF),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingMedium(context)),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Open Settings',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: ResponsiveUtils.body2(context),
                             fontWeight: FontWeight.bold,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
@@ -277,13 +286,13 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
               child: Opacity(
                 opacity: _fadeAnimation.value,
                 child: Container(
-                  margin: const EdgeInsets.all(20),
-                  padding: const EdgeInsets.all(28),
+                  margin: ResponsiveUtils.paddingLarge(context),
+                  padding: ResponsiveUtils.paddingXLarge(context),
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxWidth: ResponsiveUtils.screenWidth(context) * 0.9,
                   ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -294,11 +303,11 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                     ),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),
-                      width: 1.5,
+                      width: ResponsiveUtils.borderWidthThin(context),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Column(
@@ -306,54 +315,58 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                         children: [
                           // Icon
                           Container(
-                            padding: const EdgeInsets.all(20),
+                            padding: ResponsiveUtils.paddingLarge(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(50),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSize(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.notifications_outlined,
                               color: Colors.white,
-                              size: 40,
+                              size: ResponsiveUtils.iconXLarge(context),
                             ),
                           ),
                           
-                          const SizedBox(height: 24),
+                          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                           
                           // Title
-                          const Text(
+                          Text(
                             'Stay Updated!',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: ResponsiveUtils.h2(context),
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           
-                          const SizedBox(height: 16),
+                          SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                           
                           // Description
                           Text(
-                            'Get notified about new dance workshops, favorite artists, and exciting updates from the Nachna community.',
+                            'Get notified about new dance workshops, favorite artists, and exciting updates from Nachna.',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.85),
-                              fontSize: 16,
+                              fontSize: ResponsiveUtils.body2(context),
                               height: 1.5,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           
-                          const SizedBox(height: 24),
+                          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                           
                           // Benefits list
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: ResponsiveUtils.paddingLarge(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                               color: Colors.white.withOpacity(0.1),
                             ),
                             child: Column(
@@ -362,12 +375,12 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                                   Icons.event,
                                   'New workshop announcements',
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                                 _buildBenefitRow(
                                   Icons.favorite,
                                   'Updates from your favorite artists',
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                                 _buildBenefitRow(
                                   Icons.flash_on,
                                   'Last-minute workshop changes',
@@ -376,7 +389,7 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                             ),
                           ),
                           
-                          const SizedBox(height: 28),
+                          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                           
                           // Buttons
                           Column(
@@ -388,47 +401,51 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF00D4FF),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingLarge(context)),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                     ),
                                     elevation: 0,
                                   ),
                                   child: _isRequesting
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
+                                      ? SizedBox(
+                                          height: ResponsiveUtils.iconSmall(context),
+                                          width: ResponsiveUtils.iconSmall(context),
+                                          child: const CircularProgressIndicator(
                                             color: Colors.white,
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Text(
+                                      : Text(
                                           'Enable Notifications',
                                           style: TextStyle(
-                                            fontSize: 18,
+                                            fontSize: ResponsiveUtils.body1(context),
                                             fontWeight: FontWeight.bold,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                 ),
                               ),
                               
-                              const SizedBox(height: 12),
+                              SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                               
                               SizedBox(
                                 width: double.infinity,
                                 child: TextButton(
                                   onPressed: _isRequesting ? null : _skip,
                                   style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingMedium(context)),
                                   ),
                                   child: Text(
                                     'Maybe Later',
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.7),
-                                      fontSize: 16,
+                                      fontSize: ResponsiveUtils.body2(context),
                                       fontWeight: FontWeight.w600,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ),
@@ -453,17 +470,19 @@ class _NotificationPermissionDialogState extends State<NotificationPermissionDia
         Icon(
           icon,
           color: const Color(0xFF00D4FF),
-          size: 20,
+          size: ResponsiveUtils.iconSmall(context),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: ResponsiveUtils.spacingMedium(context)),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: ResponsiveUtils.caption(context),
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

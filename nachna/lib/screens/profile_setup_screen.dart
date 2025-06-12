@@ -113,6 +113,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         body: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(), // Dismiss keyboard on tap
           child: Container(
+            height: MediaQuery.of(context).size.height,
+            width: MediaQuery.of(context).size.width,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -124,7 +126,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                 ],
               ),
             ),
-            child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top,
+              ),
               child: AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
@@ -132,24 +137,33 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     opacity: _fadeAnimation,
                     child: SlideTransition(
                       position: _slideAnimation,
-                      child: Column(
-                        children: [
-                          // Header
-                          _buildHeader(screenHeight, screenWidth),
-                          
-                          // Profile Picture Section
-                          _buildProfilePictureSection(screenHeight, screenWidth),
-                          
-                          // Profile Form
-                          Expanded(
-                            child: _buildForm(screenHeight, screenWidth),
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: MediaQuery.of(context).size.height - 
+                                     MediaQuery.of(context).padding.top - 
+                                     MediaQuery.of(context).padding.bottom,
                           ),
-                          
-                          // Skip/Complete Button
-                          _buildActionButtons(screenHeight, screenWidth),
-                          
-                          SizedBox(height: screenHeight * 0.005), // Reduced from 0.01
-                        ],
+                          child: Column(
+                              children: [
+                                // Header
+                                _buildHeader(screenHeight, screenWidth),
+                                
+                                // Profile Picture Section
+                                _buildProfilePictureSection(screenHeight, screenWidth),
+                                
+                                // Profile Form (no longer expanded)
+                                _buildForm(screenHeight, screenWidth),
+                                
+                                // Moderate spacing between form and buttons
+                                SizedBox(height: screenHeight * 0.03),
+                                
+                                // Skip/Complete Button
+                                _buildActionButtons(screenHeight, screenWidth),
+                              ],
+                            ),
+                          ),
                       ),
                     ),
                   );
@@ -164,8 +178,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
 
   Widget _buildHeader(double screenHeight, double screenWidth) {
     final topPadding = screenHeight * 0.015; // Reduced from 0.025
-    final iconSize = screenWidth * 0.14; // Reduced from 0.16
-    final clampedIconSize = iconSize.clamp(50.0, 70.0); // Reduced max size
     final titleSize = screenWidth * 0.055; // Reduced from 0.065
     final clampedTitleSize = titleSize.clamp(18.0, 24.0); // Reduced sizes
     
@@ -178,32 +190,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
       ),
       child: Column(
         children: [
-          SizedBox(height: screenHeight * 0.01), // Reduced from 0.02
-          // Progress Indicator
-          Container(
-            width: clampedIconSize,
-            height: clampedIconSize,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(clampedIconSize * 0.25),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00D4FF).withOpacity(0.3),
-                  blurRadius: 15,
-                  spreadRadius: 3,
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.person_outline,
-              size: clampedIconSize * 0.5,
-              color: Colors.white,
-            ),
-          ),
-          
-          SizedBox(height: screenHeight * 0.015), // Reduced from 0.02
+          SizedBox(height: screenHeight * 0.02),
           
           // Title
           Text(
@@ -217,7 +204,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             ),
           ),
           
-          SizedBox(height: screenHeight * 0.005), // Reduced from 0.008
+          SizedBox(height: screenHeight * 0.01),
           
           // Subtitle
           Text(
@@ -399,6 +386,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
                   SizedBox(height: screenHeight * 0.015), // Reduced from 0.02
@@ -454,6 +443,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                               fontSize: (screenWidth * 0.03).clamp(10.0, 12.0), // Reduced from 0.032
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         );
                       }
@@ -522,6 +513,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
+        errorMaxLines: 2,
       ),
     );
   }
@@ -546,6 +538,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Date of Birth',
@@ -553,6 +546,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                       color: Colors.white.withOpacity(0.8),
                       fontSize: (screenWidth * 0.03).clamp(11.0, 12.0),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: screenHeight * 0.005),
                   Text(
@@ -563,6 +558,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                           : Colors.white.withOpacity(0.5),
                       fontSize: (screenWidth * 0.04).clamp(14.0, 16.0),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -585,6 +582,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: EdgeInsets.only(left: screenWidth * 0.03, bottom: screenHeight * 0.01),
@@ -595,10 +593,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
               fontSize: (screenWidth * 0.04).clamp(14.0, 16.0),
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         Wrap(
           spacing: screenWidth * 0.025,
+          runSpacing: screenHeight * 0.01,
           children: _genderOptions.map((gender) {
             final isSelected = _selectedGender == gender;
             return GestureDetector(
@@ -630,6 +631,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     fontSize: (screenWidth * 0.032).clamp(12.0, 14.0),
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             );
@@ -641,7 +644,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
 
   Widget _buildActionButtons(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.035), // Reduced from 0.045
+      padding: EdgeInsets.fromLTRB(
+        screenWidth * 0.035, // Left
+        screenWidth * 0.025, // Top - reduced
+        screenWidth * 0.035, // Right
+        screenWidth * 0.015, // Bottom - reduced to minimal
+      ),
       child: Row(
         children: [
           // Skip Button

@@ -77,6 +77,282 @@
 - Use method channels for iOS-Flutter communication
 - Keep business logic in Dart, platform integration in Swift
 
+## 🎨 Responsive Design Language Implementation
+
+### 🚨 CRITICAL RULE: NO HARDCODED SIZES
+**ABSOLUTELY FORBIDDEN:**
+- Hardcoded font sizes (e.g., `fontSize: 16`)
+- Hardcoded container dimensions (e.g., `width: 200`, `height: 100`)
+- Hardcoded padding/margins (e.g., `EdgeInsets.all(16)`)
+- Hardcoded icon sizes (e.g., `size: 24`)
+- Hardcoded border radius (e.g., `BorderRadius.circular(20)`)
+- Hardcoded spacing values (e.g., `SizedBox(height: 12)`)
+- ANY static numeric values for UI elements
+
+### ✅ MANDATORY: Use ResponsiveUtils Only
+**ALWAYS REQUIRED:**
+```dart
+import '../utils/responsive_utils.dart';
+```
+
+### Responsive Typography System
+```dart
+// Font Sizes - Use ONLY these methods
+ResponsiveUtils.h1(context)      // Large headers (24-32px responsive)
+ResponsiveUtils.h2(context)      // Section headers (20-28px responsive) 
+ResponsiveUtils.h3(context)      // Sub headers (18-24px responsive)
+ResponsiveUtils.body1(context)   // Main body text (14-18px responsive)
+ResponsiveUtils.body2(context)   // Secondary text (12-16px responsive)
+ResponsiveUtils.caption(context) // Small text (10-14px responsive)
+ResponsiveUtils.micro(context)   // Very small text (8-12px responsive)
+```
+
+### Responsive Icon System
+```dart
+// Icon Sizes - Use ONLY these methods
+ResponsiveUtils.iconXSmall(context)  // 12-16px responsive
+ResponsiveUtils.iconSmall(context)   // 16-20px responsive
+ResponsiveUtils.iconMedium(context)  // 20-24px responsive
+ResponsiveUtils.iconLarge(context)   // 24-32px responsive
+ResponsiveUtils.iconXLarge(context)  // 36-48px responsive
+```
+
+### Responsive Spacing System
+```dart
+// Spacing Values - Use ONLY these methods
+ResponsiveUtils.spacingXSmall(context)  // ~4px responsive
+ResponsiveUtils.spacingSmall(context)   // ~8px responsive
+ResponsiveUtils.spacingMedium(context)  // ~12px responsive
+ResponsiveUtils.spacingLarge(context)   // ~16px responsive
+ResponsiveUtils.spacingXLarge(context)  // ~20px responsive
+ResponsiveUtils.spacingXXLarge(context) // ~24px responsive
+```
+
+### Responsive Padding System
+```dart
+// Padding - Use ONLY these methods
+ResponsiveUtils.paddingSmall(context)     // All sides small
+ResponsiveUtils.paddingMedium(context)    // All sides medium
+ResponsiveUtils.paddingLarge(context)     // All sides large
+ResponsiveUtils.paddingXLarge(context)    // All sides extra large
+ResponsiveUtils.paddingSymmetricH(context) // Horizontal only
+ResponsiveUtils.paddingSymmetricV(context) // Vertical only
+```
+
+### Responsive Container System
+```dart
+// Container Properties - Use ONLY these methods
+ResponsiveUtils.cardBorderRadius(context)   // Card border radius (16-24px)
+ResponsiveUtils.buttonHeight(context)       // Button height (44-60px)
+ResponsiveUtils.avatarSize(context)         // Avatar size (40-60px)
+ResponsiveUtils.avatarSizeLarge(context)    // Large avatar (60-100px)
+ResponsiveUtils.borderWidthThin(context)    // Thin border (1-1.5px)
+ResponsiveUtils.borderWidthMedium(context)  // Medium border (1.5-2.5px)
+```
+
+### Responsive Grid System
+```dart
+// Grid Layout - Use ONLY these methods
+ResponsiveUtils.getGridColumns(context)     // Dynamic column count
+ResponsiveUtils.getChildAspectRatio(context) // Dynamic aspect ratio
+
+// Grid delegate pattern:
+SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: ResponsiveUtils.getGridColumns(context),
+  crossAxisSpacing: ResponsiveUtils.spacingLarge(context),
+  mainAxisSpacing: ResponsiveUtils.spacingLarge(context),
+  childAspectRatio: ResponsiveUtils.getChildAspectRatio(context),
+)
+```
+
+### Artist/Studio Card Responsive System
+```dart
+// Card Sizing - Use ONLY these methods
+ResponsiveUtils.artistCardWidth(context)      // Dynamic card width
+ResponsiveUtils.artistCardHeight(context)     // Dynamic card height
+ResponsiveUtils.artistImageHeight(context)    // Dynamic image height
+ResponsiveUtils.artistCardPadding(context)    // Dynamic card padding
+ResponsiveUtils.artistCardInnerSpacing(context) // Dynamic inner spacing
+```
+
+### Screen Detection Utilities
+```dart
+// Screen Size Detection - Use these for conditional logic
+ResponsiveUtils.isSmallScreen(context)   // < 360px width
+ResponsiveUtils.isMediumScreen(context)  // 360-768px width
+ResponsiveUtils.isLargeScreen(context)   // >= 768px width
+ResponsiveUtils.screenWidth(context)     // Full screen width
+ResponsiveUtils.screenHeight(context)    // Full screen height
+```
+
+### Glassmorphism Design Pattern
+```dart
+// Standard glassmorphism container pattern
+Container(
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+    gradient: LinearGradient(
+      colors: [
+        Colors.white.withOpacity(0.15),
+        Colors.white.withOpacity(0.05),
+      ],
+    ),
+    border: Border.all(
+      color: Colors.white.withOpacity(0.2),
+      width: ResponsiveUtils.borderWidthThin(context),
+    ),
+  ),
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: Container(
+        padding: ResponsiveUtils.paddingMedium(context),
+        // Your content here
+      ),
+    ),
+  ),
+)
+```
+
+### Color Palette (Constants Only)
+```dart
+// Background Gradient
+const backgroundGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    Color(0xFF0A0A0F),
+    Color(0xFF1A1A2E), 
+    Color(0xFF16213E),
+    Color(0xFF0F3460),
+  ],
+);
+
+// Primary Gradient
+const primaryGradient = LinearGradient(
+  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)]
+);
+
+// Text Colors
+const primaryTextColor = Colors.white;
+const secondaryTextColor = Colors.white70;
+const tertiaryTextColor = Colors.white54;
+```
+
+### Overflow Prevention Requirements
+```dart
+// ALWAYS use these patterns for dynamic content:
+
+// Text with potential overflow
+Text(
+  dynamicContent,
+  style: TextStyle(fontSize: ResponsiveUtils.body1(context)),
+  maxLines: 1, // or 2 for longer content
+  overflow: TextOverflow.ellipsis,
+)
+
+// Row with flexible content
+Row(
+  children: [
+    Flexible(
+      child: Text(
+        longText,
+        style: TextStyle(fontSize: ResponsiveUtils.body1(context)),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+    Icon(Icons.example, size: ResponsiveUtils.iconSmall(context)),
+  ],
+)
+
+// Container with dynamic content
+Container(
+  constraints: BoxConstraints(
+    maxWidth: ResponsiveUtils.screenWidth(context) * 0.8,
+  ),
+  child: // your content
+)
+```
+
+### Layout Patterns
+```dart
+// Standard screen structure
+SafeArea(
+  child: Column(
+    children: [
+      // Header with glassmorphism
+      Container(
+        margin: ResponsiveUtils.paddingLarge(context),
+        decoration: BoxDecoration(/* glassmorphism pattern */),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveUtils.spacingXLarge(context),
+            horizontal: ResponsiveUtils.spacingXXLarge(context),
+          ),
+          // Header content
+        ),
+      ),
+      
+      // Main content
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveUtils.spacingLarge(context)
+          ),
+          // Main content here
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+### Animation Standards
+```dart
+// Standard animation duration and curves
+Duration(milliseconds: 800)
+Curves.easeOut
+Curves.easeOutCubic
+
+// Fade and slide transitions
+AnimatedOpacity(
+  duration: Duration(milliseconds: 800),
+  curve: Curves.easeOut,
+  // content
+)
+```
+
+### Device Scaling Results
+The responsive system ensures perfect scaling:
+- **iPhone SE (320px)**: Compact 24px headers, 12px text, efficient spacing
+- **iPhone 14 (390px)**: Balanced 27px headers, 14px text, comfortable layout
+- **iPhone 14+ (428px)**: Spacious 30px headers, 15px text, generous spacing  
+- **iPad Mini (768px)**: Maximum 32px headers, 16px text, prevents oversizing
+
+### Enforcement Rules
+1. **NEVER use hardcoded numeric values** for any UI dimensions
+2. **ALWAYS import ResponsiveUtils** in every screen/widget file
+3. **ALWAYS use responsive methods** for all sizing
+4. **ALWAYS test on multiple device sizes** (SE, 14, 14+, iPad)
+5. **ALWAYS use maxLines and overflow** for dynamic text
+6. **ALWAYS use Flexible/Expanded** for layout widgets
+7. **ALWAYS follow the glassmorphism pattern** for containers
+8. **ALWAYS use the defined color constants**
+
+### Code Review Checklist
+Before any UI implementation:
+- [ ] ResponsiveUtils imported?
+- [ ] No hardcoded font sizes?
+- [ ] No hardcoded container dimensions?
+- [ ] No hardcoded spacing values?
+- [ ] All text has maxLines and overflow?
+- [ ] Flexible/Expanded used in rows/columns?
+- [ ] Glassmorphism pattern followed?
+- [ ] Tested on multiple device sizes?
+
 ## Push Notification Workflow
 
 ### Development Process:

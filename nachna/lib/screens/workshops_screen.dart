@@ -3,6 +3,7 @@ import '../models/workshop.dart';
 import '../services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
+import '../utils/responsive_utils.dart';
 
 class WorkshopsScreen extends StatefulWidget {
   const WorkshopsScreen({super.key});
@@ -122,9 +123,12 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             return Dialog(
               backgroundColor: Colors.transparent,
               child: Container(
-                constraints: const BoxConstraints(maxHeight: 600, maxWidth: 400),
+                constraints: BoxConstraints(
+                  maxHeight: ResponsiveUtils.screenHeight(context) * 0.7, 
+                  maxWidth: ResponsiveUtils.screenWidth(context) * 0.9
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.15),
@@ -133,44 +137,44 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: ResponsiveUtils.paddingXLarge(context),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: ResponsiveUtils.paddingSmall(context),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                                   color: accentColor.withOpacity(0.2),
                                 ),
                                 child: Icon(
                                   Icons.filter_list_rounded,
                                   color: accentColor,
-                                  size: 20,
+                                  size: ResponsiveUtils.iconSmall(context),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                               Text(
                                 title,
-                                style: const TextStyle(
-                                  fontSize: 20,
+                                style: TextStyle(
+                                  fontSize: ResponsiveUtils.h3(context),
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                           Flexible(
                             child: ListView.builder(
                               shrinkWrap: true,
@@ -179,9 +183,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                 final option = options[index];
                                 final isSelected = tempSelected.contains(option);
                                 return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
+                                  margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                                     color: isSelected
                                         ? accentColor.withOpacity(0.2)
                                         : Colors.white.withOpacity(0.05),
@@ -194,7 +198,10 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                   child: CheckboxListTile(
                                     title: Text(
                                       option,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: ResponsiveUtils.body2(context),
+                                      ),
                                     ),
                                     value: isSelected,
                                     onChanged: (bool? value) {
@@ -215,43 +222,47 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               Expanded(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                     border: Border.all(
                                       color: Colors.white.withOpacity(0.3),
                                     ),
                                   ),
                                   child: TextButton(
                                     onPressed: () => Navigator.of(context).pop(),
-                                    child: const Text(
+                                    child: Text(
                                       'Cancel',
-                                      style: TextStyle(color: Colors.white70),
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: ResponsiveUtils.body2(context),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                               Expanded(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                     gradient: LinearGradient(
                                       colors: [accentColor, accentColor.withOpacity(0.8)],
                                     ),
                                   ),
                                   child: TextButton(
                                     onPressed: () => Navigator.of(context).pop(tempSelected),
-                                    child: const Text(
+                                    child: Text(
                                       'Apply',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
+                                        fontSize: ResponsiveUtils.body2(context),
                                       ),
                                     ),
                                   ),
@@ -336,9 +347,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             children: [
               // Modern AppBar with glass effect
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: ResponsiveUtils.paddingLarge(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.1),
@@ -347,36 +358,39 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.spacingXLarge(context), 
+                        horizontal: ResponsiveUtils.spacingXXLarge(context)
+                      ),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: ResponsiveUtils.paddingSmall(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.event_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: ResponsiveUtils.iconMedium(context),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Text(
+                          SizedBox(width: ResponsiveUtils.spacingLarge(context)),
+                          Text(
                             'Workshops',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: ResponsiveUtils.h2(context),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 1.2,
@@ -384,9 +398,12 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveUtils.spacingMedium(context), 
+                              vertical: ResponsiveUtils.spacingSmall(context)
+                            ),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXLarge(context)),
                               gradient: LinearGradient(
                                 colors: [
                                   const Color(0xFF3B82F6).withOpacity(0.3),
@@ -396,10 +413,10 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             ),
                             child: Text(
                               '${displayedWorkshops.length} Found',
-                              style: const TextStyle(
-                                color: Color(0xFF3B82F6),
+                              style: TextStyle(
+                                color: const Color(0xFF3B82F6),
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: ResponsiveUtils.micro(context),
                               ),
                             ),
                           ),
@@ -412,7 +429,10 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
               
               // Modern Filter Controls
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingLarge(context), 
+                  vertical: ResponsiveUtils.spacingSmall(context)
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -429,7 +449,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     Expanded(
                       child: _buildFilterChip(
                         'Artist',
@@ -444,7 +464,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     Expanded(
                       child: _buildFilterChip(
                         'Studio',
@@ -460,7 +480,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                       ),
                     ),
                     if (selectedDates.isNotEmpty || selectedInstructors.isNotEmpty || selectedStudios.isNotEmpty) ...[
-                      const SizedBox(width: 8),
+                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                       _buildResetButton(),
                     ],
                   ],
@@ -475,9 +495,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -485,19 +505,19 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               ],
                             ),
                           ),
-                          child: const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-                            strokeWidth: 3,
+                          child: CircularProgressIndicator(
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                            strokeWidth: ResponsiveUtils.borderWidthMedium(context),
                           ),
                         ),
                       );
                     } else if (snapshot.hasError) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                          margin: ResponsiveUtils.paddingLarge(context),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.red.withOpacity(0.1),
@@ -508,25 +528,31 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                           ),
                           child: Text(
                             'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.redAccent, 
+                              fontSize: ResponsiveUtils.body2(context)
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
                       );
                     } else if (!snapshot.hasData || allWorkshops.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'No workshops found.',
-                          style: TextStyle(color: Colors.white70, fontSize: 18),
+                          style: TextStyle(
+                            color: Colors.white70, 
+                            fontSize: ResponsiveUtils.body1(context)
+                          ),
                         ),
                       );
                     } else if (displayedWorkshops.isEmpty) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                          margin: ResponsiveUtils.paddingLarge(context),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -540,13 +566,16 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             children: [
                               Icon(
                                 Icons.filter_list_off_rounded,
-                                size: 48,
+                                size: ResponsiveUtils.iconXLarge(context) * 1.3,
                                 color: Colors.white.withOpacity(0.5),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
+                              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                              Text(
                                 'No workshops match your filters',
-                                style: TextStyle(color: Colors.white70, fontSize: 18),
+                                style: TextStyle(
+                                  color: Colors.white70, 
+                                  fontSize: ResponsiveUtils.body1(context)
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -555,11 +584,11 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                       );
                     } else {
                       return Container(
-                        margin: const EdgeInsets.all(16),
+                        margin: ResponsiveUtils.paddingLarge(context),
                         child: ListView.builder(
                           physics: const BouncingScrollPhysics(),
                           itemCount: displayedWorkshops.length,
-                          itemExtent: 140,
+                          itemExtent: ResponsiveUtils.isSmallScreen(context) ? 130 : 140,
                           cacheExtent: 1000,
                           itemBuilder: (context, index) {
                             final workshop = displayedWorkshops[index];
@@ -582,9 +611,12 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveUtils.spacingMedium(context), 
+          vertical: ResponsiveUtils.spacingSmall(context)
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
           gradient: LinearGradient(
             colors: [
               color.withOpacity(count > 0 ? 0.2 : 0.1),
@@ -593,7 +625,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
           ),
           border: Border.all(
             color: color.withOpacity(count > 0 ? 0.5 : 0.2),
-            width: 1,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: Row(
@@ -601,16 +633,20 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
           children: [
             Icon(
               Icons.filter_list_rounded,
-              size: 16,
+              size: ResponsiveUtils.iconXSmall(context),
               color: color,
             ),
-            const SizedBox(width: 4),
-            Text(
-              count > 0 ? '$label ($count)' : label,
-              style: TextStyle(
-                color: count > 0 ? color : Colors.white70,
-                fontSize: 12,
-                fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
+            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+            Flexible(
+              child: Text(
+                count > 0 ? '$label ($count)' : label,
+                style: TextStyle(
+                  color: count > 0 ? color : Colors.white70,
+                  fontSize: ResponsiveUtils.micro(context),
+                  fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -623,17 +659,17 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     return GestureDetector(
       onTap: _resetFilters,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: ResponsiveUtils.paddingSmall(context),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
           gradient: const LinearGradient(
             colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
           ),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.clear_rounded,
           color: Colors.white,
-          size: 20,
+          size: ResponsiveUtils.iconSmall(context),
         ),
       ),
     );
@@ -641,9 +677,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
   Widget _buildMobileWorkshopCard(WorkshopListItem workshop, int index) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.12),
@@ -652,7 +688,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
-          width: 1,
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
         boxShadow: [
           BoxShadow(
@@ -663,11 +699,11 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: ResponsiveUtils.paddingMedium(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -681,9 +717,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         workshop.by?.isNotEmpty == true && workshop.by != 'TBA' 
                             ? toTitleCase(workshop.by!) 
                             : 'Dance Workshop',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: ResponsiveUtils.body2(context),
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
@@ -693,18 +729,21 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     
                     // Date Badge (aligned with artist name)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveUtils.spacingSmall(context), 
+                        vertical: ResponsiveUtils.spacingXSmall(context)
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                         ),
                       ),
                       child: Text(
                         workshop.date ?? 'TBA',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: ResponsiveUtils.micro(context) * 0.9,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
@@ -715,7 +754,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                   ],
                 ),
                 
-                const SizedBox(height: 8),
+                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                 
                 // Main Content Row with register button
                 Row(
@@ -724,7 +763,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     // Multiple Artist Avatars
                     _buildArtistAvatars(workshop),
                     
-                    const SizedBox(width: 10),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     
                     // Workshop Details
                     Expanded(
@@ -736,16 +775,16 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                           if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                             Text(
                               toTitleCase(workshop.song!),
-                              style: const TextStyle(
-                                color: Color(0xFF00D4FF),
-                                fontSize: 13,
+                              style: TextStyle(
+                                color: const Color(0xFF00D4FF),
+                                fontSize: ResponsiveUtils.caption(context),
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           
-                          const SizedBox(height: 2),
+                          SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
                           
                           // Studio
                           Row(
@@ -753,15 +792,15 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               Icon(
                                 Icons.business_rounded,
                                 color: Colors.white.withOpacity(0.7),
-                                size: 12,
+                                size: ResponsiveUtils.iconXSmall(context),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
                               Expanded(
                                 child: Text(
                                   toTitleCase(workshop.studioName),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
-                                    fontSize: 11,
+                                    fontSize: ResponsiveUtils.micro(context),
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -771,7 +810,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             ],
                           ),
                           
-                          const SizedBox(height: 2),
+                          SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
                           
                           // Time
                           Row(
@@ -779,15 +818,15 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               Icon(
                                 Icons.access_time_rounded,
                                 color: Colors.white.withOpacity(0.7),
-                                size: 12,
+                                size: ResponsiveUtils.iconXSmall(context),
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
                               Expanded(
                                 child: Text(
                                   workshop.time ?? 'TBA',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
-                                    fontSize: 11,
+                                    fontSize: ResponsiveUtils.micro(context),
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -800,12 +839,12 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                       ),
                     ),
                     
-                    const SizedBox(width: 8),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     
                     // Instagram Icon (if choreo link is available)
                     if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
                       Container(
-                        margin: const EdgeInsets.only(right: 8),
+                        margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
                         child: GestureDetector(
                           onTap: () async {
                             final uri = Uri.parse(workshop.choreoInstaLink!);
@@ -815,7 +854,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Could not open Instagram link'),
+                                    content: const Text('Could not open Instagram link'),
                                     backgroundColor: Colors.red.withOpacity(0.8),
                                   ),
                                 );
@@ -823,10 +862,10 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             }
                           },
                           child: Container(
-                            width: 30,
-                            height: 30,
+                            width: ResponsiveUtils.iconLarge(context),
+                            height: ResponsiveUtils.iconLarge(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                               ),
@@ -838,11 +877,11 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                 ),
                               ],
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.play_arrow_rounded,
                                 color: Colors.white,
-                                size: 16,
+                                size: ResponsiveUtils.iconSmall(context),
                               ),
                             ),
                           ),
@@ -851,8 +890,8 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     
                     // Register Button (vertically aligned with main content)
                     SizedBox(
-                      width: 65,
-                      height: 30,
+                      width: ResponsiveUtils.isSmallScreen(context) ? 60 : 65,
+                      height: ResponsiveUtils.iconLarge(context),
                       child: workshop.paymentLink.isNotEmpty
                           ? GestureDetector(
                               onTap: () async {
@@ -872,7 +911,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                   gradient: const LinearGradient(
                                     colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                                   ),
@@ -884,12 +923,12 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
                                     'Register',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 9,
+                                      fontSize: ResponsiveUtils.micro(context) * 0.9,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -898,7 +937,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             )
                           : Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                 color: Colors.white.withOpacity(0.1),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.2),
@@ -909,7 +948,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                   'Soon',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.6),
-                                    fontSize: 9,
+                                    fontSize: ResponsiveUtils.micro(context) * 0.9,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),

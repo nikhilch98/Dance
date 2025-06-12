@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/responsive_utils.dart';
 import './otp_verification_screen.dart';
 
 class MobileInputScreen extends StatefulWidget {
@@ -411,10 +412,26 @@ class _MobileInputScreenState extends State<MobileInputScreen>
         }
       }
     } catch (e) {
+      // Always ensure loading state is reset when exception occurs
       if (mounted) {
         setState(() {
           _isSendingOTP = false;
         });
+        
+        // Show error message for any uncaught exceptions
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'An error occurred while sending OTP. Please try again.',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     }
   }

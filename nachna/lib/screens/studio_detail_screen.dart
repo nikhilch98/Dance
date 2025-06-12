@@ -5,6 +5,7 @@ import '../widgets/workshop_detail_modal.dart';
 import '../models/workshop.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
+import '../utils/responsive_utils.dart';
 
 class StudioDetailScreen extends StatefulWidget {
   final Studio studio;
@@ -73,14 +74,19 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             ],
           ),
         ),
-        child: SafeArea(
-          child: Column(
+                child: Stack(
+          children: [
+            // Main scrollable content
+            SafeArea(
+              child: ListView(
+                padding: EdgeInsets.only(top: ResponsiveUtils.spacingXXLarge(context) * 2),
+                physics: const BouncingScrollPhysics(),
             children: [
               // Studio Header with Image and Info
               Container(
-                margin: const EdgeInsets.all(16),
+                    margin: ResponsiveUtils.paddingLarge(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.15),
@@ -89,7 +95,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                        width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -101,53 +107,22 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      padding: const EdgeInsets.all(20),
+                          padding: ResponsiveUtils.paddingLarge(context),
                       child: Column(
                         children: [
-                          // Back button row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Back Button
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white.withOpacity(0.1),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_back_ios_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              
-                              // Empty space for balance
-                              const SizedBox(width: 40),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 20),
-                          
                           // Studio Image and Name
                           Row(
                             children: [
                               // Studio Image
                               Container(
-                                width: 80,
-                                height: 80,
+                                    width: ResponsiveUtils.avatarSizeLarge(context),
+                                    height: ResponsiveUtils.avatarSizeLarge(context),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXLarge(context)),
                                   gradient: LinearGradient(
                                     colors: [
                                       const Color(0xFF00D4FF).withOpacity(0.3),
@@ -156,11 +131,11 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                   ),
                                   border: Border.all(
                                     color: Colors.white.withOpacity(0.2),
-                                    width: 2,
+                                        width: ResponsiveUtils.borderWidthMedium(context),
                                   ),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                   child: widget.studio.imageUrl != null
                                       ? Image.network(
                                           'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(widget.studio.imageUrl!)}',
@@ -173,7 +148,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 ),
                               ),
                               
-                              const SizedBox(width: 20),
+                                  SizedBox(width: ResponsiveUtils.spacingXLarge(context)),
                               
                               // Studio Name and Info
                               Expanded(
@@ -187,8 +162,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                         Flexible(
                                           child: Text(
                                             toTitleCase(widget.studio.name),
-                                            style: const TextStyle(
-                                              fontSize: 24,
+                                                style: TextStyle(
+                                                  fontSize: ResponsiveUtils.h3(context),
                                               fontWeight: FontWeight.bold,
                                               color: Colors.white,
                                               letterSpacing: 0.5,
@@ -197,15 +172,15 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
+                                            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                                         // Instagram Icon aligned with text
                                         GestureDetector(
                                           onTap: () => _launchInstagram(widget.studio.instagramLink),
                                           child: Container(
-                                            width: 20,
-                                            height: 20,
+                                                width: ResponsiveUtils.iconSmall(context),
+                                                height: ResponsiveUtils.iconSmall(context),
                                             decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(5),
+                                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
                                               boxShadow: [
                                                 BoxShadow(
                                                   color: Colors.black.withOpacity(0.2),
@@ -215,7 +190,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                               ],
                                             ),
                                             child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(5),
+                                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
                                               child: Image.asset(
                                                 'instagram-icon.png',
                                                 fit: BoxFit.cover,
@@ -223,15 +198,15 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                                   // Fallback to gradient container with camera icon
                                                   return Container(
                                                     decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(5),
+                                                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
                                                       gradient: const LinearGradient(
                                                         colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                                       ),
                                                     ),
-                                                    child: const Icon(
+                                                        child: Icon(
                                                       Icons.camera_alt_rounded,
                                                       color: Colors.white,
-                                                      size: 12,
+                                                          size: ResponsiveUtils.spacingMedium(context),
                                                     ),
                                                   );
                                                 },
@@ -241,11 +216,14 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
+                                        SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: ResponsiveUtils.spacingMedium(context), 
+                                            vertical: ResponsiveUtils.spacingSmall(context)
+                                          ),
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                         gradient: LinearGradient(
                                           colors: [
                                             const Color(0xFF00D4FF).withOpacity(0.2),
@@ -262,14 +240,14 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                           Icon(
                                             Icons.business_rounded,
                                             color: const Color(0xFF00D4FF),
-                                            size: 16,
+                                                size: ResponsiveUtils.iconXSmall(context),
                                           ),
-                                          const SizedBox(width: 6),
-                                          const Text(
+                                              SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                              Text(
                                             'Dance Studio',
                                             style: TextStyle(
-                                              color: Color(0xFF00D4FF),
-                                              fontSize: 12,
+                                                  color: const Color(0xFF00D4FF),
+                                                  fontSize: ResponsiveUtils.micro(context),
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -289,16 +267,15 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
               ),
               
               // Workshops Content
-              Expanded(
-                child: FutureBuilder<CategorizedWorkshopResponse>(
+                  FutureBuilder<CategorizedWorkshopResponse>(
         future: futureWorkshops,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
-                          padding: const EdgeInsets.all(24),
+                            padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -306,19 +283,19 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               ],
                             ),
                           ),
-                          child: const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF)),
-                            strokeWidth: 3,
+                            child: CircularProgressIndicator(
+                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF)),
+                              strokeWidth: ResponsiveUtils.borderWidthMedium(context),
                           ),
                         ),
                       );
           } else if (snapshot.hasError) {
             return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.red.withOpacity(0.1),
@@ -332,25 +309,25 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             children: [
                               Icon(
                                 Icons.error_outline_rounded,
-                                size: 48,
+                                  size: ResponsiveUtils.iconXLarge(context) * 1.3,
                                 color: Colors.red.withOpacity(0.7),
                               ),
-                              const SizedBox(height: 16),
+                                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                               Text(
                                 'Error loading workshops',
                                 style: TextStyle(
                                   color: Colors.red.withOpacity(0.9),
-                                  fontSize: 18,
+                                    fontSize: ResponsiveUtils.body2(context),
                                   fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
+                                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                               Text(
                                 '${snapshot.error}',
                                 style: TextStyle(
                                   color: Colors.red.withOpacity(0.7),
-                                  fontSize: 14,
+                                    fontSize: ResponsiveUtils.caption(context),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -361,10 +338,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           } else if (!snapshot.hasData || (snapshot.data!.thisWeek.isEmpty && snapshot.data!.postThisWeek.isEmpty)) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -378,27 +355,29 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             children: [
                               Icon(
                                 Icons.event_busy_rounded,
-                                size: 64,
+                                  size: ResponsiveUtils.iconXLarge(context) * 1.7,
                                 color: Colors.white.withOpacity(0.5),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
+                                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                                Text(
                                 'No workshops scheduled',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 20,
+                                    fontSize: ResponsiveUtils.body1(context),
                                   fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
+                                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                               Text(
                                 'Check back later for upcoming workshops at ${widget.studio.name}',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.7),
-                                  fontSize: 14,
+                                    fontSize: ResponsiveUtils.caption(context),
                                 ),
                                 textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -409,36 +388,57 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             final hasThisWeek = response.thisWeek.isNotEmpty;
             final hasPostThisWeek = response.postThisWeek.isNotEmpty;
 
-            return ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        physics: const BouncingScrollPhysics(),
+                        return Padding(
+                          padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
+                          child: Column(
               children: [
                 // This Week section
                           if (hasThisWeek) ...[
                             _buildSectionHeader('This Week', Icons.calendar_today_rounded, const Color(0xFF00D4FF)),
-                            const SizedBox(height: 12),
+                                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                             ...response.thisWeek.map((daySchedule) => _buildDaySection(daySchedule)),
                           ],
 
                           // Spacing between sections
-                          if (hasThisWeek && hasPostThisWeek) const SizedBox(height: 32),
+                              if (hasThisWeek && hasPostThisWeek) SizedBox(height: ResponsiveUtils.spacingXXLarge(context) * 1.3),
 
                           // Upcoming Workshops section
                           if (hasPostThisWeek) ...[
                             _buildSectionHeader('Upcoming Workshops', Icons.upcoming_rounded, const Color(0xFF9D4EDD)),
-                            const SizedBox(height: 12),
+                                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                             ...response.postThisWeek.map((workshop) => _buildWorkshopCard(workshop)),
                           ],
                           
-                          const SizedBox(height: 20),
+                              SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                         ],
+                          ),
                       );
                     }
                   },
-                ),
               ),
             ],
           ),
+            ),
+            
+            // Fixed back button at top-left
+            SafeArea(
+              child: Positioned(
+                top: ResponsiveUtils.spacingMedium(context),
+                left: ResponsiveUtils.spacingLarge(context),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: ResponsiveUtils.paddingSmall(context),
+                    child: Icon(
+                      Icons.arrow_back_ios_rounded,
+                      color: Colors.white,
+                      size: ResponsiveUtils.iconMedium(context),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+                     ],
         ),
       ),
     );
@@ -447,7 +447,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
   Widget _buildStudioIcon() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             const Color(0xFF00D4FF).withOpacity(0.3),
@@ -455,10 +455,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.business_rounded,
-          size: 40,
+          size: ResponsiveUtils.iconXLarge(context),
           color: Colors.white70,
         ),
       ),
@@ -467,9 +467,12 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
   Widget _buildSectionHeader(String title, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveUtils.spacingXLarge(context), 
+        vertical: ResponsiveUtils.spacingLarge(context)
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             color.withOpacity(0.2),
@@ -478,28 +481,28 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         ),
         border: Border.all(
           color: color.withOpacity(0.3),
-          width: 1,
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
       ),
       child: Row(
                     children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: ResponsiveUtils.paddingSmall(context),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
               color: color.withOpacity(0.2),
             ),
             child: Icon(
               icon,
               color: color,
-              size: 20,
+              size: ResponsiveUtils.iconSmall(context),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: ResponsiveUtils.spacingMedium(context)),
           Text(
             title,
                         style: TextStyle(
-              fontSize: 20,
+              fontSize: ResponsiveUtils.body1(context),
                           fontWeight: FontWeight.bold,
               color: color,
               letterSpacing: 0.5,
@@ -512,9 +515,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
   Widget _buildDaySection(DaySchedule daySchedule) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingLarge(context)),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.1),
@@ -523,37 +526,40 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
-          width: 1,
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: ResponsiveUtils.paddingLarge(context),
             child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                 // Day Header
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.spacingMedium(context), 
+                    vertical: ResponsiveUtils.spacingSmall(context)
+                  ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                     gradient: const LinearGradient(
                       colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                     ),
                   ),
-                                child: Text(
+                                child:                                   Text(
                                   daySchedule.day,
-                                  style: const TextStyle(
-                      fontSize: 16,
+                                   style: TextStyle(
+                       fontSize: ResponsiveUtils.body2(context),
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                 
                 // Workshops for this day
                 ...daySchedule.workshops.map((workshop) => _buildCompactWorkshopCard(workshop)),
@@ -567,9 +573,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
   Widget _buildWorkshopCard(WorkshopSession workshop) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.12),
@@ -578,7 +584,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
-          width: 1,
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
         boxShadow: [
           BoxShadow(
@@ -589,16 +595,16 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Material(
             color: Colors.transparent,
                                     child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                                       onTap: () => _showWorkshopDetails(workshop),
                                       child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: ResponsiveUtils.paddingLarge(context),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
@@ -606,11 +612,11 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child:                           Text(
                             workshop.date,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: ResponsiveUtils.body2(context),
                                                 fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -619,7 +625,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                         // Instagram Icon (if choreo link is available)
                         if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
                           Container(
-                            margin: const EdgeInsets.only(right: 8),
+                            margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
                             child: GestureDetector(
                               onTap: () async {
                                 final uri = Uri.parse(workshop.choreoInstaLink!);
@@ -637,10 +643,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 }
                               },
                               child: Container(
-                                width: 32,
-                                height: 24,
+                                width: ResponsiveUtils.iconMedium(context) * 1.3,
+                                height: ResponsiveUtils.iconMedium(context),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                   gradient: const LinearGradient(
                                     colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                                   ),
@@ -652,11 +658,11 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Icon(
                                     Icons.play_arrow_rounded,
                                     color: Colors.white,
-                                    size: 14,
+                                    size: ResponsiveUtils.body2(context),
                                   ),
                                 ),
                               ),
@@ -664,18 +670,21 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                           ),
                         
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.spacingSmall(context), 
+                            vertical: ResponsiveUtils.spacingXSmall(context)
+                          ),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                             gradient: const LinearGradient(
                               colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                             ),
                           ),
-                          child: Text(
+                          child:                           Text(
                             workshop.time,
-                            style: const TextStyle(
+                            style: TextStyle(
                                                 color: Colors.white,
-                              fontSize: 12,
+                              fontSize: ResponsiveUtils.micro(context),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -683,17 +692,17 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 12),
+                    SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                     
                     // Workshop Details
                     if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
+                        padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+                        child:                         Text(
                           toTitleCase(workshop.song!),
-                          style: const TextStyle(
-                            color: Color(0xFF00D4FF),
-                            fontSize: 15,
+                          style: TextStyle(
+                            color: const Color(0xFF00D4FF),
+                            fontSize: ResponsiveUtils.caption(context),
                             fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -705,15 +714,15 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                           Icon(
                             Icons.person_rounded,
                             color: Colors.white.withOpacity(0.7),
-                            size: 16,
+                            size: ResponsiveUtils.iconXSmall(context),
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                           Expanded(
-                            child: Text(
+                            child:                             Text(
                               toTitleCase(workshop.artist!),
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
+                                fontSize: ResponsiveUtils.caption(context),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -723,21 +732,21 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
                     if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
                         child: Row(
                     children: [
                             Icon(
                               Icons.currency_rupee_rounded,
                               color: Colors.white.withOpacity(0.7),
-                              size: 16,
+                              size: ResponsiveUtils.iconXSmall(context),
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                             Expanded(
-                              child: Text(
+                              child:                               Text(
                                 workshop.pricingInfo!,
                         style: TextStyle(
                                   color: Colors.white.withOpacity(0.8),
-                                  fontSize: 13,
+                                  fontSize: ResponsiveUtils.micro(context),
                                 ),
                               ),
                             ),
@@ -756,41 +765,44 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
   Widget _buildCompactWorkshopCard(WorkshopSession workshop) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+      padding: ResponsiveUtils.paddingMedium(context),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
         color: Colors.white.withOpacity(0.05),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
         ),
                                     ),
                                      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                                       onTap: () => _showWorkshopDetails(workshop),
         child: Row(
           children: [
             // Time Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.spacingSmall(context), 
+                vertical: ResponsiveUtils.spacingXSmall(context)
+              ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                 color: const Color(0xFF00D4FF).withOpacity(0.2),
                 border: Border.all(
                   color: const Color(0xFF00D4FF).withOpacity(0.3),
                 ),
               ),
-              child: Text(
+              child:               Text(
                 workshop.time,
-                style: const TextStyle(
-                  color: Color(0xFF00D4FF),
-                  fontSize: 12,
+                style: TextStyle(
+                  color: const Color(0xFF00D4FF),
+                  fontSize: ResponsiveUtils.micro(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             
-            const SizedBox(width: 12),
+            SizedBox(width: ResponsiveUtils.spacingMedium(context)),
             
             // Workshop Info
             Expanded(
@@ -800,9 +812,9 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                   if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                                             Text(
                       toTitleCase(workshop.song!),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: Colors.white,
-                        fontSize: 14,
+                        fontSize: ResponsiveUtils.caption(context),
                         fontWeight: FontWeight.w600,
                                               ),
                       maxLines: 1,
@@ -813,7 +825,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       'with ${toTitleCase(workshop.artist!)}',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
+                        fontSize: ResponsiveUtils.micro(context),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -825,7 +837,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             // Instagram Icon (if choreo link is available)
             if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
               Container(
-                margin: const EdgeInsets.only(right: 8),
+                margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
                 child: GestureDetector(
                   onTap: () async {
                     final uri = Uri.parse(workshop.choreoInstaLink!);
@@ -843,10 +855,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                     }
                   },
                   child: Container(
-                    width: 24,
-                    height: 24,
+                    width: ResponsiveUtils.iconMedium(context),
+                    height: ResponsiveUtils.iconMedium(context),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                       gradient: const LinearGradient(
                         colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                       ),
@@ -858,11 +870,11 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                         ),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.play_arrow_rounded,
                         color: Colors.white,
-                        size: 12,
+                        size: ResponsiveUtils.spacingMedium(context),
                       ),
                     ),
                   ),
@@ -873,7 +885,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             Icon(
               Icons.arrow_forward_ios_rounded,
               color: Colors.white.withOpacity(0.5),
-              size: 16,
+              size: ResponsiveUtils.iconXSmall(context),
                       ),
                     ],
                   ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/responsive_utils.dart';
 import '../main.dart';
 import './mobile_input_screen.dart';
 
@@ -265,82 +266,92 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   Widget _buildOTPFields(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
       child: AutofillGroup(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(6, (index) {
-          return Container(
-            width: screenWidth * 0.12,
-            height: screenWidth * 0.12,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.15),
-                  Colors.white.withOpacity(0.05),
-                ],
-              ),
-              border: Border.all(
-                color: _focusNodes[index].hasFocus
-                    ? const Color(0xFF00D4FF)
-                    : Colors.white.withOpacity(0.2),
-                width: 1.5,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Center(
-                  child: TextFormField(
-                    controller: _otpControllers[index],
-                    focusNode: _focusNodes[index],
-                    keyboardType: TextInputType.number,
-                    autofillHints: index == 0 ? [AutofillHints.oneTimeCode] : null,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(1),
+            return Flexible(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: screenWidth * 0.12,
+                  minWidth: 40,
+                ),
+                height: screenWidth * 0.12.clamp(40.0, 60.0),
+                margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.008),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.15),
+                      Colors.white.withOpacity(0.05),
                     ],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  ),
+                  border: Border.all(
+                    color: _focusNodes[index].hasFocus
+                        ? const Color(0xFF00D4FF)
+                        : Colors.white.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Center(
+                      child: TextFormField(
+                        controller: _otpControllers[index],
+                        focusNode: _focusNodes[index],
+                        keyboardType: TextInputType.number,
+                        autofillHints: index == 0 ? [AutofillHints.oneTimeCode] : null,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          // Allow longer input for auto-fill on first field, limit others to 1
+                          if (index != 0) LengthLimitingTextInputFormatter(1),
+                        ],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: (screenWidth * 0.048).clamp(16.0, 20.0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            // Check if this is a paste operation or auto-fill (more than 1 digit)
+                            if (value.length > 1) {
+                              _handleAutoFillOTP(value, index);
+                              return;
+                            }
+                            
+                            // Single digit input - move to next field
+                            if (index < 5) {
+                              _focusNodes[index + 1].requestFocus();
+                            } else {
+                              // Last field, dismiss keyboard and auto-verify
+                              FocusScope.of(context).unfocus();
+                              _autoVerifyIfComplete();
+                            }
+                          }
+                        },
+                        onTap: () {
+                          // Clear current field when tapped for manual input
+                          _otpControllers[index].clear();
+                          // Also clear any extra characters in first field from auto-fill
+                          if (index == 0 && _otpControllers[0].text.length > 1) {
+                            _otpControllers[0].clear();
+                          }
+                        },
+                      ),
                     ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    onChanged: (value) {
-                      if (value.isNotEmpty) {
-                        // Check if this is a paste operation (6 digits)
-                        if (value.length > 1) {
-                          _handlePastedOTP(value);
-                          return;
-                        }
-                        
-                        // Move to next field
-                        if (index < 5) {
-                          _focusNodes[index + 1].requestFocus();
-                        } else {
-                          // Last field, dismiss keyboard and auto-verify
-                          FocusScope.of(context).unfocus();
-                          _autoVerifyIfComplete();
-                        }
-                      }
-                    },
-                    onTap: () {
-                      // Clear field when tapped
-                      _otpControllers[index].clear();
-                    },
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
         ),
       ),
     );
@@ -416,8 +427,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   Widget _buildResendOption(double screenHeight, double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
             "Didn't receive the code? ",
@@ -425,6 +437,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
               fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
               color: Colors.white.withOpacity(0.7),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           GestureDetector(
             onTap: _canResend ? _resendOTP : null,
@@ -441,6 +455,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                     : TextDecoration.none,
                 decorationColor: const Color(0xFF00D4FF),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -554,28 +570,73 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
     );
   }
 
-  void _handlePastedOTP(String pastedText) {
-    // Extract only digits from pasted text
-    final digits = pastedText.replaceAll(RegExp(r'[^0-9]'), '');
+  void _handleAutoFillOTP(String inputText, int currentIndex) {
+    // Extract only digits from input text
+    final digits = inputText.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    print('[OTP AutoFill] Received: "$inputText", Digits: "$digits", Length: ${digits.length}, Current Index: $currentIndex');
     
     if (digits.length >= 6) {
-      // Fill the OTP fields with the first 6 digits
+      // Clear all fields first
+      for (var controller in _otpControllers) {
+        controller.clear();
+      }
+      
+      // Fill all 6 OTP fields with the digits
       for (int i = 0; i < 6; i++) {
         _otpControllers[i].text = digits[i];
       }
       
-      // Dismiss keyboard and auto-verify
+      print('[OTP AutoFill] Filled all fields with: ${digits.substring(0, 6)}');
+      
+      // Dismiss keyboard and auto-verify after a short delay
       FocusScope.of(context).unfocus();
-      _autoVerifyIfComplete();
+      
+      // Auto-verify with a slight delay to ensure UI updates
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          print('[OTP AutoFill] Auto-verifying OTP');
+          _autoVerifyIfComplete();
+        }
+      });
+    } else if (digits.length > 1) {
+      // Handle partial digits (less than 6)
+      // Clear all fields first
+      for (var controller in _otpControllers) {
+        controller.clear();
+      }
+      
+      // Fill as many fields as we have digits
+      for (int i = 0; i < digits.length && i < 6; i++) {
+        _otpControllers[i].text = digits[i];
+      }
+      
+      // Focus on the next empty field if available
+      final nextIndex = digits.length < 6 ? digits.length : 5;
+      if (nextIndex < 6) {
+        _focusNodes[nextIndex].requestFocus();
+      }
+    } else {
+      // Single digit - just set it in the current field and move to next
+      _otpControllers[currentIndex].text = digits.isNotEmpty ? digits[0] : '';
+      if (currentIndex < 5 && digits.isNotEmpty) {
+        _focusNodes[currentIndex + 1].requestFocus();
+      }
     }
   }
 
   void _autoVerifyIfComplete() {
-    final isComplete = _otpControllers.every((controller) => controller.text.isNotEmpty);
+    final otp = _otpControllers.map((controller) => controller.text).join();
+    final isComplete = otp.length == 6;
+    
+    print('[OTP AutoVerify] Current OTP: "$otp", Length: ${otp.length}, Is Complete: $isComplete, Is Verifying: $_isVerifying');
+    
     if (isComplete && !_isVerifying) {
+      print('[OTP AutoVerify] Starting auto-verification...');
       // Add a small delay to ensure UI updates
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
+        if (mounted && !_isVerifying) {
+          print('[OTP AutoVerify] Calling _verifyOTP()');
           _verifyOTP();
         }
       });
@@ -609,5 +670,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
         timer.cancel();
       }
     });
+  }
+
+  // Additional method to handle keyboard suggestions and auto-fill
+  void _handleKeyboardSuggestion(String suggestion) {
+    print('[OTP Suggestion] Received suggestion: "$suggestion"');
+    if (suggestion.length >= 6) {
+      _handleAutoFillOTP(suggestion, 0);
+    }
   }
 } 

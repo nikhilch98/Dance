@@ -6,6 +6,7 @@ import '../widgets/workshop_detail_modal.dart';
 import '../widgets/reaction_buttons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
+import '../utils/responsive_utils.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final Artist? artist;
@@ -141,11 +142,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     strokeWidth: 3,
                   ),
                   SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Loading artist...',
                     style: TextStyle(
                       color: Colors.white70,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -171,226 +172,289 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             ],
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Artist Header with Image and Info
-              Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.15),
-                      Colors.white.withOpacity(0.05),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      offset: const Offset(0, 8),
-                      blurRadius: 24,
-                      spreadRadius: 0,
+        child: Stack(
+          children: [
+            // Main scrollable content
+            SafeArea(
+              child: ListView(
+                padding: EdgeInsets.only(top: ResponsiveUtils.spacingXXLarge(context) * 2),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  // Artist Header with Image and Info
+                  Container(
+                    margin: ResponsiveUtils.paddingLarge(context),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.15),
+                          Colors.white.withOpacity(0.05),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: ResponsiveUtils.borderWidthMedium(context),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 8),
+                          blurRadius: 24,
+                          spreadRadius: 0,
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFFFF006E).withOpacity(0.1),
+                          offset: const Offset(0, 4),
+                          blurRadius: 12,
+                          spreadRadius: 0,
+                        ),
+                      ],
                     ),
-                    BoxShadow(
-                      color: const Color(0xFFFF006E).withOpacity(0.1),
-                      offset: const Offset(0, 4),
-                      blurRadius: 12,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          // Back button row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          padding: ResponsiveUtils.paddingLarge(context),
+                          child: Column(
                             children: [
-                              // Back Button
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white.withOpacity(0.1),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
+                                                            // Artist Image and Name
+                              Row(
+                                children: [
+                                  // Artist Image - Larger size
+                                  Container(
+                                    width: ResponsiveUtils.avatarSizeLarge(context) * 1.4,
+                                    height: ResponsiveUtils.avatarSizeLarge(context) * 1.4,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXLarge(context)),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFFFF006E).withOpacity(0.3),
+                                          const Color(0xFF8338EC).withOpacity(0.3),
+                                        ],
+                                      ),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                        width: ResponsiveUtils.borderWidthMedium(context),
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                                      child: _artist?.imageUrl != null
+                                          ? Image.network(
+                                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return _buildArtistIcon();
+                                              },
+                                            )
+                                          : _buildArtistIcon(),
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.arrow_back_ios_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              
-                              // Empty space for balance
-                              const SizedBox(width: 40),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 20),
-                          
-                          // Artist Image and Name
-                          Row(
-                            children: [
-                              // Artist Image
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      const Color(0xFFFF006E).withOpacity(0.3),
-                                      const Color(0xFF8338EC).withOpacity(0.3),
-                                    ],
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
-                                  child: _artist?.imageUrl != null
-                                      ? Image.network(
-                                          'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return _buildArtistIcon();
-                                          },
-                                        )
-                                      : _buildArtistIcon(),
-                                ),
-                              ),
-                              
-                              const SizedBox(width: 20),
-                              
-                              // Artist Name and Info
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Artist Name with Instagram Icon
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                  
+                                  SizedBox(width: ResponsiveUtils.spacingXLarge(context)),
+                                  
+                                  // Artist Name and Info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Flexible(
-                                          child: Text(
-                                            toTitleCase(_artist?.name ?? ''),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              letterSpacing: 0.5,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
+                                        // Artist Name - Extended
+                                        Text(
+                                          toTitleCase(_artist?.name ?? ''),
+                                          style: TextStyle(
+                                            fontSize: ResponsiveUtils.body1(context),
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
                                           ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(width: 6),
-                                        // Instagram Icon aligned with text
-                                        GestureDetector(
-                                          onTap: () => _launchInstagram(_artist?.instagramLink ?? ''),
-                                          child: Container(
-                                            width: 20,
-                                            height: 20,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(5),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(0.2),
-                                                  offset: const Offset(0, 2),
-                                                  blurRadius: 8,
+                                        SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                                        // Dance Instructor with Instagram Icon
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: ResponsiveUtils.spacingSmall(context), 
+                                                vertical: ResponsiveUtils.spacingXSmall(context)
+                                              ),
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    const Color(0xFFFF006E).withOpacity(0.2),
+                                                    const Color(0xFF8338EC).withOpacity(0.2),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(5),
-                                              child: Image.asset(
-                                                'instagram-icon.png',
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  // Fallback to gradient container with camera icon
-                                                  return Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(5),
-                                                      gradient: const LinearGradient(
-                                                        colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                                                      ),
+                                                border: Border.all(
+                                                  color: const Color(0xFFFF006E).withOpacity(0.3),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.person_rounded,
+                                                    color: const Color(0xFFFF006E),
+                                                    size: ResponsiveUtils.iconXSmall(context),
+                                                  ),
+                                                  SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                                                  Text(
+                                                    'Dance Instructor',
+                                                    style: TextStyle(
+                                                      color: const Color(0xFFFF006E),
+                                                      fontSize: ResponsiveUtils.micro(context),
+                                                      fontWeight: FontWeight.w600,
                                                     ),
-                                                    child: const Icon(
-                                                      Icons.camera_alt_rounded,
-                                                      color: Colors.white,
-                                                      size: 12,
-                                                    ),
-                                                  );
-                                                },
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ),
+                                            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                            // Instagram Icon moved here
+                                            GestureDetector(
+                                              onTap: () => _launchInstagram(_artist?.instagramLink ?? ''),
+                                              child: Container(
+                                                width: ResponsiveUtils.iconSmall(context),
+                                                height: ResponsiveUtils.iconSmall(context),
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.2),
+                                                      offset: const Offset(0, 2),
+                                                      blurRadius: 8,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
+                                                  child: Image.asset(
+                                                    'instagram-icon.png',
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      // Fallback to gradient container with camera icon
+                                                      return Container(
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context)),
+                                                          gradient: const LinearGradient(
+                                                            colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                                                          ),
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.camera_alt_rounded,
+                                                          color: Colors.white,
+                                                          size: ResponsiveUtils.spacingMedium(context),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                                        // Like and Follow Buttons Row
+                                        Row(
+                                          children: [
+                                            // Like Button
+                                            Expanded(
+                                              child: Container(
+                                                height: ResponsiveUtils.buttonHeight(context) * 0.7,
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () {
+                                                    // Handle like action
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.favorite_outline_rounded,
+                                                    size: ResponsiveUtils.iconXSmall(context),
+                                                    color: Colors.white,
+                                                  ),
+                                                  label: Flexible(
+                                                    child: Text(
+                                                      'Like',
+                                                      style: TextStyle(
+                                                        fontSize: ResponsiveUtils.micro(context),
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFFFF006E).withOpacity(0.2),
+                                                    elevation: 0,
+                                                    padding: EdgeInsets.symmetric(
+                                                      horizontal: ResponsiveUtils.spacingSmall(context),
+                                                      vertical: ResponsiveUtils.spacingXSmall(context),
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                                      side: BorderSide(
+                                                        color: const Color(0xFFFF006E).withOpacity(0.3),
+                                                        width: ResponsiveUtils.borderWidthThin(context),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                            // Follow Button
+                                            Expanded(
+                                              child: Container(
+                                                height: ResponsiveUtils.buttonHeight(context) * 0.7,
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () {
+                                                    // Handle follow action
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.person_add_outlined,
+                                                    size: ResponsiveUtils.iconXSmall(context),
+                                                    color: Colors.white,
+                                                  ),
+                                                  label: Flexible(
+                                                    child: Text(
+                                                      'Follow',
+                                                      style: TextStyle(
+                                                        fontSize: ResponsiveUtils.micro(context),
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFF8338EC).withOpacity(0.2),
+                                                    elevation: 0,
+                                                    padding: EdgeInsets.symmetric(
+                                                      horizontal: ResponsiveUtils.spacingSmall(context),
+                                                      vertical: ResponsiveUtils.spacingXSmall(context),
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                                      side: BorderSide(
+                                                        color: const Color(0xFF8338EC).withOpacity(0.3),
+                                                        width: ResponsiveUtils.borderWidthThin(context),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            const Color(0xFFFF006E).withOpacity(0.2),
-                                            const Color(0xFF8338EC).withOpacity(0.2),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFFFF006E).withOpacity(0.3),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.person_rounded,
-                                            color: const Color(0xFFFF006E),
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            'Dance Instructor',
-                                            style: TextStyle(
-                                              color: Color(0xFFFF006E),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    // Reaction Buttons
-                                    ArtistReactionButtons(
-                                      artistId: _artist?.id ?? '',
-                                      primaryColor: const Color(0xFFFF006E),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -399,16 +463,15 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               ),
               
               // Workshops Content
-              Expanded(
-                child: FutureBuilder<List<WorkshopSession>>(
+              FutureBuilder<List<WorkshopSession>>(
                   future: futureWorkshops,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -416,19 +479,19 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ],
                             ),
                           ),
-                          child: const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF006E)),
-                            strokeWidth: 3,
+                          child: CircularProgressIndicator(
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF006E)),
+                            strokeWidth: ResponsiveUtils.borderWidthMedium(context),
                           ),
                         ),
                       );
                     } else if (snapshot.hasError) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                          margin: ResponsiveUtils.paddingLarge(context),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.red.withOpacity(0.1),
@@ -442,25 +505,25 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             children: [
                               Icon(
                                 Icons.error_outline_rounded,
-                                size: 48,
+                                size: ResponsiveUtils.iconXLarge(context) * 1.3,
                                 color: Colors.red.withOpacity(0.7),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                               Text(
                                 'Error loading workshops',
                                 style: TextStyle(
                                   color: Colors.red.withOpacity(0.9),
-                                  fontSize: 18,
+                                  fontSize: ResponsiveUtils.body2(context),
                                   fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                               Text(
                                 '${snapshot.error}',
                                 style: TextStyle(
                                   color: Colors.red.withOpacity(0.7),
-                                  fontSize: 14,
+                                  fontSize: ResponsiveUtils.caption(context),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -471,10 +534,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                          margin: ResponsiveUtils.paddingLarge(context),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -488,27 +551,29 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             children: [
                               Icon(
                                 Icons.event_busy_rounded,
-                                size: 64,
+                                size: ResponsiveUtils.iconXLarge(context) * 1.7,
                                 color: Colors.white.withOpacity(0.5),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
+                              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                              Text(
                                 'No workshops scheduled',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 20,
+                                  fontSize: ResponsiveUtils.body1(context),
                                   fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                               Text(
                                 'Check back later for upcoming workshops by ${_artist?.name}',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.7),
-                                  fontSize: 14,
+                                  fontSize: ResponsiveUtils.caption(context),
                                 ),
                                 textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -519,76 +584,93 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                       final sortedWorkshops = snapshot.data!;
                       sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Section Header
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFFFF006E).withOpacity(0.2),
-                                  const Color(0xFF8338EC).withOpacity(0.1),
+                      return Padding(
+                        padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Section Header
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: ResponsiveUtils.spacingXLarge(context), 
+                                vertical: ResponsiveUtils.spacingLarge(context)
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFFF006E).withOpacity(0.2),
+                                    const Color(0xFF8338EC).withOpacity(0.1),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: const Color(0xFFFF006E).withOpacity(0.3),
+                                  width: ResponsiveUtils.borderWidthThin(context),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: ResponsiveUtils.paddingSmall(context),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                      color: const Color(0xFFFF006E).withOpacity(0.2),
+                                    ),
+                                    child: Icon(
+                                      Icons.event_rounded,
+                                      color: const Color(0xFFFF006E),
+                                      size: ResponsiveUtils.iconSmall(context),
+                                    ),
+                                  ),
+                                  SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                                  Text(
+                                    'Upcoming Workshops (${sortedWorkshops.length})',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveUtils.body1(context),
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFF006E),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              border: Border.all(
-                                color: const Color(0xFFFF006E).withOpacity(0.3),
-                                width: 1,
-                              ),
                             ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: const Color(0xFFFF006E).withOpacity(0.2),
-                                  ),
-                                  child: const Icon(
-                                    Icons.event_rounded,
-                                    color: Color(0xFFFF006E),
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Upcoming Workshops (${sortedWorkshops.length})',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFF006E),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Workshops List
-                          Expanded(
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: sortedWorkshops.length,
-                              itemBuilder: (context, index) {
-                                final workshop = sortedWorkshops[index];
-                                return _buildWorkshopCard(workshop, index);
-                              },
-                            ),
-                          ),
-                        ],
+                            
+                            SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                            
+                            // Workshops List
+                            ...sortedWorkshops.map((workshop) => _buildWorkshopCard(workshop, sortedWorkshops.indexOf(workshop))),
+                            
+                            SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
+                          ],
+                        ),
                       );
                     }
                   },
                 ),
+              ],
+            ),
+            ),
+            
+            // Fixed back button at top-left
+            SafeArea(
+              child: Positioned(
+                top: ResponsiveUtils.spacingMedium(context),
+                left: ResponsiveUtils.spacingLarge(context),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: ResponsiveUtils.paddingSmall(context),
+                    child: Icon(
+                      Icons.arrow_back_ios_rounded,
+                      color: Colors.white,
+                      size: ResponsiveUtils.iconMedium(context),
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -597,7 +679,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
   Widget _buildArtistIcon() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             const Color(0xFFFF006E).withOpacity(0.3),
@@ -605,10 +687,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.person_rounded,
-          size: 40,
+          size: ResponsiveUtils.iconXLarge(context),
           color: Colors.white70,
         ),
       ),
@@ -629,9 +711,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
           child: Opacity(
             opacity: value,
             child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                 gradient: LinearGradient(
                   colors: [
                     Colors.white.withOpacity(0.12),
@@ -640,7 +722,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 ),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.15),
-                  width: 1,
+                  width: ResponsiveUtils.borderWidthThin(context),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -656,16 +738,16 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                       onTap: () => _showWorkshopDetails(workshop),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: ResponsiveUtils.paddingLarge(context),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -673,11 +755,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: Text(
+                                  child:                                   Text(
                                     workshop.date,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 16,
+                                      fontSize: ResponsiveUtils.body2(context),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -686,7 +768,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 // Instagram Icon (if choreo link is available)
                                 if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
                                   Container(
-                                    margin: const EdgeInsets.only(right: 8),
+                                    margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
                                     child: GestureDetector(
                                       onTap: () async {
                                         final uri = Uri.parse(workshop.choreoInstaLink!);
@@ -703,46 +785,49 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                           }
                                         }
                                       },
-                                      child: Container(
-                                        width: 32,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8),
-                                          gradient: const LinearGradient(
-                                            colors: [Color(0xFFE1306C), Color(0xFFC13584)],
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFFE1306C).withOpacity(0.3),
-                                              offset: const Offset(0, 2),
-                                              blurRadius: 6,
+                                                                              child: Container(
+                                          width: ResponsiveUtils.iconMedium(context) * 1.3,
+                                          height: ResponsiveUtils.iconMedium(context),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                                             ),
-                                          ],
-                                        ),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.play_arrow_rounded,
-                                            color: Colors.white,
-                                            size: 14,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFFE1306C).withOpacity(0.3),
+                                                offset: const Offset(0, 2),
+                                                blurRadius: 6,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.play_arrow_rounded,
+                                              color: Colors.white,
+                                              size: ResponsiveUtils.body2(context),
+                                            ),
                                           ),
                                         ),
-                                      ),
                                     ),
                                   ),
                                 
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.spacingSmall(context), 
+                                    vertical: ResponsiveUtils.spacingXSmall(context)
+                                  ),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                     gradient: const LinearGradient(
                                       colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
                                     ),
                                   ),
                                   child: Text(
                                     workshop.time,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 12,
+                                      fontSize: ResponsiveUtils.micro(context),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -750,17 +835,17 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ],
                             ),
                             
-                            const SizedBox(height: 12),
+                            SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                             
                             // Workshop Details
                             if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
+                                padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
                                 child: Text(
                                   toTitleCase(workshop.song!),
-                                  style: const TextStyle(
-                                    color: Color(0xFFFF006E),
-                                    fontSize: 15,
+                                  style: TextStyle(
+                                    color: const Color(0xFFFF006E),
+                                    fontSize: ResponsiveUtils.caption(context),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -772,15 +857,15 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   Icon(
                                     Icons.business_rounded,
                                     color: Colors.white.withOpacity(0.7),
-                                    size: 16,
+                                    size: ResponsiveUtils.iconXSmall(context),
                                   ),
-                                  const SizedBox(width: 6),
+                                  SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                                   Expanded(
                                     child: Text(
                                       toTitleCase(workshop.studioId!),
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.9),
-                                        fontSize: 14,
+                                        fontSize: ResponsiveUtils.caption(context),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -790,21 +875,21 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             
                             if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
                               Padding(
-                                padding: const EdgeInsets.only(top: 8),
+                                padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.currency_rupee_rounded,
                                       color: Colors.white.withOpacity(0.7),
-                                      size: 16,
+                                      size: ResponsiveUtils.iconXSmall(context),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                                     Expanded(
                                       child: Text(
                                         workshop.pricingInfo!,
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.8),
-                                          fontSize: 13,
+                                          fontSize: ResponsiveUtils.micro(context),
                                         ),
                                       ),
                                     ),
@@ -815,11 +900,14 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             // Workshop Type Badge
                             if (workshop.eventType?.isNotEmpty == true && workshop.eventType != 'workshop')
                               Padding(
-                                padding: const EdgeInsets.only(top: 8),
+                                padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.spacingSmall(context), 
+                                    vertical: ResponsiveUtils.spacingXSmall(context)
+                                  ),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                     color: const Color(0xFF8338EC).withOpacity(0.2),
                                     border: Border.all(
                                       color: const Color(0xFF8338EC).withOpacity(0.3),
@@ -827,9 +915,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   ),
                                   child: Text(
                                     toTitleCase(workshop.eventType!),
-                                    style: const TextStyle(
-                                      color: Color(0xFF8338EC),
-                                      fontSize: 11,
+                                    style: TextStyle(
+                                      color: const Color(0xFF8338EC),
+                                      fontSize: ResponsiveUtils.micro(context),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),

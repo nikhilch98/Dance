@@ -7,6 +7,7 @@ import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../utils/responsive_utils.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -136,7 +137,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 slivers: [
                   // Custom App Bar
                   SliverAppBar(
-                    expandedHeight: 120,
+                    expandedHeight: ResponsiveUtils.isSmallScreen(context) ? 100 : 120,
                     floating: false,
                     pinned: true,
                     backgroundColor: Colors.transparent,
@@ -155,13 +156,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                             child: Container(
-                              padding: const EdgeInsets.all(20),
-                              child: const Align(
+                              padding: ResponsiveUtils.paddingLarge(context),
+                              child: Align(
                                 alignment: Alignment.bottomLeft,
             child: Text(
               'Profile',
               style: TextStyle(
-                                    fontSize: 32,
+                                    fontSize: ResponsiveUtils.h1(context),
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                                     letterSpacing: 1.2,
@@ -175,17 +176,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     actions: [
           Container(
-                        margin: const EdgeInsets.only(right: 16),
+                        margin: EdgeInsets.only(right: ResponsiveUtils.spacingLarge(context)),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                           color: Colors.white.withOpacity(0.1),
             ),
             child: IconButton(
                           onPressed: _showLogoutDialog,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.logout_rounded,
-                            color: Color(0xFFFF006E),
-                            size: 24,
+                            color: const Color(0xFFFF006E),
+                            size: ResponsiveUtils.iconMedium(context),
               ),
             ),
           ),
@@ -195,33 +196,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                   // Profile Content
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: ResponsiveUtils.paddingLarge(context),
                       child: Column(
                         children: [
                           // Profile Header Card
                           _buildProfileHeader(user),
                           
-                          const SizedBox(height: 24),
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                           
                           // Profile Stats
                           _buildProfileStats(user),
                           
-                          const SizedBox(height: 24),
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                           
                           // Profile Actions
                           _buildProfileActions(user),
                           
-                          const SizedBox(height: 24),
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                           
                           // Profile Information
                           _buildProfileInfo(user),
                           
-                          const SizedBox(height: 24), // Added spacing before delete button
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)), // Added spacing before delete button
 
                           // Delete Account Button
                           _buildDeleteAccountSection(authProvider), // Pass AuthProvider
 
-                          const SizedBox(height: 100), // Bottom padding
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context) * 2), // Bottom padding
                         ],
                       ),
                     ),
@@ -237,9 +238,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileHeader(User user) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveUtils.paddingXLarge(context),
             decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.15),
@@ -248,11 +249,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
               border: Border.all(
                 color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          width: ResponsiveUtils.borderWidthThin(context),
               ),
             ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Column(
@@ -261,10 +262,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               Stack(
                 children: [
                         Container(
-                    width: 120,
-                    height: 120,
+                    width: ResponsiveUtils.avatarSizeLarge(context),
+                    height: ResponsiveUtils.avatarSizeLarge(context),
                           decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(60),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
                       gradient: _localProfilePictureUrl == null
                           ? const LinearGradient(
                               colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
@@ -273,14 +274,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF00D4FF).withOpacity(0.3),
-                          blurRadius: 20,
+                          blurRadius: ResponsiveUtils.spacingLarge(context),
                           spreadRadius: 2,
                         ),
                       ],
                           ),
                     child: _localProfilePictureUrl != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(60),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
                             child: Image.network(
                               'https://nachna.com$_localProfilePictureUrl',
                               fit: BoxFit.cover,
@@ -304,35 +305,35 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: GestureDetector(
                       onTap: _showImagePickerDialog,
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context),
+                        height: ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context),
       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular((ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context)) / 2),
         gradient: const LinearGradient(
                             colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
         ),
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: Colors.white, width: ResponsiveUtils.borderWidthMedium(context)),
         boxShadow: [
           BoxShadow(
                               color: const Color(0xFF3B82F6).withOpacity(0.3),
-                              blurRadius: 8,
+                              blurRadius: ResponsiveUtils.spacingSmall(context),
                               spreadRadius: 1,
           ),
         ],
       ),
                         child: _isUploadingImage
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
+                            ? SizedBox(
+                                width: ResponsiveUtils.spacingLarge(context),
+                                height: ResponsiveUtils.spacingLarge(context),
+                                child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Icon(
+                            : Icon(
                                 Icons.camera_alt_rounded,
             color: Colors.white,
-                                size: 18,
+                                size: ResponsiveUtils.iconSmall(context),
           ),
         ),
       ),
@@ -340,37 +341,42 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
               
               // Name
               Text(
                 user.name ?? 'Dance Enthusiast',
-                style: const TextStyle(
-                  fontSize: 24,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.h2(context),
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
         ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
           ),
               
-              const SizedBox(height: 4),
+              SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
               
               // Mobile Number
                 Text(
                 '+91 ${user.mobileNumber}',
                   style: TextStyle(
-                  fontSize: 16,
+                  fontSize: ResponsiveUtils.body2(context),
                     color: Colors.white.withOpacity(0.7),
                   ),
                 ),
               
-              const SizedBox(height: 8),
+              SizedBox(height: ResponsiveUtils.spacingSmall(context)),
               
               // Profile Status
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingMedium(context), 
+                  vertical: ResponsiveUtils.spacingXSmall(context)
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                   gradient: LinearGradient(
                     colors: user.profileComplete
                         ? [const Color(0xFF10B981), const Color(0xFF059669)]
@@ -379,9 +385,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
                 child: Text(
                   user.profileComplete ? 'Profile Complete' : 'Complete Profile',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: ResponsiveUtils.micro(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -396,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildDefaultAvatar(User user) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(60),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
         gradient: const LinearGradient(
           colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
         ),
@@ -406,8 +412,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           user.name?.isNotEmpty == true 
               ? user.name!.substring(0, 1).toUpperCase()
               : '?',
-          style: const TextStyle(
-            fontSize: 48,
+          style: TextStyle(
+            fontSize: ResponsiveUtils.h1(context) * 1.5,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -418,9 +424,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileStats(User user) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: ResponsiveUtils.paddingLarge(context),
         decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.1),
@@ -429,20 +435,21 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
         ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-              _buildStatItem('Member Since', _formatMemberSince(user.createdAt)),
+              Flexible(child: _buildStatItem('Member Since', _formatMemberSince(user.createdAt))),
               _buildStatDivider(),
-              _buildStatItem('Profile', user.profileComplete ? 'Complete' : 'Incomplete'),
+              Flexible(child: _buildStatItem('Profile', user.profileComplete ? 'Complete' : 'Incomplete')),
               _buildStatDivider(),
-              _buildStatItem('Role', user.isAdmin == true ? 'Admin' : 'Member'),
+              Flexible(child: _buildStatItem('Role', user.isAdmin == true ? 'Admin' : 'Member')),
                 ],
               ),
         ),
@@ -455,19 +462,25 @@ class _ProfileScreenState extends State<ProfileScreen>
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: ResponsiveUtils.body1(context),
             fontWeight: FontWeight.bold,
-            color: Color(0xFF00D4FF),
+            color: const Color(0xFF00D4FF),
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
         Text(
           label,
                   style: TextStyle(
-            fontSize: 12,
+            fontSize: ResponsiveUtils.micro(context),
             color: Colors.white.withOpacity(0.7),
                   ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -475,8 +488,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildStatDivider() {
     return Container(
-      width: 1,
-      height: 40,
+      width: ResponsiveUtils.borderWidthThin(context),
+      height: ResponsiveUtils.spacingXXLarge(context) + ResponsiveUtils.spacingLarge(context),
       color: Colors.white.withOpacity(0.2),
     );
   }
@@ -484,7 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildProfileActions(User user) {
     return Center(
       child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.5,
+        width: ResponsiveUtils.screenWidth(context) * 0.5,
         child: _buildActionButton(
           'Edit Profile',
           Icons.edit_rounded,
@@ -499,16 +512,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingLarge(context)),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
           gradient: LinearGradient(
             colors: [color, color.withOpacity(0.8)],
             ),
             boxShadow: [
               BoxShadow(
               color: color.withOpacity(0.3),
-              blurRadius: 8,
+              blurRadius: ResponsiveUtils.spacingSmall(context),
               spreadRadius: 1,
               ),
             ],
@@ -516,13 +529,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
+            Icon(icon, color: Colors.white, size: ResponsiveUtils.iconSmall(context)),
+            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
             Text(
                         text,
-              style: const TextStyle(
+              style: TextStyle(
                           color: Colors.white,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.body2(context),
                 fontWeight: FontWeight.w600,
                       ),
               ),
@@ -534,9 +547,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileInfo(User user) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: ResponsiveUtils.paddingLarge(context),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.1),
@@ -545,24 +558,25 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.15),
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Personal Information',
               style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveUtils.body1(context),
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
               _buildInfoRow('Full Name', user.name ?? 'Not provided'),
               _buildInfoRow('Date of Birth', user.dateOfBirth ?? 'Not provided'),
               _buildInfoRow('Gender', user.gender ?? 'Not provided'),
@@ -577,16 +591,16 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: ResponsiveUtils.screenWidth(context) * 0.35,
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: ResponsiveUtils.body2(context),
                 color: Colors.white.withOpacity(0.7),
         ),
             ),
@@ -594,11 +608,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: ResponsiveUtils.body2(context),
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -624,9 +640,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: ResponsiveUtils.paddingLarge(context),
         decoration: BoxDecoration(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(ResponsiveUtils.cardBorderRadius(context))),
           gradient: LinearGradient(
             colors: [
               Colors.white.withOpacity(0.15),
@@ -635,11 +651,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1.5,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(ResponsiveUtils.cardBorderRadius(context))),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Column(
@@ -647,25 +663,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                 children: [
                 // Handle
                       Container(
-                  width: 40,
-                  height: 4,
+                  width: ResponsiveUtils.spacingXXLarge(context) + ResponsiveUtils.spacingLarge(context),
+                  height: ResponsiveUtils.spacingXSmall(context),
                         decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXSmall(context) / 2),
                         ),
                       ),
-                const SizedBox(height: 20),
+                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                 
                 // Title
                 Text(
                   'Profile Picture',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: ResponsiveUtils.h3(context),
                             fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                   ),
-                const SizedBox(height: 20),
+                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                   Row(
                     children: [
                       Expanded(
@@ -676,7 +692,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         () => _pickImageWithPermissionCheck(ImageSource.camera),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                       Expanded(
                       child: _buildImagePickerOption(
                         'Gallery',
@@ -687,7 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ],
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                 if (_localProfilePictureUrl != null)
                   SizedBox(
                     width: double.infinity,
@@ -710,9 +726,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingLarge(context)),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
           gradient: LinearGradient(
             colors: [color, color.withOpacity(0.8)],
           ),
@@ -720,13 +736,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
       children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
+            Icon(icon, color: Colors.white, size: ResponsiveUtils.iconSmall(context)),
+            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
             Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.body2(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -921,17 +937,23 @@ class _ProfileScreenState extends State<ProfileScreen>
       opacity: _fadeAnimation,
       child: Column(
         children: [
-          Divider(color: Colors.white.withOpacity(0.2), height: 40),
+          Divider(
+            color: Colors.white.withOpacity(0.2), 
+            height: ResponsiveUtils.spacingXXLarge(context) + ResponsiveUtils.spacingLarge(context)
+          ),
           GestureDetector(
             onTap: () => _showDeleteAccountConfirmationDialog(authProvider),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveUtils.spacingLarge(context), 
+                horizontal: ResponsiveUtils.spacingLarge(context)
+              ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                 color: Colors.red.withOpacity(0.1), // Subtle red background
                 border: Border.all(
                   color: Colors.red.withOpacity(0.4), // Red border
-                  width: 1,
+                  width: ResponsiveUtils.borderWidthThin(context),
                 ),
               ),
               child: Row(
@@ -940,14 +962,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Icon(
                     Icons.delete_forever_outlined,
                     color: Colors.red[400],
-                    size: 22,
+                    size: ResponsiveUtils.iconMedium(context),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                   Text(
                     'Delete Account',
                     style: TextStyle(
                       color: Colors.red[400],
-                      fontSize: 16,
+                      fontSize: ResponsiveUtils.body2(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -970,51 +992,71 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: AlertDialog(
             backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.85),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1.5),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+              side: BorderSide(color: Colors.white.withOpacity(0.2), width: ResponsiveUtils.borderWidthThin(context)),
             ),
-            title: const Text(
+            title: Text(
               'Delete Account?',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveUtils.h3(context),
+              ),
             ),
             content: Text(
               'Are you sure you want to delete your account? This action is irreversible and all your data will be removed.',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: ResponsiveUtils.body2(context),
+              ),
             ),
-            actions: <Widget>[
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                          actions: <Widget>[
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.spacingLarge(context), 
+                      vertical: ResponsiveUtils.spacingSmall(context)
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
-                ),
-                onPressed: () {
-                  Navigator.of(dialogContext).pop();
-                },
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8), 
+                      fontSize: ResponsiveUtils.body2(context)
+                    ),
                   ),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                  },
                 ),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red.withOpacity(0.2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.spacingLarge(context), 
+                      vertical: ResponsiveUtils.spacingSmall(context)
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                    ),
+                  ),
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: Colors.red, 
+                      fontSize: ResponsiveUtils.body2(context), 
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  onPressed: () async {
+                    Navigator.of(dialogContext).pop(); // Close dialog
+                    await _handleAccountDeletion(authProvider);
+                  },
                 ),
-                onPressed: () async {
-                  Navigator.of(dialogContext).pop(); // Close dialog
-                  await _handleAccountDeletion(authProvider);
-                },
-              ),
-            ],
+              ],
           ),
         );
       },

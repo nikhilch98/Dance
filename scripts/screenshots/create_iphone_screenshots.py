@@ -438,7 +438,7 @@ def create_screenshot_3_artists(width, height):
         name_x = card_x + (card_width - name_width) // 2
         draw.text((name_x, name_y), artist["name"], fill=TEXT_WHITE, font=name_font)
         
-        # "View workshops" button
+        # "Tap to explore" button
         btn_font = get_font(int(12 * scale))
         btn_y = name_y + int(30 * scale)
         btn_width = int(120 * scale)
@@ -451,7 +451,7 @@ def create_screenshot_3_artists(width, height):
             fill=ACCENT_PINK
         )
         
-        btn_text = "View workshops"
+        btn_text = "Tap to explore"
         btn_bbox = draw.textbbox((0, 0), btn_text, font=btn_font)
         btn_text_width = btn_bbox[2] - btn_bbox[0]
         btn_text_x = btn_x + (btn_width - btn_text_width) // 2

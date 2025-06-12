@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -22,50 +24,37 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>instagram</string>
 		<string>instagram-stories</string>
 	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<!-- Export Compliance for App Store -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<!-- <key>ITSEncryptionExportComplianceCode</key>
-	<string>a5ca1ab6-90b7-4765-9538-0b2f58e6b6c2</string> -->
-	<!-- <key>ITSAppUsesNonExemptEncryption</key>
-	<true/> -->
-	
-	<!-- Camera and Photo Library Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to camera to take profile pictures</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to select profile pictures</string>
-	
-	<!-- Push Notification Permissions -->
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Nachna sends you notifications about new dance workshops, updates from your favorite artists, and important workshop changes so you never miss an opportunity to dance!</string>
-	
-	<!-- Background Modes for Push Notifications -->
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>audio</string>
 	</array>
-	
-	<!-- Additional Push Notification Support -->
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UI
+	SupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Automatic</string>
 </dict>

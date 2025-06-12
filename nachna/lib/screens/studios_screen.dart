@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/studio.dart';
 import '../services/api_service.dart';
 import 'studio_detail_screen.dart';
+import '../utils/responsive_utils.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'dart:ui';
 
@@ -91,9 +92,9 @@ class _StudiosScreenState extends State<StudiosScreen> {
             children: [
               // Modern AppBar with glass effect
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: ResponsiveUtils.paddingLarge(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.1),
@@ -102,36 +103,39 @@ class _StudiosScreenState extends State<StudiosScreen> {
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthThin(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.spacingXLarge(context), 
+                        horizontal: ResponsiveUtils.spacingXXLarge(context)
+                      ),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: ResponsiveUtils.paddingSmall(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF00D4FF), Color(0xFF9D4EDD)],
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.business_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: ResponsiveUtils.iconSmall(context),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Text(
+                          SizedBox(width: ResponsiveUtils.spacingLarge(context)),
+                          Text(
                             'Studios',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: ResponsiveUtils.h2(context),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 1.2,
@@ -152,9 +156,9 @@ class _StudiosScreenState extends State<StudiosScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white.withOpacity(0.1),
@@ -171,10 +175,10 @@ class _StudiosScreenState extends State<StudiosScreen> {
                     } else if (snapshot.hasError) {
                       return Center(
                         child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(24),
+                          margin: ResponsiveUtils.paddingXLarge(context),
+                          padding: ResponsiveUtils.paddingXLarge(context),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.red.withOpacity(0.1),
@@ -185,33 +189,41 @@ class _StudiosScreenState extends State<StudiosScreen> {
                           ),
                           child: Text(
                             'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.redAccent, 
+                              fontSize: ResponsiveUtils.body1(context)
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
                       );
                     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'No studios found.',
-                          style: TextStyle(color: Colors.white70, fontSize: 18),
+                          style: TextStyle(
+                            color: Colors.white70, 
+                            fontSize: ResponsiveUtils.h3(context)
+                          ),
                         ),
                       );
                     } else {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.spacingLarge(context)
+                        ),
                         child: GridView.builder(
                           physics: const BouncingScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16.0,
-                            mainAxisSpacing: 16.0,
-                            childAspectRatio: 0.85,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: ResponsiveUtils.getGridColumns(context),
+                            crossAxisSpacing: ResponsiveUtils.spacingLarge(context),
+                            mainAxisSpacing: ResponsiveUtils.spacingLarge(context),
+                            childAspectRatio: ResponsiveUtils.getChildAspectRatio(context),
                           ),
                           itemCount: snapshot.data!.length,
                           itemBuilder: (context, index) {
                             final studio = snapshot.data![index];
-                            return _buildGlassyStudioCard(studio);
+                            return _buildGlassyStudioCard(studio, context);
                           },
                         ),
                       );
@@ -226,7 +238,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
     );
   }
 
-  Widget _buildGlassyStudioCard(Studio studio) {
+  Widget _buildGlassyStudioCard(Studio studio, BuildContext context) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -237,8 +249,10 @@ class _StudiosScreenState extends State<StudiosScreen> {
         );
       },
       child: Container(
+        width: ResponsiveUtils.artistCardWidth(context),
+        height: ResponsiveUtils.artistCardHeight(context),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -249,7 +263,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1.5,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
           boxShadow: [
             BoxShadow(
@@ -267,11 +281,11 @@ class _StudiosScreenState extends State<StudiosScreen> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: ResponsiveUtils.paddingLarge(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -280,7 +294,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                             gradient: LinearGradient(
                               colors: [
                                 const Color(0xFF00D4FF).withOpacity(0.3),
@@ -289,7 +303,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
                             ),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                             child: studio.imageUrl != null
                                 ? Image.network(
                                     'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(studio.imageUrl!)}',
@@ -302,29 +316,29 @@ class _StudiosScreenState extends State<StudiosScreen> {
                                 : _buildFallbackIcon(),
                           ),
                         ),
-                        // Instagram Icon (reduced size)
+                        // Instagram Icon (responsive size)
                         Positioned(
-                          bottom: 8,
-                          right: 8,
+                          bottom: ResponsiveUtils.spacingSmall(context),
+                          right: ResponsiveUtils.spacingSmall(context),
                           child: GestureDetector(
                             onTap: () async {
                               await _launchInstagram(studio.instagramLink);
                             },
                             child: Container(
-                              width: 24,
-                              height: 24,
+                              width: ResponsiveUtils.iconSmall(context),
+                              height: ResponsiveUtils.iconSmall(context),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.3),
-                                    offset: const Offset(0, 2),
-                                    blurRadius: 8,
+                                    offset: Offset(0, ResponsiveUtils.spacingXSmall(context)),
+                                    blurRadius: ResponsiveUtils.spacingSmall(context),
                                   ),
                                 ],
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                 child: Image.asset(
                                   'instagram-icon.png',
                                   fit: BoxFit.cover,
@@ -332,15 +346,15 @@ class _StudiosScreenState extends State<StudiosScreen> {
                                     // Fallback to gradient container with camera icon
                                     return Container(
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                         gradient: const LinearGradient(
                                           colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
                                         ),
-                              ),
-                              child: const Icon(
-                                Icons.photo_camera,
-                                color: Colors.white,
-                                        size: 14,
+                                      ),
+                                      child: Icon(
+                                        Icons.photo_camera,
+                                        color: Colors.white,
+                                        size: ResponsiveUtils.micro(context),
                                       ),
                                     );
                                   },
@@ -352,24 +366,27 @@ class _StudiosScreenState extends State<StudiosScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                   Text(
                     toTitleCase(studio.name),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      fontSize: ResponsiveUtils.caption(context),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.spacingXSmall(context), 
+                      vertical: ResponsiveUtils.spacingXSmall(context) * 0.5
+                    ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                       gradient: LinearGradient(
                         colors: [
                           const Color(0xFF00D4FF).withOpacity(0.2),
@@ -377,11 +394,11 @@ class _StudiosScreenState extends State<StudiosScreen> {
                         ],
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Tap to explore',
                       style: TextStyle(
-                        color: Color(0xFF00D4FF),
-                        fontSize: 11,
+                        color: const Color(0xFF00D4FF),
+                        fontSize: ResponsiveUtils.micro(context),
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
@@ -399,7 +416,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
   Widget _buildFallbackIcon() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
         gradient: LinearGradient(
           colors: [
             const Color(0xFF00D4FF).withOpacity(0.3),
@@ -407,10 +424,10 @@ class _StudiosScreenState extends State<StudiosScreen> {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.business_rounded,
-          size: 48,
+          size: (ResponsiveUtils.artistImageHeight(context) * 0.3).clamp(32.0, 56.0),
           color: Colors.white70,
         ),
       ),
