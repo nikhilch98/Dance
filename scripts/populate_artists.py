@@ -122,6 +122,7 @@ def get_artists_list() -> List[Artist]:
     """
     return [
         Artist("Prateek Aneja", "prateek.aneja"),
+        Artist("Prateek Shettigar", "prateekshettigar"),
         Artist("Akash Salunkhe", "sky_uphold"),
         Artist("Rajesh Kumar", "paletteof_colors"),
         Artist("Niraj Patel", "niraj_patel_06"),
