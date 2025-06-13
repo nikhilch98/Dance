@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/responsive_utils.dart';
-import '../main.dart';
 import './mobile_input_screen.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
@@ -222,7 +221,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
           
           // Title
           Text(
-            'Enter Verification Code',
+            'Enter OTP',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: ResponsiveUtils.h1(context),
@@ -407,7 +406,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                           ),
                         )
                       : Text(
-                          'Verify & Login',
+                          'Login',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: ResponsiveUtils.body1(context),
@@ -497,9 +496,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
         });
 
         if (success) {
-          // Navigate to main app
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MyApp()),
+          // Don't manually navigate - let AuthWrapper handle it automatically
+          // The AuthProvider state will change to 'authenticated' or 'profileIncomplete'
+          // and AuthWrapper will detect this change and navigate appropriately
+          print('[OTP Verification] Login successful - AuthWrapper will handle navigation');
+          
+          // Just pop back to let the AuthWrapper take over
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/', // Go to root route which is handled by AuthWrapper
             (route) => false,
           );
         } else {
@@ -513,6 +517,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
           _isVerifying = false;
         });
         _showErrorMessage('Verification failed. Please try again.');
+        _clearOTPFields();
       }
     }
   }
@@ -523,15 +528,17 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.sendOTP(mobileNumber: widget.mobileNumber);
     
-    if (success) {
-      _showSuccessMessage('OTP sent successfully');
-      _clearOTPFields();
-      _focusNodes[0].requestFocus();
-      
-      // Restart the timer
-      _startResendTimer();
-    } else {
-      _showErrorMessage(authProvider.errorMessage ?? 'Failed to resend OTP');
+    if (mounted) {
+      if (success) {
+        _showSuccessMessage('OTP sent successfully');
+        _clearOTPFields();
+        _focusNodes[0].requestFocus();
+        
+        // Restart the timer
+        _startResendTimer();
+      } else {
+        _showErrorMessage(authProvider.errorMessage ?? 'Failed to resend OTP');
+      }
     }
   }
 
@@ -542,6 +549,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   }
 
   void _showErrorMessage(String message) {
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -558,6 +567,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   }
 
   void _showSuccessMessage(String message) {
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

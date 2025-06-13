@@ -85,6 +85,7 @@ class AuthProvider with ChangeNotifier {
       await AuthService.sendOTP(mobileNumber: mobileNumber);
       _errorMessage = null;
       _internalLoading = false;
+      _state = AuthState.unauthenticated;
       _debounceTimer?.cancel();
       notifyListeners();
       return true;

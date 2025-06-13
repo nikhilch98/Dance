@@ -8,6 +8,9 @@ import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
 import '../utils/responsive_utils.dart';
+import '../providers/config_provider.dart';
+import '../providers/global_config_provider.dart';
+import '../providers/reaction_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -863,8 +866,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     Navigator.pushNamed(context, '/profile-setup');
   }
 
-
-
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -887,15 +888,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              
-              // Use forceLogout() directly to avoid loading state that causes white screen
-              print('[ProfileScreen] Using force logout to avoid loading state');
-              authProvider.forceLogout();
-              print('[ProfileScreen] Force logout completed');
-            },
+            onPressed: () => _handleLogout(),
             child: const Text(
               'Logout',
               style: TextStyle(color: Color(0xFFFF006E)),
@@ -904,6 +897,126 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    Navigator.pop(context); // Close dialog first
+    
+    print('[ProfileScreen] Starting logout process');
+    
+    // Show loading overlay to prevent UI glitches
+    bool isLogoutInProgress = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Container(
+          color: Colors.black.withOpacity(0.8),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Colors.white),
+                SizedBox(height: 16),
+                Text(
+                  'Logging out...',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Use the full logout method instead of forceLogout for proper cleanup
+      print('[ProfileScreen] Calling AuthProvider.logout()');
+      await authProvider.logout();
+      
+      // Also clear other providers explicitly to ensure clean state
+      if (mounted) {
+        print('[ProfileScreen] Clearing other providers...');
+        
+        // Clear ConfigProvider
+        try {
+          final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+          configProvider.clearConfig();
+          print('[ProfileScreen] ConfigProvider cleared');
+        } catch (e) {
+          print('[ProfileScreen] Error clearing ConfigProvider: $e');
+        }
+        
+        // Clear GlobalConfigProvider
+        try {
+          final globalConfigProvider = Provider.of<GlobalConfigProvider>(context, listen: false);
+          await globalConfigProvider.clearConfig();
+          print('[ProfileScreen] GlobalConfigProvider cleared');
+        } catch (e) {
+          print('[ProfileScreen] Error clearing GlobalConfigProvider: $e');
+        }
+        
+        // Clear ReactionProvider by removing auth token
+        try {
+          final reactionProvider = Provider.of<ReactionProvider>(context, listen: false);
+          reactionProvider.setAuthToken('');
+          print('[ProfileScreen] ReactionProvider cleared');
+        } catch (e) {
+          print('[ProfileScreen] Error clearing ReactionProvider: $e');
+        }
+      }
+      
+      // Close loading dialog if still open
+      if (mounted && isLogoutInProgress) {
+        Navigator.of(context).pop();
+        isLogoutInProgress = false;
+      }
+      
+      // Navigate to login screen immediately and clear all navigation stack
+      if (mounted) {
+        print('[ProfileScreen] Navigating to login screen');
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/', // Go to root route which AuthWrapper will handle
+          (route) => false, // Clear all previous routes
+        );
+      }
+      
+      print('[ProfileScreen] Logout completed successfully');
+      
+    } catch (e) {
+      print('[ProfileScreen] Logout error: $e');
+      
+      // Close loading dialog if still open
+      if (mounted && isLogoutInProgress) {
+        Navigator.of(context).pop();
+        isLogoutInProgress = false;
+      }
+      
+      // Force logout even if there was an error and clear all providers
+      if (mounted) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        authProvider.forceLogout();
+        
+        // Force clear other providers
+        try {
+          Provider.of<ConfigProvider>(context, listen: false).clearConfig();
+          Provider.of<GlobalConfigProvider>(context, listen: false).clearConfig();
+          Provider.of<ReactionProvider>(context, listen: false).setAuthToken('');
+          print('[ProfileScreen] Force cleared all providers');
+        } catch (clearError) {
+          print('[ProfileScreen] Error force clearing providers: $clearError');
+        }
+        
+        // Navigate to login screen anyway
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
+      }
+    }
   }
 
   void _showSuccessSnackBar(String message) {
@@ -1071,8 +1184,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false,
+      builder: (context) => PopScope(
+        canPop: false,
         child: Container(
           color: Colors.black.withOpacity(0.8),
           child: const Center(

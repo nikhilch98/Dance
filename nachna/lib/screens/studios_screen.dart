@@ -371,7 +371,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
                     toTitleCase(studio.name),
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: ResponsiveUtils.caption(context),
+                      fontSize: ResponsiveUtils.body2(context),
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),

@@ -308,8 +308,17 @@ class _MobileInputScreenState extends State<MobileInputScreen>
   Widget _buildSendOTPButton(double screenHeight, double screenWidth) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        final isLoading = _isSendingOTP || authProvider.isLoading;
+        // More robust loading state detection
+        final isLoading = _isSendingOTP || 
+            (authProvider.isLoading && authProvider.state == AuthState.loading);
         final isFormValid = _mobileController.text.length == 10;
+        
+        // Debug logging
+        print('[MobileInput Button] Local loading: $_isSendingOTP, '
+              'AuthProvider loading: ${authProvider.isLoading}, '
+              'AuthProvider state: ${authProvider.state}, '
+              'Combined loading: $isLoading, '
+              'Form valid: $isFormValid');
         
         return Container(
           width: double.infinity,
@@ -403,22 +412,23 @@ class _MobileInputScreenState extends State<MobileInputScreen>
       final success = await authProvider.sendOTP(mobileNumber: mobileNumber);
       
       print('[MobileInput] OTP API response - Success: $success');
+      print('[MobileInput] AuthProvider loading state: ${authProvider.isLoading}');
+      print('[MobileInput] AuthProvider error: ${authProvider.errorMessage}');
       
-      // Always reset local loading state first
-      if (mounted) {
-        setState(() {
-          _isSendingOTP = false;
-        });
-      }
-
       if (mounted) {
         if (success) {
-          print('[MobileInput] OTP sent successfully, navigating to verification screen');
+          print('[MobileInput] OTP sent successfully, preparing to navigate...');
           
-          // Wait a brief moment to ensure UI updates, then navigate
-          await Future.delayed(const Duration(milliseconds: 200));
+          // Reset local loading state BEFORE navigation
+          setState(() {
+            _isSendingOTP = false;
+          });
+          
+          // Give UI a moment to update the button state
+          await Future.delayed(const Duration(milliseconds: 100));
           
           if (mounted) {
+            print('[MobileInput] Navigating to verification screen');
             // Navigate to OTP verification screen
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -430,6 +440,11 @@ class _MobileInputScreenState extends State<MobileInputScreen>
           }
         } else {
           print('[MobileInput] OTP sending failed: ${authProvider.errorMessage}');
+          
+          // Reset local loading state on failure
+          setState(() {
+            _isSendingOTP = false;
+          });
           
           // Show error message
           _showErrorMessage(
