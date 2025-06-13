@@ -21,18 +21,23 @@ router = APIRouter()
 
 @router.get("/workshops", response_model=List[WorkshopListItem])
 @cache_response(expire=3600)
-async def get_workshops(version: str = Depends(validate_version)):
-    """Get all workshops."""
+async def get_workshops():
+    """Fetch all workshops, categorized by current week (daily) and future."""
     try:
-        return DatabaseOperations.get_all_workshops()
+        workshops_data = DatabaseOperations.get_all_workshops_categorized()
+        if not workshops_data.this_week and not workshops_data.post_this_week:
+            return CategorizedWorkshopResponse(this_week=[], post_this_week=[])
+        return workshops_data
     except Exception as e:
-        print(f"Database error: {str(e)}")
-        return []
+        print(f"Error fetching all workshops: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/studios", response_model=List[Studio])
 @cache_response(expire=3600)
-async def get_studios(version: str = Depends(validate_version)):
+async def get_studios():
     """Get all studios with active workshops."""
     try:
         return DatabaseOperations.get_studios()
@@ -43,7 +48,7 @@ async def get_studios(version: str = Depends(validate_version)):
 
 @router.get("/artists", response_model=List[Artist])
 @cache_response(expire=3600)
-async def get_artists(version: str = Depends(validate_version), has_workshops: Optional[bool] = None):
+async def get_artists(has_workshops: Optional[bool] = None):
     """Get all artists with active workshops."""
     try:
         return DatabaseOperations.get_artists(has_workshops=has_workshops)
@@ -55,7 +60,7 @@ async def get_artists(version: str = Depends(validate_version), has_workshops: O
 @router.get("/workshops_by_artist/{artist_id}", response_model=List[WorkshopSession])
 @cache_response(expire=3600)
 async def get_workshops_by_artist(
-    artist_id: str, version: str = Depends(validate_version)
+    artist_id: str,
 ):
     """Get workshops for a specific artist."""
     try:
@@ -68,11 +73,11 @@ async def get_workshops_by_artist(
 @router.get("/workshops_by_studio/{studio_id}", response_model=CategorizedWorkshopResponse)
 @cache_response(expire=3600)
 async def get_workshops_by_studio(
-    studio_id: str, version: str = Depends(validate_version)
+    studio_id: str,
 ):
     """Fetch workshops for a specific studio, categorized by current week (daily) and future."""
     try:
-        workshops_data = DatabaseOperations.get_workshops_by_studio(studio_id)
+        workshops_data = DatabaseOperations.get_all_workshops_categorized(studio_id)
         if not workshops_data.this_week and not workshops_data.post_this_week:
             return CategorizedWorkshopResponse(this_week=[], post_this_week=[])
         return workshops_data

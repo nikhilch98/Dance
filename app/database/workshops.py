@@ -224,7 +224,7 @@ class DatabaseOperations:
         return sorted(workshops, key=lambda x: x.timestamp_epoch)
 
     @staticmethod
-    def get_workshops_by_studio(studio_id: str) -> CategorizedWorkshopResponse:
+    def get_all_workshops_categorized(studio_id: Optional[str] = None) -> CategorizedWorkshopResponse:
         """Fetch workshops for a specific studio grouped by this week (daily) and post this week.
 
         Args:
@@ -234,6 +234,13 @@ class DatabaseOperations:
             Object containing 'this_week' (list of daily schedules) and 'post_this_week' workshops.
         """
         client = get_mongo_client()
+        studios = list(client["discovery"]["studios"].find({}))
+        studios_map = {studio["studio_id"]: studio["studio_name"] for studio in studios}
+        
+        # Build a mapping from artist_id to artist image_url
+        artists = list(client["discovery"]["artists_v2"].find({}))
+        artists_map = {artist["artist_id"]: artist for artist in artists}
+
         temp_this_week: List[EventDetails] = []
         temp_post_this_week: List[EventDetails] = []
 
@@ -241,8 +248,10 @@ class DatabaseOperations:
         today = datetime.now().date()
         start_of_week = today - timedelta(days=today.weekday())
         end_of_week = start_of_week + timedelta(days=6)
-
-        workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops(studio_id=studio_id)
+        if studio_id:
+            workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops(studio_id=studio_id)
+        else:
+            workshops_cursor: List[EventDetails] = DatabaseOperations.get_workshops()
 
         for workshop in workshops_cursor:
             # Categorize by week using time_details
@@ -292,16 +301,20 @@ class DatabaseOperations:
             final_this_week.append(
                 DaySchedule(
                     day=day,
-                    workshops=[WorkshopSession(
-                        date=x.date_with_day,
-                        time=x.time_str,
-                        song=x.song,
-                        studio_id=x.studio_id,
-                        artist=x.artist_name,
-                        artist_id_list=x.artist_id_list,
+                    workshops=[WorkshopListItem(
+                        uuid=x.uuid,
                         payment_link=x.payment_link,
+                        studio_id=x.studio_id,
+                        studio_name=studios_map[x.studio_id],
+                        updated_at=x.updated_at,
+                        by=" X ".join([artists_map.get(artist_id,{}).get("artist_name") for artist_id in x.artist_id_list if artists_map.get(artist_id,{}).get("artist_name")] if x.artist_id_list else []),
+                        song=x.song,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
+                        artist_id_list=x.artist_id_list,
+                        artist_image_urls=[artists_map.get(artist_id,{}).get("image_url") for artist_id in x.artist_id_list] if x.artist_id_list else [],
+                        date=x.date_with_day,
+                        time=x.time_str,
                         event_type=x.event_type,
                         choreo_insta_link=x.choreo_insta_link,
                     ) for x in sorted_workshops_raw]
@@ -310,16 +323,20 @@ class DatabaseOperations:
 
         # Sort 'post_this_week' workshops chronologically using timestamp_epoch
 
-        sorted_post_this_week = [WorkshopSession(
-                        date=x.date_with_day,
-                        time=x.time_str,
-                        song=x.song,
-                        studio_id=x.studio_id,
-                        artist=x.artist_name,
-                        artist_id_list=x.artist_id_list,
+        sorted_post_this_week = [WorkshopListItem(
+                        uuid=x.uuid,
                         payment_link=x.payment_link,
+                        studio_id=x.studio_id,
+                        studio_name=studios_map[x.studio_id],
+                        updated_at=x.updated_at,
+                        by=" X ".join([artists_map.get(artist_id,{}).get("artist_name") for artist_id in x.artist_id_list if artists_map.get(artist_id,{}).get("artist_name")] if x.artist_id_list else []),
+                        song=x.song,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
+                        artist_id_list=x.artist_id_list,
+                        artist_image_urls=[artists_map.get(artist_id,{}).get("image_url") for artist_id in x.artist_id_list] if x.artist_id_list else [],
+                        date=x.date_with_day,
+                        time=x.time_str,
                         event_type=x.event_type,
                         choreo_insta_link=x.choreo_insta_link,
                     ) for x in sorted(

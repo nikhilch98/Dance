@@ -16,7 +16,7 @@ class TimeDetails(BaseModel):
 class WorkshopListItem(BaseModel):
     """Complete workshop information including all sessions."""
     uuid: str
-    payment_link: HttpUrl
+    payment_link: str
     studio_id: str
     studio_name: str
     updated_at: float
@@ -66,13 +66,13 @@ class WorkshopSession(BaseModel):
 class DaySchedule(BaseModel):
     """Schedule of workshops for a specific day."""
     day: str
-    workshops: List[WorkshopSession]
+    workshops: List[WorkshopListItem]
 
 
 class CategorizedWorkshopResponse(BaseModel):
     """Response structure for workshops categorized by week."""
     this_week: List[DaySchedule]
-    post_this_week: List[WorkshopSession]
+    post_this_week: List[WorkshopListItem]
 
 
 class EventDetails(BaseModel):

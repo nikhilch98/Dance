@@ -609,7 +609,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                           Text(
                             'Admin Dashboard',
                             style: TextStyle(
-                              fontSize: ResponsiveUtils.h2(context),
+                              fontSize: ResponsiveUtils.h3(context),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 1.2,
