@@ -19,7 +19,7 @@ from utils.utils import cache_response
 router = APIRouter()
 
 
-@router.get("/workshops", response_model=List[WorkshopListItem])
+@router.get("/workshops", response_model=CategorizedWorkshopResponse)
 @cache_response(expire=3600)
 async def get_workshops():
     """Fetch all workshops, categorized by current week (daily) and future."""
