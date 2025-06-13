@@ -4,6 +4,8 @@ import io
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
+import asyncio
+import logging
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -30,26 +32,58 @@ from utils.utils import get_mongo_client
 
 router = APIRouter()
 
+async def send_otp_background(mobile_number: str):
+    """Send OTP in background."""
+    try:
+        logging.info(f"Background OTP sending started for: {mobile_number}")
+        
+        # Run the sync Twilio service call in a thread pool
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,  # Use default executor
+            lambda: get_twilio_service().send_otp(mobile_number)
+        )
+        
+        if result["success"]:
+            logging.info(f"Background OTP sent successfully to: {mobile_number}")
+        else:
+            logging.error(f"Background OTP sending failed for {mobile_number}: {result['message']}")
+            
+    except Exception as e:
+        logging.error(f"Background OTP sending error for {mobile_number}: {str(e)}")
 
 @router.post("/send-otp")
 async def send_otp(otp_request: SendOTPRequest):
-    """Send OTP to mobile number."""
+    """Send OTP to mobile number asynchronously."""
     try:
-        # Send OTP using Twilio
-        result = get_twilio_service().send_otp(otp_request.mobile_number)
-        
-        if result["success"]:
-            return {"message": result["message"]}
-        else:
+        # Validate mobile number format (basic validation)
+        mobile_number = otp_request.mobile_number.strip()
+        if not mobile_number or len(mobile_number) != 10 or not mobile_number.isdigit():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=result["message"]
+                detail="Invalid mobile number format"
             )
+        
+        # Log the request
+        logging.info(f"OTP request received for: {mobile_number}")
+        
+        # Schedule OTP sending in background (fire and forget)
+        asyncio.create_task(send_otp_background(mobile_number))
+        
+        # Return immediate success response
+        return {
+            "success": True,
+            "message": "OTP is being sent to your mobile number",
+            "mobile_number": mobile_number
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Send OTP error: {str(e)}")
+        logging.error(f"Send OTP endpoint error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send OTP"
+            detail="Failed to process OTP request"
         )
 
 
@@ -142,9 +176,6 @@ async def update_user_profile(
     # Return updated profile
     updated_user = UserOperations.get_user_by_id(user_id)
     return format_user_profile(updated_user)
-
-
-
 
 
 @router.post("/profile-picture")

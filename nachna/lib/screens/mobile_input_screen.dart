@@ -98,11 +98,11 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                             ),
                             child: Column(
                               children: [
-                                SizedBox(height: screenHeight * 0.12),
+                                SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                                 _buildHeader(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.08),
+                                SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                                 _buildForm(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.02),
+                                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                               ],
                             ),
                           ),
@@ -120,21 +120,16 @@ class _MobileInputScreenState extends State<MobileInputScreen>
   }
 
   Widget _buildHeader(double screenHeight, double screenWidth) {
-    final iconSize = screenWidth * 0.15;
-    final clampedIconSize = iconSize.clamp(50.0, 80.0);
-    final titleSize = screenWidth * 0.06;
-    final clampedTitleSize = titleSize.clamp(22.0, 28.0);
-    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      padding: ResponsiveUtils.paddingLarge(context),
       child: Column(
         children: [
           // Logo/Icon
           Container(
-            width: clampedIconSize,
-            height: clampedIconSize,
+            width: ResponsiveUtils.avatarSizeLarge(context),
+            height: ResponsiveUtils.avatarSizeLarge(context),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(clampedIconSize * 0.25),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
               gradient: const LinearGradient(
                 colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
               ),
@@ -148,36 +143,40 @@ class _MobileInputScreenState extends State<MobileInputScreen>
             ),
             child: Icon(
               Icons.phone_android,
-              size: clampedIconSize * 0.5,
+              size: ResponsiveUtils.iconXLarge(context),
               color: Colors.white,
             ),
           ),
           
-          SizedBox(height: screenHeight * 0.025),
+          SizedBox(height: ResponsiveUtils.spacingLarge(context)),
           
           // Title
           Text(
             'Welcome to Nachna',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: clampedTitleSize,
+              fontSize: ResponsiveUtils.h1(context),
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: 1.2,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           
-          SizedBox(height: screenHeight * 0.01),
+          SizedBox(height: ResponsiveUtils.spacingMedium(context)),
           
           // Subtitle
           Text(
             'Enter your mobile number to get started\nWe\'ll send you a secure verification code',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+              fontSize: ResponsiveUtils.body2(context),
               color: Colors.white.withOpacity(0.7),
               height: 1.4,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -186,7 +185,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
 
   Widget _buildForm(double screenHeight, double screenWidth) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      margin: ResponsiveUtils.paddingLarge(context),
       child: Form(
         key: _formKey,
         child: Column(
@@ -194,7 +193,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
             // Mobile Number Field
             _buildMobileField(screenHeight, screenWidth),
             
-            SizedBox(height: screenHeight * 0.04),
+            SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
             
             // Send OTP Button
             _buildSendOTPButton(screenHeight, screenWidth),
@@ -207,7 +206,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
   Widget _buildMobileField(double screenHeight, double screenWidth) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.15),
@@ -216,42 +215,42 @@ class _MobileInputScreenState extends State<MobileInputScreen>
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          width: ResponsiveUtils.borderWidthMedium(context),
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: ResponsiveUtils.paddingMedium(context),
             child: Row(
               children: [
                 // Country Code
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingSmall(context)),
                   child: Row(
                     children: [
-                      const Text(
+                      Text(
                         '🇮🇳',
-                        style: TextStyle(fontSize: 20),
+                        style: TextStyle(fontSize: ResponsiveUtils.body1(context)),
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                      Text(
                         '+91',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: ResponsiveUtils.body1(context),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                       Container(
-                        width: 1,
-                        height: 20,
+                        width: ResponsiveUtils.borderWidthThin(context),
+                        height: ResponsiveUtils.iconMedium(context),
                         color: Colors.white.withOpacity(0.3),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: ResponsiveUtils.spacingMedium(context)),
                     ],
                   ),
                 ),
@@ -265,9 +264,9 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(10),
                     ],
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: ResponsiveUtils.body1(context),
                       fontWeight: FontWeight.w500,
                     ),
                     textInputAction: TextInputAction.done,
@@ -276,10 +275,12 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                       hintText: 'Mobile Number',
                       hintStyle: TextStyle(
                         color: Colors.white.withOpacity(0.5),
-                        fontSize: 16,
+                        fontSize: ResponsiveUtils.body1(context),
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.spacingSmall(context),
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -289,6 +290,10 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                         return 'Please enter valid 10-digit mobile number';
                       }
                       return null;
+                    },
+                    onChanged: (value) {
+                      // Trigger rebuild to update button state
+                      setState(() {});
                     },
                   ),
                 ),
@@ -304,13 +309,14 @@ class _MobileInputScreenState extends State<MobileInputScreen>
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final isLoading = _isSendingOTP || authProvider.isLoading;
+        final isFormValid = _mobileController.text.length == 10;
         
         return Container(
           width: double.infinity,
-          height: screenHeight * 0.07,
+          height: ResponsiveUtils.buttonHeight(context),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: isLoading
+            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+            gradient: (isLoading || !isFormValid)
                 ? LinearGradient(
                     colors: [
                       Colors.grey.withOpacity(0.5),
@@ -320,7 +326,7 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                 : const LinearGradient(
                     colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                   ),
-            boxShadow: isLoading
+            boxShadow: (isLoading || !isFormValid)
                 ? []
                 : [
                     BoxShadow(
@@ -333,15 +339,15 @@ class _MobileInputScreenState extends State<MobileInputScreen>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: isLoading ? null : _sendOTP,
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+              onTap: (isLoading || !isFormValid) ? null : _sendOTP,
               child: Container(
                 alignment: Alignment.center,
                 child: isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
+                    ? SizedBox(
+                        width: ResponsiveUtils.iconMedium(context),
+                        height: ResponsiveUtils.iconMedium(context),
+                        child: const CircularProgressIndicator(
                           color: Colors.white,
                           strokeWidth: 2,
                         ),
@@ -350,10 +356,12 @@ class _MobileInputScreenState extends State<MobileInputScreen>
                         'Continue',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: (screenWidth * 0.045).clamp(16.0, 18.0),
+                          fontSize: ResponsiveUtils.body1(context),
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
               ),
             ),
@@ -364,54 +372,74 @@ class _MobileInputScreenState extends State<MobileInputScreen>
   }
 
   void _sendOTP() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_isSendingOTP) return; // Prevent multiple calls
+    // Validate form first
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    // Prevent multiple calls
+    if (_isSendingOTP) {
+      return;
+    }
+
+    // Clear any previous errors from AuthProvider
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearError();
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
+    // Set local loading state
     setState(() {
       _isSendingOTP = true;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final mobileNumber = _mobileController.text.trim();
     
     try {
+      print('[MobileInput] Sending OTP to: $mobileNumber');
+      
+      // Call the API and wait for response
       final success = await authProvider.sendOTP(mobileNumber: mobileNumber);
       
+      print('[MobileInput] OTP API response - Success: $success');
+      
+      // Always reset local loading state first
       if (mounted) {
         setState(() {
           _isSendingOTP = false;
         });
+      }
 
+      if (mounted) {
         if (success) {
-          // Navigate to OTP verification screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => OTPVerificationScreen(
-                mobileNumber: mobileNumber,
+          print('[MobileInput] OTP sent successfully, navigating to verification screen');
+          
+          // Wait a brief moment to ensure UI updates, then navigate
+          await Future.delayed(const Duration(milliseconds: 200));
+          
+          if (mounted) {
+            // Navigate to OTP verification screen
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => OTPVerificationScreen(
+                  mobileNumber: mobileNumber,
+                ),
               ),
-            ),
-          );
+            );
+          }
         } else {
+          print('[MobileInput] OTP sending failed: ${authProvider.errorMessage}');
+          
           // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                authProvider.errorMessage ?? 'Failed to send OTP',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+          _showErrorMessage(
+            authProvider.errorMessage ?? 'Failed to send OTP. Please try again.'
           );
         }
       }
     } catch (e) {
+      print('[MobileInput] Exception during OTP sending: $e');
+      
       // Always ensure loading state is reset when exception occurs
       if (mounted) {
         setState(() {
@@ -419,20 +447,31 @@ class _MobileInputScreenState extends State<MobileInputScreen>
         });
         
         // Show error message for any uncaught exceptions
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'An error occurred while sending OTP. Please try again.',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        _showErrorMessage(
+          'An error occurred while sending OTP. Please check your connection and try again.'
         );
       }
     }
+  }
+
+  void _showErrorMessage(String message) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 } 

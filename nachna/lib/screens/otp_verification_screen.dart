@@ -126,15 +126,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                             ),
                             child: Column(
                               children: [
-                                SizedBox(height: screenHeight * 0.08),
+                                SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                                 _buildHeader(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.06),
+                                SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                                 _buildOTPFields(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.04),
+                                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                                 _buildVerifyButton(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.03),
+                                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                                 _buildResendOption(screenHeight, screenWidth),
-                                SizedBox(height: screenHeight * 0.02),
+                                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                               ],
                             ),
                           ),
@@ -152,33 +152,28 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   }
 
   Widget _buildHeader(double screenHeight, double screenWidth) {
-    final iconSize = screenWidth * 0.15;
-    final clampedIconSize = iconSize.clamp(50.0, 80.0);
-    final titleSize = screenWidth * 0.06;
-    final clampedTitleSize = titleSize.clamp(22.0, 28.0);
-    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      padding: ResponsiveUtils.paddingLarge(context),
       child: Column(
         children: [
           // Back Button
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: ResponsiveUtils.iconLarge(context),
+                height: ResponsiveUtils.iconLarge(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context) * 0.6),
                   color: Colors.white.withOpacity(0.1),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1,
+                    width: ResponsiveUtils.borderWidthThin(context),
                   ),
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context) * 0.6),
                     onTap: () {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
@@ -186,10 +181,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                         ),
                       );
                     },
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_back_ios_rounded,
                       color: Colors.white,
-                      size: 18,
+                      size: ResponsiveUtils.iconSmall(context),
                     ),
                   ),
                 ),
@@ -197,14 +192,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             ],
           ),
           
-          SizedBox(height: screenHeight * 0.03),
+          SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
           
           // Logo/Icon
           Container(
-            width: clampedIconSize,
-            height: clampedIconSize,
+            width: ResponsiveUtils.avatarSizeLarge(context),
+            height: ResponsiveUtils.avatarSizeLarge(context),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(clampedIconSize * 0.25),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
               gradient: const LinearGradient(
                 colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
               ),
@@ -218,42 +213,45 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             ),
             child: Icon(
               Icons.sms_outlined,
-              size: clampedIconSize * 0.5,
+              size: ResponsiveUtils.iconXLarge(context),
               color: Colors.white,
             ),
           ),
           
-          SizedBox(height: screenHeight * 0.025),
+          SizedBox(height: ResponsiveUtils.spacingLarge(context)),
           
           // Title
           Text(
             'Enter Verification Code',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: clampedTitleSize,
+              fontSize: ResponsiveUtils.h1(context),
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: 1.2,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           
-          SizedBox(height: screenHeight * 0.01),
+          SizedBox(height: ResponsiveUtils.spacingMedium(context)),
           
           // Subtitle
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
               style: TextStyle(
-                fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+                fontSize: ResponsiveUtils.body2(context),
                 color: Colors.white.withOpacity(0.7),
               ),
               children: [
                 const TextSpan(text: 'We sent a 6-digit code to\n'),
                 TextSpan(
                   text: '+91 ${widget.mobileNumber}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF00D4FF),
+                    color: const Color(0xFF00D4FF),
+                    fontSize: ResponsiveUtils.body1(context),
                   ),
                 ),
               ],
@@ -266,7 +264,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   Widget _buildOTPFields(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      padding: ResponsiveUtils.paddingLarge(context),
       child: AutofillGroup(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -274,13 +272,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             return Flexible(
               child: Container(
                 constraints: BoxConstraints(
-                  maxWidth: screenWidth * 0.12,
+                  maxWidth: ResponsiveUtils.screenWidth(context) * 0.12,
                   minWidth: 40,
                 ),
-                height: screenWidth * 0.12.clamp(40.0, 60.0),
-                margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.008),
+                height: ResponsiveUtils.buttonHeight(context),
+                margin: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingXSmall(context),
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context) * 0.75),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.15),
@@ -291,11 +291,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                     color: _focusNodes[index].hasFocus
                         ? const Color(0xFF00D4FF)
                         : Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context) * 0.75),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Center(
@@ -312,7 +312,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: (screenWidth * 0.048).clamp(16.0, 20.0),
+                          fontSize: ResponsiveUtils.body1(context),
                           fontWeight: FontWeight.bold,
                         ),
                         decoration: const InputDecoration(
@@ -359,7 +359,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   Widget _buildVerifyButton(double screenHeight, double screenWidth) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      margin: ResponsiveUtils.paddingLarge(context),
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           final isLoading = _isVerifying || authProvider.isLoading;
@@ -367,9 +367,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
           
           return Container(
             width: double.infinity,
-            height: screenHeight * 0.07,
+            height: ResponsiveUtils.buttonHeight(context),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
               gradient: (!isComplete || isLoading)
                   ? LinearGradient(
                       colors: [
@@ -393,15 +393,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                 onTap: (!isComplete || isLoading) ? null : _verifyOTP,
                 child: Container(
                   alignment: Alignment.center,
                   child: isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          width: ResponsiveUtils.iconMedium(context),
+                          height: ResponsiveUtils.iconMedium(context),
+                          child: const CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
                           ),
@@ -410,10 +410,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
                           'Verify & Login',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: (screenWidth * 0.045).clamp(16.0, 18.0),
+                            fontSize: ResponsiveUtils.body1(context),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                 ),
               ),
@@ -426,15 +428,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   Widget _buildResendOption(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+      padding: ResponsiveUtils.paddingLarge(context),
       child: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: ResponsiveUtils.spacingXSmall(context),
         children: [
           Text(
-            "Didn't receive the code? ",
+            "Didn't receive the code?",
             style: TextStyle(
-              fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+              fontSize: ResponsiveUtils.body2(context),
               color: Colors.white.withOpacity(0.7),
             ),
             maxLines: 1,
@@ -445,7 +448,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
             child: Text(
               _canResend ? 'Resend' : 'Resend in ${_resendCountdown}s',
               style: TextStyle(
-                fontSize: (screenWidth * 0.037).clamp(13.0, 15.0),
+                fontSize: ResponsiveUtils.body2(context),
                 color: _canResend 
                     ? const Color(0xFF00D4FF) 
                     : Colors.white.withOpacity(0.5),
