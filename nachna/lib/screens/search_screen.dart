@@ -7,6 +7,7 @@ import '../models/search.dart';
 import '../services/search_service.dart';
 import '../screens/artist_detail_screen.dart';
 import '../models/workshop.dart';
+import '../utils/responsive_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -242,13 +243,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.all(20),
+    return Padding(
+      padding: ResponsiveUtils.paddingLarge(context),
       child: Text(
         'Search',
         style: TextStyle(
           color: Colors.white,
-          fontSize: 28,
+          fontSize: ResponsiveUtils.h1(context),
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
         ),
@@ -258,10 +259,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           gradient: LinearGradient(
             colors: [
               Colors.white.withOpacity(0.15),
@@ -270,30 +271,30 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1.5,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: ResponsiveUtils.body1(context),
               ),
               decoration: InputDecoration(
                 hintText: 'Search artists, workshops, or users...',
                 hintStyle: TextStyle(
                   color: Colors.white.withOpacity(0.5),
-                  fontSize: 16,
+                  fontSize: ResponsiveUtils.body1(context),
                 ),
                 prefixIcon: Icon(
                   Icons.search,
                   color: const Color(0xFF00D4FF),
-                  size: 24,
+                  size: ResponsiveUtils.iconMedium(context),
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
@@ -309,14 +310,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         child: Icon(
                           Icons.clear,
                           color: Colors.white.withOpacity(0.7),
-                          size: 20,
+                          size: ResponsiveUtils.iconSmall(context),
                         ),
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingLarge(context),
+                  vertical: ResponsiveUtils.spacingLarge(context),
                 ),
               ),
             ),
@@ -432,10 +433,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: ResponsiveUtils.paddingLarge(context),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
           gradient: LinearGradient(
             colors: [
               Colors.white.withOpacity(0.1),
@@ -444,32 +445,32 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                 gradient: const LinearGradient(
                   colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                 ),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: const EdgeInsets.all(4),
+              indicatorPadding: EdgeInsets.all(ResponsiveUtils.spacingXSmall(context)),
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white.withOpacity(0.7),
-              labelStyle: const TextStyle(
+              labelStyle: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.body2(context),
               ),
-              unselectedLabelStyle: const TextStyle(
+              unselectedLabelStyle: TextStyle(
                 fontWeight: FontWeight.normal,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.body2(context),
               ),
               tabs: availableTabs,
             ),
@@ -514,20 +515,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.all(20),
+        Padding(
+          padding: ResponsiveUtils.paddingLarge(context),
           child: Text(
             'Recent Searches',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: ResponsiveUtils.h2(context),
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
             itemCount: _recentSearches.length,
             itemBuilder: (context, index) {
               final search = _recentSearches[index];
@@ -543,10 +544,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return GestureDetector(
       onTap: () => _performSearchFromRecent(search),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveUtils.spacingLarge(context), 
+          vertical: ResponsiveUtils.spacingMedium(context)
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
           gradient: LinearGradient(
             colors: [
               Colors.white.withOpacity(0.1),
@@ -555,7 +559,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.1),
-            width: 1,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: Row(
@@ -563,15 +567,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             Icon(
               Icons.history,
               color: Colors.white.withOpacity(0.7),
-              size: 18,
+              size: ResponsiveUtils.iconSmall(context),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: ResponsiveUtils.spacingMedium(context)),
             Expanded(
               child: Text(
                 search,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
-                  fontSize: 16,
+                  fontSize: ResponsiveUtils.body1(context),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -582,7 +586,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               child: Icon(
                 Icons.close,
                 color: Colors.white.withOpacity(0.5),
-                size: 18,
+                size: ResponsiveUtils.iconSmall(context),
               ),
             ),
           ],
@@ -619,16 +623,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         children: [
           Icon(
             Icons.search,
-            size: 80,
+            size: ResponsiveUtils.iconXLarge(context) * 2,
             color: Colors.white.withOpacity(0.3),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: ResponsiveUtils.spacingLarge(context)),
           Text(
             message,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
-              fontSize: 16,
+              fontSize: ResponsiveUtils.body1(context),
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -641,7 +646,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
       itemCount: _artistResults.length,
       itemBuilder: (context, index) {
         final artist = _artistResults[index];
@@ -656,7 +661,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
       itemCount: _workshopResults.length,
       itemBuilder: (context, index) {
         final workshop = _workshopResults[index];
@@ -671,7 +676,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
       itemCount: _userResults.length,
       itemBuilder: (context, index) {
         final user = _userResults[index];
@@ -692,9 +697,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           gradient: LinearGradient(
             colors: [
               Colors.white.withOpacity(0.15),
@@ -703,21 +708,21 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: 1.5,
+            width: ResponsiveUtils.borderWidthThin(context),
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: ResponsiveUtils.paddingLarge(context),
               child: Row(
                 children: [
                   // Artist Image
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: ResponsiveUtils.avatarSize(context),
+                    height: ResponsiveUtils.avatarSize(context),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: artist.imageUrl != null
@@ -739,22 +744,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                       colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                                     ),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.person,
                                     color: Colors.white,
-                                    size: 30,
+                                    size: ResponsiveUtils.iconMedium(context),
                                   ),
                                 );
                               },
                             ),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.person,
                             color: Colors.white,
-                            size: 30,
+                            size: ResponsiveUtils.iconMedium(context),
                           ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: ResponsiveUtils.spacingLarge(context)),
                   // Artist Info
                   Expanded(
                     child: Column(
@@ -764,20 +769,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           artist.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: ResponsiveUtils.h3(context),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
                         Text(
                           '@${artist.id}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
+                            fontSize: ResponsiveUtils.caption(context),
                           ),
                         ),
                       ],
@@ -791,15 +796,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     },
                     child: Image.asset(
                       'instagram-icon.png',
-                      width: 24,
-                      height: 24,
+                      width: ResponsiveUtils.iconMedium(context),
+                      height: ResponsiveUtils.iconMedium(context),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback to camera icon
-                        return const Icon(
+                        return Icon(
                           Icons.camera_alt_rounded,
                           color: Colors.white,
-                          size: 24,
+                          size: ResponsiveUtils.iconMedium(context),
                         );
                       },
                     ),
@@ -1075,9 +1080,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Widget _buildUserCard(SearchUserResult user) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.15),
@@ -1086,21 +1091,28 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          width: ResponsiveUtils.borderWidthThin(context),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withOpacity(0.1),
+            blurRadius: ResponsiveUtils.spacingSmall(context),
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: ResponsiveUtils.paddingLarge(context),
             child: Row(
               children: [
-                // User Profile Picture
+                // User Profile Picture with enhanced styling
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: ResponsiveUtils.avatarSize(context),
+                  height: ResponsiveUtils.avatarSize(context),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: user.profilePictureUrl != null
@@ -1108,36 +1120,32 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         : const LinearGradient(
                             colors: [Color(0xFF10B981), Color(0xFF059669)],
                           ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withOpacity(0.3),
+                        blurRadius: ResponsiveUtils.spacingSmall(context),
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                   child: user.profilePictureUrl != null
                       ? ClipOval(
                           child: Image.network(
-                            user.profilePictureUrl!,
+                            'https://nachna.com${user.profilePictureUrl!}',
                             fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return _buildUserAvatar(user.name);
+                            },
                             errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 30,
-                                ),
-                              );
+                              print('Error loading user profile picture: $error');
+                              return _buildUserAvatar(user.name);
                             },
                           ),
                         )
-                      : const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 30,
-                        ),
+                      : _buildUserAvatar(user.name),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: ResponsiveUtils.spacingLarge(context)),
                 // User Info
                 Expanded(
                   child: Column(
@@ -1147,38 +1155,38 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         user.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: ResponsiveUtils.h3(context),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
                       Text(
                         'Joined ${_formatDate(user.createdAt)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
-                          fontSize: 12,
+                          fontSize: ResponsiveUtils.caption(context),
                         ),
                       ),
                     ],
                   ),
                 ),
-                // User Icon
+                // User Badge Icon
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(ResponsiveUtils.spacingSmall(context)),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                     gradient: const LinearGradient(
                       colors: [Color(0xFF10B981), Color(0xFF059669)],
                     ),
                   ),
-                  child: const Icon(
-                    Icons.person,
+                  child: Icon(
+                    Icons.person_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: ResponsiveUtils.iconSmall(context),
                   ),
                 ),
               ],
@@ -1188,6 +1196,29 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       ),
     );
   }
+
+  Widget _buildUserAvatar(String name) {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: ResponsiveUtils.h3(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

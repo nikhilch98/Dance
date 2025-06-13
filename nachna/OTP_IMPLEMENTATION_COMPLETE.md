@@ -75,7 +75,7 @@ The OTP (One-Time Password) authentication system has been successfully implemen
 - Auto-verification when all fields are filled
 - 30-second resend timer with countdown
 - Back button navigation to mobile input
-- Professional "Verify & Login" button
+- Professional "Login" button
 
 #### Profile Screen Updates
 - **File**: `nachna/lib/screens/profile_screen.dart`

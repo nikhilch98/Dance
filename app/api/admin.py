@@ -536,3 +536,50 @@ async def update_workshop_instagram_link(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update workshop Instagram link: {str(e)}"
         ) 
+
+
+@router.get("/api/artists/{artist_id}/choreo-links")
+async def get_artist_choreo_links(
+    artist_id: str,
+    user_id: str = Depends(verify_admin_user)
+):
+    """Get all existing choreo links for a specific artist."""
+    try:
+        client = get_mongo_client()
+        
+        # Find all choreo links that include this artist
+        choreo_links = list(client["discovery"]["choreo_links"].find({
+            "artist_id_list": {"$in": [artist_id]}
+        }, {
+            "_id": 0,
+            "choreo_insta_link": 1,
+            "song": 1,
+            "artist_id_list": 1
+        }))
+        
+        # Remove duplicates and format for display
+        unique_links = {}
+        for link_data in choreo_links:
+            url = link_data.get("choreo_insta_link", "")
+            if url and url not in unique_links:
+                unique_links[url] = {
+                    "url": url,
+                    "song": link_data.get("song", "").title() if link_data.get("song") else "Unknown Song",
+                    "display_text": f"{link_data.get('song', 'Unknown Song').title() if link_data.get('song') else 'Unknown Song'} - {url}"
+                }
+        
+        result = list(unique_links.values())
+        result.sort(key=lambda x: x["song"])
+        
+        return {
+            "success": True,
+            "data": result,
+            "count": len(result)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error getting artist choreo links: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get artist choreo links: {str(e)}"
+        ) 

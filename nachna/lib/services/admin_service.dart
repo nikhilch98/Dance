@@ -98,4 +98,40 @@ class AdminService {
       return false;
     }
   }
+
+  /// Get existing choreo links for a specific artist
+  static Future<List<Map<String, dynamic>>> getArtistChoreoLinks(String artistId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/artists/$artistId/choreo-links'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return List<Map<String, dynamic>>.from(data['data'] ?? []);
+        } else {
+          throw Exception('API returned success: false');
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please log in again.');
+      } else if (response.statusCode == 403) {
+        throw Exception('Admin access required. Contact support if you believe this is an error.');
+      } else {
+        throw Exception('Failed to get artist choreo links (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      print('[AdminService] Error getting artist choreo links: $e');
+      return [];
+    }
+  }
 } 

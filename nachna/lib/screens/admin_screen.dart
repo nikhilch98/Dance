@@ -14,6 +14,7 @@ import '../services/first_launch_service.dart';
 import '../services/admin_service.dart';
 import '../models/app_insights.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/responsive_utils.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -565,9 +566,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
             children: [
               // Modern AppBar with glass effect
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: ResponsiveUtils.paddingLarge(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.1),
@@ -576,36 +577,39 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.spacingXLarge(context), 
+                        horizontal: ResponsiveUtils.spacingXXLarge(context)
+                      ),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: ResponsiveUtils.paddingSmall(context),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4081), Color(0xFFE91E63)],
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.admin_panel_settings_rounded,
                               color: Colors.white,
-                              size: 24,
+                              size: ResponsiveUtils.iconMedium(context),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Text(
+                          SizedBox(width: ResponsiveUtils.spacingLarge(context)),
+                          Text(
                             'Admin Dashboard',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: ResponsiveUtils.h2(context),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 1.2,
@@ -620,9 +624,12 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               
               // Tab Bar
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingLarge(context), 
+                  vertical: ResponsiveUtils.spacingSmall(context)
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   gradient: LinearGradient(
                     colors: [
                       Colors.white.withOpacity(0.1),
@@ -631,11 +638,11 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   ),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    width: ResponsiveUtils.borderWidthMedium(context),
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: TabBar(
@@ -643,7 +650,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                       isScrollable: true,
                       tabAlignment: TabAlignment.start,
                       indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                         gradient: const LinearGradient(
                           colors: [Color(0xFFFF4081), Color(0xFFE91E63)],
                         ),
@@ -652,13 +659,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                       dividerColor: Colors.transparent,
                       labelColor: Colors.white,
                       unselectedLabelColor: Colors.white.withOpacity(0.6),
-                      labelStyle: const TextStyle(
+                      labelStyle: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: ResponsiveUtils.body2(context),
                       ),
-                      unselectedLabelStyle: const TextStyle(
+                      unselectedLabelStyle: TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 16,
+                        fontSize: ResponsiveUtils.body2(context),
                       ),
                       tabs: [
                         Tab(
@@ -2557,9 +2564,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     required String description,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: ResponsiveUtils.paddingXLarge(context),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -2570,7 +2577,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         ),
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
-          width: 1.5,
+          width: ResponsiveUtils.borderWidthMedium(context),
         ),
       ),
       child: Column(
@@ -2579,18 +2586,18 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: ResponsiveUtils.paddingMedium(context),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                   color: color.withOpacity(0.2),
                 ),
                 child: Icon(
                   icon,
                   color: color,
-                  size: 24,
+                  size: ResponsiveUtils.iconMedium(context),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: ResponsiveUtils.spacingMedium(context)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2599,16 +2606,16 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                       title,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
-                        fontSize: 14,
+                        fontSize: ResponsiveUtils.caption(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: ResponsiveUtils.h2(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -2617,12 +2624,12 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveUtils.spacingMedium(context)),
           Text(
             description,
             style: TextStyle(
               color: Colors.white.withOpacity(0.6),
-              fontSize: 12,
+              fontSize: ResponsiveUtils.micro(context),
             ),
           ),
         ],
@@ -3482,205 +3489,10 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
 
   /// Build individual workshop card for Instagram links
   Widget _buildInstagramLinkWorkshopCard(Map<String, dynamic> workshop) {
-    final TextEditingController linkController = TextEditingController();
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
-          ],
-        ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Workshop Info
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.link,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            workshop['workshop_name'] ?? workshop['song'] ?? 'Unknown Workshop',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'By: ${workshop['by'] ?? 'Unknown Artist'}',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Artist Instagram Link Button
-                if (workshop['artist_instagram_links'] != null && 
-                    (workshop['artist_instagram_links'] as List).isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Artist Instagram:',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: (workshop['artist_instagram_links'] as List).map<Widget>((link) {
-                          return ElevatedButton.icon(
-                            onPressed: () => _launchInstagramUrl(link.toString()),
-                            icon: const Icon(Icons.open_in_new, size: 16),
-                            label: Text(
-                              'Open Artist IG',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE1306C),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                
-                // Instagram Link Input
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: linkController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Paste Instagram link here...',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Paste Button
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Get clipboard data
-                        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-                        if (clipboardData?.text != null) {
-                          linkController.text = clipboardData!.text!;
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9C27B0),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Icon(Icons.paste, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    // Submit Button
-                    ElevatedButton(
-                      onPressed: () {
-                        if (linkController.text.trim().isNotEmpty) {
-                          _updateInstagramLink(workshop['workshop_id'], linkController.text.trim());
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter an Instagram link'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE91E63),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Icon(Icons.check, size: 20),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return _InstagramLinkWorkshopCard(
+      workshop: workshop,
+      onUpdateInstagramLink: _updateInstagramLink,
+      onLaunchInstagramUrl: _launchInstagramUrl,
     );
   }
 
@@ -3703,6 +3515,408 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         );
       }
     }
+  }
+}
+
+class _InstagramLinkWorkshopCard extends StatefulWidget {
+  final Map<String, dynamic> workshop;
+  final Function(String, String) onUpdateInstagramLink;
+  final Function(String) onLaunchInstagramUrl;
+
+  const _InstagramLinkWorkshopCard({
+    super.key,
+    required this.workshop,
+    required this.onUpdateInstagramLink,
+    required this.onLaunchInstagramUrl,
+  });
+
+  @override
+  State<_InstagramLinkWorkshopCard> createState() => _InstagramLinkWorkshopCardState();
+}
+
+class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> {
+  final TextEditingController linkController = TextEditingController();
+  List<Map<String, dynamic>> choreoLinks = [];
+  bool isLoadingChoreoLinks = false;
+  String? selectedChoreoLink;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChoreoLinksForArtists();
+    linkController.addListener(() {
+      setState(() {}); // Rebuild when text changes to show/hide preview button
+    });
+  }
+
+  @override
+  void dispose() {
+    linkController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadChoreoLinksForArtists() async {
+    final artistIdList = widget.workshop['artist_id_list'] as List<dynamic>?;
+    if (artistIdList == null || artistIdList.isEmpty) return;
+
+    setState(() {
+      isLoadingChoreoLinks = true;
+    });
+
+    List<Map<String, dynamic>> allChoreoLinks = [];
+
+    for (String artistId in artistIdList) {
+      if (artistId.isNotEmpty && artistId != 'TBA' && artistId != 'tba') {
+        try {
+          final links = await AdminService.getArtistChoreoLinks(artistId);
+          allChoreoLinks.addAll(links);
+        } catch (e) {
+          print('Error loading choreo links for artist $artistId: $e');
+        }
+      }
+    }
+
+    // Remove duplicates based on URL
+    final uniqueLinks = <String, Map<String, dynamic>>{};
+    for (final link in allChoreoLinks) {
+      final url = link['url'] as String;
+      if (!uniqueLinks.containsKey(url)) {
+        uniqueLinks[url] = link;
+      }
+    }
+
+    setState(() {
+      choreoLinks = uniqueLinks.values.toList();
+      isLoadingChoreoLinks = false;
+    });
+  }
+
+  void _selectChoreoLink(String? url) {
+    if (url != null) {
+      setState(() {
+        selectedChoreoLink = url;
+        linkController.text = url;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingLarge(context)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: ResponsiveUtils.borderWidthMedium(context),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: ResponsiveUtils.paddingXLarge(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Workshop Info
+                Row(
+                  children: [
+                    Container(
+                      padding: ResponsiveUtils.paddingMedium(context),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.link,
+                        color: Colors.white,
+                        size: ResponsiveUtils.iconMedium(context),
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveUtils.spacingLarge(context)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.workshop['workshop_name'] ?? widget.workshop['song'] ?? 'Unknown Workshop',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: ResponsiveUtils.body1(context),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                          Text(
+                            'By: ${widget.workshop['by'] ?? 'Unknown Artist'}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: ResponsiveUtils.caption(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                
+                // Existing Choreo Links Dropdown
+                if (choreoLinks.isNotEmpty) ...[
+                  Text(
+                    'Existing Choreo Links for this Artist:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.caption(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.spacingMedium(context), 
+                      vertical: ResponsiveUtils.spacingXSmall(context)
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                      color: Colors.white.withOpacity(0.1),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: ResponsiveUtils.borderWidthThin(context),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedChoreoLink,
+                        hint: Text(
+                          isLoadingChoreoLinks 
+                              ? 'Loading choreo links...' 
+                              : 'Select existing choreo link',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: ResponsiveUtils.caption(context),
+                          ),
+                        ),
+                        dropdownColor: const Color(0xFF1A1A2E),
+                        style: TextStyle(
+                          color: Colors.white, 
+                          fontSize: ResponsiveUtils.caption(context)
+                        ),
+                        icon: Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        isExpanded: true,
+                        items: choreoLinks.map((Map<String, dynamic> choreoLink) {
+                          return DropdownMenuItem<String>(
+                            value: choreoLink['url'],
+                            child: Text(
+                              choreoLink['display_text'] ?? choreoLink['url'],
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: ResponsiveUtils.micro(context),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: isLoadingChoreoLinks ? null : _selectChoreoLink,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                ],
+                
+                // Artist Instagram Link Button
+                if (widget.workshop['artist_instagram_links'] != null && 
+                    (widget.workshop['artist_instagram_links'] as List).isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Artist Instagram:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: ResponsiveUtils.caption(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                      Wrap(
+                        spacing: ResponsiveUtils.spacingSmall(context),
+                        runSpacing: ResponsiveUtils.spacingSmall(context),
+                        children: (widget.workshop['artist_instagram_links'] as List).map<Widget>((link) {
+                          return ElevatedButton.icon(
+                            onPressed: () => widget.onLaunchInstagramUrl(link.toString()),
+                            icon: Icon(Icons.open_in_new, size: ResponsiveUtils.iconXSmall(context)),
+                            label: Text(
+                              'Open Artist IG',
+                              style: TextStyle(fontSize: ResponsiveUtils.micro(context)),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE1306C),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: ResponsiveUtils.spacingMedium(context), 
+                                vertical: ResponsiveUtils.spacingSmall(context)
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingXLarge(context)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                    ],
+                  ),
+                
+                // Instagram Link Input
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: linkController,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: ResponsiveUtils.caption(context),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Paste Instagram link here...',
+                          hintStyle: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: ResponsiveUtils.caption(context),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                            borderSide: BorderSide(
+                              color: const Color(0xFFE91E63), 
+                              width: ResponsiveUtils.borderWidthMedium(context)
+                            ),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.spacingLarge(context), 
+                            vertical: ResponsiveUtils.spacingMedium(context)
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                    
+                    // Preview Instagram Button (if link is pasted)
+                    if (linkController.text.trim().isNotEmpty)
+                      ElevatedButton(
+                        onPressed: () => widget.onLaunchInstagramUrl(linkController.text.trim()),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE1306C),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.spacingLarge(context), 
+                            vertical: ResponsiveUtils.spacingMedium(context)
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                          ),
+                        ),
+                        child: Icon(Icons.open_in_new, size: ResponsiveUtils.iconSmall(context)),
+                      ),
+                    
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                    
+                    // Paste Button
+                    ElevatedButton(
+                      onPressed: () async {
+                        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+                        if (clipboardData?.text != null) {
+                          setState(() {
+                            linkController.text = clipboardData!.text!;
+                          });
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9C27B0),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.spacingLarge(context), 
+                          vertical: ResponsiveUtils.spacingMedium(context)
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                        ),
+                      ),
+                      child: Icon(Icons.paste, size: ResponsiveUtils.iconSmall(context)),
+                    ),
+                    
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                    
+                    // Submit Button
+                    ElevatedButton(
+                      onPressed: () {
+                        if (linkController.text.trim().isNotEmpty) {
+                          widget.onUpdateInstagramLink(widget.workshop['workshop_id'], linkController.text.trim());
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Please enter an Instagram link'),
+                              backgroundColor: Colors.orange,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE91E63),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.spacingLarge(context), 
+                          vertical: ResponsiveUtils.spacingMedium(context)
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                        ),
+                      ),
+                      child: Icon(Icons.check, size: ResponsiveUtils.iconSmall(context)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
