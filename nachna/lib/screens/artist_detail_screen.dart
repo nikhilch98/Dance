@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/artist.dart';
 import '../services/api_service.dart';
 import '../models/workshop.dart';
 import '../widgets/workshop_detail_modal.dart';
 import '../widgets/reaction_buttons.dart';
 import '../services/deep_link_service.dart';
+import '../providers/reaction_provider.dart';
+import '../models/reaction.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:ui';
@@ -120,7 +123,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     
     try {
       final shareUrl = DeepLinkService.generateArtistShareUrl(_artist!.id);
-      final shareText = 'Check out ${toTitleCase(_artist!.name)} on Nachna! 💃🕺\n\nDiscover amazing dance workshops and connect with talented instructors.\n\n$shareUrl';
+      final shareText = 'Check out ${toTitleCase(_artist!.name)} on Nachna! 💃🕺\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
       
       await Share.share(
         shareText,
@@ -136,6 +139,51 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleLikeArtist() async {
+    if (_artist == null) return;
+    
+    try {
+      final reactionProvider = Provider.of<ReactionProvider>(context, listen: false);
+      await reactionProvider.toggleArtistReaction(_artist!.id, ReactionType.LIKE);
+      
+      if (reactionProvider.error != null) {
+        _showErrorMessage('Failed to update like status: ${reactionProvider.error}');
+      }
+    } catch (e) {
+      print('Error handling like: $e');
+      _showErrorMessage('Failed to like artist');
+    }
+  }
+
+  Future<void> _handleFollowArtist() async {
+    if (_artist == null) return;
+    
+    try {
+      final reactionProvider = Provider.of<ReactionProvider>(context, listen: false);
+      await reactionProvider.toggleArtistReaction(_artist!.id, ReactionType.NOTIFY);
+      
+      if (reactionProvider.error != null) {
+        _showErrorMessage('Failed to update follow status: ${reactionProvider.error}');
+      }
+    } catch (e) {
+      print('Error handling follow: $e');
+      _showErrorMessage('Failed to follow artist');
+    }
+  }
+
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red.withOpacity(0.8),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -381,132 +429,113 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         ),
                                                                 SizedBox(height: ResponsiveUtils.spacingMedium(context)),
                         // Action Buttons Row (Like, Follow, Share)
-                        Row(
-                          children: [
-                            // Like Button
-                            Expanded(
-                              child: Container(
-                                height: ResponsiveUtils.buttonHeight(context) * 0.7,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    // Handle like action
-                                  },
-                                  icon: Icon(
-                                    Icons.favorite_outline_rounded,
-                                    size: ResponsiveUtils.iconXSmall(context),
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    'Like',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveUtils.micro(context),
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFF006E).withOpacity(0.2),
-                                    elevation: 0,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: ResponsiveUtils.spacingXSmall(context),
-                                      vertical: ResponsiveUtils.spacingXSmall(context),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
-                                      side: BorderSide(
-                                        color: const Color(0xFFFF006E).withOpacity(0.3),
-                                        width: ResponsiveUtils.borderWidthThin(context),
+                        Consumer<ReactionProvider>(
+                          builder: (context, reactionProvider, child) {
+                            final isLiked = _artist != null ? reactionProvider.isArtistLiked(_artist!.id) : false;
+                            final isFollowed = _artist != null ? reactionProvider.isArtistNotified(_artist!.id) : false;
+                            
+                            return Row(
+                              children: [
+                                // Like Button
+                                Expanded(
+                                  child: Container(
+                                    height: ResponsiveUtils.buttonHeight(context) * 0.7,
+                                    child: ElevatedButton(
+                                      onPressed: _handleLikeArtist,
+                                      child: Icon(
+                                        isLiked ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+                                        size: ResponsiveUtils.iconSmall(context),
+                                        color: Colors.white,
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isLiked 
+                                          ? const Color(0xFFFF006E).withOpacity(0.4)
+                                          : const Color(0xFFFF006E).withOpacity(0.2),
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: ResponsiveUtils.spacingSmall(context),
+                                          vertical: ResponsiveUtils.spacingXSmall(context),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                          side: BorderSide(
+                                            color: isLiked 
+                                              ? const Color(0xFFFF006E).withOpacity(0.6)
+                                              : const Color(0xFFFF006E).withOpacity(0.3),
+                                            width: ResponsiveUtils.borderWidthThin(context),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
-                            // Follow Button
-                            Expanded(
-                              child: Container(
-                                height: ResponsiveUtils.buttonHeight(context) * 0.7,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    // Handle follow action
-                                  },
-                                  icon: Icon(
-                                    Icons.person_add_outlined,
-                                    size: ResponsiveUtils.iconXSmall(context),
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    'Follow',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveUtils.micro(context),
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF8338EC).withOpacity(0.2),
-                                    elevation: 0,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: ResponsiveUtils.spacingXSmall(context),
-                                      vertical: ResponsiveUtils.spacingXSmall(context),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
-                                      side: BorderSide(
-                                        color: const Color(0xFF8338EC).withOpacity(0.3),
-                                        width: ResponsiveUtils.borderWidthThin(context),
+                                SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                                // Follow Button
+                                Expanded(
+                                  child: Container(
+                                    height: ResponsiveUtils.buttonHeight(context) * 0.7,
+                                    child: ElevatedButton(
+                                      onPressed: _handleFollowArtist,
+                                      child: Icon(
+                                        isFollowed ? Icons.notifications_active_rounded : Icons.person_add_outlined,
+                                        size: ResponsiveUtils.iconSmall(context),
+                                        color: Colors.white,
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isFollowed 
+                                          ? const Color(0xFF8338EC).withOpacity(0.4)
+                                          : const Color(0xFF8338EC).withOpacity(0.2),
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: ResponsiveUtils.spacingSmall(context),
+                                          vertical: ResponsiveUtils.spacingXSmall(context),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                          side: BorderSide(
+                                            color: isFollowed 
+                                              ? const Color(0xFF8338EC).withOpacity(0.6)
+                                              : const Color(0xFF8338EC).withOpacity(0.3),
+                                            width: ResponsiveUtils.borderWidthThin(context),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
-                            // Share Button  
-                            Expanded(
-                              child: Container(
-                                height: ResponsiveUtils.buttonHeight(context) * 0.7,
-                                child: ElevatedButton.icon(
-                                  onPressed: _shareArtist,
-                                  icon: Icon(
-                                    Icons.share_rounded,
-                                    size: ResponsiveUtils.iconXSmall(context),
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    'Share',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveUtils.micro(context),
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00D4FF).withOpacity(0.2),
-                                    elevation: 0,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: ResponsiveUtils.spacingXSmall(context),
-                                      vertical: ResponsiveUtils.spacingXSmall(context),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
-                                      side: BorderSide(
-                                        color: const Color(0xFF00D4FF).withOpacity(0.3),
-                                        width: ResponsiveUtils.borderWidthThin(context),
+                                SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                                // Share Button  
+                                Expanded(
+                                  child: Container(
+                                    height: ResponsiveUtils.buttonHeight(context) * 0.7,
+                                    child: ElevatedButton(
+                                      onPressed: _shareArtist,
+                                      child: Icon(
+                                        Icons.share_rounded,
+                                        size: ResponsiveUtils.iconSmall(context),
+                                        color: Colors.white,
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF00D4FF).withOpacity(0.2),
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: ResponsiveUtils.spacingSmall(context),
+                                          vertical: ResponsiveUtils.spacingXSmall(context),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                          side: BorderSide(
+                                            color: const Color(0xFF00D4FF).withOpacity(0.3),
+                                            width: ResponsiveUtils.borderWidthThin(context),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          ],
+                              ],
+                            );
+                          },
                         ),
                                       ],
                                     ),

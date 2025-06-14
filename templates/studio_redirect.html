@@ -6,16 +6,16 @@
     <title>Nachna - Dance Workshop Platform</title>
     
     <!-- Open Graph Meta Tags for Social Sharing -->
-    <meta property="og:title" content="Discover {{ artist_name }} on Nachna">
-    <meta property="og:description" content="Connect with talented dance instructors and discover amazing workshops on Nachna!">
+    <meta property="og:title" content="Discover {{ studio_name }} on Nachna">
+    <meta property="og:description" content="Find amazing dance workshops at this studio and connect with talented instructors on Nachna!">
     <meta property="og:image" content="https://nachna.com/static/assets/nachna-logo-square.png">
     <meta property="og:url" content="{{ current_url }}">
     <meta property="og:type" content="website">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Discover {{ artist_name }} on Nachna">
-    <meta name="twitter:description" content="Connect with talented dance instructors and discover amazing workshops!">
+    <meta name="twitter:title" content="Discover {{ studio_name }} on Nachna">
+    <meta name="twitter:description" content="Find amazing dance workshops at this studio and connect with talented instructors!">
     <meta name="twitter:image" content="https://nachna.com/static/assets/nachna-logo-square.png">
     
     <style>
@@ -46,13 +46,13 @@
         .logo {
             width: 80px;
             height: 80px;
-            background: linear-gradient(45deg, #FF006E, #8338EC);
+            background: linear-gradient(45deg, #00D4FF, #9D4EDD);
             border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1.5rem;
-            box-shadow: 0 8px 32px rgba(255, 0, 110, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
         }
         
         .logo svg {
@@ -65,7 +65,7 @@
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
-            background: linear-gradient(45deg, #FF006E, #00D4FF);
+            background: linear-gradient(45deg, #00D4FF, #9D4EDD);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -77,10 +77,10 @@
             margin-bottom: 0.5rem;
         }
         
-        .artist-name {
+        .studio-name {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #FF006E;
+            color: #00D4FF;
             margin-bottom: 2rem;
         }
         
@@ -116,7 +116,7 @@
         
         .download-btn:hover {
             background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 0, 110, 0.5);
+            border-color: rgba(0, 212, 255, 0.5);
             transform: translateY(-2px);
         }
         
@@ -163,13 +163,14 @@
     <div class="container">
         <div class="logo">
             <svg viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                <path d="M21 16V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM5 4h14v12H5V4z"/>
+                <path d="M12 6v6l4-2-4-2z"/>
             </svg>
         </div>
         
         <h1>Nachna</h1>
         <div class="subtitle">Dance Workshop Platform</div>
-        <div class="artist-name">{{ artist_name }}</div>
+        <div class="studio-name">{{ studio_name }}</div>
         
         <div class="attempting">
             <span class="loading"></span>
@@ -177,7 +178,7 @@
         </div>
         
         <div class="description">
-            Discover amazing dance workshops and connect with talented instructors like {{ artist_name }}!
+            Discover amazing dance workshops at {{ studio_name }} and connect with talented instructors!
         </div>
         
         <div class="download-buttons">
@@ -197,14 +198,14 @@
     </div>
 
     <script>
-        // Extract artist ID from URL
+        // Extract studio ID from URL
         const pathParts = window.location.pathname.split('/');
-        const artistId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+        const studioId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
         
         // Attempt to open the app with deep link
         function attemptAppOpen() {
-            const customSchemeUrl = `nachna://artist/${artistId}`;
-            const universalLinkUrl = `https://nachna.com/artist/${artistId}`;
+            const customSchemeUrl = `nachna://studio/${studioId}`;
+            const universalLinkUrl = `https://nachna.com/studio/${studioId}`;
             
             // Try custom scheme first
             window.location.href = customSchemeUrl;

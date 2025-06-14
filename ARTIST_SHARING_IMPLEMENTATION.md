@@ -123,26 +123,24 @@ This implementation adds a comprehensive artist sharing feature to the Nachna ap
 
 ## 🔗 How Deep Links Work
 
-### URL Structure
+### URL Structure (Direct App Links)
 ```
-https://nachna.com/artist/{artistId}
+nachna://artist/{artistId}
 ```
 
 ### Flow Diagram
 ```
-User Clicks Link
-        ↓
-Web Page Loads (artist_redirect.html)
-        ↓
-JavaScript Attempts App Opening
+User Clicks Direct Link
         ↓
     ┌─ App Installed? ──┐
     ↓ YES              ↓ NO
-Opens App          Shows Download
-    ↓              Buttons
-Artist Detail          ↓
-Screen Loads      User Downloads
-                  & Installs App
+Opens App              System shows
+Directly               "No app can handle"
+    ↓                      ↓
+Artist Detail          User sees share text
+Screen Loads           with app store guidance
+                           ↓
+                       Downloads Nachna
 ```
 
 ### Share Text Format
@@ -151,7 +149,10 @@ Check out {Artist Name} on Nachna! 💃🕺
 
 Discover amazing dance workshops and connect with talented instructors.
 
-https://nachna.com/artist/{artistId}
+Open in Nachna app: nachna://artist/{artistId}
+
+Don't have Nachna yet? Download it here:
+https://apps.apple.com/in/app/nachna/id6746702742
 ```
 
 ## 🧪 Testing Instructions

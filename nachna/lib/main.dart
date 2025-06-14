@@ -145,9 +145,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _initializeDeepLinks() async {
     print('[AuthWrapper] Starting deep link initialization...');
     try {
-      await DeepLinkService.instance.initialize(
-        onArtistLink: _handleDeepLinkToArtist,
-      );
+      await DeepLinkService.instance.initialize();
       print('[AuthWrapper] Deep links initialized successfully');
     } catch (e) {
       print('[AuthWrapper] Failed to initialize deep links: $e');
@@ -229,25 +227,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _navigateToArtist(artistId, fromNotification: true);
   }
 
-  void _handleDeepLinkToArtist(String artistId) {
-    _navigateToArtist(artistId, fromNotification: false);
-  }
-
   void _navigateToArtist(String artistId, {bool fromNotification = false}) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
-      (route) => false,
-    );
-    
-    Future.delayed(const Duration(milliseconds: 500), () {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => ArtistDetailScreen(
-            artistId: artistId,
-            fromNotification: fromNotification,
-          ),
-        ),
-      );
+    // Use global navigator to avoid context issues
+    DeepLinkService.navigateToArtist(context, artistId, fromNotification: fromNotification).catchError((error) {
+      print('Error in artist navigation: $error');
     });
   }
 

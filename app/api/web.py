@@ -80,4 +80,42 @@ async def artist_deep_link(request: Request, artist_id: str):
         
     except Exception as e:
         print(f"Error in artist deep link route: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/studio/{studio_id}", response_class=HTMLResponse)
+async def studio_deep_link(request: Request, studio_id: str):
+    """Serve the studio deep link page that attempts to open the app or redirects to app store."""
+    try:
+        # Get studio data from database
+        db_ops = DatabaseOperations()
+        studios = await db_ops.get_studios()
+        
+        # Find the specific studio
+        studio = None
+        for std in studios:
+            if std.get('_id') == studio_id:
+                studio = std
+                break
+        
+        if not studio:
+            raise HTTPException(status_code=404, detail="Studio not found")
+        
+        # Get studio name with proper title case
+        studio_name = studio.get('name', 'Unknown Studio')
+        if studio_name:
+            studio_name = ' '.join(word.capitalize() for word in studio_name.split())
+        
+        # Get current URL for social sharing
+        current_url = str(request.url)
+        
+        return templates.TemplateResponse("studio_redirect.html", {
+            "request": request,
+            "studio_name": studio_name,
+            "studio_id": studio_id,
+            "current_url": current_url
+        })
+        
+    except Exception as e:
+        print(f"Error in studio deep link route: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") 

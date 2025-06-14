@@ -3,7 +3,9 @@ import '../models/studio.dart';
 import '../services/api_service.dart';
 import '../widgets/workshop_detail_modal.dart';
 import '../models/workshop.dart';
+import '../services/deep_link_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:ui';
 import '../utils/responsive_utils.dart';
 
@@ -54,6 +56,28 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
       }
     } catch (e) {
       print('Error launching Instagram: $e');
+    }
+  }
+
+  Future<void> _shareStudio() async {
+    try {
+      final shareUrl = DeepLinkService.generateStudioShareUrl(widget.studio.id);
+      final shareText = 'Check out ${toTitleCase(widget.studio.name)} on Nachna! 💃🕺\n\nDiscover amazing dance workshops at this studio.\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
+      
+      await Share.share(
+        shareText,
+        subject: 'Discover ${toTitleCase(widget.studio.name)} on Nachna',
+      );
+    } catch (e) {
+      print('Error sharing studio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to share studio'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+          ),
+        );
+      }
     }
   }
 
@@ -211,42 +235,73 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                       ],
                                     ),
                                     SizedBox(height: ResponsiveUtils.spacingSmall(context)),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: ResponsiveUtils.spacingMedium(context), 
-                                        vertical: ResponsiveUtils.spacingSmall(context)
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            const Color(0xFF00D4FF).withOpacity(0.2),
-                                            const Color(0xFF9D4EDD).withOpacity(0.2),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF00D4FF).withOpacity(0.3),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.business_rounded,
-                                            color: const Color(0xFF00D4FF),
-                                            size: ResponsiveUtils.iconXSmall(context),
+                                    // Dance Studio badge with share button
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: ResponsiveUtils.spacingMedium(context), 
+                                            vertical: ResponsiveUtils.spacingSmall(context)
                                           ),
-                                          SizedBox(width: ResponsiveUtils.spacingSmall(context)),
-                                          Text(
-                                            'Dance Studio',
-                                            style: TextStyle(
-                                              color: const Color(0xFF00D4FF),
-                                              fontSize: ResponsiveUtils.micro(context),
-                                              fontWeight: FontWeight.w600,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                const Color(0xFF00D4FF).withOpacity(0.2),
+                                                const Color(0xFF9D4EDD).withOpacity(0.2),
+                                              ],
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF00D4FF).withOpacity(0.3),
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.business_rounded,
+                                                color: const Color(0xFF00D4FF),
+                                                size: ResponsiveUtils.iconXSmall(context),
+                                              ),
+                                              SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                              Text(
+                                                'Dance Studio',
+                                                style: TextStyle(
+                                                  color: const Color(0xFF00D4FF),
+                                                  fontSize: ResponsiveUtils.micro(context),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                        // Small Share Button
+                                        GestureDetector(
+                                          onTap: _shareStudio,
+                                          child: Container(
+                                            padding: EdgeInsets.all(ResponsiveUtils.spacingSmall(context)),
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  const Color(0xFF00D4FF).withOpacity(0.2),
+                                                  const Color(0xFF9D4EDD).withOpacity(0.2),
+                                                ],
+                                              ),
+                                              border: Border.all(
+                                                color: const Color(0xFF00D4FF).withOpacity(0.3),
+                                                width: ResponsiveUtils.borderWidthThin(context),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.share_rounded,
+                                              size: ResponsiveUtils.iconXSmall(context),
+                                              color: const Color(0xFF00D4FF),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
