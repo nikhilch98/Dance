@@ -269,11 +269,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     height: ResponsiveUtils.avatarSizeLarge(context),
                           decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
-                      gradient: _localProfilePictureUrl == null
-                          ? const LinearGradient(
+                      gradient: const LinearGradient(
                               colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                            )
-                          : null,
+                            ),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF00D4FF).withOpacity(0.3),
@@ -282,23 +280,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                           ),
-                    child: _localProfilePictureUrl != null
-                        ? ClipRRect(
+                    child: ClipRRect(
                             borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
                             child: Image.network(
-                              'https://nachna.com$_localProfilePictureUrl',
+                              'https://nachna.com/api/profile-picture/${user.userId}',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                print('Error loading profile image: $error');
-                                return _buildDefaultAvatar(user);
-                              },
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return _buildDefaultAvatar(user);
-              },
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to default avatar if profile picture doesn't exist or fails to load
+                                return _buildDefaultAvatar(user);
+                              },
             ),
-                          )
-                        : _buildDefaultAvatar(user),
+                          ),
                   ),
                   
                   // Upload/Edit Button
@@ -318,7 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         bottom: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: _showImagePickerDialog,
+                          onTap: () => _showImagePickerDialog(user),
                           child: Container(
                             width: buttonSize,
                             height: buttonSize,
@@ -652,7 +648,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _showImagePickerDialog() {
+  void _showImagePickerDialog(User user) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -721,7 +717,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                 SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-                if (_localProfilePictureUrl != null)
+                if (user.profilePictureUrl != null)
                   SizedBox(
                     width: double.infinity,
                     child: _buildImagePickerOption(
@@ -809,12 +805,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _uploadProfilePicture(File imageFile) async {
-    // Loading state is already set in _pickImageWithPermissionCheck
+    // Set loading state
+    setState(() {
+      _isUploadingImage = true;
+    });
+    
     try {
       final imageUrl = await AuthService.uploadProfilePicture(imageFile);
       
-      // Update local state immediately for instant UI feedback
-              setState(() {
+      // Update local state for consistency with backend
+      setState(() {
         _localProfilePictureUrl = imageUrl;
         _isUploadingImage = false;
       });
@@ -830,7 +830,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _isUploadingImage = false;
         });
-  }
+      }
 
       String errorMessage = 'Failed to upload profile picture.';
       if (e.toString().contains('size')) {
@@ -855,7 +855,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       await AuthService.removeProfilePicture();
       
-      // Update local state immediately for instant UI feedback
+      // Update local state for consistency with backend
       setState(() {
         _localProfilePictureUrl = null;
         _isUploadingImage = false;
