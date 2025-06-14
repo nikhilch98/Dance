@@ -7,6 +7,7 @@ import UserNotifications
   private var notificationChannel: FlutterMethodChannel?
   private var deviceTokenString: String?
   private var permissionStatusObserver: NSObjectProtocol?
+  private var deepLinkChannel: FlutterMethodChannel?
   
   override func application(
     _ application: UIApplication,
@@ -35,6 +36,11 @@ import UserNotifications
     
     // Monitor app lifecycle for permission changes
     setupPermissionStatusMonitoring()
+    
+    // Set up deep link method channel
+    deepLinkChannel = FlutterMethodChannel(name: "nachna/deep_links", binaryMessenger: controller.binaryMessenger)
+    
+    setupDeepLinkMethodChannel()
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -447,5 +453,37 @@ import UserNotifications
   
   deinit {
     NotificationCenter.default.removeObserver(self)
+  }
+  
+  private func setupDeepLinkMethodChannel() {
+    deepLinkChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+      switch call.method {
+      case "getInitialLink":
+        // Return any initial deep link that launched the app
+        result(nil) // We'll handle this through the standard URL handling
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+  
+  // Handle custom URL schemes
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    handleDeepLink(url: url)
+    return super.application(app, open: url, options: options)
+  }
+  
+  // Handle universal links
+  override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+    if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+       let url = userActivity.webpageURL {
+      handleDeepLink(url: url)
+    }
+    return super.application(application, continue: userActivity, restorationHandler: restorationHandler)
+  }
+  
+  private func handleDeepLink(url: URL) {
+    print("Deep link received: \(url.absoluteString)")
+    deepLinkChannel?.invokeMethod("handleDeepLink", arguments: url.absoluteString)
   }
 }

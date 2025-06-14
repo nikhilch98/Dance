@@ -12,6 +12,7 @@ import './services/auth_service.dart';
 import './services/notification_service.dart';
 import './services/global_config.dart';
 import './services/first_launch_service.dart';
+import './services/deep_link_service.dart';
 import './widgets/notification_permission_dialog.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
@@ -112,6 +113,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // Initialize notifications first (without requesting permission yet)
       await _initializeNotifications();
       
+      // Initialize deep link service
+      await _initializeDeepLinks();
+      
       // Perform initial sync of global config
       await _initialGlobalConfigSync();
       
@@ -135,6 +139,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print('[AuthWrapper] Notifications initialized successfully with token: ${deviceToken.substring(0, 20)}...');
     } else {
       print('[AuthWrapper] Failed to initialize notifications');
+    }
+  }
+
+  Future<void> _initializeDeepLinks() async {
+    print('[AuthWrapper] Starting deep link initialization...');
+    try {
+      await DeepLinkService.instance.initialize(
+        onArtistLink: _handleDeepLinkToArtist,
+      );
+      print('[AuthWrapper] Deep links initialized successfully');
+    } catch (e) {
+      print('[AuthWrapper] Failed to initialize deep links: $e');
     }
   }
 
@@ -210,10 +226,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _handleNotificationTap(String artistId) {
-    _navigateToArtist(artistId);
+    _navigateToArtist(artistId, fromNotification: true);
   }
 
-  void _navigateToArtist(String artistId) {
+  void _handleDeepLinkToArtist(String artistId) {
+    _navigateToArtist(artistId, fromNotification: false);
+  }
+
+  void _navigateToArtist(String artistId, {bool fromNotification = false}) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
       (route) => false,
@@ -224,7 +244,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         MaterialPageRoute(
           builder: (context) => ArtistDetailScreen(
             artistId: artistId,
-            fromNotification: true,
+            fromNotification: fromNotification,
           ),
         ),
       );
