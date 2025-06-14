@@ -114,7 +114,20 @@ class DatabaseOperations:
         # Build a mapping from artist_id to artist image_url
         artists = list(client["discovery"]["artists_v2"].find({}))
         artists_map = {artist["artist_id"]: artist.get("image_url") for artist in artists}
-        
+
+        def format_artist_name(artist_id_list, extracted_artist_name) -> str:
+            artist_names = []
+            for artist_id in artist_id_list:
+                if artist_id not in artists_map:
+                    continue
+                name = artists_map[artist_id]["artist_name"]
+                artist_names += [name]
+            if not artist_names:
+                return extracted_artist_name
+            if len(artist_names) == 1:
+                return artist_names[0]
+            return " X ".join([name.split()[0] for name in artist_names])
+
         workshops =  [
             WorkshopListItem(
             uuid=workshop.uuid,
@@ -122,7 +135,7 @@ class DatabaseOperations:
             studio_id=workshop.studio_id,
             studio_name=studios_map[workshop.studio_id],
             updated_at=workshop.updated_at,
-            by=workshop.artist_name,
+            by=format_artist_name(workshop.artist_id_list, workshop.artist_name),
             song=workshop.song,
             pricing_info=workshop.pricing_info,
             timestamp_epoch=workshop.timestamp_epoch,
@@ -292,7 +305,7 @@ class DatabaseOperations:
             "Sunday",
         ]
 
-        def format_artist_name(artist_id_list, extracted_artist_name):
+        def format_artist_name(artist_id_list, extracted_artist_name) -> str:
             artist_names = []
             for artist_id in artist_id_list:
                 if artist_id not in artists_map:
