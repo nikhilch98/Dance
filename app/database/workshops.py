@@ -291,6 +291,20 @@ class DatabaseOperations:
             "Saturday",
             "Sunday",
         ]
+
+        def format_artist_name(artist_id_list, extracted_artist_name):
+            artist_names = []
+            for artist_id in artist_id_list:
+                if artist_id not in artists_map:
+                    continue
+                name = artists_map[artist_id]["artist_name"]
+                artist_names += [name]
+            if not artist_names:
+                return extracted_artist_name
+            if len(artist_names) == 1:
+                return artist_names[0]
+            return " X ".join([name.split()[0] for name in artist_names])
+
         for day in days_order:
             if not this_week_by_day.get(day,[]):
                 continue
@@ -307,7 +321,7 @@ class DatabaseOperations:
                         studio_id=x.studio_id,
                         studio_name=studios_map[x.studio_id],
                         updated_at=x.updated_at,
-                        by=" X ".join([artists_map.get(artist_id,{}).get("artist_name") for artist_id in x.artist_id_list if artists_map.get(artist_id,{}).get("artist_name")] if x.artist_id_list else []),
+                        by=format_artist_name(x.artist_id_list, x.artist_name),
                         song=x.song,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,
@@ -329,7 +343,7 @@ class DatabaseOperations:
                         studio_id=x.studio_id,
                         studio_name=studios_map[x.studio_id],
                         updated_at=x.updated_at,
-                        by=" X ".join([artists_map.get(artist_id,{}).get("artist_name") for artist_id in x.artist_id_list if artists_map.get(artist_id,{}).get("artist_name")] if x.artist_id_list else []),
+                        by=format_artist_name(x.artist_id_list, x.artist_name),
                         song=x.song,
                         pricing_info=x.pricing_info,
                         timestamp_epoch=x.timestamp_epoch,

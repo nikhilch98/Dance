@@ -97,7 +97,7 @@ class WorkshopSession {
 @JsonSerializable()
 class DaySchedule {
   final String day;
-  final List<WorkshopSession> workshops;
+  final List<WorkshopListItem> workshops;
 
   DaySchedule({
     required this.day,
@@ -113,7 +113,7 @@ class CategorizedWorkshopResponse {
   @JsonKey(name: 'this_week')
   final List<DaySchedule> thisWeek;
   @JsonKey(name: 'post_this_week')
-  final List<WorkshopSession> postThisWeek;
+  final List<WorkshopListItem> postThisWeek;
 
   CategorizedWorkshopResponse({
     required this.thisWeek,

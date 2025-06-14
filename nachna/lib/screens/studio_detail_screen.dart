@@ -397,7 +397,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               if (hasPostThisWeek) ...[
                                 _buildSectionHeader('Upcoming Workshops', Icons.upcoming_rounded, const Color(0xFF9D4EDD)),
                                 SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-                                ...response.postThisWeek.map((workshop) => _buildWorkshopCard(workshop)),
+                                ...response.postThisWeek.map((workshop) => _buildWorkshopCard(_convertToWorkshopSession(workshop))),
                               ],
                               SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
                             ],
@@ -451,6 +451,23 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           color: Colors.white70,
         ),
       ),
+    );
+  }
+
+  // Helper method to convert WorkshopListItem to WorkshopSession
+  WorkshopSession _convertToWorkshopSession(WorkshopListItem workshop) {
+    return WorkshopSession(
+      date: workshop.date ?? 'TBA',
+      time: workshop.time ?? 'TBA',
+      song: workshop.song,
+      studioId: workshop.studioId,
+      artist: workshop.by,
+      artistIdList: workshop.artistIdList,
+      paymentLink: workshop.paymentLink,
+      pricingInfo: workshop.pricingInfo,
+      timestampEpoch: workshop.timestampEpoch,
+      eventType: workshop.eventType,
+      choreoInstaLink: workshop.choreoInstaLink,
     );
   }
 
@@ -546,8 +563,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             ),
             SizedBox(height: ResponsiveUtils.spacingMedium(context)),
             
-            // Workshops for this day
-            ...daySchedule.workshops.map((workshop) => _buildWorkshopCard(workshop)),
+            // Workshops for this day - convert WorkshopListItem to WorkshopSession
+            ...daySchedule.workshops.map((workshop) => _buildWorkshopCard(_convertToWorkshopSession(workshop))),
           ],
         ),
       ),

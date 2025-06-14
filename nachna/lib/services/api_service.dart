@@ -65,7 +65,7 @@ class ApiService {
   }
 
   // Fetches all workshops
-  Future<List<WorkshopListItem>> fetchAllWorkshops() async {
+  Future<CategorizedWorkshopResponse> fetchAllWorkshops() async {
     try {
       final response = await _httpClient
           .get(
@@ -78,8 +78,8 @@ class ApiService {
       HttpClientService.logCompressionInfo(response);
 
       if (response.statusCode == 200) {
-        List<dynamic> body = json.decode(response.body);
-        return body.map((dynamic item) => WorkshopListItem.fromJson(item)).toList();
+        dynamic body = json.decode(response.body);
+        return CategorizedWorkshopResponse.fromJson(body);
       } else {
         throw Exception('Failed to load workshops: ${response.statusCode}');
       }

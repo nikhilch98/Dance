@@ -83,7 +83,7 @@ Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
 DaySchedule _$DayScheduleFromJson(Map<String, dynamic> json) => DaySchedule(
       day: json['day'] as String,
       workshops: (json['workshops'] as List<dynamic>)
-          .map((e) => WorkshopSession.fromJson(e as Map<String, dynamic>))
+          .map((e) => WorkshopListItem.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
@@ -100,7 +100,7 @@ CategorizedWorkshopResponse _$CategorizedWorkshopResponseFromJson(
           .map((e) => DaySchedule.fromJson(e as Map<String, dynamic>))
           .toList(),
       postThisWeek: (json['post_this_week'] as List<dynamic>)
-          .map((e) => WorkshopSession.fromJson(e as Map<String, dynamic>))
+          .map((e) => WorkshopListItem.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 

@@ -13,9 +13,10 @@ class WorkshopsScreen extends StatefulWidget {
 }
 
 class _WorkshopsScreenState extends State<WorkshopsScreen> {
-  late Future<List<WorkshopListItem>> futureWorkshops;
+  late Future<CategorizedWorkshopResponse> futureWorkshops;
   List<WorkshopListItem> allWorkshops = [];
   List<WorkshopListItem> displayedWorkshops = [];
+  CategorizedWorkshopResponse? categorizedWorkshops;
 
   // State variables for filters
   List<String> availableDates = [];
@@ -42,11 +43,23 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
   @override
   void initState() {
     super.initState();
-    futureWorkshops = ApiService().fetchAllWorkshops().then((workshops) {
-      allWorkshops = workshops;
+    futureWorkshops = ApiService().fetchAllWorkshops().then((response) {
+      // Flatten the categorized response into a single list for filtering
+      List<WorkshopListItem> allWorkshopsList = [];
+      
+      // Add workshops from this week
+      for (var daySchedule in response.thisWeek) {
+        allWorkshopsList.addAll(daySchedule.workshops);
+      }
+      
+      // Add workshops from post this week
+      allWorkshopsList.addAll(response.postThisWeek);
+      
+      allWorkshops = allWorkshopsList;
+      categorizedWorkshops = response;
       _initializeFilters(allWorkshops);
       _applyFilters(); // Apply initial filters (none selected) and sorting
-      return workshops;
+      return response;
     });
   }
 
@@ -489,114 +502,153 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
               // Workshops Table
               Expanded(
-                child: FutureBuilder<List<WorkshopListItem>>(
+                child: FutureBuilder<CategorizedWorkshopResponse>(
                   future: futureWorkshops,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: Container(
-                          padding: ResponsiveUtils.paddingXLarge(context),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.1),
-                                Colors.white.withOpacity(0.05),
-                              ],
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(
+                          child: Container(
+                            padding: ResponsiveUtils.paddingXLarge(context),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.1),
+                                  Colors.white.withOpacity(0.05),
+                                ],
+                              ),
+                            ),
+                            child: CircularProgressIndicator(
+                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                              strokeWidth: ResponsiveUtils.borderWidthMedium(context),
                             ),
                           ),
-                          child: CircularProgressIndicator(
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-                            strokeWidth: ResponsiveUtils.borderWidthMedium(context),
-                          ),
-                        ),
-                      );
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Container(
-                          margin: ResponsiveUtils.paddingLarge(context),
-                          padding: ResponsiveUtils.paddingXLarge(context),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.red.withOpacity(0.1),
-                                Colors.red.withOpacity(0.05),
-                              ],
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Container(
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            padding: ResponsiveUtils.paddingXLarge(context),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.red.withOpacity(0.1),
+                                  Colors.red.withOpacity(0.05),
+                                ],
+                              ),
+                              border: Border.all(color: Colors.red.withOpacity(0.3)),
                             ),
-                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                            child: Text(
+                              'Error: ${snapshot.error}',
+                              style: TextStyle(
+                                color: Colors.redAccent, 
+                                fontSize: ResponsiveUtils.body2(context)
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
+                        );
+                      } else if (!snapshot.hasData || allWorkshops.isEmpty) {
+                        return Center(
                           child: Text(
-                            'Error: ${snapshot.error}',
+                            'No workshops found.',
                             style: TextStyle(
-                              color: Colors.redAccent, 
-                              fontSize: ResponsiveUtils.body2(context)
+                              color: Colors.white70, 
+                              fontSize: ResponsiveUtils.body1(context)
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      );
-                    } else if (!snapshot.hasData || allWorkshops.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'No workshops found.',
-                          style: TextStyle(
-                            color: Colors.white70, 
-                            fontSize: ResponsiveUtils.body1(context)
-                          ),
-                        ),
-                      );
-                    } else if (displayedWorkshops.isEmpty) {
-                      return Center(
-                        child: Container(
-                          margin: ResponsiveUtils.paddingLarge(context),
-                          padding: ResponsiveUtils.paddingXLarge(context),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.1),
-                                Colors.white.withOpacity(0.05),
+                        );
+                      } else if (displayedWorkshops.isEmpty) {
+                        return Center(
+                          child: Container(
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            padding: ResponsiveUtils.paddingXLarge(context),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.1),
+                                  Colors.white.withOpacity(0.05),
+                                ],
+                              ),
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.filter_list_off_rounded,
+                                  size: ResponsiveUtils.iconXLarge(context) * 1.3,
+                                  color: Colors.white.withOpacity(0.5),
+                                ),
+                                SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+                                Text(
+                                  'No workshops match your filters',
+                                  style: TextStyle(
+                                    color: Colors.white70, 
+                                    fontSize: ResponsiveUtils.body1(context)
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ],
                             ),
-                            border: Border.all(color: Colors.white.withOpacity(0.2)),
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.filter_list_off_rounded,
-                                size: ResponsiveUtils.iconXLarge(context) * 1.3,
-                                color: Colors.white.withOpacity(0.5),
-                              ),
-                              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
-                              Text(
-                                'No workshops match your filters',
-                                style: TextStyle(
-                                  color: Colors.white70, 
-                                  fontSize: ResponsiveUtils.body1(context)
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    } else {
-                      return Container(
-                        margin: ResponsiveUtils.paddingLarge(context),
-                        child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: displayedWorkshops.length,
-                          itemExtent: ResponsiveUtils.isSmallScreen(context) ? 130 : 140,
-                          cacheExtent: 1000,
-                          itemBuilder: (context, index) {
-                            final workshop = displayedWorkshops[index];
-                            return _buildMobileWorkshopCard(workshop, index);
-                          },
-                        ),
-                      );
-                    }
+                        );
+                      } else {
+                        // Check if filters are active
+                        bool hasActiveFilters = selectedDates.isNotEmpty || 
+                                              selectedInstructors.isNotEmpty || 
+                                              selectedStudios.isNotEmpty;
+
+                        if (hasActiveFilters) {
+                          // Show filtered results as a simple list
+                          return Container(
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            child: ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: displayedWorkshops.length,
+                              itemExtent: ResponsiveUtils.isSmallScreen(context) ? 130 : 140,
+                              cacheExtent: 1000,
+                              itemBuilder: (context, index) {
+                                final workshop = displayedWorkshops[index];
+                                return _buildMobileWorkshopCard(workshop, index);
+                              },
+                            ),
+                          );
+                        } else {
+                          // Show categorized workshops when no filters are active
+                          final response = snapshot.data!;
+                          final hasThisWeek = response.thisWeek.isNotEmpty;
+                          final hasPostThisWeek = response.postThisWeek.isNotEmpty;
+
+                          return Container(
+                            margin: ResponsiveUtils.paddingLarge(context),
+                            child: ListView(
+                              physics: const BouncingScrollPhysics(),
+                              children: [
+                                // This Week section
+                                if (hasThisWeek) ...[
+                                  _buildSectionHeader('This Week', Icons.calendar_today_rounded, const Color(0xFF00D4FF)),
+                                  SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                                  ...response.thisWeek.map((daySchedule) => _buildDaySection(daySchedule)),
+                                ],
+
+                                // Spacing between sections
+                                if (hasThisWeek && hasPostThisWeek) SizedBox(height: ResponsiveUtils.spacingXXLarge(context) * 1.3),
+
+                                // Upcoming Workshops section
+                                if (hasPostThisWeek) ...[
+                                  _buildSectionHeader('Upcoming Workshops', Icons.upcoming_rounded, const Color(0xFF9D4EDD)),
+                                  SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                                  ...response.postThisWeek.map((workshop) => _buildMobileWorkshopCard(workshop, response.postThisWeek.indexOf(workshop))),
+                                ],
+                                SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
+                              ],
+                            ),
+                          );
+                        }
+                      }
                   },
                 ),
               ),
@@ -1133,6 +1185,109 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveUtils.spacingXLarge(context), 
+        vertical: ResponsiveUtils.spacingLarge(context)
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.2),
+            color.withOpacity(0.1),
+          ],
+        ),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: ResponsiveUtils.borderWidthThin(context),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: ResponsiveUtils.paddingSmall(context),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+              color: color.withOpacity(0.2),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: ResponsiveUtils.iconSmall(context),
+            ),
+          ),
+          SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: ResponsiveUtils.body1(context),
+              fontWeight: FontWeight.bold,
+              color: color,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDaySection(DaySchedule daySchedule) {
+    return Container(
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingLarge(context)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+          width: ResponsiveUtils.borderWidthThin(context),
+        ),
+      ),
+      child: Padding(
+        padding: ResponsiveUtils.paddingLarge(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Day Header
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.spacingMedium(context), 
+                vertical: ResponsiveUtils.spacingSmall(context)
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                ),
+              ),
+              child: Text(
+                daySchedule.day,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.body2(context),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+            
+            // Workshops for this day
+            ...daySchedule.workshops.map((workshop) => Padding(
+              padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+              child: _buildMobileWorkshopCard(workshop, daySchedule.workshops.indexOf(workshop)),
+            )),
+          ],
         ),
       ),
     );
