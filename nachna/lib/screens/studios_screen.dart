@@ -239,6 +239,16 @@ class _StudiosScreenState extends State<StudiosScreen> {
   }
 
   Widget _buildGlassyStudioCard(Studio studio, BuildContext context) {
+    // Calculate responsive values once to avoid MediaQuery in widget tree
+    final cardBorderRadius = ResponsiveUtils.cardBorderRadius(context);
+    final borderWidthThin = ResponsiveUtils.borderWidthThin(context);
+    final paddingLarge = ResponsiveUtils.paddingLarge(context);
+    final spacingLarge = ResponsiveUtils.spacingLarge(context);
+    final spacingSmall = ResponsiveUtils.spacingSmall(context);
+    final spacingXSmall = ResponsiveUtils.spacingXSmall(context);
+    final iconSmall = ResponsiveUtils.iconSmall(context);
+    final microSize = ResponsiveUtils.micro(context);
+    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -252,7 +262,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
         width: ResponsiveUtils.artistCardWidth(context),
         height: ResponsiveUtils.artistCardHeight(context),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+          borderRadius: BorderRadius.circular(cardBorderRadius),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -263,7 +273,7 @@ class _StudiosScreenState extends State<StudiosScreen> {
           ),
           border: Border.all(
             color: Colors.white.withOpacity(0.2),
-            width: ResponsiveUtils.borderWidthThin(context),
+            width: borderWidthThin,
           ),
           boxShadow: [
             BoxShadow(
@@ -281,89 +291,90 @@ class _StudiosScreenState extends State<StudiosScreen> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+          borderRadius: BorderRadius.circular(cardBorderRadius),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              padding: ResponsiveUtils.paddingLarge(context),
+              padding: paddingLarge,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF00D4FF).withOpacity(0.3),
-                                const Color(0xFF9D4EDD).withOpacity(0.3),
-                              ],
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                            child: studio.imageUrl != null
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(spacingLarge),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00D4FF).withOpacity(0.3),
+                            const Color(0xFF9D4EDD).withOpacity(0.3),
+                          ],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(spacingLarge),
+                        child: Stack(
+                          children: [
+                            studio.imageUrl != null
                                 ? Image.network(
                                     'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(studio.imageUrl!)}',
                                     fit: BoxFit.cover,
                                     width: double.infinity,
+                                    height: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return _buildFallbackIcon();
+                                      return _buildFallbackIcon(spacingLarge);
                                     },
                                   )
-                                : _buildFallbackIcon(),
-                          ),
-                        ),
-                        // Instagram Icon (responsive size)
-                        Positioned(
-                          bottom: ResponsiveUtils.spacingSmall(context),
-                          right: ResponsiveUtils.spacingSmall(context),
-                          child: GestureDetector(
-                            onTap: () async {
-                              await _launchInstagram(studio.instagramLink);
-                            },
-                            child: Container(
-                              width: ResponsiveUtils.iconSmall(context),
-                              height: ResponsiveUtils.iconSmall(context),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    offset: Offset(0, ResponsiveUtils.spacingXSmall(context)),
-                                    blurRadius: ResponsiveUtils.spacingSmall(context),
+                                : _buildFallbackIcon(spacingLarge),
+                            // Instagram Icon (responsive size)
+                            Positioned(
+                              bottom: spacingSmall,
+                              right: spacingSmall,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await _launchInstagram(studio.instagramLink);
+                                },
+                                child: Container(
+                                  width: iconSmall * 1.3,
+                                  height: iconSmall * 1.3,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(spacingSmall),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        offset: Offset(0, spacingXSmall),
+                                        blurRadius: spacingSmall,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                child: Image.asset(
-                                  'instagram-icon.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Fallback to gradient container with camera icon
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.photo_camera,
-                                        color: Colors.white,
-                                        size: ResponsiveUtils.micro(context),
-                                      ),
-                                    );
-                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(spacingSmall),
+                                    child: Image.asset(
+                                      'instagram-icon.png',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        // Fallback to gradient container with camera icon
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(spacingSmall),
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.photo_camera,
+                                            color: Colors.white,
+                                            size: microSize * 1.2,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   SizedBox(height: ResponsiveUtils.spacingMedium(context)),
@@ -413,10 +424,12 @@ class _StudiosScreenState extends State<StudiosScreen> {
     );
   }
 
-  Widget _buildFallbackIcon() {
+  Widget _buildFallbackIcon(double borderRadius) {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+        borderRadius: BorderRadius.circular(borderRadius),
         gradient: LinearGradient(
           colors: [
             const Color(0xFF00D4FF).withOpacity(0.3),

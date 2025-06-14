@@ -410,22 +410,32 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
               ),
             ),
             // Fixed back button at top-left
-            SafeArea(
-              child: Positioned(
-                top: ResponsiveUtils.spacingMedium(context),
-                left: ResponsiveUtils.spacingLarge(context),
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: ResponsiveUtils.paddingSmall(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_rounded,
-                      color: Colors.white,
-                      size: ResponsiveUtils.iconMedium(context),
+            Builder(
+              builder: (context) {
+                // Pre-calculate responsive values and add safe area padding
+                final mediaQuery = MediaQuery.of(context);
+                final topPadding = mediaQuery.padding.top;
+                final spacingMedium = ResponsiveUtils.spacingMedium(context);
+                final spacingLarge = ResponsiveUtils.spacingLarge(context);
+                final paddingSmall = ResponsiveUtils.paddingSmall(context);
+                final iconMedium = ResponsiveUtils.iconMedium(context);
+                
+                return Positioned(
+                  top: topPadding + spacingMedium,
+                  left: spacingLarge,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: paddingSmall,
+                      child: Icon(
+                        Icons.arrow_back_ios_rounded,
+                        color: Colors.white,
+                        size: iconMedium,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),

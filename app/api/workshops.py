@@ -116,8 +116,8 @@ async def proxy_image(url: str):
         raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
 
-@router.get("/profile-picture/{picture_id}")
-async def get_profile_picture(picture_id: str):
+@router.get("/profile-picture/{user_id}")
+async def get_profile_picture(user_id: str):
     """Serve profile picture from MongoDB."""
     try:
         from bson import ObjectId
@@ -127,7 +127,7 @@ async def get_profile_picture(picture_id: str):
         
         # Get profile picture from MongoDB
         picture_doc = client["dance_app"]["profile_pictures"].find_one(
-            {"_id": ObjectId(picture_id)}
+            {"user_id": user_id}
         )
         
         if not picture_doc:

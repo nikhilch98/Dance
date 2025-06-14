@@ -383,6 +383,12 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
   }
 
   Widget _buildGlassyArtistCard(Artist artist) {
+    // Calculate responsive values once to avoid MediaQuery in widget tree
+    final spacingSmall = ResponsiveUtils.spacingSmall(context);
+    final spacingXSmall = ResponsiveUtils.spacingXSmall(context);
+    final iconSmall = ResponsiveUtils.iconSmall(context);
+    final microSize = ResponsiveUtils.micro(context);
+    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -433,129 +439,116 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFFF006E).withOpacity(0.3),
-                                const Color(0xFF8338EC).withOpacity(0.3),
-                              ],
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: artist.imageUrl != null
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFFF006E).withOpacity(0.3),
+                            const Color(0xFF8338EC).withOpacity(0.3),
+                          ],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          children: [
+                            artist.imageUrl != null
                                 ? Image.network(
                                     'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
                                     fit: BoxFit.cover,
                                     width: double.infinity,
+                                    height: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {
                                       return _buildFallbackIcon();
                                     },
                                   )
                                 : _buildFallbackIcon(),
-                          ),
-                        ),
-                        // Instagram Icon (reduced size)
-                        Positioned(
-                          bottom: 8,
-                          right: 8,
-                          child: GestureDetector(
-                            onTap: () async {
-                              // Try to open Instagram app first, fallback to browser
-                              final instagramUrl = artist.instagramLink;
-                              
-                              await _launchInstagram(instagramUrl);
-                            },
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    offset: const Offset(0, 2),
-                                    blurRadius: 8,
+                            // Instagram Icon (responsive size)
+                            Positioned(
+                              bottom: spacingSmall,
+                              right: spacingSmall,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await _launchInstagram(artist.instagramLink);
+                                },
+                                child: Container(
+                                  width: iconSmall * 1.3,
+                                  height: iconSmall * 1.3,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(spacingSmall),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        offset: Offset(0, spacingXSmall),
+                                        blurRadius: spacingSmall,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  'instagram-icon.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Fallback to gradient container with camera icon
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.photo_camera,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    );
-                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(spacingSmall),
+                                    child: Image.asset(
+                                      'instagram-icon.png',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        // Fallback to gradient container with camera icon
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(spacingSmall),
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.photo_camera,
+                                            color: Colors.white,
+                                            size: microSize * 1.2,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  // Fixed height text section to prevent overflow
-                  SizedBox(
-                    height: 50, // Fixed height to prevent overflow
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            toTitleCase(artist.name),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: ResponsiveUtils.caption(context),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFFF006E).withOpacity(0.2),
-                                const Color(0xFF8338EC).withOpacity(0.2),
-                              ],
-                            ),
-                          ),
-                          child: Text(
-                            'Tap to explore',
-                            style: TextStyle(
-                              color: const Color(0xFFFF006E),
-                              fontSize: ResponsiveUtils.micro(context),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 8),
+                  Text(
+                    toTitleCase(artist.name),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.caption(context),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFFFF006E).withOpacity(0.2),
+                          const Color(0xFF8338EC).withOpacity(0.2),
+                        ],
+                      ),
+                    ),
+                    child: Text(
+                      'Tap to explore',
+                      style: TextStyle(
+                        color: const Color(0xFFFF006E),
+                        fontSize: ResponsiveUtils.micro(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -569,6 +562,8 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
 
   Widget _buildFallbackIcon() {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(

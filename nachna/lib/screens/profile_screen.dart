@@ -302,44 +302,58 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   
                   // Upload/Edit Button
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _showImagePickerDialog,
-                      child: Container(
-                        width: ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context),
-                        height: ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context),
-      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular((ResponsiveUtils.iconLarge(context) + ResponsiveUtils.spacingMedium(context)) / 2),
-        gradient: const LinearGradient(
-                            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-        ),
-                          border: Border.all(color: Colors.white, width: ResponsiveUtils.borderWidthMedium(context)),
-        boxShadow: [
-          BoxShadow(
-                              color: const Color(0xFF3B82F6).withOpacity(0.3),
-                              blurRadius: ResponsiveUtils.spacingSmall(context),
-                              spreadRadius: 1,
-          ),
-        ],
-      ),
-                        child: _isUploadingImage
-                            ? SizedBox(
-                                width: ResponsiveUtils.spacingLarge(context),
-                                height: ResponsiveUtils.spacingLarge(context),
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  Builder(
+                    builder: (context) {
+                      // Pre-calculate responsive values to avoid MediaQuery in Positioned
+                      final iconLarge = ResponsiveUtils.iconLarge(context);
+                      final spacingMedium = ResponsiveUtils.spacingMedium(context);
+                      final borderWidthMedium = ResponsiveUtils.borderWidthMedium(context);
+                      final spacingSmall = ResponsiveUtils.spacingSmall(context);
+                      final spacingLarge = ResponsiveUtils.spacingLarge(context);
+                      final iconSmall = ResponsiveUtils.iconSmall(context);
+                      
+                      final buttonSize = iconLarge + spacingMedium;
+                      
+                      return Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _showImagePickerDialog,
+                          child: Container(
+                            width: buttonSize,
+                            height: buttonSize,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(buttonSize / 2),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                              ),
+                              border: Border.all(color: Colors.white, width: borderWidthMedium),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                  blurRadius: spacingSmall,
+                                  spreadRadius: 1,
                                 ),
-                              )
-                            : Icon(
-                                Icons.camera_alt_rounded,
-            color: Colors.white,
-                                size: ResponsiveUtils.iconSmall(context),
-          ),
-        ),
-      ),
+                              ],
+                            ),
+                            child: _isUploadingImage
+                                ? SizedBox(
+                                    width: spacingLarge,
+                                    height: spacingLarge,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.camera_alt_rounded,
+                                    color: Colors.white,
+                                    size: iconSmall,
+                                  ),
+                          ),
+                        ),
+                      );
+                    }
                   ),
                 ],
               ),

@@ -370,17 +370,15 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                                     size: ResponsiveUtils.iconXSmall(context),
                                                     color: Colors.white,
                                                   ),
-                                                  label: Flexible(
-                                                    child: Text(
-                                                      'Like',
-                                                      style: TextStyle(
-                                                        fontSize: ResponsiveUtils.micro(context),
-                                                        fontWeight: FontWeight.w600,
-                                                        color: Colors.white,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                  label: Text(
+                                                    'Like',
+                                                    style: TextStyle(
+                                                      fontSize: ResponsiveUtils.micro(context),
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.white,
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFFFF006E).withOpacity(0.2),
@@ -414,17 +412,15 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                                     size: ResponsiveUtils.iconXSmall(context),
                                                     color: Colors.white,
                                                   ),
-                                                  label: Flexible(
-                                                    child: Text(
-                                                      'Follow',
-                                                      style: TextStyle(
-                                                        fontSize: ResponsiveUtils.micro(context),
-                                                        fontWeight: FontWeight.w600,
-                                                        color: Colors.white,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                  label: Text(
+                                                    'Follow',
+                                                    style: TextStyle(
+                                                      fontSize: ResponsiveUtils.micro(context),
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.white,
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFF8338EC).withOpacity(0.2),
@@ -647,22 +643,32 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             ),
             
             // Fixed back button at top-left
-            SafeArea(
-              child: Positioned(
-                top: ResponsiveUtils.spacingMedium(context),
-                left: ResponsiveUtils.spacingLarge(context),
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: ResponsiveUtils.paddingSmall(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_rounded,
-                      color: Colors.white,
-                      size: ResponsiveUtils.iconMedium(context),
+            Builder(
+              builder: (context) {
+                // Pre-calculate responsive values and add safe area padding
+                final mediaQuery = MediaQuery.of(context);
+                final topPadding = mediaQuery.padding.top;
+                final spacingMedium = ResponsiveUtils.spacingMedium(context);
+                final spacingLarge = ResponsiveUtils.spacingLarge(context);
+                final paddingSmall = ResponsiveUtils.paddingSmall(context);
+                final iconMedium = ResponsiveUtils.iconMedium(context);
+                
+                return Positioned(
+                  top: topPadding + spacingMedium,
+                  left: spacingLarge,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: paddingSmall,
+                      child: Icon(
+                        Icons.arrow_back_ios_rounded,
+                        color: Colors.white,
+                        size: iconMedium,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),

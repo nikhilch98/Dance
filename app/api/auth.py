@@ -234,14 +234,6 @@ async def upload_profile_picture(
         # Get MongoDB client
         client = get_mongo_client()
         
-        # Remove existing profile picture if any
-        existing_user = client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
-        if existing_user and existing_user.get("profile_picture_id"):
-            # Delete old profile picture from MongoDB
-            client["dance_app"]["profile_pictures"].delete_one(
-                {"_id": ObjectId(existing_user["profile_picture_id"])}
-            )
-        
         # Save new image to MongoDB
         profile_picture_doc = {
             "user_id": user_id,
@@ -252,8 +244,13 @@ async def upload_profile_picture(
             "created_at": datetime.utcnow(),
         }
         
-        result = client["dance_app"]["profile_pictures"].insert_one(profile_picture_doc)
-        picture_id = str(result.inserted_id)
+        result = client["dance_app"]["profile_pictures"].update_one(
+            {"user_id": user_id},
+            {"$set": profile_picture_doc},
+            upsert=True
+        )
+
+        picture_id = str(result.upserted_id)
         
         # Create URL for the image
         image_url = f"/api/profile-picture/{picture_id}"
@@ -270,7 +267,7 @@ async def upload_profile_picture(
         
         if update_result.modified_count == 0:
             # Clean up uploaded image if database update fails
-            client["dance_app"]["profile_pictures"].delete_one({"_id": ObjectId(picture_id)})
+            client["dance_app"]["profile_pictures"].delete_one({"user_id": user_id})
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update profile picture"
@@ -314,7 +311,7 @@ async def remove_profile_picture(user_id: str = Depends(verify_token)):
         # Remove profile picture from MongoDB if it exists
         if user.get("profile_picture_id"):
             client["dance_app"]["profile_pictures"].delete_one(
-                {"_id": ObjectId(user["profile_picture_id"])}
+                {"user_id": user_id}
             )
         
         # Remove profile picture references from user document

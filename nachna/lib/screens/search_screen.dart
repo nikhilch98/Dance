@@ -1128,22 +1128,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ],
                   ),
-                  child: user.profilePictureUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            'https://nachna.com${user.profilePictureUrl!}',
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return _buildUserAvatar(user.name);
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              print('Error loading user profile picture: $error');
-                              return _buildUserAvatar(user.name);
-                            },
-                          ),
-                        )
-                      : _buildUserAvatar(user.name),
+                  child: ClipOval(
+                    child: Image.network(
+                      'https://nachna.com/api/profile-picture/${user.userId}',
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return _buildUserAvatar(user.name);
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to default avatar if profile picture doesn't exist or fails to load
+                        return _buildUserAvatar(user.name);
+                      },
+                    ),
+                  ),
                 ),
                 SizedBox(width: ResponsiveUtils.spacingLarge(context)),
                 // User Info
