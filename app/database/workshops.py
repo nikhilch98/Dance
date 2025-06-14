@@ -113,7 +113,7 @@ class DatabaseOperations:
         
         # Build a mapping from artist_id to artist image_url
         artists = list(client["discovery"]["artists_v2"].find({}))
-        artists_map = {artist["artist_id"]: artist.get("image_url") for artist in artists}
+        artists_map = {artist["artist_id"]: artist for artist in artists}
 
         def format_artist_name(artist_id_list, extracted_artist_name) -> str:
             artist_names = []
@@ -140,7 +140,7 @@ class DatabaseOperations:
             pricing_info=workshop.pricing_info,
             timestamp_epoch=workshop.timestamp_epoch,
             artist_id_list=workshop.artist_id_list,
-            artist_image_urls=[artists_map.get(artist_id) for artist_id in workshop.artist_id_list] if workshop.artist_id_list else [],
+            artist_image_urls=[artists_map.get(artist_id,{}).get("image_url") for artist_id in workshop.artist_id_list] if workshop.artist_id_list else [],
             date=workshop.date_with_day,
             time=workshop.time_str,
             event_type=workshop.event_type,

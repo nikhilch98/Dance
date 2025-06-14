@@ -16,8 +16,7 @@ router = APIRouter()
 async def search_users(
     q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
-    user_id: str = Depends(verify_token),
-    version: str = Depends(validate_version)
+    user_id: str = Depends(verify_token)
 ):
     """Search users by name.
     
@@ -45,8 +44,7 @@ async def search_users(
 async def search_artists(
     q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
-    user_id: str = Depends(verify_token),
-    version: str = Depends(validate_version)
+    user_id: str = Depends(verify_token)
 ):
     """Search artists by name or username.
     
@@ -73,8 +71,7 @@ async def search_artists(
 @router.get("/search/workshops", response_model=List[WorkshopListItem])
 async def search_workshops(
     q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    user_id: str = Depends(verify_token),
-    version: str = Depends(validate_version)
+    user_id: str = Depends(verify_token)
 ):
     """Search workshops by song name or artist name, sorted by time.
     
