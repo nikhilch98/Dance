@@ -27,7 +27,7 @@ class ManualWorkshopEntry(BaseModel):
     choreo_insta_link: Optional[str]
 
 def manual_populate_workshops(studio_id: str, mobile_number: str, workshop_details: List[ManualWorkshopEntry]):
-    if studio_id not in ["theroyaldancespace"]:
+    if studio_id not in ["theroyaldancespace", "manifestbytmn"]:
         return
     mongo_client = DatabaseManager.get_mongo_client("prod")
     workshop_updates = []
@@ -83,6 +83,15 @@ def main():
                             event_type=EventType.WORKSHOP, day=21, month=6, year=2025, start_time="08:00 PM",
                             end_time="10:00 PM", choreo_insta_link=None),
     ])
+
+    # manual_populate_workshops("manifestbytmn", "9892652774", [
+    #     ManualWorkshopEntry(by="Vinayak Ghoshal", song="dekha ek khwab", pricing_info=None,
+    #                         event_type=EventType.WORKSHOP, day=15, month=6, year=2025, start_time="02:00 PM",
+    #                         end_time="06:00 PM", choreo_insta_link=None),
+    #     ManualWorkshopEntry(by="Vinayak Ghoshal", song="mera dadla", pricing_info=None,
+    #                         event_type=EventType.WORKSHOP, day=15, month=6, year=2025, start_time="06:00 PM",
+    #                         end_time="08:00 PM", choreo_insta_link=None),
+    # ])
 
 
 if __name__ == "__main__":
