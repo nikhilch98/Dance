@@ -242,6 +242,7 @@ class NotificationOperations:
             "time_details": workshop.get("time_details", []),
             "pricing_info": workshop.get("pricing_info"),
             "payment_link": workshop.get("payment_link"),
+            "payment_link_type": workshop.get("payment_link_type"),
             "is_sold_out": workshop.get("is_sold_out", False)
         }
         

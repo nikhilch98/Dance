@@ -34,6 +34,7 @@ class SearchWorkshopResult(BaseModel):
     time: str
     timestamp_epoch: int
     payment_link: HttpUrl
+    payment_link_type: str
     pricing_info: Optional[str] = None
     event_type: Optional[str] = None
     choreo_insta_link: Optional[str] = None 

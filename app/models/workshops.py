@@ -17,6 +17,7 @@ class WorkshopListItem(BaseModel):
     """Complete workshop information including all sessions."""
     uuid: str
     payment_link: str
+    payment_link_type: str
     studio_id: str
     studio_name: str
     updated_at: float
@@ -57,6 +58,7 @@ class WorkshopSession(BaseModel):
     artist: Optional[str]
     artist_id_list: Optional[List[str]] = []
     payment_link: HttpUrl
+    payment_link_type: str
     pricing_info: Optional[str]
     timestamp_epoch: int
     event_type: Optional[str]
@@ -79,6 +81,7 @@ class EventDetails(BaseModel):
     """Event details model for workshop processing."""
     mongo_id: str
     payment_link: str
+    payment_link_type: str
     studio_id: str
     uuid: str
     event_type: str

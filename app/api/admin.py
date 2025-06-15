@@ -76,6 +76,7 @@ def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user))
                 "song": workshop.get("song"),
                 "studio_name": studio_map.get(workshop["studio_id"], "Unknown Studio"),
                 "payment_link": workshop.get("payment_link"),
+                "payment_link_type": workshop.get("payment_link_type"),
                 "original_by_field": workshop.get("by"),
                 "timestamp_epoch": int(datetime(
                     year=time_detail.get('year', 2024),
@@ -128,6 +129,7 @@ def admin_get_missing_song_sessions(user_id: str = Depends(verify_admin_user)):
                 "song": workshop.get("song"),
                 "studio_name": studio_map.get(workshop["studio_id"], "Unknown Studio"),
                 "payment_link": workshop.get("payment_link"),
+                "payment_link_type": workshop.get("payment_link_type"),
                 "original_by_field": workshop.get("by"),
                 "timestamp_epoch": int(datetime(
                     year=time_detail.get('year', 2024),

@@ -41,6 +41,7 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
         event_details.append(EventDetails(
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
+            payment_link_type=workshop["payment_link_type"],
             studio_id=workshop["studio_id"],
             uuid=workshop["uuid"],
             event_type=workshop["event_type"],
@@ -132,6 +133,7 @@ class DatabaseOperations:
             WorkshopListItem(
             uuid=workshop.uuid,
             payment_link=workshop.payment_link,
+            payment_link_type=workshop.payment_link_type,
             studio_id=workshop.studio_id,
             studio_name=studios_map[workshop.studio_id],
             updated_at=workshop.updated_at,
@@ -227,6 +229,7 @@ class DatabaseOperations:
                         artist_id_list=workshop.get("artist_id_list", []),
                         artist=workshop.get("by"),
                         payment_link=workshop.get("payment_link"),
+                        payment_link_type=workshop.get("payment_link_type"),
                         pricing_info=workshop.get("pricing_info"),
                         timestamp_epoch=get_timestamp_epoch(time_detail),
                         event_type=workshop.get("event_type"),
@@ -331,6 +334,7 @@ class DatabaseOperations:
                     workshops=[WorkshopListItem(
                         uuid=x.uuid,
                         payment_link=x.payment_link,
+                        payment_link_type=x.payment_link_type,
                         studio_id=x.studio_id,
                         studio_name=studios_map[x.studio_id],
                         updated_at=x.updated_at,
@@ -353,6 +357,7 @@ class DatabaseOperations:
         sorted_post_this_week = [WorkshopListItem(
                         uuid=x.uuid,
                         payment_link=x.payment_link,
+                        payment_link_type=x.payment_link_type,
                         studio_id=x.studio_id,
                         studio_name=studios_map[x.studio_id],
                         updated_at=x.updated_at,
