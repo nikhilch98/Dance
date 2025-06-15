@@ -324,7 +324,8 @@ class StudioProcessor:
                         # Iterate through event_details using event_detail
                         for event_detail in event_data["event_details"]:
                             inserted_data = {
-                                "payment_link": link,
+                                "payment_link": link, # Can be url payment link or whatsapp number as string
+                                "payment_link_type" : "url", # Can be url or whatsapp
                                 "studio_id": studio.config.studio_id,
                                 "uuid": event_data["uuid"], # Use event_data
                                 "event_type": event_data["event_type"], # Add event_type

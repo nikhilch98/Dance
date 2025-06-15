@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/search.dart';
 import '../services/search_service.dart';
 import '../screens/artist_detail_screen.dart';
 import '../models/workshop.dart';
 import '../utils/responsive_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/payment_link_utils.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -1029,19 +1030,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     // Register Button
                     GestureDetector(
                       onTap: () async {
-                        final uri = Uri.parse(workshop.paymentLink);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        } else {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Could not open registration link'),
-                                backgroundColor: Colors.red.withOpacity(0.8),
-                              ),
-                            );
-                          }
-                        }
+                        await PaymentLinkUtils.launchPaymentLink(
+                          paymentLink: workshop.paymentLink,
+                          paymentLinkType: workshop.paymentLinkType,
+                          context: context,
+                          workshopDetails: {
+                            'song': workshop.song,
+                            'artist': workshop.by,
+                            'studio': workshop.studioName,
+                            'date': workshop.date,
+                            'time': workshop.time,
+                            'pricing': workshop.pricingInfo,
+                          },
+                        );
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

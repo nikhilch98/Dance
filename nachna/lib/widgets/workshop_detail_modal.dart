@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/workshop.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../utils/payment_link_utils.dart';
 
 class WorkshopDetailModal extends StatelessWidget {
   final WorkshopSession workshop;
@@ -35,18 +35,19 @@ class WorkshopDetailModal extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final url = Uri.parse(workshop.paymentLink);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url);
-                    } else {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Could not launch ${workshop.paymentLink}'),
-                          ),
-                        );
-                      }
-                    }
+                    await PaymentLinkUtils.launchPaymentLink(
+                      paymentLink: workshop.paymentLink,
+                      paymentLinkType: workshop.paymentLinkType,
+                      context: context,
+                      workshopDetails: {
+                        'song': workshop.song,
+                        'artist': workshop.artist,
+                        'studio': workshop.studioId, // Note: WorkshopSession uses studioId, not studioName
+                        'date': workshop.date,
+                        'time': workshop.time,
+                        'pricing': workshop.pricingInfo,
+                      },
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,

@@ -7,6 +7,8 @@ class WorkshopListItem {
   final String uuid;
   @JsonKey(name: 'payment_link')
   final String paymentLink;
+  @JsonKey(name: 'payment_link_type')
+  final String? paymentLinkType;
   @JsonKey(name: 'studio_id')
   final String studioId;
   @JsonKey(name: 'studio_name')
@@ -33,6 +35,7 @@ class WorkshopListItem {
   WorkshopListItem({
     required this.uuid,
     required this.paymentLink,
+    this.paymentLinkType,
     required this.studioId,
     required this.studioName,
     required this.updatedAt,
@@ -64,6 +67,8 @@ class WorkshopSession {
   final List<String>? artistIdList;
   @JsonKey(name: 'payment_link')
   final String paymentLink;
+  @JsonKey(name: 'payment_link_type')
+  final String? paymentLinkType;
   @JsonKey(name: 'pricing_info')
   final String? pricingInfo;
   @JsonKey(name: 'timestamp_epoch')
@@ -84,6 +89,7 @@ class WorkshopSession {
     this.artist,
     this.artistIdList,
     required this.paymentLink,
+    this.paymentLinkType,
     this.pricingInfo,
     required this.timestampEpoch,
     this.eventType,

@@ -147,7 +147,8 @@ This test account demonstrates:
 ```json
 {
   "uuid": "string",
-  "payment_link": "string",
+  "payment_link": "string", 
+   "payment_link_type": "string",
   "studio_id": "string",
   "studio_name": "string",
   "artist_id_list": ["string"],

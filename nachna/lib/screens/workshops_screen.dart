@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/workshop.dart';
 import '../services/api_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:ui';
 import '../utils/responsive_utils.dart';
+import '../utils/payment_link_utils.dart';
 
 class WorkshopsScreen extends StatefulWidget {
   const WorkshopsScreen({super.key});
@@ -947,19 +949,19 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                       child: workshop.paymentLink.isNotEmpty
                           ? GestureDetector(
                               onTap: () async {
-                                final uri = Uri.parse(workshop.paymentLink);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                } else {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Could not launch ${workshop.paymentLink}'),
-                                        backgroundColor: Colors.red.withOpacity(0.8),
-                                      ),
-                                    );
-                                  }
-                                }
+                                await PaymentLinkUtils.launchPaymentLink(
+                                  paymentLink: workshop.paymentLink,
+                                  paymentLinkType: workshop.paymentLinkType,
+                                  context: context,
+                                  workshopDetails: {
+                                    'song': workshop.song,
+                                    'artist': workshop.by,
+                                    'studio': workshop.studioName,
+                                    'date': workshop.date,
+                                    'time': workshop.time,
+                                    'pricing': workshop.pricingInfo,
+                                  },
+                                );
                               },
                               child: Container(
                                 decoration: BoxDecoration(

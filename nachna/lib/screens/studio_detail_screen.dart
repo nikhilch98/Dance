@@ -529,6 +529,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
       artist: workshop.by,
       artistIdList: workshop.artistIdList,
       paymentLink: workshop.paymentLink,
+      paymentLinkType: workshop.paymentLinkType,
       pricingInfo: workshop.pricingInfo,
       timestampEpoch: workshop.timestampEpoch,
       eventType: workshop.eventType,
