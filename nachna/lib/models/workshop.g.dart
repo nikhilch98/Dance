@@ -60,6 +60,9 @@ WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
       artistIdList: (json['artist_id_list'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      artistImageUrls: (json['artist_image_urls'] as List<dynamic>?)
+          ?.map((e) => e as String?)
+          .toList(),
       paymentLink: json['payment_link'] as String,
       paymentLinkType: json['payment_link_type'] as String?,
       pricingInfo: json['pricing_info'] as String?,
@@ -76,6 +79,7 @@ Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
       'studio_id': instance.studioId,
       'artist': instance.artist,
       'artist_id_list': instance.artistIdList,
+      'artist_image_urls': instance.artistImageUrls,
       'payment_link': instance.paymentLink,
       'payment_link_type': instance.paymentLinkType,
       'pricing_info': instance.pricingInfo,

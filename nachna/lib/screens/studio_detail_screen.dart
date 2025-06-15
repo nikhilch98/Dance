@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/studio.dart';
 import '../services/api_service.dart';
 import '../widgets/workshop_detail_modal.dart';
 import '../models/workshop.dart';
 import '../services/deep_link_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
-import 'dart:ui';
 import '../utils/responsive_utils.dart';
+import '../utils/payment_link_utils.dart';
 
 class StudioDetailScreen extends StatefulWidget {
   final Studio studio;
@@ -519,6 +521,179 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
     );
   }
 
+  Widget _buildArtistAvatars(WorkshopSession workshop) {
+    final artistImageUrls = workshop.artistImageUrls ?? [];
+    final validImageUrls = artistImageUrls.where((url) => url != null && url.isNotEmpty).toList();
+    
+    // If no valid images or only one artist, show single avatar
+    if (validImageUrls.length <= 1) {
+      return Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: validImageUrls.isEmpty
+              ? const LinearGradient(
+                  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                )
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00D4FF).withOpacity(0.2),
+              blurRadius: 6,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: validImageUrls.isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildDefaultAvatar(workshop.artist);
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildDefaultAvatar(workshop.artist);
+                  },
+                ),
+              )
+            : _buildDefaultAvatar(workshop.artist),
+      );
+    }
+    
+    // Multiple artists - show overlapping avatars
+    final maxAvatars = validImageUrls.length > 3 ? 3 : validImageUrls.length;
+    final avatarSize = 36.0;
+    final overlapOffset = 24.0;
+    
+    return SizedBox(
+      width: avatarSize + (maxAvatars - 1) * overlapOffset,
+      height: 42,
+      child: Stack(
+        children: [
+          for (int i = 0; i < maxAvatars; i++)
+            Positioned(
+              left: i * overlapOffset,
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00D4FF).withOpacity(0.2),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildSmallDefaultAvatar(workshop.artist, i);
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildSmallDefaultAvatar(workshop.artist, i);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          // Show count if more than 3 artists
+          if (validImageUrls.length > 3)
+            Positioned(
+              right: 0,
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFF1A1A2E).withOpacity(0.9),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '+${validImageUrls.length - 2}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+    final colors = [
+      [const Color(0xFF00D4FF), const Color(0xFF9C27B0)],
+      [const Color(0xFFFF006E), const Color(0xFF8338EC)],
+      [const Color(0xFF06FFA5), const Color(0xFF00D4FF)],
+    ];
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        gradient: LinearGradient(
+          colors: colors[index % colors.length],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          instructorName?.isNotEmpty == true 
+              ? instructorName![0].toUpperCase() 
+              : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(String? instructorName) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          instructorName?.isNotEmpty == true 
+              ? instructorName!.substring(0, 1).toUpperCase()
+              : '?',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
   // Helper method to convert WorkshopListItem to WorkshopSession
   WorkshopSession _convertToWorkshopSession(WorkshopListItem workshop) {
     return WorkshopSession(
@@ -528,6 +703,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
       studioId: workshop.studioId,
       artist: workshop.by,
       artistIdList: workshop.artistIdList,
+      artistImageUrls: workshop.artistImageUrls,
       paymentLink: workshop.paymentLink,
       paymentLinkType: workshop.paymentLinkType,
       pricingInfo: workshop.pricingInfo,
@@ -630,7 +806,10 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             SizedBox(height: ResponsiveUtils.spacingMedium(context)),
             
             // Workshops for this day - convert WorkshopListItem to WorkshopSession
-            ...daySchedule.workshops.map((workshop) => _buildWorkshopCard(_convertToWorkshopSession(workshop))),
+            ...daySchedule.workshops.map((workshop) => Padding(
+              padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+              child: _buildWorkshopCard(_convertToWorkshopSession(workshop)),
+            )),
           ],
         ),
       ),
@@ -660,29 +839,148 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-          onTap: () => _showWorkshopDetails(workshop),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Padding(
-            padding: ResponsiveUtils.paddingLarge(context),
+            padding: ResponsiveUtils.paddingMedium(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with Date and Time
+                // Header Row with Artist Name and Date Badge
                 Row(
                   children: [
+                    // Artist Name (Main Title)
                     Expanded(
                       child: Text(
-                        workshop.date,
+                        workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA' 
+                            ? toTitleCase(workshop.artist!) 
+                            : 'Dance Workshop',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: ResponsiveUtils.body2(context),
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    
+                    // Date Badge (aligned with artist name)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveUtils.spacingSmall(context), 
+                        vertical: ResponsiveUtils.spacingXSmall(context)
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                        ),
+                      ),
+                      child: Text(
+                        workshop.date,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: ResponsiveUtils.micro(context) * 0.9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                
+                // Main Content Row with register button
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Artist Avatars
+                    _buildArtistAvatars(workshop),
+                    
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                    
+                    // Workshop Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Song Name
+                          if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
+                            Text(
+                              toTitleCase(workshop.song!),
+                              style: TextStyle(
+                                color: const Color(0xFF00D4FF),
+                                fontSize: ResponsiveUtils.caption(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          
+                          SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
+                          
+                          // Studio (we know it's the current studio, so we can show it or skip it)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.business_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: ResponsiveUtils.iconXSmall(context),
+                              ),
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
+                              Expanded(
+                                child: Text(
+                                  toTitleCase(widget.studio.name),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: ResponsiveUtils.micro(context),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
+                          
+                          // Time
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                                size: ResponsiveUtils.iconXSmall(context),
+                              ),
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
+                              Expanded(
+                                child: Text(
+                                  workshop.time,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: ResponsiveUtils.micro(context),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     
                     // Instagram Icon (if choreo link is available)
                     if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
@@ -705,8 +1003,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             }
                           },
                           child: Container(
-                            width: ResponsiveUtils.iconMedium(context) * 1.3,
-                            height: ResponsiveUtils.iconMedium(context),
+                            width: ResponsiveUtils.iconLarge(context),
+                            height: ResponsiveUtils.iconLarge(context),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                               gradient: const LinearGradient(
@@ -724,97 +1022,82 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               child: Icon(
                                 Icons.play_arrow_rounded,
                                 color: Colors.white,
-                                size: ResponsiveUtils.body2(context),
+                                size: ResponsiveUtils.iconSmall(context),
                               ),
                             ),
                           ),
                         ),
                       ),
                     
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.spacingSmall(context), 
-                        vertical: ResponsiveUtils.spacingXSmall(context)
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                        ),
-                      ),
-                      child: Text(
-                        workshop.time,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: ResponsiveUtils.micro(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    // Register Button (vertically aligned with main content)
+                    SizedBox(
+                      width: ResponsiveUtils.isSmallScreen(context) ? 60 : 65,
+                      height: ResponsiveUtils.iconLarge(context),
+                      child: workshop.paymentLink.isNotEmpty
+                          ? GestureDetector(
+                              onTap: () async {
+                                await PaymentLinkUtils.launchPaymentLink(
+                                  paymentLink: workshop.paymentLink,
+                                  paymentLinkType: workshop.paymentLinkType,
+                                  context: context,
+                                  workshopDetails: {
+                                    'song': workshop.song,
+                                    'artist': workshop.artist,
+                                    'studio': widget.studio.name,
+                                    'date': workshop.date,
+                                    'time': workshop.time,
+                                    'pricing': workshop.pricingInfo,
+                                  },
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Register',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: ResponsiveUtils.micro(context) * 0.9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                color: Colors.white.withOpacity(0.1),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Soon',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: ResponsiveUtils.micro(context) * 0.9,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
                     ),
                   ],
                 ),
-                
-                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-                
-                // Workshop Details
-                if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
-                  Padding(
-                    padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
-                    child: Text(
-                      toTitleCase(workshop.song!),
-                      style: TextStyle(
-                        color: const Color(0xFF00D4FF),
-                        fontSize: ResponsiveUtils.caption(context),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                
-                if (workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA')
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_rounded,
-                        color: Colors.white.withOpacity(0.7),
-                        size: ResponsiveUtils.iconXSmall(context),
-                      ),
-                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
-                      Expanded(
-                        child: Text(
-                          toTitleCase(workshop.artist!),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: ResponsiveUtils.caption(context),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
-                  Padding(
-                    padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.currency_rupee_rounded,
-                          color: Colors.white.withOpacity(0.7),
-                          size: ResponsiveUtils.iconXSmall(context),
-                        ),
-                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
-                        Expanded(
-                          child: Text(
-                            workshop.pricingInfo!,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: ResponsiveUtils.micro(context),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),

@@ -102,9 +102,9 @@ class PaymentLinkUtils {
       message += "💃 Artist: ${_formatText(workshopDetails['artist'])}\n";
     }
     
-    if (workshopDetails['studio']?.isNotEmpty == true && workshopDetails['studio'] != 'TBA') {
-      message += "🏢 Studio: ${_formatText(workshopDetails['studio'])}\n";
-    }
+//     if (workshopDetails['studio']?.isNotEmpty == true && workshopDetails['studio'] != 'TBA') {
+//       message += "🏢 Studio: ${_formatText(workshopDetails['studio'])}\n";
+//     }
     
     if (workshopDetails['date']?.isNotEmpty == true && workshopDetails['date'] != 'TBA') {
       message += "📅 Date: ${workshopDetails['date']}\n";

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/artist.dart';
 import '../services/api_service.dart';
 import '../models/workshop.dart';
-import '../widgets/workshop_detail_modal.dart';
-import '../widgets/reaction_buttons.dart';
 import '../services/deep_link_service.dart';
 import '../providers/reaction_provider.dart';
 import '../models/reaction.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
-import 'dart:ui';
 import '../utils/responsive_utils.dart';
+import '../utils/payment_link_utils.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final Artist? artist;
@@ -86,14 +85,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     }
   }
 
-  void _showWorkshopDetails(WorkshopSession workshop) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return WorkshopDetailModal(workshop: workshop);
-      },
-    );
-  }
+
 
   String toTitleCase(String text) {
     if (text.isEmpty) return text;
@@ -540,11 +532,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                        ],
-                      ),
-                    ),
+                                                       ],
+                     ),
+                   ],
+                 ),
+               ),
                   ),
               
               // Workshops Content
@@ -832,191 +824,272 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                  onTap: () => _showWorkshopDetails(workshop),
-                  child: Padding(
-                    padding: ResponsiveUtils.paddingLarge(context),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding: ResponsiveUtils.paddingLarge(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with Date, Time and Action Buttons
+                    Row(
                       children: [
-                        // Header with Date and Time
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                workshop.date,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: ResponsiveUtils.body2(context),
-                                  fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            workshop.date,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: ResponsiveUtils.body2(context),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        
+                        // Instagram Icon (if choreo link is available)
+                        if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
+                          Container(
+                            margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
+                            child: GestureDetector(
+                              onTap: () async {
+                                final uri = Uri.parse(workshop.choreoInstaLink!);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Could not open Instagram link'),
+                                        backgroundColor: Colors.red.withOpacity(0.8),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              child: Container(
+                                width: ResponsiveUtils.iconMedium(context) * 1.3,
+                                height: ResponsiveUtils.iconMedium(context),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE1306C), Color(0xFFC13584)],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFE1306C).withOpacity(0.3),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: ResponsiveUtils.body2(context),
+                                  ),
                                 ),
                               ),
                             ),
-                            
-                            // Instagram Icon (if choreo link is available)
-                            if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
-                              Container(
-                                margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    final uri = Uri.parse(workshop.choreoInstaLink!);
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                    } else {
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: const Text('Could not open Instagram link'),
-                                            backgroundColor: Colors.red.withOpacity(0.8),
+                          ),
+                        
+                        // Time Badge
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.spacingSmall(context), 
+                            vertical: ResponsiveUtils.spacingXSmall(context)
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
+                            ),
+                          ),
+                          child: Text(
+                            workshop.time,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: ResponsiveUtils.micro(context),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                    
+                    // Main Content Row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Side - Workshop Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Song Name
+                              if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
+                                Padding(
+                                  padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+                                  child: Text(
+                                    toTitleCase(workshop.song!),
+                                    style: TextStyle(
+                                      color: const Color(0xFFFF006E),
+                                      fontSize: ResponsiveUtils.caption(context),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              
+                              // Studio
+                              if (workshop.studioId?.isNotEmpty == true && workshop.studioId != 'TBA')
+                                Padding(
+                                  padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingXSmall(context)),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.business_rounded,
+                                        color: Colors.white.withOpacity(0.7),
+                                        size: ResponsiveUtils.iconXSmall(context),
+                                      ),
+                                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                      Expanded(
+                                        child: Text(
+                                          toTitleCase(workshop.studioId!),
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.9),
+                                            fontSize: ResponsiveUtils.caption(context),
+                                            fontWeight: FontWeight.w500,
                                           ),
-                                        );
-                                      }
-                                    }
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              
+                              // Pricing
+                              if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
+                                Padding(
+                                  padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingXSmall(context)),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.currency_rupee_rounded,
+                                        color: Colors.white.withOpacity(0.7),
+                                        size: ResponsiveUtils.iconXSmall(context),
+                                      ),
+                                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                      Expanded(
+                                        child: Text(
+                                          workshop.pricingInfo!,
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.8),
+                                            fontSize: ResponsiveUtils.micro(context),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              
+                              // Workshop Type Badge
+                              if (workshop.eventType?.isNotEmpty == true && workshop.eventType != 'workshop')
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.spacingSmall(context), 
+                                    vertical: ResponsiveUtils.spacingXSmall(context)
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                    color: const Color(0xFF8338EC).withOpacity(0.2),
+                                    border: Border.all(
+                                      color: const Color(0xFF8338EC).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    toTitleCase(workshop.eventType!),
+                                    style: TextStyle(
+                                      color: const Color(0xFF8338EC),
+                                      fontSize: ResponsiveUtils.micro(context),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                        
+                        // Right Side - Register Button
+                        Container(
+                          margin: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
+                          width: ResponsiveUtils.isSmallScreen(context) ? 50 : 55,
+                          child: workshop.paymentLink.isNotEmpty
+                              ? GestureDetector(
+                                  onTap: () async {
+                                    await PaymentLinkUtils.launchPaymentLink(
+                                      paymentLink: workshop.paymentLink,
+                                      paymentLinkType: workshop.paymentLinkType,
+                                      context: context,
+                                      workshopDetails: {
+                                        'song': workshop.song,
+                                        'artist': _artist?.name,
+                                        'studio': workshop.studioId,
+                                        'date': workshop.date,
+                                        'time': workshop.time,
+                                        'pricing': workshop.pricingInfo,
+                                      },
+                                    );
                                   },
                                   child: Container(
-                                    width: ResponsiveUtils.iconMedium(context) * 1.3,
-                                    height: ResponsiveUtils.iconMedium(context),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: ResponsiveUtils.spacingSmall(context),
+                                      horizontal: ResponsiveUtils.spacingXSmall(context),
+                                    ),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFFE1306C), Color(0xFFC13584)],
+                                        colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFFE1306C).withOpacity(0.3),
-                                          offset: const Offset(0, 2),
-                                          blurRadius: 6,
-                                        ),
-                                      ],
                                     ),
                                     child: Center(
-                                      child: Icon(
-                                        Icons.play_arrow_rounded,
-                                        color: Colors.white,
-                                        size: ResponsiveUtils.body2(context),
+                                      child: Text(
+                                        'Register',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: ResponsiveUtils.micro(context) * 0.8,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: ResponsiveUtils.spacingSmall(context),
+                                    horizontal: ResponsiveUtils.spacingXSmall(context),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                    color: Colors.white.withOpacity(0.1),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Soon',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.6),
+                                        fontSize: ResponsiveUtils.micro(context) * 0.8,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: ResponsiveUtils.spacingSmall(context), 
-                                vertical: ResponsiveUtils.spacingXSmall(context)
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
-                                ),
-                              ),
-                              child: Text(
-                                workshop.time,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: ResponsiveUtils.micro(context),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
-                        
-                        SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-                        
-                        // Workshop Details
-                        if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
-                          Padding(
-                            padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
-                            child: Text(
-                              toTitleCase(workshop.song!),
-                              style: TextStyle(
-                                color: const Color(0xFFFF006E),
-                                fontSize: ResponsiveUtils.caption(context),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        
-                        if (workshop.studioId?.isNotEmpty == true && workshop.studioId != 'TBA')
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.business_rounded,
-                                color: Colors.white.withOpacity(0.7),
-                                size: ResponsiveUtils.iconXSmall(context),
-                              ),
-                              SizedBox(width: ResponsiveUtils.spacingSmall(context)),
-                              Expanded(
-                                child: Text(
-                                  toTitleCase(workshop.studioId!),
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: ResponsiveUtils.caption(context),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        
-                        if (workshop.pricingInfo?.isNotEmpty == true && workshop.pricingInfo != 'TBA')
-                          Padding(
-                            padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.currency_rupee_rounded,
-                                  color: Colors.white.withOpacity(0.7),
-                                  size: ResponsiveUtils.iconXSmall(context),
-                                ),
-                                SizedBox(width: ResponsiveUtils.spacingSmall(context)),
-                                Expanded(
-                                  child: Text(
-                                    workshop.pricingInfo!,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.8),
-                                      fontSize: ResponsiveUtils.micro(context),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        
-                        // Workshop Type Badge
-                        if (workshop.eventType?.isNotEmpty == true && workshop.eventType != 'workshop')
-                          Padding(
-                            padding: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: ResponsiveUtils.spacingSmall(context), 
-                                vertical: ResponsiveUtils.spacingXSmall(context)
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                color: const Color(0xFF8338EC).withOpacity(0.2),
-                                border: Border.all(
-                                  color: const Color(0xFF8338EC).withOpacity(0.3),
-                                ),
-                              ),
-                              child: Text(
-                                toTitleCase(workshop.eventType!),
-                                style: TextStyle(
-                                  color: const Color(0xFF8338EC),
-                                  fontSize: ResponsiveUtils.micro(context),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
