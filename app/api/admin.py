@@ -445,14 +445,14 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
                 "workshop_id": str(workshop["_id"]),
                 "workshop_name": workshop.get("workshop_name"),
                 "song": workshop.get("song"),
-                "by": workshop.get("by"),
+                "by": workshop.get("by") if workshop.get("by") else "",
                 "artist_id_list": artist_id_list,
                 "artist_instagram_links": artist_instagram_links,
             }
             result.append(workshop_data)
         
         # Sort by created_at descending (newest first)
-        result.sort(key=lambda x: x.get("by", ""), reverse=True)
+        result.sort(key=lambda x: x.get("by_sort_key", ""), reverse=True)
         
         return result
         
