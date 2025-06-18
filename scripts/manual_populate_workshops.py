@@ -34,6 +34,13 @@ def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorks
     mongo_client = DatabaseManager.get_mongo_client("prod")
     workshop_updates = []
     for workshop in workshop_details:
+        artist_id_list = sorted(workshop["artist_id_list"])
+        song = workshop.song.lower() if workshop.song else None
+        if song and artist_id_list and not workshop.choreo_insta_link:
+            choreo_insta_link_entry = mongo_client["discovery"]["choreo_links"].find_one({"song": song, "artist_id_list": artist_id_list})
+            if choreo_insta_link_entry:
+                workshop.choreo_insta_link = choreo_insta_link_entry["choreo_insta_link"]
+
         doc = {
             "payment_link": workshop.mobile_number,
             "payment_link_type": "whatsapp",
@@ -50,9 +57,9 @@ def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorks
                 }
             ],
             "by": workshop.by,
-            "song": workshop.song.lower(),
+            "song": song,
             "pricing_info": workshop.pricing_info,
-            "artist_id_list": workshop.artist_id_list,
+            "artist_id_list": artist_id_list,
             "updated_at":  time.time(),
             "version": 1,
             "choreo_insta_link": workshop.choreo_insta_link,

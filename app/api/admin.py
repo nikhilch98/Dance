@@ -452,7 +452,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
             result.append(workshop_data)
         
         # Sort by created_at descending (newest first)
-        result.sort(key=lambda x: x.get("uuid", ""), reverse=True)
+        result.sort(key=lambda x: x.get("by", ""), reverse=True)
         
         return result
         
