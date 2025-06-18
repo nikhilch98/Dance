@@ -69,7 +69,7 @@ fi
 log_message "Using Python interpreter: $PYTHON_CMD"
 
 # Run workshop population scripts sequentially
-run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio manifestbytmn --ai gemini" "Manifest by TMN studio workshop population"
+run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio manifest --ai gemini" "Manifest by TMN studio workshop population"
 if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
 
 run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio vins --ai gemini" "Vins studio workshop population"
