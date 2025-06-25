@@ -126,7 +126,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Natya Social", "natyasocial"),
         Artist("Seerat Madan", "always_on_taal"),
         Artist("Risparna","rishhparnaa"),
-        Artist("Shreya Shetty", "afrogirl_indian"),
+        Artist("Shreya Shetty", "afrogirlindian"),
         Artist("Prateek Aneja", "prateek.aneja"),
         Artist("Abhishek Vernekar", "abhishek_vernekar"),
         Artist("Prateek Shettigar", "prateekshettigar"),
