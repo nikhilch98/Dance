@@ -121,6 +121,8 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Bindu Bolar","bindu.bolar22"),
+        Artist("Himanshu Dulani","himanshu_dulani"),
         Artist("Pooja Purohith", "poojapurohith_"),
         Artist("Swady Dinesh", "swady_dinesh"),
         Artist("Natya Social", "natyasocial"),
@@ -209,6 +211,13 @@ def get_artists_list() -> List[Artist]:
         Artist("Prabhat Patro", "prabhat.patro"),
         Artist("Dherya kandari", "dheryakandari"),
         Artist("Thangaat Garba", "thangaatgarba"),
+        Artist("Nikhil Noyal","nikhil_noyal"),
+        Artist("Yash Kadam","yasshkadamm"),
+        Artist("Shivanshu", "shivanshu_the.fusionist_"),
+        Artist("Mohan Pandey","mohanpandey"),
+        Artist("Kiran J","mr.kiranj"),
+        Artist("Rupin Kale","rupin_kale"),
+        Artist("Amisha Jayaram","amisha_jayaram"),
     ]
 
 

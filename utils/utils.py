@@ -118,12 +118,17 @@ class BrowserConfig:
     WINDOW_WIDTH = 1920
     WINDOW_HEIGHT = 1080
     PAGE_LOAD_TIMEOUT = 10
+    DESKTOP_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     CHROME_OPTIONS = [
         "--headless",
         "--no-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--disable-software-rasterizer",
+        "--disable-web-security",
+        "--disable-features=VizDisplayCompositor",
+        "--force-device-scale-factor=1",
+        "--hide-scrollbars",
     ]
 
 
@@ -433,7 +438,7 @@ class ScreenshotManager:
     @staticmethod
     @retry(max_attempts=5, backoff_factor=1)
     def capture_screenshot(url: str, output_file: str) -> bool:
-        """Capture full page screenshot of a URL.
+        """Capture full page screenshot of a URL in desktop view.
 
         Args:
             url: Website URL to capture
@@ -445,24 +450,50 @@ class ScreenshotManager:
         service = Service(ChromeDriverManager().install())
         chrome_options = webdriver.ChromeOptions()
 
+        # Add basic Chrome options
         for option in BrowserConfig.CHROME_OPTIONS:
             chrome_options.add_argument(option)
+        
+        # Force desktop user agent
+        chrome_options.add_argument(f"--user-agent={BrowserConfig.DESKTOP_USER_AGENT}")
+        
+        # Set initial window size to desktop dimensions
+        chrome_options.add_argument(f"--window-size={BrowserConfig.WINDOW_WIDTH},{BrowserConfig.WINDOW_HEIGHT}")
+        
+        # Additional options to ensure desktop view
+        chrome_options.add_argument("--force-device-scale-factor=1")
+        chrome_options.add_argument("--disable-mobile-emulation")
 
         driver = webdriver.Chrome(service=service, options=chrome_options)
         success = False
 
         try:
+            # Set desktop window size before loading page
+            driver.set_window_size(BrowserConfig.WINDOW_WIDTH, BrowserConfig.WINDOW_HEIGHT)
+            
+            # Load the page
             driver.get(url)
             WebDriverWait(driver, BrowserConfig.PAGE_LOAD_TIMEOUT).until(
                 lambda d: d.execute_script("return document.readyState") == "complete"
             )
 
+            # Get page dimensions after loading
             total_width = driver.execute_script("return document.body.scrollWidth")
             total_height = driver.execute_script("return document.body.scrollHeight")
-            driver.set_window_size(total_width, total_height)
+            
+            # Ensure minimum desktop width for responsive sites
+            final_width = max(total_width, BrowserConfig.WINDOW_WIDTH)
+            final_height = max(total_height, BrowserConfig.WINDOW_HEIGHT)
+            
+            # Set final dimensions for full page capture
+            driver.set_window_size(final_width, final_height)
+            
+            # Wait a moment for any responsive layout changes
+            time.sleep(1)
 
             driver.save_screenshot(output_file)
             success = True
+            # print(f"Screenshot captured: {final_width}x{final_height} pixels")
         except Exception as e:
             print(f"Screenshot capture failed: {str(e)}")
             success = False
