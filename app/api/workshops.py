@@ -35,6 +35,9 @@ async def get_workshops():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+
+
+
 @router.get("/studios", response_model=List[Studio])
 @cache_response(expire=3600)
 async def get_studios():

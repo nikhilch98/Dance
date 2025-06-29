@@ -18,6 +18,7 @@ from app.api import (
     admin_router,
     web_router,
     search_router,
+    mcp_router,
 )
 from app.services.notifications import notification_service
 from utils.utils import DatabaseManager, start_cache_invalidation_watcher
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(reactions_router, prefix="/api", tags=["Reactions"])
     app.include_router(notifications_router, prefix="/api", tags=["Notifications"])
     app.include_router(search_router, prefix="/api", tags=["Search"])
+    app.include_router(mcp_router, prefix="/mcp", tags=["MCP (Model Context Protocol)"])
     app.include_router(admin_router, prefix="/admin", tags=["Admin"])
     app.include_router(web_router, tags=["Web"])
 

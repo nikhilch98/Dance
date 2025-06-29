@@ -47,6 +47,7 @@ class InstagramAPI:
         "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
         "Accept": "*/*",
+        "Cookie": "csrftoken=BYVaFMzU72BN4x_KyaTek6"
     }
 
     @classmethod

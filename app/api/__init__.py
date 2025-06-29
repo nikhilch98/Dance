@@ -7,6 +7,7 @@ from .notifications import router as notifications_router
 from .admin import router as admin_router
 from .web import router as web_router
 from .search import router as search_router
+from .mcp import router as mcp_router
 
 __all__ = [
     "auth_router",
@@ -16,4 +17,5 @@ __all__ = [
     "admin_router",
     "web_router",
     "search_router",
+    "mcp_router",
 ] 

@@ -99,3 +99,4 @@ class EventDetails(BaseModel):
     time_day: Optional[int]
     time_day_full_string: Optional[str] 
     choreo_insta_link: Optional[HttpUrl]
+

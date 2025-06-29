@@ -29,6 +29,13 @@ from .workshops import (
     CategorizedWorkshopResponse,
     EventDetails,
 )
+from .mcp import (
+    McpToolDefinition,
+    McpListToolsResponse,
+    McpCallRequest,
+    McpCallResponse,
+    McpResourceResponse,
+)
 from .admin import (
     AssignArtistPayload,
     AssignSongPayload,
@@ -66,6 +73,12 @@ __all__ = [
     "DaySchedule",
     "CategorizedWorkshopResponse",
     "EventDetails",
+    # MCP models
+    "McpToolDefinition",
+    "McpListToolsResponse",
+    "McpCallRequest",
+    "McpCallResponse",
+    "McpResourceResponse",
     # Search models
     "SearchUserResult",
     "SearchArtistResult",

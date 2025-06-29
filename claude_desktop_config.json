@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "nachna-workshops": {
+      "command": "node",
+      "args": [
+        "./mcp_bridge.js"
+      ],
+      "env": {
+        "NACHNA_SERVER_URL": "http://localhost:8000"
+      }
+    }
+  }
+} 
