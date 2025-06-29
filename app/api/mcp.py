@@ -117,8 +117,9 @@ async def mcp_jsonrpc_endpoint(request: Request):
             
             call_id = str(uuid.uuid4())
             call_result = McpWorkshopService.call_tool(tool_name, arguments, call_id)
-            
+
             if call_result.error:
+                print(f"Error in MCP JSON-RPC endpoint: {call_result.error} | {traceback.format_exc()} | {request.body}")
                 return JSONResponse(
                     create_jsonrpc_error(request_id, -32603, call_result.error),
                     status_code=500,
@@ -241,6 +242,7 @@ async def list_mcp_tools():
         return McpWorkshopService.list_tools()
     except Exception as e:
         print(f"Error listing MCP tools: {e}")
+        print(f"Error listing MCP tools: {e} | {traceback.format_exc()} | {request.body}")
         raise HTTPException(status_code=500, detail="Failed to list MCP tools")
 
 
@@ -273,7 +275,7 @@ async def get_mcp_resource(resource_type: str, resource_id: Optional[str] = None
     try:
         return McpWorkshopService.get_resource(resource_type, resource_id)
     except Exception as e:
-        print(f"Error getting MCP resource: {e}")
+        print(f"Error getting MCP resource: {e} | {traceback.format_exc()} | {request.body}")
         raise HTTPException(status_code=500, detail=f"Failed to get resource: {str(e)}")
 
 
