@@ -205,6 +205,7 @@ async def mcp_jsonrpc_endpoint(request: Request):
             )
             
     except Exception as e:
+        print(f"Error in MCP JSON-RPC endpoint: {e} | {traceback.format_exc()} | {request.body}")
         return JSONResponse(
             create_jsonrpc_error(request_id, -32603, f"Internal error: {str(e)}"),
             status_code=500,
