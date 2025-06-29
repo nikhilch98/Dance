@@ -41,12 +41,17 @@ def create_app() -> FastAPI:
     # Add GZip middleware for response compression
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # Security middleware
+    # Security middleware with OpenAI MCP support
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=APIConfig.CORS_ORIGINS,
+        allow_origins=APIConfig.CORS_ORIGINS + [
+            "https://api.openai.com",
+            "https://chat.openai.com", 
+            "https://platform.openai.com",
+            "https://*.openai.com"
+        ],
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 

@@ -1,18 +1,82 @@
 from openai import OpenAI
+import requests
 
-client = OpenAI()
+# First, let's test if our MCP server is running locally
+def test_local_server():
+    try:
+        response = requests.get("http://localhost:8002/mcp/server-info")
+        if response.status_code == 200:
+            print("✅ Local MCP server is running")
+            print(f"Server info: {response.json()}")
+            return True
+        else:
+            print(f"❌ Local server responded with {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Cannot connect to local server: {e}")
+        return False
 
-resp = client.responses.create(
-    model="gpt-4.1",
-    tools=[
-        {
-            "type": "mcp",
-            "server_label": "deepwiki",
-            "server_url": "http://localhost:8002/mcp",
-            "require_approval": "never",
-        },
-    ],
-    input="What transport protocols are supported in the 2025-03-26 version of the MCP spec?",
-)
+# Test the JSON-RPC endpoint
+def test_jsonrpc_endpoint():
+    try:
+        # Test tools/list method
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "tools/list",
+            "id": 1
+        }
+        
+        response = requests.post("http://localhost:8002/mcp/", json=payload)
+        if response.status_code == 200:
+            data = response.json()
+            print("✅ JSON-RPC endpoint working")
+            print(f"Available tools: {len(data['result']['tools'])}")
+            for tool in data['result']['tools']:
+                print(f"  - {tool['name']}: {tool['description']}")
+            return True
+        else:
+            print(f"❌ JSON-RPC endpoint failed: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+    except Exception as e:
+        print(f"❌ JSON-RPC test failed: {e}")
+        return False
 
-print(resp.output_text)
+# Test the server first
+print("🔍 Testing local MCP server...")
+if test_local_server() and test_jsonrpc_endpoint():
+    print("\n🚀 Trying OpenAI MCP integration...")
+    
+    client = OpenAI()
+
+    # Use the correct server URL - replace with your actual deployment URL
+    # For local testing, you might need to expose your server publicly
+    server_url = "http://localhost:8002/mcp"  # Change this to your deployed URL
+    
+    try:
+        resp = client.responses.create(
+            model="gpt-4o",  # Fixed model name
+            tools=[
+                {
+                    "type": "mcp",
+                    "server_label": "nachna-workshops",
+                    "server_url": server_url,
+                    "require_approval": "never",
+                },
+            ],
+            input="List of workshops available today",
+        )
+
+        print("✅ OpenAI MCP integration successful!")
+        print(resp.output_text)
+        
+    except Exception as e:
+        print(f"❌ OpenAI MCP integration failed: {e}")
+        print("\n💡 Possible solutions:")
+        print("1. Deploy your server to a public URL (not localhost)")
+        print("2. Update server_url to your deployed URL")
+        print("3. Ensure the deployed server has CORS enabled for OpenAI")
+        
+else:
+    print("\n❌ Local server not working. Please start your server first:")
+    print("uvicorn app.main:app --reload")

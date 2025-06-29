@@ -5,7 +5,7 @@ import json
 from typing import Dict, Any
 
 # Base URL for the API (adjust as needed)
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8002"
 
 def test_mcp_server_info():
     """Test the MCP server info endpoint."""
