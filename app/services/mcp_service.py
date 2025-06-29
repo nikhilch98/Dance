@@ -98,7 +98,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=result.model_dump()
+                    output=result
                 )
             
             elif tool_name == "get_workshops_by_artist":
@@ -111,7 +111,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=[workshop.model_dump() for workshop in result]
+                    output=[workshop for workshop in result]
                 )
             
             elif tool_name == "get_artists":
@@ -132,7 +132,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=[studio.model_dump() for studio in result]
+                    output=[studio for studio in result]
                 )
             
             else:
