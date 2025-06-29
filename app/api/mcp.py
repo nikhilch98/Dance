@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 import uuid
 import json
+import traceback
 
 from app.models.mcp import (
     McpListToolsResponse,
@@ -53,9 +54,10 @@ async def mcp_jsonrpc_endpoint(request: Request):
     
     try:
         body = await request.json()
-    except Exception:
+        body_str = json.dumps(body)
+    except Exception as e:
         return JSONResponse(
-            create_jsonrpc_error(None, -32700, "Parse error"),
+            create_jsonrpc_error(None, -32700, f"Parse error: {str(e)}"),
             status_code=400,
             headers=headers
         )
@@ -119,7 +121,7 @@ async def mcp_jsonrpc_endpoint(request: Request):
             call_result = McpWorkshopService.call_tool(tool_name, arguments, call_id)
 
             if call_result.error:
-                print(f"Error in MCP JSON-RPC endpoint: {call_result.error} | {traceback.format_exc()} | {request.body}")
+                print(f"MCP Tool Error - Tool: {tool_name}, Error: {call_result.error}, Request: {body_str}")
                 return JSONResponse(
                     create_jsonrpc_error(request_id, -32603, call_result.error),
                     status_code=500,
@@ -206,9 +208,11 @@ async def mcp_jsonrpc_endpoint(request: Request):
             )
             
     except Exception as e:
-        print(f"Error in MCP JSON-RPC endpoint: {e} | {traceback.format_exc()} | {request.body}")
+        print(f"MCP JSON-RPC Error: {str(e)}")
+        print(f"Request body: {body_str if 'body_str' in locals() else 'Could not parse'}")
+        print(f"Traceback: {traceback.format_exc()}")
         return JSONResponse(
-            create_jsonrpc_error(request_id, -32603, f"Internal error: {str(e)}"),
+            create_jsonrpc_error(request_id if 'request_id' in locals() else None, -32603, f"Internal error: {str(e)}"),
             status_code=500,
             headers=headers
         )
@@ -242,7 +246,7 @@ async def list_mcp_tools():
         return McpWorkshopService.list_tools()
     except Exception as e:
         print(f"Error listing MCP tools: {e}")
-        print(f"Error listing MCP tools: {e} | {traceback.format_exc()} | {request.body}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to list MCP tools")
 
 
@@ -275,7 +279,8 @@ async def get_mcp_resource(resource_type: str, resource_id: Optional[str] = None
     try:
         return McpWorkshopService.get_resource(resource_type, resource_id)
     except Exception as e:
-        print(f"Error getting MCP resource: {e} | {traceback.format_exc()} | {request.body}")
+        print(f"Error getting MCP resource: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to get resource: {str(e)}")
 
 
