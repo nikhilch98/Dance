@@ -30,8 +30,7 @@ class McpWorkshopService:
                     "properties": {
                         "studio_id": {
                             "type": "string",
-                            "description": "Optional studio ID to filter workshops by specific studio",
-                            "required": False
+                            "description": "Optional studio ID to filter workshops by specific studio"
                         }
                     },
                     "additionalProperties": False
@@ -45,8 +44,7 @@ class McpWorkshopService:
                     "properties": {
                         "artist_id": {
                             "type": "string",
-                            "description": "The unique identifier of the artist",
-                            "required": True
+                            "description": "The unique identifier of the artist"
                         }
                     },
                     "required": ["artist_id"],
@@ -61,8 +59,7 @@ class McpWorkshopService:
                     "properties": {
                         "has_workshops": {
                             "type": "boolean",
-                            "description": "Filter artists who have workshops",
-                            "required": False
+                            "description": "Filter artists who have workshops"
                         }
                     },
                     "additionalProperties": False

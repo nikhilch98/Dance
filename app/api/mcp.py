@@ -43,12 +43,21 @@ def create_jsonrpc_error(id: Any, code: int, message: str, data: Any = None):
 @router.post("/")
 async def mcp_jsonrpc_endpoint(request: Request):
     """Main MCP JSON-RPC endpoint for OpenAI integration"""
+    # Set CORS headers for OpenAI
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+    }
+    
     try:
         body = await request.json()
     except Exception:
         return JSONResponse(
             create_jsonrpc_error(None, -32700, "Parse error"),
-            status_code=400
+            status_code=400,
+            headers=headers
         )
     
     # Handle JSON-RPC request
@@ -74,7 +83,10 @@ async def mcp_jsonrpc_endpoint(request: Request):
                     "version": "1.0.0"
                 }
             }
-            return JSONResponse(create_jsonrpc_response(request_id, result))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, result),
+                headers=headers
+            )
         
         elif method == "tools/list":
             tools_data = McpWorkshopService.list_tools()
@@ -87,7 +99,10 @@ async def mcp_jsonrpc_endpoint(request: Request):
                 })
             
             result = {"tools": tools}
-            return JSONResponse(create_jsonrpc_response(request_id, result))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, result),
+                headers=headers
+            )
         
         elif method == "tools/call":
             tool_name = params.get("name")
@@ -96,7 +111,8 @@ async def mcp_jsonrpc_endpoint(request: Request):
             if not tool_name:
                 return JSONResponse(
                     create_jsonrpc_error(request_id, -32602, "Missing tool name"),
-                    status_code=400
+                    status_code=400,
+                    headers=headers
                 )
             
             call_id = str(uuid.uuid4())
@@ -105,7 +121,8 @@ async def mcp_jsonrpc_endpoint(request: Request):
             if call_result.error:
                 return JSONResponse(
                     create_jsonrpc_error(request_id, -32603, call_result.error),
-                    status_code=500
+                    status_code=500,
+                    headers=headers
                 )
             
             # Format response for OpenAI
@@ -117,7 +134,10 @@ async def mcp_jsonrpc_endpoint(request: Request):
                     }
                 ]
             }
-            return JSONResponse(create_jsonrpc_response(request_id, result))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, result),
+                headers=headers
+            )
         
         elif method == "resources/list":
             result = {
@@ -139,14 +159,18 @@ async def mcp_jsonrpc_endpoint(request: Request):
                     }
                 ]
             }
-            return JSONResponse(create_jsonrpc_response(request_id, result))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, result),
+                headers=headers
+            )
         
         elif method == "resources/read":
             uri = params.get("uri")
             if not uri:
                 return JSONResponse(
                     create_jsonrpc_error(request_id, -32602, "Missing resource URI"),
-                    status_code=400
+                    status_code=400,
+                    headers=headers
                 )
             
             resource_type = uri.split("://")[0]
@@ -161,22 +185,30 @@ async def mcp_jsonrpc_endpoint(request: Request):
                     }
                 ]
             }
-            return JSONResponse(create_jsonrpc_response(request_id, result))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, result),
+                headers=headers
+            )
         
         elif method == "notifications/initialized":
             # Acknowledge initialization notification
-            return JSONResponse(create_jsonrpc_response(request_id, {}))
+            return JSONResponse(
+                create_jsonrpc_response(request_id, {}),
+                headers=headers
+            )
         
         else:
             return JSONResponse(
                 create_jsonrpc_error(request_id, -32601, f"Method not found: {method}"),
-                status_code=404
+                status_code=404,
+                headers=headers
             )
             
     except Exception as e:
         return JSONResponse(
             create_jsonrpc_error(request_id, -32603, f"Internal error: {str(e)}"),
-            status_code=500
+            status_code=500,
+            headers=headers
         )
 
 
