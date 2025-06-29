@@ -98,7 +98,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=result.dict()
+                    output=result.model_dump()
                 )
             
             elif tool_name == "get_workshops_by_artist":
@@ -111,7 +111,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=[workshop.dict() for workshop in result]
+                    output=[workshop.model_dump() for workshop in result]
                 )
             
             elif tool_name == "get_artists":
@@ -122,7 +122,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=[artist.dict() for artist in result]
+                    output=[artist.model_dump() for artist in result]
                 )
             
             elif tool_name == "get_studios":
@@ -132,7 +132,7 @@ class McpWorkshopService:
                     name=tool_name,
                     server_label=cls.SERVER_LABEL,
                     type="mcp_call",
-                    output=[studio.dict() for studio in result]
+                    output=[studio.model_dump() for studio in result]
                 )
             
             else:
@@ -168,7 +168,7 @@ class McpWorkshopService:
                 return McpResourceResponse(
                     resource_type=resource_type,
                     resource_id=resource_id or "all",
-                    data=data.dict(),
+                    data=data.model_dump(),
                     metadata={
                         "server_label": cls.SERVER_LABEL,
                         "server_version": cls.SERVER_VERSION,
@@ -185,7 +185,7 @@ class McpWorkshopService:
                 return McpResourceResponse(
                     resource_type=resource_type,
                     resource_id=resource_id or "all",
-                    data=[artist.dict() for artist in data],
+                    data=[artist.model_dump() for artist in data],
                     metadata={
                         "server_label": cls.SERVER_LABEL,
                         "server_version": cls.SERVER_VERSION,
@@ -201,7 +201,7 @@ class McpWorkshopService:
                 return McpResourceResponse(
                     resource_type=resource_type,
                     resource_id=resource_id or "all",
-                    data=[studio.dict() for studio in data],
+                    data=[studio.model_dump() for studio in data],
                     metadata={
                         "server_label": cls.SERVER_LABEL,
                         "server_version": cls.SERVER_VERSION,
