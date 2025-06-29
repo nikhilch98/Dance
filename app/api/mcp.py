@@ -133,7 +133,7 @@ async def mcp_jsonrpc_endpoint(request: Request):
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps(call_result.output, indent=2) if call_result.output else "No output"
+                        "text": json.dumps(call_result.output.model_dump_json(), indent=2) if call_result.output else "No output"
                     }
                 ]
             }
