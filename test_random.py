@@ -1,10 +1,10 @@
 from openai import OpenAI
 import requests
-
+from app.models.workshops import Artist
 # First, let's test if our MCP server is running locally
 def test_local_server():
     try:
-        response = requests.get("http://localhost:8002/mcp/server-info")
+        response = requests.get("https://nachna.com/mcp/server-info")
         if response.status_code == 200:
             print("✅ Local MCP server is running")
             print(f"Server info: {response.json()}")
@@ -26,7 +26,7 @@ def test_jsonrpc_endpoint():
             "id": 1
         }
         
-        response = requests.post("http://localhost:8002/mcp/", json=payload)
+        response = requests.post("https://nachna.com/mcp/", json=payload)
         if response.status_code == 200:
             data = response.json()
             print("✅ JSON-RPC endpoint working")
@@ -51,7 +51,7 @@ if test_local_server() and test_jsonrpc_endpoint():
 
     # Use the correct server URL - replace with your actual deployment URL
     # For local testing, you might need to expose your server publicly
-    server_url = "http://localhost:8002/mcp"  # Change this to your deployed URL
+    server_url = "https://nachna.com/mcp"  # Change this to your deployed URL
     
     try:
         resp = client.responses.create(
@@ -64,7 +64,7 @@ if test_local_server() and test_jsonrpc_endpoint():
                     "require_approval": "never",
                 },
             ],
-            input="List of workshops available today",
+            input="Get all workshops that are happening today",
         )
 
         print("✅ OpenAI MCP integration successful!")
@@ -79,4 +79,8 @@ if test_local_server() and test_jsonrpc_endpoint():
         
 else:
     print("\n❌ Local server not working. Please start your server first:")
-    print("uvicorn app.main:app --reload")
+    print("source venv/bin/activate")
+    print("uvicorn app.main:app --reload --port 8002")
+    print("")
+    print("💡 Or use the automated public server script:")
+    print("python scripts/start_public_mcp_server.py")

@@ -47,24 +47,34 @@ def install_ngrok_instructions():
 def start_server():
     """Start the FastAPI server"""
     print("🚀 Starting FastAPI MCP server on port 8002...")
+    
+    # Check if we're in a virtual environment or if venv exists
+    venv_python = Path("venv/bin/python")
+    if venv_python.exists():
+        python_cmd = str(venv_python)
+        uvicorn_cmd = str(Path("venv/bin/uvicorn"))
+    else:
+        python_cmd = "python"
+        uvicorn_cmd = "uvicorn"
+    
     try:
         # Start server in background
         server_process = subprocess.Popen([
-            "uvicorn", "app.main:app", 
+            uvicorn_cmd, "app.main:app", 
             "--reload", 
             "--port", "8002",
             "--host", "0.0.0.0"
         ])
         
         # Wait for server to start
-        for i in range(10):
+        for i in range(15):
             try:
                 response = requests.get("http://localhost:8002/mcp/server-info", timeout=2)
                 if response.status_code == 200:
                     print("✅ Server started successfully!")
                     return server_process
             except:
-                print(f"⏳ Waiting for server to start... ({i+1}/10)")
+                print(f"⏳ Waiting for server to start... ({i+1}/15)")
                 time.sleep(2)
         
         print("❌ Server failed to start")
@@ -74,6 +84,7 @@ def start_server():
     except FileNotFoundError:
         print("❌ uvicorn not found. Please activate your virtual environment:")
         print("source venv/bin/activate")
+        print("Or install dependencies: pip install uvicorn fastapi")
         return None
 
 
