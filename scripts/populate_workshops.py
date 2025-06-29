@@ -121,11 +121,11 @@ class EventProcessor:
             return None
         finally:
             #Cleanup screenshot
-            # if os.path.exists(screenshot_path):
-            #     try:
-            #         os.remove(screenshot_path)
-            #     except Exception as e:
-            #         print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
+            if os.path.exists(screenshot_path):
+                try:
+                    os.remove(screenshot_path)
+                except Exception as e:
+                    print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
             pass
 
     def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[EventSummary]:
