@@ -57,7 +57,7 @@ class WorkshopSession(BaseModel):
     studio_id: Optional[str]
     artist: Optional[str]
     artist_id_list: Optional[List[str]] = []
-    payment_link: HttpUrl
+    payment_link: str
     payment_link_type: str
     pricing_info: Optional[str]
     timestamp_epoch: int

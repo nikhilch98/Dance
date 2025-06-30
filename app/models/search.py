@@ -33,7 +33,7 @@ class SearchWorkshopResult(BaseModel):
     date: str
     time: str
     timestamp_epoch: int
-    payment_link: HttpUrl
+    payment_link: str
     payment_link_type: str
     pricing_info: Optional[str] = None
     event_type: Optional[str] = None

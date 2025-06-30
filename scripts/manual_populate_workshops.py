@@ -103,6 +103,9 @@ def main():
         ManualWorkshopEntry(by="Bindu Bolar", song="kehna hi kya", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
                             event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="06:30 PM",
                             end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
+        ManualWorkshopEntry(by="Shreejee Rawat", song="shake it to the max", pricing_info=None,
+                            event_type=EventType.WORKSHOP, day=27, month=7, year=2025, start_time="06:30 PM",
+                            end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["shreejee._"]),
     ], remove_existing_workshops = True)
 
 
