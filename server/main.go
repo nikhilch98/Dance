@@ -3,7 +3,7 @@ package main
 import (
 	"server/handler"
 	"net/http"
-	"fmt"
+	"log"
 	"time"
 	"os"
 	"os/signal"
@@ -12,6 +12,9 @@ import (
 )
 
 func main() {
+	// Setup logging
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	
 	// Load environment variables
 	router := handler.SetupRouter()
 	server := &http.Server{
@@ -21,11 +24,12 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+	
 	// Start server in a goroutine
 	go func() {
-		fmt.Println("Server starting on port 8008")
+		log.Println("Server starting on port 8008")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Println("Server failed to start: %v", err)
+			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
 
@@ -33,15 +37,15 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	fmt.Println("Shutting down server...")
+	log.Println("Shutting down server...")
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Println("Server forced to shutdown: %v", err)
+		log.Printf("Server forced to shutdown: %v", err)
 	}
 
-	fmt.Println("Server exited")
+	log.Println("Server exited")
 }

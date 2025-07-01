@@ -1,0 +1,39 @@
+[Unit]
+Description=Nachna Go Server
+After=network.target
+
+[Service]
+Type=exec
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/workspace/server
+ExecStart=/workspace/server/nachna-server
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=5
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/workspace/server
+
+# Environment
+Environment="GOMAXPROCS=2"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nachna-go-server
+
+[Install]
+WantedBy=multi-user.target
