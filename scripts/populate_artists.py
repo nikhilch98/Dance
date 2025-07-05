@@ -122,6 +122,10 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Niti Nritye (Neha & Esha)", "niti_nritye"),
+        Artist("Dakshita Pradhan", "bellysium"),
+        Artist("Rajiv Gupta", "rajivkrishnagupta"),
+        Artist("Aiswarya Rashmi", "aiswarya_rashmi"),
         Artist("Shreejee Rawat","shreejee._"),
         Artist("Bindu Bolar","bindu.bolar22"),
         Artist("Himanshu Dulani","himanshu_dulani"),

@@ -25,11 +25,12 @@ class ManualWorkshopEntry(BaseModel):
     start_time: str ## "HH:MM AM/PM"
     end_time: str ## "HH:MM AM/PM"
     choreo_insta_link: Optional[str]
-    mobile_number: str
     artist_id_list: List[str]
+    registration_link: Optional[str]
+    registration_link_type: Optional[str]
 
 def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorkshopEntry], remove_existing_workshops: bool):
-    if studio_id not in ["theroyaldancespace", "manifestbytmn", "beinrtribe"]:
+    if studio_id not in ["theroyaldancespace", "manifestbytmn", "beinrtribe","goodmove_studios"]:
         return
     mongo_client = DatabaseManager.get_mongo_client("prod")
     workshop_updates = []
@@ -42,8 +43,8 @@ def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorks
                 workshop.choreo_insta_link = choreo_insta_link_entry["choreo_insta_link"]
 
         doc = {
-            "payment_link": workshop.mobile_number,
-            "payment_link_type": "whatsapp",
+            "payment_link": workshop.registration_link,
+            "payment_link_type": workshop.registration_link_type,
             "studio_id": studio_id,
             "uuid": f"{studio_id}/{workshop.by.lower()}-{workshop.event_type.value.lower()}_{workshop.day}_{workshop.month}_{workshop.year}",
             "event_type": workshop.event_type.value.lower(),
@@ -86,27 +87,43 @@ def main():
     NATYA_SOCIAL_NUMBER = "9892652774"
     HIMANSHU_DULANI_NUMBER = "8296193112"
     RTRIBE_NUMBER = "7338003939"
+    GOOD_MOVE_STUDIOS_NUMBER = "9826000000"
 
-    manual_populate_workshops("theroyaldancespace", [
-        ManualWorkshopEntry(by="Himanshu Dulani", song="jo tere sang", pricing_info="First 15: 1200/-\nLater: 1500/-",
-                            event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="02:00 PM",
-                            end_time="04:00 PM", choreo_insta_link=None, mobile_number=HIMANSHU_DULANI_NUMBER, artist_id_list=["himanshu_dulani"]),
-        ManualWorkshopEntry(by="Kiran J", song="shaky", pricing_info="First 15: 999/-\nNext 15: 1100/-\nOTS: 1300/-",
-                            event_type=EventType.WORKSHOP, day=13, month=7, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, mobile_number=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"]),
+    # manual_populate_workshops("theroyaldancespace", [
+    #     ManualWorkshopEntry(by="Himanshu Dulani", song="jo tere sang", pricing_info="First 15: 1200/-\nLater: 1500/-",
+    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="02:00 PM",
+    #                         end_time="04:00 PM", choreo_insta_link=None, mobile_number=HIMANSHU_DULANI_NUMBER, artist_id_list=["himanshu_dulani"]),
+    #     ManualWorkshopEntry(by="Kiran J", song="shaky", pricing_info="First 15: 999/-\nNext 15: 1100/-\nOTS: 1300/-",
+    #                         event_type=EventType.WORKSHOP, day=13, month=7, year=2025, start_time="07:00 PM",
+    #                         end_time="09:00 PM", choreo_insta_link=None, mobile_number=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"]),
+    # ], remove_existing_workshops = True)
+
+    # manual_populate_workshops("beinrtribe", [
+    #     ManualWorkshopEntry(by="Bindu Bolar", song="chuttamalle", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
+    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="04:00 PM",
+    #                         end_time="06:00 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
+    #     ManualWorkshopEntry(by="Bindu Bolar", song="kehna hi kya", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
+    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="06:30 PM",
+    #                         end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
+    #     ManualWorkshopEntry(by="Shreejee Rawat", song="shake it to the max", pricing_info=None,
+    #                         event_type=EventType.WORKSHOP, day=27, month=7, year=2025, start_time="06:30 PM",
+    #                         end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["shreejee._"]),
+    # ], remove_existing_workshops = True)
+    
+
+    manual_populate_workshops("goodmove_studios", [
+        ManualWorkshopEntry(by="", song="Piya re", pricing_info="Early bird: 599/-\nLater: 699/-",
+                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="02:00 PM",
+                            end_time="04:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qd75qzAYhD7jvq/view", registration_link_type="url", artist_id_list=[]),
+        ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
+                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="03:00 PM",
+                            end_time="05:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
+        ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
+                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="06:00 PM",
+                            end_time="08:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
     ], remove_existing_workshops = True)
 
-    manual_populate_workshops("beinrtribe", [
-        ManualWorkshopEntry(by="Bindu Bolar", song="chuttamalle", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
-                            event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
-        ManualWorkshopEntry(by="Bindu Bolar", song="kehna hi kya", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
-                            event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="06:30 PM",
-                            end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
-        ManualWorkshopEntry(by="Shreejee Rawat", song="shake it to the max", pricing_info=None,
-                            event_type=EventType.WORKSHOP, day=27, month=7, year=2025, start_time="06:30 PM",
-                            end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["shreejee._"]),
-    ], remove_existing_workshops = True)
+
 
 
 

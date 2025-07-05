@@ -139,6 +139,7 @@ def get_studios_list() -> List[Studio]:
         Studio("manifestbytmn", "Manifest", "manifestbytmn"),
         Studio("theroyaldancespace", "The Royals", "theroyaldancespace"),
         Studio("beinrtribe", "RTribe", "beinrtribe"),
+        Studio("goodmove_studios", "Good Move Studios", "goodmove_studios"),
     ]
 
 
