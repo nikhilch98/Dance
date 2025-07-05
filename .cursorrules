@@ -331,6 +331,17 @@ Remember: Consistency is key. When implementing new features or making changes, 
   │   ├── middleware/         # Request processing
   │   ├── api/                # Route handlers
   │   └── main.py             # Application factory
+  ├── server/                 # GOLANG SERVER CODE ONLY
+  │   ├── config/             # Configuration management
+  │   ├── models/             # Go struct models and data types
+  │   ├── database/           # Database operations and connections
+  │   ├── handlers/           # HTTP request handlers
+  │   ├── utils/              # Utility functions
+  │   ├── templates/          # HTML templates
+  │   ├── static/             # Static assets for server
+  │   ├── go.mod              # Go module dependencies
+  │   ├── go.sum              # Dependency checksums
+  │   └── main.go             # Main application entry point
   ├── nachna/                 # FLUTTER CLIENT CODE ONLY
   │   ├── lib/                # Flutter Dart code
   │   ├── android/            # Android platform code
@@ -338,14 +349,16 @@ Remember: Consistency is key. When implementing new features or making changes, 
   │   ├── web/                # Web platform code
   │   ├── pubspec.yaml        # Flutter dependencies
   │   └── ...                 # Other Flutter files
-  ├── utils/                  # Shared utilities
-  ├── static/                 # Static web assets
+  ├── utils/                  # Shared utilities (cross-platform)
+  ├── static/                 # Static web assets (global)
   └── ...                     # Other project files
   ```
-- **CRITICAL**: Server code goes in `app/` folder ONLY
+- **CRITICAL**: FastAPI server code goes in `app/` folder ONLY
+- **CRITICAL**: Golang server code goes in `server/` folder ONLY
 - **CRITICAL**: Flutter code goes in `nachna/` folder ONLY
 - **NEVER mix server and client code in the same directory**
-- **ALWAYS add new server features in appropriate `app/` modules**
+- **ALWAYS add new FastAPI server features in appropriate `app/` modules**
+- **ALWAYS add new Golang server features in appropriate `server/` modules**
 - **ALWAYS add new Flutter features in appropriate `nachna/` directories**
 - **NEVER create monolithic files**
 - **ALWAYS maintain separation of concerns**
@@ -387,14 +400,17 @@ Remember: Consistency is key. When implementing new features or making changes, 
 
 ### RULE #11: CLIENT-SERVER SEPARATION
 - **CRITICAL**: `app/` folder contains FastAPI server code ONLY
+- **CRITICAL**: `server/` folder contains Golang server code ONLY
 - **CRITICAL**: `nachna/` folder contains Flutter client code ONLY
-- **NEVER add Flutter code to the `app/` folder**
-- **NEVER add server code to the `nachna/` folder**
+- **NEVER add Flutter code to the `app/` or `server/` folders**
+- **NEVER add FastAPI server code to the `server/` or `nachna/` folders**
+- **NEVER add Golang server code to the `app/` or `nachna/` folders**
 - **ALWAYS respect the client-server boundary**
-- **Server dependencies**: Add to `requirements.txt` (Python packages only)
+- **FastAPI dependencies**: Add to `requirements.txt` (Python packages only)
+- **Golang dependencies**: Add to `server/go.mod` (Go modules only)
 - **Client dependencies**: Add to `nachna/pubspec.yaml` (Dart packages only)
 - **Shared utilities**: Use `utils/` folder for code used by both client and server
-- **Static assets**: Use `static/` folder for web assets served by the server
+- **Static assets**: Use `static/` folder for global web assets served by any server
 
 ## 🔧 DEVELOPMENT GUIDELINES
 
@@ -452,7 +468,8 @@ Remember: Consistency is key. When implementing new features or making changes, 
 
 ### For New Features:
 1. **Determine if it's server or client feature**:
-   - Server features: API endpoints, database operations, business logic → `app/` folder
+   - FastAPI server features: API endpoints, database operations, business logic → `app/` folder
+   - Golang server features: Workshop management, caching, admin APIs → `server/` folder
    - Client features: UI, user interactions, mobile functionality → `nachna/` folder
 2. **Extend** existing architecture in the appropriate folder
 3. **Add** new modules/endpoints in correct location
@@ -551,9 +568,11 @@ Before ANY code change:
 - [ ] Will this affect other developers?
 - [ ] Will this require migration scripts?
 - [ ] Will this break existing integrations?
-- [ ] Am I putting server code in the `app/` folder?
+- [ ] Am I putting FastAPI server code in the `app/` folder?
+- [ ] Am I putting Golang server code in the `server/` folder?
 - [ ] Am I putting Flutter code in the `nachna/` folder?
 - [ ] Am I respecting the client-server separation?
+- [ ] Am I using the correct dependency management for each technology?
 
 ## 🎯 SUCCESS CRITERIA
 
@@ -570,12 +589,13 @@ A change is successful ONLY if:
 ## 📚 REFERENCE IMPLEMENTATION
 
 ### Current Working Architecture:
-- **FastAPI**: Modular route structure
-- **MongoDB**: Database operations via utils
+- **FastAPI (app/ folder)**: Modular route structure, authentication, notifications
+- **Golang (server/ folder)**: Workshop management, caching, admin APIs, fasthttp-based
+- **MongoDB**: Database operations via utils (shared across servers)
 - **Authentication**: JWT-based with decorators
 - **Notifications**: APNs integration with watchers
 - **Caching**: Redis-like caching system
-- **Admin**: Separate admin endpoints
+- **Admin**: Separate admin endpoints (both FastAPI and Golang)
 - **Middleware**: Logging, CORS, version validation
 
 ### DO NOT MODIFY:
@@ -595,5 +615,63 @@ A change is successful ONLY if:
 - New services for new functionality
 - New middleware for new requirements
 - New utilities for new needs
+
+## 🐹 GOLANG SERVER SPECIFICATIONS
+
+### Server Architecture (server/ folder):
+- **Technology Stack**: Go 1.21+, fasthttp, MongoDB integration
+- **Purpose**: Workshop management, artist/studio APIs, caching, admin functionality
+- **Entry Point**: `server/main.go`
+- **Dependencies**: Managed via `server/go.mod` and `server/go.sum`
+
+### Key Golang Server Features:
+- **Workshop Management**: Complete CRUD operations for workshops
+- **Artist & Studio APIs**: Profile management and data serving
+- **Cache System**: Optimized performance with caching layer
+- **Admin Panel**: Content management and administrative functions
+- **Image Proxy**: External image serving and optimization
+- **Fast HTTP**: High-performance HTTP server using valyala/fasthttp
+
+### Golang Server Endpoints:
+- **Public API**: Workshop discovery, artist profiles, studio schedules
+- **Admin API**: Content management, data manipulation
+- **Proxy Services**: Image proxy, external resource handling
+
+### Development Guidelines for Golang Server:
+1. **Go Module Management**: Always use `go mod tidy` after adding dependencies
+2. **Error Handling**: Use Go's standard error handling patterns
+3. **Structure Patterns**: Follow Go project layout standards
+4. **Database Integration**: Use existing MongoDB connection patterns
+5. **HTTP Handlers**: Implement fasthttp.RequestHandler interface
+6. **Configuration**: Use environment-based configuration management
+7. **Logging**: Implement consistent logging across all handlers
+8. **Testing**: Write unit tests for all new handlers and functions
+
+### Golang Server File Structure:
+```
+server/
+├── config/           # Configuration and environment management
+├── database/         # MongoDB operations and connection handling
+├── handlers/         # HTTP request handlers (fasthttp-based)
+├── models/           # Go structs for data modeling
+├── templates/        # HTML templates for admin interface
+├── static/          # Static assets served by Golang server
+├── utils/           # Utility functions and helpers
+├── go.mod           # Go module definition
+├── go.sum           # Dependency checksums
+└── main.go          # Application entry point
+```
+
+### Running the Golang Server:
+```bash
+# Development mode
+./dance_server --dev
+
+# Production mode  
+./dance_server --prod
+
+# Build the server
+go build -o dance_server
+```
 
 Remember: **WORKING CODE IS SACRED** - Preserve it at all costs! 
