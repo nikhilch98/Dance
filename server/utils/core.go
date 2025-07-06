@@ -76,26 +76,24 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaException {
 	// ---------- 1. Launch Chromium with the same flags you showed ----------
 	launch := launcher.New().
-		// Use Lambda layer binary or system Chrome
 		Bin("/opt/headless-chromium").
 		Headless(true).
-		// Optional proxy: honour env var if you set one
-		Proxy(os.Getenv("HTTP_PROXY")).
+		Proxy(os.Getenv("HTTP_PROXY")). // safe to leave empty
 		Set("--single-process").
-		Set("--v=99").
+		Set("--v", "99").
 		Set("--enable-webgl").
 		Set("--disable-dev-shm-usage").
 		Set("--ignore-gpu-blacklist").
 		Set("--ignore-certificate-errors").
 		Set("--allow-running-insecure-content").
 		Set("--disable-extensions").
-		Set("--user-data-dir=/tmp/user-data").
-		Set("--data-path=/tmp/data-path").
-		Set("--homedir=/tmp").
-		Set("--disk-cache-dir=/tmp/cache-dir").
+		Set("--user-data-dir", "/tmp/user-data").
+		Set("--data-path", "/tmp/data-path").
+		Set("--homedir", "/tmp").
+		Set("--disk-cache-dir", "/tmp/cache-dir").
 		Set("--no-sandbox").
-		Set("--use-gl=osmesa").
-		Set("--window-size=400,650") // a tad wider than 312 px
+		Set("--use-gl", "osmesa").
+		Set("--window-size", "400,650")
 	wsURL, err := launch.Launch()
 	if err != nil {
 		return &core.NachnaException{
