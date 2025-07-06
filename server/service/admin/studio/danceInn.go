@@ -7,6 +7,7 @@ import (
 	"nachna/utils"
 	coreModels "nachna/models/core"
 	"github.com/PuerkitoBio/goquery"
+	"nachna/service/ai"
 )
 
 var lock = &sync.Mutex{}
@@ -57,8 +58,8 @@ func (i *DanceInnStudioImpl) FetchExistingWorkshops() ([]coreModels.Workshop, *c
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Links: ", links)
 	for _, link := range links {
+		// Process screenshot
 		screenshotPath := BuildScreenshotPath(i.studioId, link)
 		screenshotErr := utils.GetScreenshotGivenUrl(link, screenshotPath)
 		if screenshotErr != nil {
@@ -66,6 +67,10 @@ func (i *DanceInnStudioImpl) FetchExistingWorkshops() ([]coreModels.Workshop, *c
 		} else {
 			fmt.Println("Successfully scraped screenshot: ", screenshotPath)
 		}
+		// Analyze with ai
+		data, err := ai.OpenAIAnalyzer{}.GetInstance().Analyze(screenshotPath, nil, "gpt-4o-2024-11-20")
+		fmt.Println(data, err)
+
 	}
 	return []coreModels.Workshop{}, nil
 }
