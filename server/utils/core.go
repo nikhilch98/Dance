@@ -103,6 +103,7 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 		}
 	}
 	fmt.Println("jhgmjnhgjhgbfvnhbgfv")
+	fmt.Println("Connecting to:", wsURL)
 	// ---------- 2. Connect, ignore cert errors, emulate device ----------
 	browser := rod.New().ControlURL(wsURL).MustConnect()
 	defer browser.MustClose()
