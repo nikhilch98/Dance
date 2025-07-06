@@ -2,7 +2,9 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"nachna/constants"
+	"nachna/core"
 	"nachna/models/response"
 	"encoding/base64"
 	"encoding/json"
@@ -12,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)	
+)
 
 const (
 	TimeOut = 180 * time.Second
@@ -170,4 +172,15 @@ func HttpRequests(requestType string, baseUrl string, path string, params map[st
 	} else {
 		return []byte{}, statusCode, err
 	}
+}
+
+func FetchURL(url string) (*http.Response, *core.NachnaException) {
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, &core.NachnaException{
+			StatusCode:   500,
+			ErrorMessage: fmt.Sprintf("Error in fetching URL - %s", url),
+		}
+	}
+	return resp, nil
 }

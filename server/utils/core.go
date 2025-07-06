@@ -4,6 +4,7 @@ import (
 	"nachna/models/response"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -46,4 +47,20 @@ func GetKeysFromSet(s map[string]bool) []string {
 func Stringify(s interface{}) string {
 	val, _ := json.Marshal(s)
 	return string(val)
+}
+
+func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
+	seen := make(map[string]bool)
+	var filtered []string
+
+	for _, arrItem := range arr {
+		lowerArritem := strings.ToLower(arrItem)
+		if strings.HasPrefix(lowerArritem, startsWith) {
+			if _, exists := seen[lowerArritem]; !exists {
+				seen[lowerArritem] = true
+				filtered = append(filtered, lowerArritem)
+			}
+		}
+	}
+	return filtered
 }
