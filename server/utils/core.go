@@ -79,22 +79,8 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 	launch := launcher.New().
 		Bin("/usr/bin/chromium-browser").
 		Headless(true).
-		Proxy(os.Getenv("HTTP_PROXY")). // safe to leave empty
-		Set("--single-process").
-		Set("--v", "99").
-		Set("--enable-webgl").
-		Set("--disable-dev-shm-usage").
-		Set("--ignore-gpu-blacklist").
-		Set("--ignore-certificate-errors").
-		Set("--allow-running-insecure-content").
-		Set("--disable-extensions").
-		Set("--user-data-dir", "/tmp/user-data").
-		Set("--data-path", "/tmp/data-path").
-		Set("--homedir", "/tmp").
-		Set("--disk-cache-dir", "/tmp/cache-dir").
-		Set("--no-sandbox").
-		Set("--use-gl", "osmesa").
-		Set("--window-size", "400,650")
+		NoSandbox(true). // helper wrapper for --no-sandbox
+		RemoteDebuggingPort(9222)
 	wsURL, err := launch.Launch()
 	if err != nil {
 		return &core.NachnaException{
