@@ -75,6 +75,7 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 
 func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaException {
 	// ---------- 1. Launch Chromium with the same flags you showed ----------
+	fmt.Println("GetScreenshotGivenUrl", targetURL, screenshotPath)
 	launch := launcher.New().
 		Bin("/usr/bin/chromium-browser").
 		Headless(true).
@@ -101,7 +102,7 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 			ErrorMessage: fmt.Sprintf("launch chrome: %v", err),
 		}
 	}
-
+	fmt.Println("jhgmjnhgjhgbfvnhbgfv")
 	// ---------- 2. Connect, ignore cert errors, emulate device ----------
 	browser := rod.New().ControlURL(wsURL).MustConnect()
 	defer browser.MustClose()
@@ -114,7 +115,7 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 			ErrorMessage: fmt.Sprintf("new page: %v", err),
 		}
 	}
-
+	fmt.Println("rgfedwwfeg")
 	// ---------- 3. Navigate & wait ----------
 	if err = page.Navigate(targetURL); err != nil {
 		return &core.NachnaException{
