@@ -122,6 +122,7 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 			ErrorMessage: fmt.Sprintf("navigate %s: %v", targetURL, err),
 		}
 	}
+	fmt.Println("gfegdwsqadfgbfgdws")
 	page.WaitLoad()
 
 	img, err := page.Screenshot(true, &proto.PageCaptureScreenshot{})
