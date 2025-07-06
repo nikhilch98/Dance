@@ -11,7 +11,9 @@ import (
 	"strings"
 	"time"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
+	rodutils "github.com/go-rod/rod/lib/utils"
 )
 
 func ContainsString(s []string, e string) bool {
@@ -71,28 +73,55 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 	return filtered
 }
 
-func GetScreenshotGivenUrl(url string, screenshotPath string) *core.NachnaException {
-	browser := rod.New().Timeout(30 * time.Second)
-	if err := browser.Connect(); err != nil {
+func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaException {
+	// ---------- 1. Launch Chromium with the same flags you showed ----------
+	launch := launcher.New().
+		// Use Lambda layer binary or system Chrome
+		Bin("/opt/headless-chromium").
+		Headless(true).
+		// Optional proxy: honour env var if you set one
+		Proxy(os.Getenv("HTTP_PROXY")).
+		Set("--single-process").
+		Set("--v=99").
+		Set("--enable-webgl").
+		Set("--disable-dev-shm-usage").
+		Set("--ignore-gpu-blacklist").
+		Set("--ignore-certificate-errors").
+		Set("--allow-running-insecure-content").
+		Set("--disable-extensions").
+		Set("--user-data-dir=/tmp/user-data").
+		Set("--data-path=/tmp/data-path").
+		Set("--homedir=/tmp").
+		Set("--disk-cache-dir=/tmp/cache-dir").
+		Set("--no-sandbox").
+		Set("--use-gl=osmesa").
+		Set("--window-size=400,650") // a tad wider than 312 px
+	wsURL, err := launch.Launch()
+	if err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
-			ErrorMessage: fmt.Sprintf("rod connect error: %v", err),
+			ErrorMessage: fmt.Sprintf("launch chrome: %v", err),
 		}
 	}
-	defer browser.Close()
+
+	// ---------- 2. Connect, ignore cert errors, emulate device ----------
+	browser := rod.New().ControlURL(wsURL).MustConnect()
+	defer browser.MustClose()
+	browser.MustIgnoreCertErrors(true)
 
 	page, err := browser.Page(proto.TargetCreateTarget{URL: "about:blank"})
 	if err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
-			ErrorMessage: fmt.Sprintf("new page error: %v", err),
+			ErrorMessage: fmt.Sprintf("new page: %v", err),
 		}
 	}
 
-	if err = page.Navigate(url); err != nil {
+	// ---------- 3. Navigate & wait ----------
+	if err = page.Navigate(targetURL); err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
-			ErrorMessage: fmt.Sprintf("navigate error (%s): %v", url, err),
+			ErrorMessage: fmt.Sprintf("navigate %s: %v", targetURL, err),
 		}
 	}
 	page.WaitLoad()
@@ -101,23 +130,23 @@ func GetScreenshotGivenUrl(url string, screenshotPath string) *core.NachnaExcept
 	if err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
-			ErrorMessage: fmt.Sprintf("screenshot error (%s): %v", url, err),
+			ErrorMessage: fmt.Sprintf("screenshot error (%s): %v", targetURL, err),
 		}
 	}
 
+	// ---------- 5. Write file (ensure parent dir exists) ----------
 	if err := os.MkdirAll(filepath.Dir(screenshotPath), 0o755); err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
 			ErrorMessage: fmt.Sprintf("mkdir error (%s): %v", screenshotPath, err),
 		}
 	}
-
-	if err := os.WriteFile(screenshotPath, img, 0o644); err != nil {
+	if err := rodutils.OutputFile(screenshotPath, img); err != nil {
 		return &core.NachnaException{
 			StatusCode:   500,
 			ErrorMessage: fmt.Sprintf("write file error (%s): %v", screenshotPath, err),
 		}
 	}
 
-	return nil
+	return nil // 👍 success
 }
