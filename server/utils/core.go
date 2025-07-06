@@ -76,7 +76,7 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaException {
 	// ---------- 1. Launch Chromium with the same flags you showed ----------
 	launch := launcher.New().
-		Bin("/opt/headless-chromium").
+		Bin("/usr/bin/chromium-browser").
 		Headless(true).
 		Proxy(os.Getenv("HTTP_PROXY")). // safe to leave empty
 		Set("--single-process").
