@@ -58,6 +58,15 @@ func (i *DanceInnStudioImpl) FetchExistingWorkshops() ([]coreModels.Workshop, *c
 		return nil, err
 	}
 	fmt.Println("Links: ", links)
+	for _, link := range links {
+		screenshotPath := BuildScreenshotPath(i.studioId, link)
+		screenshotErr := utils.GetScreenshotGivenUrl(link, screenshotPath)
+		if screenshotErr != nil {
+			fmt.Println(screenshotErr)
+		} else {
+			fmt.Println("Successfully scraped screenshot: ", screenshotPath)
+		}
+	}
 	return []coreModels.Workshop{}, nil
 }
 
