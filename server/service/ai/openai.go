@@ -71,7 +71,7 @@ func (a *OpenAIAnalyzer) Analyze(screenshotPath string, artistsDataList []map[st
 		}
 	}
 
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", "https://generativelanguage.googleapis.com/v1beta/openai/", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, &core.NachnaException{
 			LogMessage:   err.Error(),
@@ -79,7 +79,7 @@ func (a *OpenAIAnalyzer) Analyze(screenshotPath string, artistsDataList []map[st
 			ErrorMessage: "Failed to create HTTP request",
 		}
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("OPENAI_API_KEY"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("GEMINI_API_KEY"))
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
