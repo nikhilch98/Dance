@@ -68,7 +68,7 @@ func (i *DanceInnStudioImpl) FetchExistingWorkshops() ([]coreModels.Workshop, *c
 			fmt.Println("Successfully scraped screenshot: ", screenshotPath)
 		}
 		// Analyze with ai
-		data, err := ai.OpenAIAnalyzer{}.GetInstance().Analyze(screenshotPath, nil, "gpt-4o-2024-11-20")
+		data, err := ai.OpenAIAnalyzer{}.GetInstance().Analyze(screenshotPath, nil, "gemini-2.5-flash-preview-04-17")
 		fmt.Println(data, err)
 
 	}
