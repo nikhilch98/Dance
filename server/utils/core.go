@@ -1,19 +1,21 @@
 package utils
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"nachna/core"
 	"nachna/models/response"
-	"encoding/base64"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 	rodutils "github.com/go-rod/rod/lib/utils"
+	"github.com/invopop/jsonschema"
 )
 
 func ContainsString(s []string, e string) bool {
@@ -131,4 +133,29 @@ func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaExcepti
 	}
 
 	return nil // 👍 success
+}
+
+func GenerateSchema[T any]() interface{} {
+	// Structured Outputs uses a subset of JSON schema
+	// These flags are necessary to comply with the subset
+	reflector := jsonschema.Reflector{
+		AllowAdditionalProperties: false,
+		DoNotReference:            true,
+	}
+	var v T
+	schema := reflector.Reflect(v)
+	return schema
+}
+
+func StringPtrSliceToStringSlice(s []*string) []string {
+	if s == nil {
+		return []string{}
+	}
+	result := make([]string, len(s))
+	for i, item := range s {
+		if item != nil {
+			result[i] = *item
+		}
+	}
+	return result
 }

@@ -1,9 +1,9 @@
 package core
 
 type TimeDetail struct {
-	Day       *string `json:"day"`
-	Month     *string `json:"month"`
-	Year      *string `json:"year"`
+	Day       *int64  `json:"day"`
+	Month     *int64  `json:"month"`
+	Year      *int64  `json:"year"`
 	StartTime *string `json:"start_time"`
 	EndTime   *string `json:"end_time"`
 }

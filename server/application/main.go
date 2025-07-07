@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"nachna/api"
 	"nachna/config"
-	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {

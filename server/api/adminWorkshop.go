@@ -3,10 +3,10 @@ package api
 import (
 	"nachna/core"
 	"nachna/models/request"
-	"nachna/utils"
-	"net/http"
 	"nachna/service/admin"
 	"nachna/service/admin/studio"
+	"nachna/utils"
+	"net/http"
 )
 
 func GetAdminService() admin.AdminService {
@@ -24,8 +24,7 @@ func RefreshWorkshops(r *http.Request) (any, *core.NachnaException) {
 	}
 	defer r.Body.Close()
 	adminService := GetAdminService()
-	adminService.RefreshWorkshops(adminWorkshopRequest)
-	return nil, nil
+	return adminService.RefreshWorkshops(adminWorkshopRequest)
 }
 
 func init() {

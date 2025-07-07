@@ -44,15 +44,19 @@ func (a *AdminStudioServiceImpl) RefreshWorkshopsGivenStudioId(studioId string) 
 	if err != nil {
 		return nil, err
 	}
-	workshops, err := baseStudio.FetchExistingWorkshops()
+	fmt.Printf("Fetching workshops from studio %s\n", studioId)
+	workshops, ignoredLinks, oldLinks, missingArtists, err := baseStudio.FetchExistingWorkshops()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Fetched %s workshops from studio %s", len(workshops), studioId)
+	fmt.Printf("Fetched %d workshops from studio %s\n", len(workshops), studioId)
+	fmt.Printf("Ignored %d links from studio %s\n", len(ignoredLinks), studioId)
+	fmt.Printf("Old %d links from studio %s\n", len(oldLinks), studioId)
+	fmt.Printf("Missing %d artists from studio %s\n", len(missingArtists), studioId)
 	return nil, nil
 }
 
-//Internal Methods
+// Internal Methods
 func (a *AdminStudioServiceImpl) fetchStudioProcessorGivenStudioId(studioId string) (BaseStudio, *core.NachnaException) {
 	if studioId == "dance.inn.bangalore" {
 		return a.danceInnStudioImpl, nil

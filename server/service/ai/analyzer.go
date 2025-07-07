@@ -6,8 +6,8 @@ import (
 
 type AIAnalyzer interface {
 	GetInstance() AIAnalyzer
-	generateSystemPrompt(artistsDataList []map[string]string, currentDateTime string) string
-	Analyze(screenshotPath string, artistsDataList []map[string]string, modelVersion string) (*EventSummary, *core.NachnaException)
+	generateSystemPrompt(artistsDataList []map[string]string, currentDateTime string) (string, *core.NachnaException)
+	Analyze(screenshotPath string, artistsDataList []map[string]string) (*EventSummary, *core.NachnaException)
 }
 
 type TimeDetails struct {

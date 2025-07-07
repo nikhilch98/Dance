@@ -10,7 +10,7 @@ import (
 
 type BaseStudio interface {
 	GetInstance(startUrl string, studioId string, regexMatchLink string, maxDepth int64, maxWorkers int64) BaseStudio
-	FetchExistingWorkshops() ([]coreModels.Workshop, *core.NachnaException)
+	FetchExistingWorkshops() ([]coreModels.Workshop, []string, []string, []string, *core.NachnaException)
 	scrapeLinks() ([]string, *core.NachnaException)
 }
 

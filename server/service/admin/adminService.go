@@ -34,6 +34,5 @@ func (AdminServiceImpl) GetInstance(adminStudioServiceImpl studio.AdminStudioSer
 }
 
 func (a *AdminServiceImpl) RefreshWorkshops(request *request.AdminWorkshopRequest) (any, *core.NachnaException) {
-	a.adminStudioService.RefreshWorkshopsGivenStudioId(request.StudioId)
-	return nil, nil
+	return a.adminStudioService.RefreshWorkshopsGivenStudioId(request.StudioId)
 }
