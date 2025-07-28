@@ -1,7 +1,7 @@
 {
     "env": "prod",
     "http_port": 8008,
-    "studios": [{
+    "web_based_studios": [{
           "url": "https://www.yoactiv.com/eventplugin.aspx?Apikey=ZL0C5CwgOJzo38yELwSW%2Fg%3D%3D",
           "name": "dance_n_addiction",
           "base_url": "https://www.yoactiv.com/Event/",

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"nachna/core"
+	coreModels "nachna/models/core"
 )
 
 type AIAnalyzer interface {
@@ -27,7 +28,7 @@ type EventDetails struct {
 }
 
 type EventSummary struct {
-	IsValid      bool           `json:"is_valid"`
-	EventType    string         `json:"event_type"`
-	EventDetails []EventDetails `json:"event_details"`
+	IsValid      bool                     `json:"is_valid"`
+	EventType    coreModels.EventTypeEnum `json:"event_type"`
+	EventDetails []EventDetails           `json:"event_details"`
 }

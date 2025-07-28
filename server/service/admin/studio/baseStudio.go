@@ -9,9 +9,9 @@ import (
 )
 
 type BaseStudio interface {
-	GetInstance(startUrl string, studioId string, regexMatchLink string, maxDepth int64, maxWorkers int64) BaseStudio
-	FetchExistingWorkshops() ([]coreModels.Workshop, []string, []string, []string, *core.NachnaException)
-	scrapeLinks() ([]string, *core.NachnaException)
+	GetInstance() BaseStudio
+	FetchExistingWorkshops(studioId string, startUrl string, regexMatchLink string) ([]coreModels.Workshop, []string, []string, []string, *core.NachnaException)
+	scrapeLinks(startUrl string, regexMatchLink string) ([]string, *core.NachnaException)
 }
 
 func BuildScreenshotPath(studioID, link string) string {

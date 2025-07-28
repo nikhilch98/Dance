@@ -3,8 +3,8 @@ package request
 import (
 	"encoding/json"
 	"io"
-	"strings"
 	"nachna/core"
+	"strings"
 )
 
 type AdminWorkshopRequest struct {

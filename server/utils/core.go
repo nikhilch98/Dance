@@ -64,11 +64,10 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 	var filtered []string
 
 	for _, arrItem := range arr {
-		lowerArritem := strings.ToLower(arrItem)
-		if strings.HasPrefix(lowerArritem, startsWith) {
-			if _, exists := seen[lowerArritem]; !exists {
-				seen[lowerArritem] = true
-				filtered = append(filtered, lowerArritem)
+		if strings.HasPrefix(arrItem, startsWith) {
+			if _, exists := seen[arrItem]; !exists {
+				seen[arrItem] = true
+				filtered = append(filtered, arrItem)
 			}
 		}
 	}
@@ -78,7 +77,6 @@ func GetStringSetWithRegexFilters(arr []string, startsWith string) []string {
 func GetScreenshotGivenUrl(targetURL, screenshotPath string) *core.NachnaException {
 	// ---------- 1. Launch Chromium with the same flags you showed ----------
 	launch := launcher.New().
-		Bin("/usr/bin/chromium-browser").
 		Headless(true).
 		NoSandbox(true). // helper wrapper for --no-sandbox
 		RemoteDebuggingPort(9222)

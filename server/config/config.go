@@ -8,16 +8,16 @@ import (
 )
 
 type Configuration struct {
-	Env              string `json:"env"`
-	HttpPort         int    `json:"http_port"`
-	studios []struct {
-		Url                string `json:"url"`
-		Name               string `json:"name"`
-		BaseUrl                string `json:"base_url"`
-		MaxDepth               int    `json:"max_depth"`
-	} `json:"studios"`
+	Env             string `json:"env"`
+	HttpPort        int    `json:"http_port"`
+	WebBasedStudios []struct {
+		Url      string `json:"url"`
+		Name     string `json:"name"`
+		BaseUrl  string `json:"base_url"`
+		MaxDepth int    `json:"max_depth"`
+	} `json:"web_based_studios"`
 	ApiContextPath string `json:"api_context_path"`
-	MongoDB struct {
+	MongoDB        struct {
 		Uri string `json:"uri"`
 	} `json:"mongodb"`
 	NewRelic struct {

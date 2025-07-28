@@ -10,6 +10,7 @@ import (
 type AdminService interface {
 	GetInstance(adminStudioServiceImpl studio.AdminStudioService) AdminService
 	RefreshWorkshops(request *request.AdminWorkshopRequest) (any, *core.NachnaException)
+	RefreshStudios(request *request.AdminStudioRequest) (any, *core.NachnaException)
 }
 
 var lock = &sync.Mutex{}
@@ -35,4 +36,8 @@ func (AdminServiceImpl) GetInstance(adminStudioServiceImpl studio.AdminStudioSer
 
 func (a *AdminServiceImpl) RefreshWorkshops(request *request.AdminWorkshopRequest) (any, *core.NachnaException) {
 	return a.adminStudioService.RefreshWorkshopsGivenStudioId(request.StudioId)
+}
+
+func (a *AdminServiceImpl) RefreshStudios(request *request.AdminStudioRequest) (any, *core.NachnaException) {
+	return a.adminStudioService.RefreshStudios()
 }

@@ -20,6 +20,54 @@ type MongoDBDatabaseImpl struct {
 	database *mongo.Database
 }
 
+// InsertWorkshops implements Database.
+func (m *MongoDBDatabaseImpl) InsertWorkshops(ctx context.Context, workshops []mongodb.Workshop) *core.NachnaException {
+	if m.database == nil {
+		return &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+	// Convert []*mongodb.Workshop to []interface{}
+	docs := make([]interface{}, len(workshops))
+	for i, workshop := range workshops {
+		docs[i] = workshop
+	}
+	_, err := m.database.Collection("workshops_v3").InsertMany(ctx, docs)
+	if err != nil {
+		return &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to insert workshops",
+		}
+	}
+	return nil
+}
+
+// RemoveWorkshopsGivenStudioId implements Database.
+func (m *MongoDBDatabaseImpl) RemoveWorkshopsGivenStudioId(ctx context.Context, studioId string) *core.NachnaException {
+	if m.database == nil {
+		return &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	// Remove all workshops with the given studioId
+	filter := bson.M{"studio_id": studioId}
+	_, err := m.database.Collection("workshops_v3").DeleteMany(ctx, filter)
+	if err != nil {
+		return &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to remove workshops for studio",
+		}
+	}
+	return nil
+}
+
 // GetChoreoLinkGivenArtistIdListAndSong implements Database.
 func (m *MongoDBDatabaseImpl) GetChoreoLinkGivenArtistIdListAndSong(ctx context.Context, artistIdList []string, song string) (*string, *core.NachnaException) {
 	if m.database == nil {

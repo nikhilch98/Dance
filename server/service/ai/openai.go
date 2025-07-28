@@ -36,7 +36,7 @@ func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]strin
 		"Artists Data for additional context : " + artistsStr + "\n\n" +
 		"Current Date for reference : " + currentDateTime + "\n\n" +
 		"1. Determine if the event is a dance workshop, intensive, or regulars class based in Bangalore.\n" +
-		"2. If it is NOT a valid Bangalore-based dance event OR if the event is in the past based on the current date, set `is_valid` to `false`, " +
+		"2. If it is NOT a valid Bangalore-based dance event OR if the event is in the past (the definition of past is if the day is before the current date. Lets take an example : If current date is 15th July 2025 05:00PM, Case 1: if Event is on 15th july 2025 04:00PM, then it is considered valid since the event is on the same day and not in the past, Case 2: if Event is on 16th july 2025 04:00PM, then it is valid since the event is in the future, Case 3: if Event is on 14th july 2025 04:00PM, then it is invalid since the event is in the past), set `is_valid` to `false`, " +
 		"   `event_type` to null, and provide an empty list for `event_details`.\n" +
 		"3. If it IS a valid Bangalore-based dance event, set `is_valid` to `true`, determine the `event_type` ('workshop', 'intensive', or 'regulars'), and " +
 		"   return a list of one or more event objects under `event_details` with the " +
