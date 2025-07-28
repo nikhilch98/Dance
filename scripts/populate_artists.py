@@ -239,6 +239,29 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def sort_artists_by_workshops(artists: list, env: str) -> list:
+    """Sort artists based on whether they have existing workshops.
+
+    Artists with workshops will be placed before artists without workshops.
+
+    Args:
+        artists: List of Artist objects.
+        env: Environment ('prod' or 'dev') to connect to the database.
+
+    Returns:
+        Sorted list of Artist objects.
+    """
+    try:
+        client = DatabaseManager.get_mongo_client(env)
+        workshops_collection = client["discovery"]["workshops_v2"]
+
+        def has_workshops(artist):
+            return workshops_collection.count_documents({"artist_id_list": artist.instagram_id}) > 0
+
+        return sorted(artists, key=lambda artist: (not has_workshops(artist), artist.name))
+    except Exception as e:
+        print(f"Error sorting artists: {e}")
+        return artists  # Return original list in case of error
 
 def main():
     """Main execution function."""
@@ -249,6 +272,7 @@ def main():
     env = args.env
     manager = ArtistManager(env)
     artists = get_artists_list()
+    artists = sort_artists_by_workshops(artists, env)
 
     with tqdm(artists, desc="Updating Artists", leave=False) as pbar:
         for artist in pbar:
