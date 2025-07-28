@@ -341,7 +341,7 @@ class DateTimeFormatter:
         """
         start_time = time_details["start_time"]
         end_time = time_details["end_time"]
-        if start_time is None:
+        if start_time is None or start_time == "":
             return "TBA"
 
         start_time, start_format = start_time.split(" ")
@@ -353,7 +353,7 @@ class DateTimeFormatter:
             else start_time_hour
         )
 
-        if end_time is None:
+        if end_time is None or end_time == "":
             return f"{start_time_str} {start_format}"
 
         end_time, end_format = end_time.split(" ")
