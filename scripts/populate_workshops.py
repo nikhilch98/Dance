@@ -133,7 +133,7 @@ class EventProcessor:
         if self.cfg.ai_model == "openai":
             return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-4o-2024-11-20")
         elif self.cfg.ai_model == "gemini":
-            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gemini-2.5-flash-preview-04-17")
+            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gemini-2.5-flash")
         else:
             raise ValueError(f"Unknown ai_model: {self.ai_model}")
 
