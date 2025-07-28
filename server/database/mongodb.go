@@ -34,7 +34,7 @@ func (m *MongoDBDatabaseImpl) InsertWorkshops(ctx context.Context, workshops []m
 	for i, workshop := range workshops {
 		docs[i] = workshop
 	}
-	_, err := m.database.Collection("workshops_v3").InsertMany(ctx, docs)
+	_, err := m.database.Collection("workshops_v2").InsertMany(ctx, docs)
 	if err != nil {
 		return &core.NachnaException{
 			LogMessage:   err.Error(),
@@ -57,7 +57,7 @@ func (m *MongoDBDatabaseImpl) RemoveWorkshopsGivenStudioId(ctx context.Context, 
 
 	// Remove all workshops with the given studioId
 	filter := bson.M{"studio_id": studioId}
-	_, err := m.database.Collection("workshops_v3").DeleteMany(ctx, filter)
+	_, err := m.database.Collection("workshops_v2").DeleteMany(ctx, filter)
 	if err != nil {
 		return &core.NachnaException{
 			LogMessage:   err.Error(),
