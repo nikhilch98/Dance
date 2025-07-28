@@ -122,6 +122,17 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Sanket Panchal", "sanket_panchal25"),
+        Artist("Pery Sheetal", "perysheetal17"),
+        Artist("Adib Khan", "adibkhanofficial"),
+        Artist("Karthik Priyadarshan", "karthikpriyadarshan_"),
+        Artist("Nivedita Sharma", "niveditaasharma"),
+        Artist("Parinita Raghavendra", "parinitaraghavendra"),
+        Artist("Parangom Chowdhury", "parangomchowdhury"),
+        Artist("Poonam Dhillon", "_dhillonp_"),
+        Artist("Ananya Gupta", "annu_2607"),
+        Artist("Nidhi Kedia", "nidhi_nk"),
+        Artist("Bhangra by Navdeep", "bhangra.by_navdeep"),
         Artist("Niti Nritye (Neha & Esha)", "niti_nritye"),
         Artist("Dakshita Pradhan", "bellysium"),
         Artist("Rajiv Gupta", "rajivkrishnagupta"),
