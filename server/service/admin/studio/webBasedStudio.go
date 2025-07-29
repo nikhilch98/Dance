@@ -143,7 +143,7 @@ func (i *WebBasedStudioImpl) FetchExistingWorkshops(studioId string, startUrl st
 			})
 		}
 		// Analyze with ai
-		data, err := ai.OpenAIAnalyzer{}.GetInstance().Analyze(screenshotPath, artistsData)
+		data, err := ai.OpenAIAnalyzer{}.GetInstance().Analyze(screenshotPath, studioId, artistsData)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -168,13 +168,24 @@ func (i *WebBasedStudioImpl) FetchExistingWorkshops(studioId string, startUrl st
 		timeDetails := []coreModels.TimeDetail{}
 
 		for _, event := range data.EventDetails {
-			for _, timeDetail := range event.TimeDetails {
+			// Deduplicate timeDetails by (day, month, year, startTime, endTime)
+			seen := make(map[string]struct{})
+			for _, t := range event.TimeDetails {
+				key := fmt.Sprintf("%v-%v-%v-%v-%v",
+					*t.Day, *t.Month, *t.Year,
+					*t.StartTime, *t.EndTime,
+				)
+				fmt.Println(key, seen)
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				seen[key] = struct{}{}
 				timeDetails = append(timeDetails, coreModels.TimeDetail{
-					Day:       timeDetail.Day,
-					Month:     timeDetail.Month,
-					Year:      timeDetail.Year,
-					StartTime: timeDetail.StartTime,
-					EndTime:   timeDetail.EndTime,
+					Day:       t.Day,
+					Month:     t.Month,
+					Year:      t.Year,
+					StartTime: t.StartTime,
+					EndTime:   t.EndTime,
 				})
 			}
 			var choreoInstaLink *string
@@ -221,7 +232,7 @@ func (i *WebBasedStudioImpl) FetchExistingWorkshops(studioId string, startUrl st
 				if len(event.ArtistIDList) == 0 {
 					missingArtists = append(missingArtists, link)
 				}
-				fmt.Println("Accepted")
+				fmt.Println("Accepted %d", len(timeDetails))
 			}
 		}
 	}

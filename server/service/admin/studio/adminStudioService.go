@@ -80,17 +80,18 @@ func (a *AdminStudioServiceImpl) RefreshWorkshopsGivenStudioId(studioId string) 
 		}
 	}
 
-	err = a.databaseImpl.RemoveWorkshopsGivenStudioId(context.Background(), studioId)
+	deletedCount, err := a.databaseImpl.RemoveWorkshopsGivenStudioId(context.Background(), studioId)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("Inserting %d workshops into database\n", len(workshopsMongo))
+	fmt.Printf("Deleted %d workshops for studio %s\n", deletedCount, studioId)
 
 	err = a.databaseImpl.InsertWorkshops(context.Background(), workshopsMongo)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("Inserted %d workshops into database\n", len(workshopsMongo))
+
 	return nil, nil
 }
 

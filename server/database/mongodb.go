@@ -46,9 +46,9 @@ func (m *MongoDBDatabaseImpl) InsertWorkshops(ctx context.Context, workshops []m
 }
 
 // RemoveWorkshopsGivenStudioId implements Database.
-func (m *MongoDBDatabaseImpl) RemoveWorkshopsGivenStudioId(ctx context.Context, studioId string) *core.NachnaException {
+func (m *MongoDBDatabaseImpl) RemoveWorkshopsGivenStudioId(ctx context.Context, studioId string) (int64, *core.NachnaException) {
 	if m.database == nil {
-		return &core.NachnaException{
+		return 0, &core.NachnaException{
 			LogMessage:   "not connected",
 			StatusCode:   500,
 			ErrorMessage: "Failed to connect to MongoDB",
@@ -57,15 +57,15 @@ func (m *MongoDBDatabaseImpl) RemoveWorkshopsGivenStudioId(ctx context.Context, 
 
 	// Remove all workshops with the given studioId
 	filter := bson.M{"studio_id": studioId}
-	_, err := m.database.Collection("workshops_v2").DeleteMany(ctx, filter)
+	deleteResult, err := m.database.Collection("workshops_v2").DeleteMany(ctx, filter)
 	if err != nil {
-		return &core.NachnaException{
+		return 0, &core.NachnaException{
 			LogMessage:   err.Error(),
 			StatusCode:   500,
 			ErrorMessage: "Failed to remove workshops for studio",
 		}
 	}
-	return nil
+	return deleteResult.DeletedCount, nil
 }
 
 // GetChoreoLinkGivenArtistIdListAndSong implements Database.

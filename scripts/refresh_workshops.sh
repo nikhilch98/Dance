@@ -69,20 +69,46 @@ fi
 log_message "Using Python interpreter: $PYTHON_CMD"
 
 # Run workshop population scripts sequentially
-run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio manifest --ai gemini" "Manifest by TMN studio workshop population"
-if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
+# Run each command directly so output is visible in the console (and still logged)
+$PYTHON_CMD scripts/populate_workshops.py --env prod --studio manifest --ai gemini 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    log_message "ERROR: Manifest by TMN studio workshop population failed"
+    ((ERROR_COUNT++))
+else
+    log_message "SUCCESS: Manifest by TMN studio workshop population completed"
+fi
 
-run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio vins --ai gemini" "Vins studio workshop population"
-if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
+$PYTHON_CMD scripts/populate_workshops.py --env prod --studio vins --ai gemini 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    log_message "ERROR: Vins studio workshop population failed"
+    ((ERROR_COUNT++))
+else
+    log_message "SUCCESS: Vins studio workshop population completed"
+fi
 
-run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio dna --ai gemini" "DNA studio workshop population"
-if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
+$PYTHON_CMD scripts/populate_workshops.py --env prod --studio dna --ai gemini 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    log_message "ERROR: DNA studio workshop population failed"
+    ((ERROR_COUNT++))
+else
+    log_message "SUCCESS: DNA studio workshop population completed"
+fi
 
-run_command "$PYTHON_CMD scripts/populate_workshops.py --env prod --studio danceinn --ai gemini" "Dance Inn studio workshop population"
-if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
+$PYTHON_CMD scripts/populate_workshops.py --env prod --studio danceinn --ai gemini 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    log_message "ERROR: Dance Inn studio workshop population failed"
+    ((ERROR_COUNT++))
+else
+    log_message "SUCCESS: Dance Inn studio workshop population completed"
+fi
 
-run_command "$PYTHON_CMD scripts/manual_populate_workshops.py" "Manual workshop population"
-if [ $? -ne 0 ]; then ((ERROR_COUNT++)); fi
+$PYTHON_CMD scripts/manual_populate_workshops.py 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    log_message "ERROR: Manual workshop population failed"
+    ((ERROR_COUNT++))
+else
+    log_message "SUCCESS: Manual workshop population completed"
+fi
 
 # Summary
 log_message "=== Workshop Refresh Process Completed ==="

@@ -18,7 +18,7 @@ var lockOpenAI = &sync.Mutex{}
 
 type OpenAIAnalyzer struct{}
 
-func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]string, currentDateTime string) (string, *core.NachnaException) {
+func (a *OpenAIAnalyzer) generateSystemPrompt(studioId string, artistsDataList []map[string]string, currentDateTime string) (string, *core.NachnaException) {
 	// Convert artists data to JSON string for the prompt
 	artistsJSON, err := json.Marshal(artistsDataList)
 	if err != nil {
@@ -35,6 +35,7 @@ func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]strin
 		"the type of event and extract its details if it's a Bangalore-based dance event.\n\n" +
 		"Artists Data for additional context : " + artistsStr + "\n\n" +
 		"Current Date for reference : " + currentDateTime + "\n\n" +
+		"Current Studio Id for reference : " + studioId + "\n\n" +
 		"1. Determine if the event is a dance workshop, intensive, or regulars class based in Bangalore.\n" +
 		"2. If it is NOT a valid Bangalore-based dance event OR if the event is in the past (the definition of past is if the day is before the current date. Lets take an example : If current date is 15th July 2025 05:00PM, Case 1: if Event is on 15th july 2025 04:00PM, then it is considered valid since the event is on the same day and not in the past, Case 2: if Event is on 16th july 2025 04:00PM, then it is valid since the event is in the future, Case 3: if Event is on 14th july 2025 04:00PM, then it is invalid since the event is in the past), set `is_valid` to `false`, " +
 		"   `event_type` to null, and provide an empty list for `event_details`.\n" +
@@ -51,7 +52,7 @@ func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]strin
 		"         choose the earliest valid future year. Otherwise, use the current year if the month/day suggest it's upcoming, or null.\n" +
 		"     * **`start_time`**: string, 12-hour format \"HH:MM AM/PM\" with leading zeros (e.g., \"01:00 PM\", \"05:30 AM\"). Null if not found.\n" +
 		"     * **`end_time`**: string, 12-hour format \"HH:MM AM/PM\" with leading zeros (e.g., \"01:00 PM\", \"05:30 AM\"). Null if not found.\n" +
-		"     * NOTE: Only intensives or regulars typically have multiple entries in `time_details` array (for multiple days/sessions). Workshops usually have only one.\n\n" +
+		"     * NOTE: Only intensives or regulars typically have multiple entries in `time_details` array (for multiple days/sessions). Workshops will have only one, ensure there are no duplicates.\n\n" +
 		"   - **`by`**: string with the instructor's name(s). If multiple, use ' X ' to separate. Null if not found.\n" +
 		"   - **`song`**: string with the routine/song name if available, else null.\n" +
 		"   - **`pricing_info`**: string if pricing is found, else null. Format multiple tiers/options separated by a newline character '\\n'. Do not include taxes/fees like GST , Service charge , etc. \n" +
@@ -60,7 +61,7 @@ func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]strin
 		"   - If multiple distinct classes/routines are offered within the same event post (e.g., different songs/styles with separate pricing/times), create a separate object in `event_details` for each.\n" +
 		"   - If different routines share the same date/time, use the same `time_details` object(s) for each corresponding `event_details` object.\n" +
 		"   - Prioritize information from sections explicitly labeled 'Workshop Details', 'Event Details', 'Session Details', 'About Event', etc., especially for timings, song, and pricing.\n" +
-		"   - For 'Dance N Addiction' studio posts specifically, look for an 'About event details' or 'session details' section for potentially more accurate information.\n\n" +
+		"   - For 'dance_n_addiction' studio posts specifically, look for an 'About event details' or 'session details' section for potentially more accurate information.\n\n" +
 		"4. Only return a valid JSON object with this exact structure:\n" +
 		"   ```json\n" +
 		"   {\n" +
@@ -93,7 +94,7 @@ func (a *OpenAIAnalyzer) generateSystemPrompt(artistsDataList []map[string]strin
 		"8. Return only the raw JSON object.", nil
 }
 
-func (a *OpenAIAnalyzer) Analyze(screenshotPath string, artistsDataList []map[string]string) (*EventSummary, *core.NachnaException) {
+func (a *OpenAIAnalyzer) Analyze(screenshotPath string, studioID string, artistsDataList []map[string]string) (*EventSummary, *core.NachnaException) {
 	client := openai.NewClient()
 	// Generate schema for the response
 	eventSymmarySchema := utils.GenerateSchema[EventSummary]()
@@ -104,7 +105,7 @@ func (a *OpenAIAnalyzer) Analyze(screenshotPath string, artistsDataList []map[st
 		Strict:      openai.Bool(true),
 	}
 	// Generate system prompt
-	systemPrompt, systemPromptErr := a.generateSystemPrompt(artistsDataList, time.Now().Format("January 2, 2006"))
+	systemPrompt, systemPromptErr := a.generateSystemPrompt(studioID, artistsDataList, time.Now().Format("January 2, 2006"))
 	if systemPromptErr != nil {
 		return nil, systemPromptErr
 	}
@@ -136,7 +137,7 @@ func (a *OpenAIAnalyzer) Analyze(screenshotPath string, artistsDataList []map[st
 			},
 		},
 		// only certain models can perform structured outputs
-		Model: openai.ChatModelGPT4o2024_08_06,
+		Model: "gemini-2.5-flash",
 	})
 	if openAIErr != nil {
 		return nil, &core.NachnaException{
