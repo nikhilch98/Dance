@@ -34,10 +34,10 @@ func backgroundTasks(wg *sync.WaitGroup) {
 
 func refreshWorkshopsBackground() *core.NachnaException {
 	studioIDs := []string{
-		// "manifestbytmn",
-		// "vins.dance.co",
+		"manifestbytmn",
+		"vins.dance.co",
 		"dance_n_addiction",
-		// "dance.inn.bangalore",
+		"dance.inn.bangalore",
 	}
 	adminService, err := api.GetAdminService()
 	if err != nil {
