@@ -497,7 +497,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: ResponsiveUtils.paddingXSmall(context),
+                          padding: EdgeInsets.all(ResponsiveUtils.spacingXSmall(context)),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
