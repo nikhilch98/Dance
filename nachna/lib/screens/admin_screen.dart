@@ -51,8 +51,12 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   
   // Instagram Links state
   List<Map<String, dynamic>> missingInstagramLinkWorkshops = [];
+  List<Map<String, dynamic>> filteredInstagramLinkWorkshops = [];
   bool isLoadingInstagramLinks = false;
   String? instagramLinksError;
+  // Filters for Instagram Links tab
+  List<String> availableByFilters = [];
+  List<String> selectedByFilters = [];
   
   late TabController _tabController;
 
@@ -3273,6 +3277,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         if (mounted) {
           setState(() {
             missingInstagramLinkWorkshops = data.cast<Map<String, dynamic>>();
+            _initializeInstagramFilters();
+            _applyInstagramFilters();
           });
         }
       } else {
@@ -3291,6 +3297,231 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         });
       }
     }
+  }
+
+  void _initializeInstagramFilters() {
+    final names = <String>{};
+    for (final w in missingInstagramLinkWorkshops) {
+      final by = (w['by'] ?? '').toString().trim();
+      if (by.isNotEmpty && by.toLowerCase() != 'tba') {
+        names.add(by);
+      }
+    }
+    availableByFilters = names.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
+  void _applyInstagramFilters() {
+    if (selectedByFilters.isEmpty) {
+      filteredInstagramLinkWorkshops = List<Map<String, dynamic>>.from(missingInstagramLinkWorkshops);
+    } else {
+      filteredInstagramLinkWorkshops = missingInstagramLinkWorkshops.where((w) {
+        final by = (w['by'] ?? '').toString();
+        return selectedByFilters.contains(by);
+      }).toList();
+    }
+  }
+
+  Future<void> _showByFilterDialog() async {
+    List<String> tempSelected = List.from(selectedByFilters);
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: ResponsiveUtils.screenHeight(context) * 0.7,
+              maxWidth: ResponsiveUtils.screenWidth(context) * 0.9,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.15),
+                  Colors.white.withOpacity(0.05),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: ResponsiveUtils.borderWidthMedium(context),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Padding(
+                  padding: ResponsiveUtils.paddingXLarge(context),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(ResponsiveUtils.spacingSmall(context)),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                              color: const Color(0xFFFF006E).withOpacity(0.2),
+                            ),
+                            child: Icon(Icons.filter_list_rounded, color: const Color(0xFFFF006E), size: ResponsiveUtils.iconSmall(context)),
+                          ),
+                          SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                          Text(
+                            'Filter by Artist (by)',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.h3(context),
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: availableByFilters.length,
+                          itemBuilder: (context, index) {
+                            final option = availableByFilters[index];
+                            final isSelected = tempSelected.contains(option);
+                            return Container(
+                              margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                                color: isSelected ? const Color(0xFFFF006E).withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                border: Border.all(
+                                  color: isSelected ? const Color(0xFFFF006E).withOpacity(0.5) : Colors.white.withOpacity(0.1),
+                                ),
+                              ),
+                              child: CheckboxListTile(
+                                title: Text(option, style: TextStyle(color: Colors.white, fontSize: ResponsiveUtils.body2(context))),
+                                value: isSelected,
+                                onChanged: (val) {
+                                  setState(() {});
+                                  if (val == true) {
+                                    tempSelected.add(option);
+                                  } else {
+                                    tempSelected.remove(option);
+                                  }
+                                  // local rebuild via StatefulBuilder? We used outer setState; but dialog builder isn't StatefulBuilder.
+                                },
+                                controlAffinity: ListTileControlAffinity.leading,
+                                checkColor: Colors.white,
+                                activeColor: const Color(0xFFFF006E),
+                                side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: ResponsiveUtils.spacingXLarge(context)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                              ),
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: ResponsiveUtils.body2(context))),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                                gradient: const LinearGradient(colors: [Color(0xFFFF006E), Color(0xFF8338EC)]),
+                              ),
+                              child: TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedByFilters = tempSelected;
+                                    _applyInstagramFilters();
+                                  });
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: ResponsiveUtils.body2(context))),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildByFilterChip() {
+    final count = selectedByFilters.length;
+    return GestureDetector(
+      onTap: availableByFilters.isEmpty ? null : _showByFilterDialog,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveUtils.spacingMedium(context),
+          vertical: ResponsiveUtils.spacingSmall(context),
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFFFF006E).withOpacity(count > 0 ? 0.2 : 0.1),
+              const Color(0xFF8338EC).withOpacity(count > 0 ? 0.1 : 0.05),
+            ],
+          ),
+          border: Border.all(
+            color: const Color(0xFFFF006E).withOpacity(count > 0 ? 0.5 : 0.2),
+            width: ResponsiveUtils.borderWidthThin(context),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.filter_list_rounded, size: ResponsiveUtils.iconXSmall(context), color: const Color(0xFFFF006E)),
+            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+            Text(
+              count > 0 ? 'Artist (by) ($count)' : 'Artist (by)',
+              style: TextStyle(
+                color: count > 0 ? const Color(0xFFFF006E) : Colors.white70,
+                fontSize: ResponsiveUtils.micro(context),
+                fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildByResetButton() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedByFilters.clear();
+          _applyInstagramFilters();
+        });
+      },
+      child: Container(
+        padding: ResponsiveUtils.paddingSmall(context),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+          gradient: const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFDC2626)]),
+        ),
+        child: Icon(Icons.clear_rounded, color: Colors.white, size: ResponsiveUtils.iconSmall(context)),
+      ),
+    );
   }
 
   /// Update Instagram link for a workshop
@@ -3345,6 +3576,17 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Filter row
+          Row(
+            children: [
+              _buildByFilterChip(),
+              if (selectedByFilters.isNotEmpty) ...[
+                SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                _buildByResetButton(),
+              ],
+            ],
+          ),
+          SizedBox(height: ResponsiveUtils.spacingSmall(context)),
           if (isLoadingInstagramLinks)
             Expanded(
               child: Center(
@@ -3475,9 +3717,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
           else
             Expanded(
               child: ListView.builder(
-                itemCount: missingInstagramLinkWorkshops.length,
+                itemCount: filteredInstagramLinkWorkshops.length,
                 itemBuilder: (context, index) {
-                  final workshop = missingInstagramLinkWorkshops[index];
+                  final workshop = filteredInstagramLinkWorkshops[index];
                   return _buildInstagramLinkWorkshopCard(workshop);
                 },
               ),

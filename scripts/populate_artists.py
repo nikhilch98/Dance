@@ -122,6 +122,10 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Richa Tiwari","beats_and_taal"),
+        Artist("Raj Shaw", "bboytrue1"),
+        Artist("Nikunj Luharuka", "nikunjluharuka"),
+        Artist("Gaurav Thukral", "gaurav.thukral"),
         Artist("Sanket Panchal", "sanket_panchal25"),
         Artist("Pery Sheetal", "perysheetal17"),
         Artist("Adib Khan", "adibkhanofficial"),
@@ -268,7 +272,7 @@ def sort_artists_by_workshops(artists: list, env: str) -> list:
 
         def has_workshops(artist):
             return workshops_collection.count_documents({"artist_id_list": artist.instagram_id}) > 0
-
+        return artists
         return sorted(artists, key=lambda artist: (not has_workshops(artist), artist.name))
     except Exception as e:
         print(f"Error sorting artists: {e}")
