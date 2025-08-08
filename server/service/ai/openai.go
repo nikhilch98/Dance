@@ -162,15 +162,15 @@ func (a *OpenAIAnalyzer) Analyze(screenshotPath string, studioID string, artists
 	return &eventSummary, nil
 }
 
-var openAIAnalyzer *OpenAIAnalyzer
+var aiServiceInstance *OpenAIAnalyzer
 
-func (OpenAIAnalyzer) GetInstance() AIAnalyzer {
-	if openAIAnalyzer == nil {
+func (OpenAIAnalyzer) GetInstance() *OpenAIAnalyzer {
+	if aiServiceInstance == nil {
 		lockOpenAI.Lock()
 		defer lockOpenAI.Unlock()
-		if openAIAnalyzer == nil {
-			openAIAnalyzer = &OpenAIAnalyzer{}
+		if aiServiceInstance == nil {
+			aiServiceInstance = &OpenAIAnalyzer{}
 		}
 	}
-	return openAIAnalyzer
+	return aiServiceInstance
 }

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nachna Streaming API Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00D4FF 0%, #3B82F6 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .status-bar {
+            padding: 20px 30px;
+            background: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #28a745;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        .progress-container {
+            padding: 20px 30px;
+            background: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00D4FF 0%, #9C27B0 100%);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            width: 0%;
+            position: relative;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 500px;
+        }
+
+        .event-log {
+            padding: 30px;
+            background: white;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .event-log h3 {
+            margin-bottom: 20px;
+            color: #495057;
+            font-size: 1.3em;
+        }
+
+        .events {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .event {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .event:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .event.info {
+            border-left-color: #17a2b8;
+        }
+
+        .event.success {
+            border-left-color: #28a745;
+        }
+
+        .event.warning {
+            border-left-color: #ffc107;
+        }
+
+        .event.error {
+            border-left-color: #dc3545;
+        }
+
+        .event-time {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .event-message {
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .stats-panel {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stats-panel h3 {
+            margin-bottom: 20px;
+            color: #495057;
+            font-size: 1.3em;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-title {
+            font-size: 0.9em;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #495057;
+        }
+
+        .stat-value.success {
+            color: #28a745;
+        }
+
+        .stat-value.warning {
+            color: #ffc107;
+        }
+
+        .stat-value.error {
+            color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .event-log {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Nachna Streaming API</h1>
+            <p>Real-time workshop processing test client</p>
+        </div>
+
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="testRefreshWorkshops()" id="refreshBtn">
+                    🔄 Refresh Workshops
+                </button>
+                <button class="btn btn-success" onclick="testProcessStudio()" id="processBtn">
+                    🏢 Process Studio
+                </button>
+                <button class="btn btn-warning" onclick="testErrorHandling()" id="errorBtn">
+                    🚨 Test Errors
+                </button>
+                <button class="btn btn-danger" onclick="clearLog()" id="clearBtn">
+                    🗑️ Clear Log
+                </button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="event-log">
+                <h3>📝 Event Log</h3>
+                <div class="events" id="events"></div>
+            </div>
+
+            <div class="stats-panel">
+                <h3>📊 Statistics</h3>
+                <div class="stat-card">
+                    <div class="stat-title">Total Events</div>
+                    <div class="stat-value" id="totalEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Info Events</div>
+                    <div class="stat-value" id="infoEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Success Events</div>
+                    <div class="stat-value success" id="successEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Warning Events</div>
+                    <div class="stat-value warning" id="warningEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Error Events</div>
+                    <div class="stat-value error" id="errorEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Connection Time</div>
+                    <div class="stat-value" id="connectionTime">0s</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            baseUrl: 'http://localhost:8008', // Changed to localhost for local testing
+            studioId: 'dance_n_addiction',
+            timeout: 30000
+        };
+
+        // State management
+        let eventSource = null;
+        let connectionStartTime = null;
+        let stats = {
+            total: 0,
+            info: 0,
+            success: 0,
+            warning: 0,
+            error: 0
+        };
+
+        // DOM elements
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const eventsContainer = document.getElementById('events');
+        const buttons = {
+            refresh: document.getElementById('refreshBtn'),
+            process: document.getElementById('processBtn'),
+            error: document.getElementById('errorBtn'),
+            clear: document.getElementById('clearBtn')
+        };
+
+        // Utility functions
+        function updateStatus(text, isConnected = false, isError = false) {
+            statusText.textContent = text;
+            statusIndicator.className = 'status-indicator';
+            
+            if (isError) {
+                statusIndicator.classList.add('error');
+            } else if (isConnected) {
+                statusIndicator.classList.add('connected');
+            }
+        }
+
+        function updateProgress(percentage, current = 0, total = 0) {
+            progressFill.style.width = `${percentage}%`;
+            if (current && total) {
+                progressText.textContent = `${percentage.toFixed(1)}% (${current}/${total})`;
+            } else {
+                progressText.textContent = `${percentage.toFixed(1)}%`;
+            }
+        }
+
+        function addEvent(message, type = 'info', data = null) {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `event ${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'event-time';
+            timeSpan.textContent = time;
+            
+            const messageSpan = document.createElement('div');
+            messageSpan.className = 'event-message';
+            messageSpan.textContent = message;
+            
+            eventDiv.appendChild(timeSpan);
+            eventDiv.appendChild(messageSpan);
+            
+            if (data) {
+                const dataDiv = document.createElement('div');
+                dataDiv.style.fontSize = '0.8em';
+                dataDiv.style.color = '#6c757d';
+                dataDiv.style.marginTop = '5px';
+                dataDiv.textContent = JSON.stringify(data, null, 2);
+                eventDiv.appendChild(dataDiv);
+            }
+            
+            eventsContainer.appendChild(eventDiv);
+            eventsContainer.scrollTop = eventsContainer.scrollHeight;
+            
+            // Update statistics
+            stats.total++;
+            stats[type]++;
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('totalEvents').textContent = stats.total;
+            document.getElementById('infoEvents').textContent = stats.info;
+            document.getElementById('successEvents').textContent = stats.success;
+            document.getElementById('warningEvents').textContent = stats.warning;
+            document.getElementById('errorEvents').textContent = stats.error;
+            
+            if (connectionStartTime) {
+                const duration = Math.round((Date.now() - connectionStartTime) / 1000);
+                document.getElementById('connectionTime').textContent = `${duration}s`;
+            }
+        }
+
+        function resetStats() {
+            stats = { total: 0, info: 0, success: 0, warning: 0, error: 0 };
+            updateStats();
+        }
+
+        function disableButtons() {
+            Object.values(buttons).forEach(btn => btn.disabled = true);
+        }
+
+        function enableButtons() {
+            Object.values(buttons).forEach(btn => btn.disabled = false);
+        }
+
+        function closeConnection() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            updateStatus('Disconnected');
+            enableButtons();
+        }
+
+        function clearLog() {
+            eventsContainer.innerHTML = '';
+            updateProgress(0);
+            resetStats();
+            addEvent('Log cleared', 'info');
+        }
+
+        // Test functions
+        function testRefreshWorkshops() {
+            closeConnection();
+            clearLog();
+            disableButtons();
+            
+            updateStatus('Connecting to Refresh Workshops...', false);
+            addEvent('Starting Refresh Workshops streaming test...', 'info');
+            connectionStartTime = Date.now();
+            
+            const requestData = {
+                studio_id: CONFIG.studioId
+            };
+            
+            // Use fetch for POST request with streaming
+            fetch(`${CONFIG.baseUrl}/api/streaming/refresh-workshops`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(requestData)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                updateStatus('Connected - Processing workshops...', true);
+                addEvent('Connection established successfully', 'success');
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                function readStream() {
+                    reader.read().then(({done, value}) => {
+                        if (done) {
+                            addEvent('Stream completed', 'success');
+                            updateStatus('Completed', false);
+                            enableButtons();
+                            return;
+                        }
+                        
+                        buffer += decoder.decode(value, {stream: true});
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                        
+                        let currentEvent = null;
+                        let currentData = null;
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('event: ')) {
+                                currentEvent = line.substring(7);
+                            } else if (line.startsWith('data: ')) {
+                                try {
+                                    currentData = JSON.parse(line.substring(6));
+                                } catch (e) {
+                                    currentData = { error: 'Invalid JSON' };
+                                }
+                            } else if (line === '') {
+                                // End of event
+                                if (currentEvent && currentData) {
+                                    handleStreamingEvent(currentEvent, currentData);
+                                }
+                                currentEvent = null;
+                                currentData = null;
+                            }
+                        }
+                        
+                        readStream();
+                    }).catch(error => {
+                        addEvent(`Stream error: ${error.message}`, 'error');
+                        updateStatus('Stream error', false, true);
+                        enableButtons();
+                    });
+                }
+                
+                readStream();
+            }).catch(error => {
+                addEvent(`Connection error: ${error.message}`, 'error');
+                updateStatus('Connection failed', false, true);
+                enableButtons();
+            });
+        }
+
+        function testProcessStudio() {
+            closeConnection();
+            clearLog();
+            disableButtons();
+            
+            updateStatus('Connecting to Process Studio...', false);
+            addEvent('Starting Process Studio streaming test...', 'info');
+            connectionStartTime = Date.now();
+            
+            eventSource = new EventSource(`${CONFIG.baseUrl}/api/streaming/process-studio?studio_id=${CONFIG.studioId}`);
+            
+            eventSource.onopen = function() {
+                updateStatus('Connected - Processing studio...', true);
+                addEvent('Connection established successfully', 'success');
+            };
+            
+            eventSource.addEventListener('logs', function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    addEvent(`[${data.data.level}] ${data.data.message}`, data.data.level, data);
+                } catch (e) {
+                    addEvent(`Error parsing logs event: ${e.message}`, 'error');
+                }
+            });
+            
+            eventSource.addEventListener('progress_bar', function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateProgress(data.data.percentage, data.data.current, data.data.total);
+                    addEvent(`Progress: ${data.data.percentage.toFixed(1)}% (${data.data.current}/${data.data.total})`, 'info', data);
+                } catch (e) {
+                    addEvent(`Error parsing progress event: ${e.message}`, 'error');
+                }
+            });
+            
+            eventSource.addEventListener('complete', function(event) {
+                addEvent('Process completed successfully!', 'success');
+                updateStatus('Completed', false);
+                eventSource.close();
+                enableButtons();
+            });
+            
+            eventSource.addEventListener('error', function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    addEvent(`Error: ${data.error}`, 'error', data);
+                } catch (e) {
+                    addEvent(`Error event received: ${event.data}`, 'error');
+                }
+            });
+            
+            eventSource.onerror = function(event) {
+                addEvent('Connection error occurred', 'error');
+                updateStatus('Connection error', false, true);
+                enableButtons();
+            };
+        }
+
+        function testErrorHandling() {
+            closeConnection();
+            clearLog();
+            disableButtons();
+            
+            updateStatus('Testing error handling...', false);
+            addEvent('Starting error handling tests...', 'info');
+            connectionStartTime = Date.now();
+            
+            // Test 1: Invalid studio ID
+            addEvent('Testing with invalid studio ID...', 'info');
+            eventSource = new EventSource(`${CONFIG.baseUrl}/api/streaming/process-studio?studio_id=invalid_studio`);
+            
+            eventSource.addEventListener('error', function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    addEvent(`Error received: ${data.error}`, 'error', data);
+                } catch (e) {
+                    addEvent('Error event received (invalid studio)', 'error');
+                }
+                eventSource.close();
+                
+                // Test 2: Missing studio ID
+                setTimeout(() => {
+                    addEvent('Testing with missing studio ID...', 'info');
+                    eventSource = new EventSource(`${CONFIG.baseUrl}/api/streaming/process-studio`);
+                    
+                    eventSource.addEventListener('error', function(event) {
+                        try {
+                            const data = JSON.parse(event.data);
+                            addEvent(`Error received: ${data.error}`, 'error', data);
+                        } catch (e) {
+                            addEvent('Error event received (missing studio)', 'error');
+                        }
+                        eventSource.close();
+                        updateStatus('Error tests completed', false);
+                        enableButtons();
+                    });
+                    
+                    eventSource.onerror = function(event) {
+                        addEvent('Connection error in error test', 'error');
+                        updateStatus('Error test failed', false, true);
+                        enableButtons();
+                    };
+                }, 1000);
+            });
+            
+            eventSource.onerror = function(event) {
+                addEvent('Connection error in error test', 'error');
+                updateStatus('Error test failed', false, true);
+                enableButtons();
+            };
+        }
+
+        function handleStreamingEvent(eventType, data) {
+            switch (eventType) {
+                case 'logs':
+                    addEvent(`[${data.data.level}] ${data.data.message}`, data.data.level, data);
+                    break;
+                case 'progress_bar':
+                    updateProgress(data.data.percentage, data.data.current, data.data.total);
+                    addEvent(`Progress: ${data.data.percentage.toFixed(1)}% (${data.data.current}/${data.data.total})`, 'info', data);
+                    break;
+                case 'complete':
+                    addEvent('Process completed successfully!', 'success', data);
+                    updateStatus('Completed', false);
+                    enableButtons();
+                    break;
+                case 'error':
+                    addEvent(`Error: ${data.error}`, 'error', data);
+                    updateStatus('Error occurred', false, true);
+                    enableButtons();
+                    break;
+                default:
+                    addEvent(`Unknown event type: ${eventType}`, 'warning', data);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            addEvent('Streaming API test client loaded', 'success');
+            addEvent(`Base URL: ${CONFIG.baseUrl}`, 'info');
+            addEvent(`Studio ID: ${CONFIG.studioId}`, 'info');
+        });
+    </script>
+</body>
+</html> 

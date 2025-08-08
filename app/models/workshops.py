@@ -27,6 +27,7 @@ class WorkshopListItem(BaseModel):
     timestamp_epoch: int
     artist_id_list: Optional[List[str]] = []
     artist_image_urls: Optional[List[Optional[HttpUrl]]] = []
+    artist_instagram_links: Optional[List[HttpUrl]] = []
     date: Optional[str]
     time: Optional[str]
     event_type: Optional[str]

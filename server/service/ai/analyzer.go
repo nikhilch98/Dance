@@ -1,15 +1,8 @@
 package ai
 
 import (
-	"nachna/core"
 	coreModels "nachna/models/core"
 )
-
-type AIAnalyzer interface {
-	GetInstance() AIAnalyzer
-	generateSystemPrompt(studioId string, artistsDataList []map[string]string, currentDateTime string) (string, *core.NachnaException)
-	Analyze(screenshotPath string, studioID string, artistsDataList []map[string]string) (*EventSummary, *core.NachnaException)
-}
 
 type TimeDetails struct {
 	Day       *int64  `json:"day"`

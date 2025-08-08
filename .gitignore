@@ -10,5 +10,9 @@ __pycache__/
 *.log
 *.pem
 *.png
+
+#Exclude all files in venv
+venv/
+
 # Allow PNGs in static/assets
 !/static/assets/*/*.png

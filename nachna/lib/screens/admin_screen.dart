@@ -4104,7 +4104,7 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
                           ),
                         ),
                         ...suggestedArtists.map((artist) {
-                          final isSelected = selectedArtistIds.contains(artist.id);
+                      final isSelected = selectedArtistIds.contains(artist.id);
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
@@ -4239,60 +4239,60 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
                         ),
                         ...regularArtists.map((artist) {
                           final isSelected = selectedArtistIds.contains(artist.id);
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: isSelected 
-                                  ? Colors.white.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.1),
-                              border: Border.all(
-                                color: isSelected 
-                                    ? const Color(0xFF00D4FF)
-                                    : Colors.white.withOpacity(0.2),
-                                width: 1,
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: isSelected 
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.white.withOpacity(0.1),
+                          border: Border.all(
+                            color: isSelected 
+                                ? const Color(0xFF00D4FF)
+                                : Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFF00D4FF),
+                            child: Text(
+                              artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: const Color(0xFF00D4FF),
-                                child: Text(
-                                  artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                artist.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              trailing: isSelected
-                                  ? const Icon(
-                                      Icons.check_circle,
-                                      color: Color(0xFF00D4FF),
-                                    )
-                                  : const Icon(
-                                      Icons.circle_outlined,
-                                      color: Colors.white54,
-                                    ),
-                              onTap: () {
-                                setState(() {
-                                  if (isSelected) {
-                                    selectedArtistIds.remove(artist.id);
-                                    selectedArtists.removeWhere((a) => a.id == artist.id);
-                                  } else {
-                                    selectedArtistIds.add(artist.id);
-                                    selectedArtists.add(artist);
-                                  }
-                                });
-                              },
+                          ),
+                          title: Text(
+                            artist.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
                             ),
-                          );
+                          ),
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF00D4FF),
+                                )
+                              : const Icon(
+                                  Icons.circle_outlined,
+                                  color: Colors.white54,
+                                ),
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                selectedArtistIds.remove(artist.id);
+                                selectedArtists.removeWhere((a) => a.id == artist.id);
+                              } else {
+                                selectedArtistIds.add(artist.id);
+                                selectedArtists.add(artist);
+                              }
+                            });
+                          },
+                        ),
+                      );
                         }).toList(),
                       ],
                     ],

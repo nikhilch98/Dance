@@ -73,10 +73,7 @@ func (i *WebBasedStudioImpl) scrapeLinks(startUrl string, regexMatchLink string)
 		u, err := url.Parse(baseUrl)
 		if err == nil {
 			// Remove trailing slash from base path if present
-			basePath := u.Path
-			if strings.HasSuffix(basePath, "/") {
-				basePath = basePath[:len(basePath)-1]
-			}
+			basePath := strings.TrimSuffix(u.Path, "/")
 			// If baseUrl has no path, just join
 			if basePath == "" {
 				return fmt.Sprintf("%s://%s/%s", u.Scheme, u.Host, parsedHref)
@@ -232,22 +229,22 @@ func (i *WebBasedStudioImpl) FetchExistingWorkshops(studioId string, startUrl st
 				if len(event.ArtistIDList) == 0 {
 					missingArtists = append(missingArtists, link)
 				}
-				fmt.Println("Accepted %d", len(timeDetails))
+				fmt.Printf("Accepted %d\n", len(timeDetails))
 			}
 		}
 	}
 	return workshops, ignoredLinks, oldLinks, missingArtists, nil
 }
 
-var webBasedStudioImpl *WebBasedStudioImpl
+var studioServiceInstance *WebBasedStudioImpl
 
-func (WebBasedStudioImpl) GetInstance() BaseStudio {
-	if webBasedStudioImpl == nil {
+func (WebBasedStudioImpl) GetInstance() *WebBasedStudioImpl {
+	if studioServiceInstance == nil {
 		lock.Lock()
 		defer lock.Unlock()
-		if webBasedStudioImpl == nil {
-			webBasedStudioImpl = &WebBasedStudioImpl{}
+		if studioServiceInstance == nil {
+			studioServiceInstance = &WebBasedStudioImpl{}
 		}
 	}
-	return webBasedStudioImpl
+	return studioServiceInstance
 }

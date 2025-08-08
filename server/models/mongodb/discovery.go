@@ -15,6 +15,15 @@ type Artist struct {
 	InstagramLink string             `bson:"instagram_link" json:"instagram_link"`
 }
 
+type Studio struct {
+	ID            primitive.ObjectID `bson:"_id" json:"id"`
+	StudioID      string             `bson:"studio_id" json:"studio_id"`
+	StudioName    string             `bson:"studio_name" json:"studio_name"`
+	InstagramLink *string            `bson:"instagram_link,omitempty" json:"instagram_link,omitempty"`
+	Location      *string            `bson:"location,omitempty" json:"location,omitempty"`
+	Description   *string            `bson:"description,omitempty" json:"description,omitempty"`
+}
+
 type ChoreoLink struct {
 	ID              primitive.ObjectID `bson:"_id" json:"id"`
 	Song            string             `bson:"song" json:"song"`

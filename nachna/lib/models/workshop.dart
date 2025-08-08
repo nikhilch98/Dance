@@ -25,6 +25,8 @@ class WorkshopListItem {
   final List<String>? artistIdList;
   @JsonKey(name: 'artist_image_urls')
   final List<String?>? artistImageUrls;
+  @JsonKey(name: 'artist_instagram_links')
+  final List<String?>? artistInstagramLinks;
   final String? date;
   final String? time;
   @JsonKey(name: 'event_type')
@@ -45,6 +47,7 @@ class WorkshopListItem {
     required this.timestampEpoch,
     this.artistIdList,
     this.artistImageUrls,
+    this.artistInstagramLinks,
     this.date,
     this.time,
     this.eventType,

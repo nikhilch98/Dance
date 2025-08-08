@@ -7,6 +7,7 @@ import (
 	"nachna/core"
 	"nachna/models/mongodb"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -92,17 +93,17 @@ func (m *MongoDBDatabaseImpl) GetChoreoLinkGivenArtistIdListAndSong(ctx context.
 	return &choreoLink.ChoreoInstaLink, nil
 }
 
-var mongoDBDatabaseImpl *MongoDBDatabaseImpl
+var databaseServiceInstance *MongoDBDatabaseImpl
 
 // GetInstance returns a singleton instance of MongoDBDatabaseImpl
-func (MongoDBDatabaseImpl) GetInstance() (Database, *core.NachnaException) {
+func (MongoDBDatabaseImpl) GetInstance() (*MongoDBDatabaseImpl, *core.NachnaException) {
 	lock.Lock()
 	defer lock.Unlock()
-	if mongoDBDatabaseImpl == nil {
-		mongoDBDatabaseImpl = &MongoDBDatabaseImpl{}
-		err := mongoDBDatabaseImpl.Connect(context.Background())
+	if databaseServiceInstance == nil {
+		databaseServiceInstance = &MongoDBDatabaseImpl{}
+		err := databaseServiceInstance.Connect(context.Background())
 		if err != nil {
-			mongoDBDatabaseImpl = nil
+			databaseServiceInstance = nil
 			return nil, &core.NachnaException{
 				LogMessage:   err.Error(),
 				StatusCode:   500,
@@ -110,7 +111,7 @@ func (MongoDBDatabaseImpl) GetInstance() (Database, *core.NachnaException) {
 			}
 		}
 	}
-	return mongoDBDatabaseImpl, nil
+	return databaseServiceInstance, nil
 }
 
 func (m *MongoDBDatabaseImpl) Connect(ctx context.Context) error {
@@ -170,4 +171,265 @@ func (m *MongoDBDatabaseImpl) GetAllArtists(ctx context.Context) ([]*mongodb.Art
 		artists = append(artists, &artist)
 	}
 	return artists, nil
+}
+
+func (m *MongoDBDatabaseImpl) GetAllStudiosFromDB(ctx context.Context) ([]*mongodb.Studio, *core.NachnaException) {
+	if m.database == nil {
+		return nil, &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+	cursor, err := m.database.Collection("studios").Find(ctx, bson.M{})
+	if err != nil {
+		return nil, &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to get studios",
+		}
+	}
+	defer cursor.Close(ctx)
+	var studios []*mongodb.Studio
+	for cursor.Next(ctx) {
+		var studio mongodb.Studio
+		if err := cursor.Decode(&studio); err != nil {
+			return nil, &core.NachnaException{
+				LogMessage:   err.Error(),
+				StatusCode:   500,
+				ErrorMessage: "Failed to decode studio",
+			}
+		}
+		studios = append(studios, &studio)
+	}
+	return studios, nil
+}
+
+// Order-related operations
+
+// CreateOrder creates a new order in the database
+func (m *MongoDBDatabaseImpl) CreateOrder(ctx context.Context, order *mongodb.Order) *core.NachnaException {
+	if m.database == nil {
+		return &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	_, err := m.database.Collection("orders").InsertOne(ctx, order)
+	if err != nil {
+		return &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to create order",
+		}
+	}
+	return nil
+}
+
+// GetOrderByID retrieves an order by its ID
+func (m *MongoDBDatabaseImpl) GetOrderByID(ctx context.Context, orderID string) (*mongodb.Order, *core.NachnaException) {
+	if m.database == nil {
+		return nil, &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	var order mongodb.Order
+	err := m.database.Collection("orders").FindOne(ctx, bson.M{"order_id": orderID}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, &core.NachnaException{
+				LogMessage:   "order not found",
+				StatusCode:   404,
+				ErrorMessage: "Order not found",
+			}
+		}
+		return nil, &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to retrieve order",
+		}
+	}
+	return &order, nil
+}
+
+// UpdateOrderStatus updates an order's status and adds to status history
+func (m *MongoDBDatabaseImpl) UpdateOrderStatus(ctx context.Context, orderID string, status mongodb.OrderStatus, note *string) *core.NachnaException {
+	if m.database == nil {
+		return &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	// Create status update
+	statusUpdate := mongodb.OrderStatusUpdate{
+		Status:    status,
+		Timestamp: time.Now().Unix(),
+		Note:      note,
+	}
+
+	// Update order with new status and push to status history
+	update := bson.M{
+		"$set": bson.M{
+			"status":     status,
+			"updated_at": time.Now().Unix(),
+		},
+		"$push": bson.M{
+			"status_history": statusUpdate,
+		},
+	}
+
+	_, err := m.database.Collection("orders").UpdateOne(ctx, bson.M{"order_id": orderID}, update)
+	if err != nil {
+		return &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to update order status",
+		}
+	}
+	return nil
+}
+
+// UpdateOrderQR updates an order with the generated QR code
+func (m *MongoDBDatabaseImpl) UpdateOrderQR(ctx context.Context, orderID string, qrCode string) *core.NachnaException {
+	if m.database == nil {
+		return &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"order_verification_qr": qrCode,
+			"updated_at":            time.Now().Unix(),
+		},
+	}
+
+	_, err := m.database.Collection("orders").UpdateOne(ctx, bson.M{"order_id": orderID}, update)
+	if err != nil {
+		return &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to update order QR code",
+		}
+	}
+	return nil
+}
+
+// GetOrdersByUserID retrieves all orders for a specific user
+func (m *MongoDBDatabaseImpl) GetOrdersByUserID(ctx context.Context, userID string) ([]*mongodb.Order, *core.NachnaException) {
+	if m.database == nil {
+		return nil, &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	// Sort by created_at descending (newest first)
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := m.database.Collection("orders").Find(ctx, bson.M{"user_id": userID}, opts)
+	if err != nil {
+		return nil, &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to retrieve orders",
+		}
+	}
+	defer cursor.Close(ctx)
+
+	var orders []*mongodb.Order
+	for cursor.Next(ctx) {
+		var order mongodb.Order
+		if err := cursor.Decode(&order); err != nil {
+			return nil, &core.NachnaException{
+				LogMessage:   err.Error(),
+				StatusCode:   500,
+				ErrorMessage: "Failed to decode order",
+			}
+		}
+		orders = append(orders, &order)
+	}
+	return orders, nil
+}
+
+// GetWorkshopByUUID retrieves a workshop by its UUID
+func (m *MongoDBDatabaseImpl) GetWorkshopByUUID(ctx context.Context, workshopUUID string) (*mongodb.Workshop, *core.NachnaException) {
+	if m.database == nil {
+		return nil, &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	var workshop mongodb.Workshop
+	err := m.database.Collection("workshops_v2").FindOne(ctx, bson.M{"uuid": workshopUUID}).Decode(&workshop)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, &core.NachnaException{
+				LogMessage:   "workshop not found",
+				StatusCode:   404,
+				ErrorMessage: "Workshop not found",
+			}
+		}
+		return nil, &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to retrieve workshop",
+		}
+	}
+	return &workshop, nil
+}
+
+// GetOrdersWithoutQR retrieves orders with successful status but no QR code
+func (m *MongoDBDatabaseImpl) GetOrdersWithoutQR(ctx context.Context) ([]*mongodb.Order, *core.NachnaException) {
+	if m.database == nil {
+		return nil, &core.NachnaException{
+			LogMessage:   "not connected",
+			StatusCode:   500,
+			ErrorMessage: "Failed to connect to MongoDB",
+		}
+	}
+
+	filter := bson.M{
+		"status": mongodb.OrderStatusSuccessful,
+		"$or": []bson.M{
+			{"order_verification_qr": bson.M{"$exists": false}},
+			{"order_verification_qr": nil},
+			{"order_verification_qr": ""},
+		},
+	}
+
+	cursor, err := m.database.Collection("orders").Find(ctx, filter)
+	if err != nil {
+		return nil, &core.NachnaException{
+			LogMessage:   err.Error(),
+			StatusCode:   500,
+			ErrorMessage: "Failed to retrieve orders without QR",
+		}
+	}
+	defer cursor.Close(ctx)
+
+	var orders []*mongodb.Order
+	for cursor.Next(ctx) {
+		var order mongodb.Order
+		if err := cursor.Decode(&order); err != nil {
+			return nil, &core.NachnaException{
+				LogMessage:   err.Error(),
+				StatusCode:   500,
+				ErrorMessage: "Failed to decode order",
+			}
+		}
+		orders = append(orders, &order)
+	}
+	return orders, nil
 }

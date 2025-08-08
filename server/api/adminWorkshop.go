@@ -6,18 +6,21 @@ import (
 	"nachna/models/request"
 	"nachna/service/admin"
 	"nachna/service/admin/studio"
+	"nachna/service/notification"
 	"nachna/utils"
 	"net/http"
 )
 
-func GetAdminService() (admin.AdminService, *core.NachnaException) {
+func GetAdminService() (*admin.AdminServiceImpl, *core.NachnaException) {
 	databaseImpl, err := database.MongoDBDatabaseImpl{}.GetInstance()
 	if err != nil {
 		return nil, err
 	}
+
 	webBasedStudio := studio.WebBasedStudioImpl{}.GetInstance()
 	adminStudioService := studio.AdminStudioServiceImpl{}.GetInstance(webBasedStudio, databaseImpl)
-	adminService := admin.AdminServiceImpl{}.GetInstance(adminStudioService)
+	notificationService := notification.NotificationServiceImpl{}.GetInstance(databaseImpl)
+	adminService := admin.AdminServiceImpl{}.GetInstance(adminStudioService, databaseImpl, notificationService)
 	return adminService, nil
 }
 

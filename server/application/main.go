@@ -5,7 +5,9 @@ import (
 	"nachna/api"
 	"nachna/config"
 	"nachna/core"
+	"nachna/database"
 	"nachna/models/request"
+	"nachna/service/order"
 	"net/http"
 	"sync"
 	"time"
@@ -14,22 +16,36 @@ import (
 )
 
 func backgroundTasks(wg *sync.WaitGroup) {
-	// Run the background task in a goroutine and signal completion via WaitGroup
+	// QR Code generation background task
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			err := refreshWorkshopsBackground()
+			err := processQRGeneration()
 			if err != nil {
-				log.Errorf("Error refreshing workshops in background: %v", err)
+				log.Errorf("Error processing QR generation in background: %v", err)
 			}
-			log.Info("Refreshed workshops in background")
-			select {
-			case <-time.After(6 * time.Hour):
-				continue
-			}
+			log.Info("Processed QR generation in background")
+			time.Sleep(10 * time.Minute) // Run every 10 minutes
 		}
 	}()
+
+	// Uncomment below for workshop refresh background task
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	for {
+	// 		err := refreshWorkshopsBackground()
+	// 		if err != nil {
+	// 			log.Errorf("Error refreshing workshops in background: %v", err)
+	// 		}
+	// 		log.Info("Refreshed workshops in background")
+	// 		select {
+	// 		case <-time.After(6 * time.Hour):
+	// 			continue
+	// 		}
+	// 	}
+	// }()
 }
 
 func refreshWorkshopsBackground() *core.NachnaException {
@@ -37,7 +53,6 @@ func refreshWorkshopsBackground() *core.NachnaException {
 		"manifestbytmn",
 		"vins.dance.co",
 		"dance_n_addiction",
-		"dance.inn.bangalore",
 	}
 	adminService, err := api.GetAdminService()
 	if err != nil {
@@ -53,6 +68,25 @@ func refreshWorkshopsBackground() *core.NachnaException {
 			continue
 		}
 	}
+	return nil
+}
+
+func processQRGeneration() *core.NachnaException {
+	// Get database instance
+	databaseImpl, err := database.MongoDBDatabaseImpl{}.GetInstance()
+	if err != nil {
+		return err
+	}
+
+	// Get order service instance
+	orderService := order.OrderServiceImpl{}.GetInstance(databaseImpl)
+
+	// Process orders without QR codes
+	err = orderService.ProcessOrdersWithoutQR()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

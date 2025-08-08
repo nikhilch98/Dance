@@ -340,6 +340,45 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     });
   }
 
+  // Helper method to handle Instagram linking
+  Future<void> _launchInstagram(String instagramUrl) async {
+    // Extract Instagram username from URL format: https://www.instagram.com/{username}/
+    String? username;
+    if (instagramUrl.contains('instagram.com/')) {
+      final parts = instagramUrl.split('instagram.com/');
+      if (parts.length > 1) {
+        // Remove trailing slash and any query parameters
+        username = parts[1].split('/')[0].split('?')[0];
+      }
+    }
+    
+    if (username != null && username.isNotEmpty) {
+      final appUrl = 'instagram://user?username=$username';
+      final webUrl = 'https://instagram.com/$username';
+
+      if (await canLaunchUrl(Uri.parse(appUrl))) {
+        await launchUrl(Uri.parse(appUrl));
+      } else {
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+      }
+    } else {
+      // Fallback to original URL if username extraction fails
+      final webUrl = Uri.parse(instagramUrl);
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not launch $instagramUrl'),
+              backgroundColor: Colors.red.withOpacity(0.8),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -764,9 +803,10 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
               children: [
                 // Header Row with Artist Name and Date Badge
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Artist Name (Main Title)
-                    Expanded(
+                    Flexible(
                       child: Text(
                         workshop.by?.isNotEmpty == true && workshop.by != 'TBA' 
                             ? toTitleCase(workshop.by!) 
@@ -780,7 +820,21 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    
+                    if (workshop.artistInstagramLinks?.isNotEmpty == true &&
+                        workshop.artistInstagramLinks![0] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: GestureDetector(
+                          onTap: () =>
+                              _launchInstagram(workshop.artistInstagramLinks![0]!),
+                          child: Image.asset(
+                            'assets/images/instagram-icon.png',
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
                     // Date Badge (aligned with artist name)
                     Container(
                       padding: EdgeInsets.symmetric(

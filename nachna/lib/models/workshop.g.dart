@@ -24,6 +24,9 @@ WorkshopListItem _$WorkshopListItemFromJson(Map<String, dynamic> json) =>
       artistImageUrls: (json['artist_image_urls'] as List<dynamic>?)
           ?.map((e) => e as String?)
           .toList(),
+      artistInstagramLinks: (json['artist_instagram_links'] as List<dynamic>?)
+          ?.map((e) => e as String?)
+          .toList(),
       date: json['date'] as String?,
       time: json['time'] as String?,
       eventType: json['event_type'] as String?,
@@ -44,6 +47,7 @@ Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
       'timestamp_epoch': instance.timestampEpoch,
       'artist_id_list': instance.artistIdList,
       'artist_image_urls': instance.artistImageUrls,
+      'artist_instagram_links': instance.artistInstagramLinks,
       'date': instance.date,
       'time': instance.time,
       'event_type': instance.eventType,

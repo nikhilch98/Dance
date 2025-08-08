@@ -11,39 +11,29 @@ import (
 	"sync"
 )
 
-type AdminStudioService interface {
-
-	// External Methods
-	GetInstance(webBasedStudioImpl BaseStudio, databaseImpl database.Database) AdminStudioService
-	RefreshWorkshopsGivenStudioId(studioId string) (any, *core.NachnaException)
-	RefreshStudios() (any, *core.NachnaException)
-	//Internal Methods
-	fetchStudioProcessorGivenStudioId(studioId string) (BaseStudio, *core.NachnaException, map[string]string)
-}
-
 var adminStudioServicelock = &sync.Mutex{}
 
 type AdminStudioServiceImpl struct {
-	webBasedStudioImpl BaseStudio
-	databaseImpl       database.Database
+	webBasedStudioImpl *WebBasedStudioImpl
+	databaseImpl       *database.MongoDBDatabaseImpl
 }
 
-var adminStudioServiceImpl *AdminStudioServiceImpl
+var adminStudioServiceInstance *AdminStudioServiceImpl
 
 // External Methods
 
-func (AdminStudioServiceImpl) GetInstance(webBasedStudioImpl BaseStudio, databaseImpl database.Database) AdminStudioService {
-	if adminStudioServiceImpl == nil {
+func (AdminStudioServiceImpl) GetInstance(webBasedStudioImpl *WebBasedStudioImpl, databaseImpl *database.MongoDBDatabaseImpl) *AdminStudioServiceImpl {
+	if adminStudioServiceInstance == nil {
 		adminStudioServicelock.Lock()
 		defer adminStudioServicelock.Unlock()
-		if adminStudioServiceImpl == nil {
-			adminStudioServiceImpl = &AdminStudioServiceImpl{
+		if adminStudioServiceInstance == nil {
+			adminStudioServiceInstance = &AdminStudioServiceImpl{
 				webBasedStudioImpl: webBasedStudioImpl,
 				databaseImpl:       databaseImpl,
 			}
 		}
 	}
-	return adminStudioServiceImpl
+	return adminStudioServiceInstance
 }
 
 func (a *AdminStudioServiceImpl) RefreshWorkshopsGivenStudioId(studioId string) (any, *core.NachnaException) {
@@ -100,7 +90,7 @@ func (a *AdminStudioServiceImpl) RefreshStudios() (any, *core.NachnaException) {
 }
 
 // Internal Methods
-func (a *AdminStudioServiceImpl) fetchStudioProcessorGivenStudioId(studioId string) (BaseStudio, *core.NachnaException, map[string]string) {
+func (a *AdminStudioServiceImpl) fetchStudioProcessorGivenStudioId(studioId string) (*WebBasedStudioImpl, *core.NachnaException, map[string]string) {
 	for _, studio := range config.Config.WebBasedStudios {
 		if studio.Name == studioId {
 			return a.webBasedStudioImpl, nil, map[string]string{
