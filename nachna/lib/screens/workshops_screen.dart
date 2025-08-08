@@ -6,6 +6,8 @@ import '../models/workshop.dart';
 import '../services/api_service.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../models/artist.dart';
+import 'artist_detail_screen.dart';
 
 class WorkshopsScreen extends StatefulWidget {
   const WorkshopsScreen({super.key});
@@ -408,7 +410,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: Image.asset(
-                'instagram-icon.png',
+                'assets/icons/instagram.png',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -535,7 +537,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                   height: ResponsiveUtils.iconMedium(context),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(6),
-                                    child: Image.asset('instagram-icon.png', fit: BoxFit.cover),
+                                    child: Image.asset('assets/icons/instagram.png', fit: BoxFit.cover),
                                   ),
                                 ),
                                 SizedBox(width: ResponsiveUtils.spacingSmall(context)),
@@ -1252,44 +1254,55 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
   Widget _buildArtistAvatars(WorkshopListItem workshop) {
     final artistImageUrls = workshop.artistImageUrls ?? [];
+    final artistIdList = workshop.artistIdList ?? [];
     final validImageUrls = artistImageUrls.where((url) => url != null && url.isNotEmpty).toList();
-    
+
     // If no valid images or only one artist, show single avatar
     if (validImageUrls.length <= 1) {
-      return Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: validImageUrls.isEmpty
-              ? const LinearGradient(
-                  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+      return GestureDetector(
+        onTap: () {
+          if (artistIdList.isNotEmpty && artistIdList[0].isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ArtistDetailScreen(artistId: artistIdList[0])),
+            );
+          }
+        },
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: validImageUrls.isEmpty
+                ? const LinearGradient(
+                    colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                  )
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D4FF).withOpacity(0.2),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: validImageUrls.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildDefaultAvatar(workshop.by);
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildDefaultAvatar(workshop.by);
+                    },
+                  ),
                 )
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF00D4FF).withOpacity(0.2),
-              blurRadius: 6,
-              spreadRadius: 1,
-            ),
-          ],
+              : _buildDefaultAvatar(workshop.by),
         ),
-        child: validImageUrls.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildDefaultAvatar(workshop.by);
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return _buildDefaultAvatar(workshop.by);
-                  },
-                ),
-              )
-            : _buildDefaultAvatar(workshop.by),
       );
     }
     
@@ -1306,37 +1319,47 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
           for (int i = 0; i < maxAvatars; i++)
             Positioned(
               left: i * overlapOffset,
-              child: Container(
-                width: avatarSize,
-                height: avatarSize,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00D4FF).withOpacity(0.2),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+              child: GestureDetector(
+                onTap: () {
+                  if (artistIdList.length > i && artistIdList[i].isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ArtistDetailScreen(artistId: artistIdList[i])),
+                    );
+                  }
+                },
+                child: Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00D4FF).withOpacity(0.2),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildSmallDefaultAvatar(workshop.by, i);
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _buildSmallDefaultAvatar(workshop.by, i);
+                        },
+                      ),
+                    ),
                 ),
-                                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildSmallDefaultAvatar(workshop.by, i);
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return _buildSmallDefaultAvatar(workshop.by, i);
-                      },
-                    ),
-                  ),
               ),
             ),
           // Show count if more than 3 artists
@@ -1525,4 +1548,4 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
       ),
     );
   }
-} 
+}
