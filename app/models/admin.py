@@ -19,3 +19,8 @@ class AnalyzeRequest(BaseModel):
     """Request model for the analysis endpoint."""
     link: HttpUrl
     ai_model: str  # 'openai' or 'gemini' 
+
+class CreateArtistPayload(BaseModel):
+    """Payload for creating a new artist."""
+    artist_id: str
+    artist_name: str

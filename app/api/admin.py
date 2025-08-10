@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from app.services.auth import verify_admin_user
-from app.models.admin import AssignArtistPayload, AssignSongPayload
+from app.models.admin import AssignArtistPayload, AssignSongPayload, CreateArtistPayload
 from utils.utils import get_mongo_client
 from app.database.reactions import ReactionOperations
 from app.database.users import UserOperations
@@ -37,6 +37,40 @@ def admin_list_artists(user_id: str = Depends(verify_admin_user)):
     """List all artists for admin."""
     client = get_mongo_client()
     return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}).sort("artist_name", 1))
+
+
+@router.post("/api/artist")
+def admin_add_artist(
+    payload: CreateArtistPayload = Body(...),
+    user_id: str = Depends(verify_admin_user)
+):
+    """Add a new artist."""
+    try:
+        # Check if artist already exists
+        client = get_mongo_client()
+        existing_artist = client["discovery"]["artists_v2"].find_one({"artist_id": payload.artist_id})
+        if existing_artist:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Artist with ID '{payload.artist_id}' already exists."
+            )
+
+        UserOperations.add_artist(
+            artist_id=payload.artist_id,
+            artist_name=payload.artist_name
+        )
+        return {
+            "success": True,
+            "message": "Artist added successfully.",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error adding new artist: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add new artist: {str(e)}"
+        )
 
 
 @router.get("/api/missing_artist_sessions")

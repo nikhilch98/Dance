@@ -161,3 +161,27 @@ class UserOperations:
         except Exception as e:
             print(f"Error getting total user count: {e}")
             return 0 
+
+    @staticmethod
+    def add_artist(artist_id: str, artist_name: str) -> dict:
+        """Adds a new artist to the database."""
+        client = get_mongo_client()
+        db = client["discovery"]
+        
+        instagram_link = f"https://www.instagram.com/{artist_id}/"
+        
+        artist_data = {
+            "artist_id": artist_id,
+            "artist_name": artist_name,
+            "instagram_link": instagram_link,
+            "image_url": None,
+        }
+        
+        result = db["artists_v2"].update_one(
+            {"artist_id": artist_id},
+            {"$set": artist_data},
+            upsert=True
+        )
+
+        artist_data["_id"] = result.upserted_id
+        return artist_data 
