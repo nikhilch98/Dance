@@ -991,18 +991,20 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header Row with Artist Name and Date Badge
+                // Header Row with Artist Name + Instagram icons and Date Badge
                 Row(
                   children: [
-                    // Artist Name (Main Title) with Instagram icon
-                    Expanded(
+                    // Name + Instagram icons tightly beside the name
+                    Flexible(
+                      fit: FlexFit.loose,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Expanded(
+                          Flexible(
                             child: Text(
-                              workshop.by?.isNotEmpty == true && workshop.by != 'TBA' 
-                                  ? toTitleCase(workshop.by!) 
+                              workshop.by?.isNotEmpty == true && workshop.by != 'TBA'
+                                  ? toTitleCase(workshop.by!)
                                   : 'Dance Workshop',
                               style: TextStyle(
                                 color: Colors.white,
@@ -1018,8 +1020,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         ],
                       ),
                     ),
-                    
-                    // Date Badge (aligned with artist name)
+                    const Spacer(),
+
+                    // Date Badge
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: ResponsiveUtils.spacingSmall(context), 
@@ -1133,7 +1136,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     
                     SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                     
-                    // Instagram Icon (if choreo link is available)
+                    // Play Button (if choreo link is available)
                     if (workshop.choreoInstaLink != null && workshop.choreoInstaLink!.isNotEmpty)
                       Container(
                         margin: EdgeInsets.only(right: ResponsiveUtils.spacingSmall(context)),
@@ -1158,34 +1161,22 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             height: ResponsiveUtils.iconLarge(context),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFE1306C), Color(0xFFC13584)],
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
+                                  color: const Color(0xFFE1306C).withOpacity(0.3),
                                   offset: const Offset(0, 2),
                                   blurRadius: 6,
                                 ),
                               ],
                             ),
                             child: Center(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                child: Image.asset(
-                                  'instagram-icon.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                        gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
-                                      ),
-                                      child: Icon(
-                                        Icons.camera_alt_rounded,
-                                        color: Colors.white,
-                                        size: ResponsiveUtils.iconSmall(context) * 0.9,
-                                      ),
-                                    );
-                                  },
-                                ),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: ResponsiveUtils.iconSmall(context),
                               ),
                             ),
                           ),
