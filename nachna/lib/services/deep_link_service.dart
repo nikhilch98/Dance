@@ -10,9 +10,15 @@ import '../main.dart';
 class DeepLinkService {
   static const String _baseUrl = 'https://nachna.com';
   static const MethodChannel _methodChannel = MethodChannel('nachna/deep_links');
+  static const MethodChannel _instagramShareChannel = MethodChannel('nachna/instagram_share');
   
   static DeepLinkService? _instance;
   static DeepLinkService get instance => _instance ??= DeepLinkService._internal();
+  
+  // Deduplication and reentrancy guards
+  static String? _lastHandledUrl;
+  static DateTime? _lastHandledAt;
+  static bool _isHandling = false;
   
   DeepLinkService._internal();
   
@@ -30,6 +36,8 @@ class DeepLinkService {
       });
       
       // Check for initial deep link when app is launched
+      // Avoid double-processing: iOS sometimes delivers continueUserActivity and initialLink
+      // We'll rely on continueUserActivity path; keep this call but guard inside handler
       final String? initialLink = await _methodChannel.invokeMethod('getInitialLink');
       if (initialLink != null) {
         await _handleIncomingLink(initialLink);
@@ -42,6 +50,20 @@ class DeepLinkService {
   /// Handle incoming deep link
   Future<void> _handleIncomingLink(String url) async {
     try {
+      // Drop duplicates within a short window
+      final now = DateTime.now();
+      if (_lastHandledUrl == url && _lastHandledAt != null && now.difference(_lastHandledAt!).inSeconds < 3) {
+        print('Deep link ignored (duplicate within window): $url');
+        return;
+      }
+      if (_isHandling) {
+        print('Deep link ignored (already handling): $url');
+        return;
+      }
+      _isHandling = true;
+      _lastHandledUrl = url;
+      _lastHandledAt = now;
+
       final uri = Uri.parse(url);
       print('Deep link received: $url');
       
@@ -73,6 +95,10 @@ class DeepLinkService {
       }
     } catch (e) {
       print('Error handling deep link: $e');
+    } finally {
+      // Keep a short lock to prevent UIKit re-entrant deliveries from bouncing us
+      await Future.delayed(const Duration(milliseconds: 250));
+      _isHandling = false;
     }
   }
   
@@ -84,7 +110,27 @@ class DeepLinkService {
 
   /// Generate shareable URL for a studio (direct app link)
   static String generateStudioShareUrl(String studioId) {
-    return 'nachna://studio/$studioId';
+    // Use a universal link so it opens in the app via iOS Universal Links / Android App Links,
+    // and falls back to the website when the app is not installed
+    return '$_baseUrl/studio/$studioId';
+  }
+
+  /// Share to Instagram Story (iOS). Returns true if Instagram story intent was opened.
+  static Future<bool> shareToInstagramStory({
+    required String contentUrl,
+    String? topColorHex,
+    String? bottomColorHex,
+  }) async {
+    try {
+      final bool ok = await _instagramShareChannel.invokeMethod('shareToStory', {
+        'contentURL': contentUrl,
+        'topColor': topColorHex,
+        'bottomColor': bottomColorHex,
+      });
+      return ok;
+    } catch (_) {
+      return false;
+    }
   }
   
   /// Internal method to navigate to artist (used by deep link handler)
@@ -99,6 +145,7 @@ class DeepLinkService {
       print('Navigating to artist: $artistId');
       
       // First navigate to home screen, then to artist detail
+      // Reset stack to a single HomeScreen to avoid route info errors
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
         (route) => false,
@@ -207,9 +254,9 @@ class DeepLinkService {
       print('Navigating to artist: $artistId');
       
       // First navigate to home screen, then to artist detail
-      navigator.pushAndRemoveUntil(
+      navigator.popUntil((route) => route.isFirst);
+      navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
-        (route) => false,
       );
       
       // Add a small delay to ensure the home screen is loaded

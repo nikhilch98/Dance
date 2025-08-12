@@ -30,6 +30,8 @@
 	<array>
 		<string>instagram</string>
 		<string>instagram-stories</string>
+		<string>whatsapp</string>
+		<string>whatsapp-business</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>

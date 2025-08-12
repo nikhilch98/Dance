@@ -8,6 +8,10 @@ import UserNotifications
   private var deviceTokenString: String?
   private var permissionStatusObserver: NSObjectProtocol?
   private var deepLinkChannel: FlutterMethodChannel?
+  private var instagramShareChannel: FlutterMethodChannel?
+  // Deduplicate rapid duplicate deep link deliveries from iOS
+  private var lastDeepLinkUrl: String?
+  private var lastDeepLinkAt: Date?
   
   override func application(
     _ application: UIApplication,
@@ -41,6 +45,10 @@ import UserNotifications
     deepLinkChannel = FlutterMethodChannel(name: "nachna/deep_links", binaryMessenger: controller.binaryMessenger)
     
     setupDeepLinkMethodChannel()
+
+    // Set up Instagram share method channel
+    instagramShareChannel = FlutterMethodChannel(name: "nachna/instagram_share", binaryMessenger: controller.binaryMessenger)
+    setupInstagramShareMethodChannel()
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -470,7 +478,8 @@ import UserNotifications
   // Handle custom URL schemes
   override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
     handleDeepLink(url: url)
-    return super.application(app, open: url, options: options)
+    // Return true to indicate we handled the URL and prevent iOS from falling back to Safari
+    return true
   }
   
   // Handle universal links
@@ -479,11 +488,57 @@ import UserNotifications
        let url = userActivity.webpageURL {
       handleDeepLink(url: url)
     }
-    return super.application(application, continue: userActivity, restorationHandler: restorationHandler)
+    // Return true to indicate we handled the universal link to avoid Safari bounce
+    return true
   }
   
   private func handleDeepLink(url: URL) {
-    print("Deep link received: \(url.absoluteString)")
-    deepLinkChannel?.invokeMethod("handleDeepLink", arguments: url.absoluteString)
+    let incoming = url.absoluteString
+    let now = Date()
+    if let lastUrl = lastDeepLinkUrl, let lastAt = lastDeepLinkAt {
+      if lastUrl == incoming && now.timeIntervalSince(lastAt) < 2.0 {
+        print("Deep link ignored (native duplicate within window): \(incoming)")
+        return
+      }
+    }
+    lastDeepLinkUrl = incoming
+    lastDeepLinkAt = now
+    print("Deep link received: \(incoming)")
+    deepLinkChannel?.invokeMethod("handleDeepLink", arguments: incoming)
+  }
+
+  private func setupInstagramShareMethodChannel() {
+    instagramShareChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+      guard let self = self else { result(FlutterError(code: "UNAVAILABLE", message: "Self deallocated", details: nil)); return }
+      switch call.method {
+      case "shareToStory":
+        guard let args = call.arguments as? [String: Any],
+              let contentURL = args["contentURL"] as? String else {
+          result(FlutterError(code: "BAD_ARGS", message: "contentURL required", details: nil))
+          return
+        }
+        let topColor = args["topColor"] as? String
+        let bottomColor = args["bottomColor"] as? String
+        let success = self.shareToInstagramStory(contentURL: contentURL, topColor: topColor, bottomColor: bottomColor)
+        result(success)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func shareToInstagramStory(contentURL: String, topColor: String?, bottomColor: String?) -> Bool {
+    guard let urlScheme = URL(string: "instagram-stories://share"), UIApplication.shared.canOpenURL(urlScheme) else {
+      return false
+    }
+    var pasteboardItems: [String: Any] = [
+      "com.instagram.sharedSticker.contentURL": contentURL
+    ]
+    if let topColor = topColor { pasteboardItems["com.instagram.sharedSticker.backgroundTopColor"] = topColor }
+    if let bottomColor = bottomColor { pasteboardItems["com.instagram.sharedSticker.backgroundBottomColor"] = bottomColor }
+
+    UIPasteboard.general.setItems([pasteboardItems], options: [UIPasteboard.OptionsKey.expirationDate: Date().addingTimeInterval(300)])
+    UIApplication.shared.open(urlScheme, options: [:], completionHandler: nil)
+    return true
   }
 }

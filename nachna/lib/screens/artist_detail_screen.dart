@@ -116,12 +116,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     try {
       final shareUrl = DeepLinkService.generateArtistShareUrl(_artist!.id);
       final shareText = 'Check out ${toTitleCase(_artist!.name)} on Nachna! 💃🕺\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
-      await Share.share(
-        shareText,
-        subject: 'Discover ${toTitleCase(_artist!.name)} on Nachna',
-        // Provide a universal non-zero origin rect; Share will ignore on platforms that don't need it
-        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-      );
+      await _showShareOptions(shareText);
     } catch (e) {
       print('Error sharing artist: $e');
       if (mounted) {
@@ -133,6 +128,153 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
         );
       }
     }
+  }
+
+  Future<void> _shareViaWhatsApp(String text) async {
+    try {
+      final encoded = Uri.encodeComponent(text);
+      // Try WhatsApp Business first
+      final waBizUri = Uri.parse('whatsapp-business://send?text=$encoded');
+      if (await canLaunchUrl(waBizUri)) {
+        await launchUrl(waBizUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+      // Then standard WhatsApp
+      final waUri = Uri.parse('whatsapp://send?text=$encoded');
+      if (await canLaunchUrl(waUri)) {
+        await launchUrl(waUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+      final waWeb = Uri.parse('https://wa.me/?text=$encoded');
+      if (await canLaunchUrl(waWeb)) {
+        await launchUrl(waWeb, mode: LaunchMode.externalApplication);
+        return;
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('WhatsApp not available'),
+          backgroundColor: Colors.red.withOpacity(0.8),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Could not open WhatsApp'),
+          backgroundColor: Colors.red.withOpacity(0.8),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showShareOptions(String text) async {
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                Colors.black.withOpacity(0.55),
+                Colors.black.withOpacity(0.45),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.0),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.asset('whatsapp-icon.png', width: 28, height: 28, fit: BoxFit.cover),
+                  ),
+                  title: const Text('Share on WhatsApp', style: TextStyle(color: Colors.white)),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    // Prefer WhatsApp Business if installed, else WhatsApp
+                    await _shareViaWhatsApp(text);
+                  },
+                ),
+                const Divider(color: Colors.white24, height: 1),
+                ListTile(
+                  leading: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          offset: const Offset(0, 2),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.asset(
+                        'instagram-icon.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  title: const Text('Share to Instagram Story', style: TextStyle(color: Colors.white)),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    final ok = await DeepLinkService.shareToInstagramStory(
+                      contentUrl: DeepLinkService.generateArtistShareUrl(_artist!.id),
+                      topColorHex: '#FF006E',
+                      bottomColorHex: '#00D4FF',
+                    );
+                    if (!ok && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Instagram not available'),
+                          backgroundColor: Colors.red.withOpacity(0.8),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const Divider(color: Colors.white24, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.ios_share, color: Color(0xFF00D4FF)),
+                  title: const Text('More...', style: TextStyle(color: Colors.white)),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await Share.share(
+                      text,
+                      sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _handleLikeArtist() async {
