@@ -134,4 +134,46 @@ class AdminService {
       return [];
     }
   }
+
+  /// Add a new artist (admin only)
+  static Future<bool> addArtist({
+    required String artistId,
+    required String artistName,
+  }) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/artist'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'artist_id': artistId,
+          'artist_name': artistName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data is Map<String, dynamic> && (data['success'] == true);
+      } else if (response.statusCode == 409) {
+        // Artist already exists – treat as a handled error for UI messaging
+        throw Exception("Artist with this ID already exists");
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please log in again.');
+      } else if (response.statusCode == 403) {
+        throw Exception('Admin access required.');
+      } else {
+        throw Exception('Failed to add artist (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      print('[AdminService] Error adding artist: $e');
+      rethrow;
+    }
+  }
 } 

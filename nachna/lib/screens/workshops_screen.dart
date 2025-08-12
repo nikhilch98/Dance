@@ -410,14 +410,19 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: Image.asset(
-                'assets/icons/instagram.png',
+                'instagram-icon.png',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
+                      gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: ResponsiveUtils.iconXSmall(context) * 0.9,
                       ),
                     ),
                   );
@@ -1153,22 +1158,34 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             height: ResponsiveUtils.iconLarge(context),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFE1306C), Color(0xFFC13584)],
-                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFE1306C).withOpacity(0.3),
+                                  color: Colors.black.withOpacity(0.25),
                                   offset: const Offset(0, 2),
                                   blurRadius: 6,
                                 ),
                               ],
                             ),
                             child: Center(
-                              child: Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: ResponsiveUtils.iconSmall(context),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                child: Image.asset(
+                                  'instagram-icon.png',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                        gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
+                                      ),
+                                      child: Icon(
+                                        Icons.camera_alt_rounded,
+                                        color: Colors.white,
+                                        size: ResponsiveUtils.iconSmall(context) * 0.9,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
