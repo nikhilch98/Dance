@@ -21,17 +21,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _selectedIndex;
+  late PageController _pageController;
+  bool? _isAdminCached;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
+    _pageController = PageController(initialPage: _selectedIndex);
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -54,22 +68,39 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         
         final isAdmin = configProvider.isAdmin;
+        if (_isAdminCached != isAdmin) {
+          // Rebuild the page controller if the number of tabs changes
+          _isAdminCached = isAdmin;
+          final maxIndex = isAdmin ? 5 : 4;
+          if (_selectedIndex > maxIndex) {
+            _selectedIndex = maxIndex;
+          }
+          _pageController.dispose();
+          _pageController = PageController(initialPage: _selectedIndex);
+        }
         
         // Define screens based on admin status
         final screens = <Widget>[
-          const StudiosScreen(),
-          const ArtistsScreen(),
-          const WorkshopsScreen(),
-          const SearchScreen(),
-          if (isAdmin) const AdminScreen(),
-          const ProfileScreen(),
+          const StudiosScreen(key: PageStorageKey('studios')),
+          const ArtistsScreen(key: PageStorageKey('artists')),
+          const WorkshopsScreen(key: PageStorageKey('workshops')),
+          const SearchScreen(key: PageStorageKey('search')),
+          if (isAdmin) const AdminScreen(key: PageStorageKey('admin')),
+          const ProfileScreen(key: PageStorageKey('profile')),
         ];
 
         return Scaffold(
           backgroundColor: const Color(0xFF0A0A0F),
           extendBody: true, // This extends the body behind the bottom nav
-          body: Center(
-            child: screens.elementAt(_selectedIndex),
+          body: PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            children: screens,
           ),
 
           bottomNavigationBar: Container(

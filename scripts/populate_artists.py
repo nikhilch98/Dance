@@ -153,7 +153,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Prateek Aneja", "prateek.aneja"),
         Artist("Abhishek Vernekar", "abhishek_vernekar"),
         Artist("Prateek Shettigar", "prateekshettigar"),
-        Artist("Akash Salunkhe", "sky_uphold"),
+        Artist("Akash Salunkhe (Sky)", "sky_uphold"),
         Artist("Rajesh Kumar", "paletteof_colors"),
         Artist("Niraj Patel", "niraj_patel_06"),
         Artist("Ritu", "_burritu_"),

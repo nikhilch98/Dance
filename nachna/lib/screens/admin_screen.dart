@@ -15,6 +15,7 @@ import '../services/admin_service.dart';
 import '../models/app_insights.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/responsive_utils.dart';
+import '../utils/payment_link_utils.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -969,7 +970,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 itemCount: missingSongSessions.length,
                 itemBuilder: (context, index) {
                   final session = missingSongSessions[index];
-                  return _buildSessionCard(session, Icons.music_note, const Color(0xFFFF4081), showAssignSongButton: true);
+                  return _buildSessionCard(
+                    session,
+                    Icons.music_note,
+                    const Color(0xFFFF4081),
+                    showAssignSongButton: true,
+                    showRegisterButton: true,
+                  );
                 },
               ),
             ),
@@ -1107,7 +1114,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 itemCount: missingArtistSessions.length,
                 itemBuilder: (context, index) {
                   final session = missingArtistSessions[index];
-                  return _buildSessionCard(session, Icons.person, const Color(0xFFFF006E), showAssignButton: true);
+                  return _buildSessionCard(
+                    session,
+                    Icons.person,
+                    const Color(0xFFFF006E),
+                    showAssignButton: true,
+                    showRegisterButton: true,
+                  );
                 },
               ),
             ),
@@ -2098,7 +2111,14 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     return buffer.toString();
   }
 
-  Widget _buildSessionCard(Map<String, dynamic> session, IconData icon, Color accentColor, {bool showAssignButton = false, bool showAssignSongButton = false}) {
+  Widget _buildSessionCard(
+    Map<String, dynamic> session,
+    IconData icon,
+    Color accentColor, {
+    bool showAssignButton = false,
+    bool showAssignSongButton = false,
+    bool showRegisterButton = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -2307,6 +2327,44 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                       icon: const Icon(Icons.music_note, size: 20),
                       label: const Text(
                         'Assign Song',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (showRegisterButton) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await PaymentLinkUtils.launchPaymentLink(
+                          paymentLink: (session['payment_link'] ?? '').toString(),
+                          paymentLinkType: (session['payment_link_type'] ?? 'url')?.toString(),
+                          context: context,
+                          workshopDetails: {
+                            'song': (session['song'] ?? '').toString(),
+                            'artist': (session['original_by_field'] ?? '').toString(),
+                            'studio': (session['studio_name'] ?? '').toString(),
+                            'date': (session['date'] ?? '').toString(),
+                            'time': (session['time'] ?? '').toString(),
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Register',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
