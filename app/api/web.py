@@ -1,12 +1,16 @@
 """Web routes for serving static pages."""
 
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.database.workshops import DatabaseOperations
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+# Constants for Apple App Site Association (Universal Links)
+APPLE_TEAM_ID = "TJ9YTH589R"
+IOS_BUNDLE_ID = "com.nachna.nachna"
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -43,6 +47,41 @@ async def support(request: Request):
 async def ai_analyzer_page(request: Request):
     """Serve the AI analyzer page."""
     return templates.TemplateResponse("website/ai_analyzer.html", {"request": request})
+
+
+# --- Apple App Site Association (AASA) endpoints ---
+# These must be served as raw JSON (no redirects, no extensions) for iOS to verify
+
+def _aasa_payload() -> dict:
+    return {
+        "applinks": {
+            # Keep top-level "apps" for legacy compatibility
+            "apps": [],
+            "details": [
+                {
+                    # appID is TEAMID.BUNDLEID
+                    "appID": f"{APPLE_TEAM_ID}.{IOS_BUNDLE_ID}",
+                    # Only link paths we handle in the app
+                    "paths": [
+                        "/artist/*",
+                        "/studio/*",
+                    ],
+                }
+            ],
+        }
+    }
+
+
+@router.get("/.well-known/apple-app-site-association", include_in_schema=False)
+async def aasa_well_known() -> JSONResponse:
+    """Serve AASA from the well-known location."""
+    return JSONResponse(content=_aasa_payload(), media_type="application/json")
+
+
+@router.get("/apple-app-site-association", include_in_schema=False)
+async def aasa_root() -> JSONResponse:
+    """Serve AASA from the root as an additional location."""
+    return JSONResponse(content=_aasa_payload(), media_type="application/json")
 
 
 @router.get("/artist/{artist_id}", response_class=HTMLResponse)

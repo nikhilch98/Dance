@@ -69,6 +69,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
       await Share.share(
         shareText,
         subject: 'Discover ${toTitleCase(widget.studio.name)} on Nachna',
+        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
       );
     } catch (e) {
       print('Error sharing studio: $e');

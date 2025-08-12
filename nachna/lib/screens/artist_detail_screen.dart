@@ -116,10 +116,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     try {
       final shareUrl = DeepLinkService.generateArtistShareUrl(_artist!.id);
       final shareText = 'Check out ${toTitleCase(_artist!.name)} on Nachna! 💃🕺\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
-      
       await Share.share(
         shareText,
         subject: 'Discover ${toTitleCase(_artist!.name)} on Nachna',
+        // Provide a universal non-zero origin rect; Share will ignore on platforms that don't need it
+        sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
       );
     } catch (e) {
       print('Error sharing artist: $e');

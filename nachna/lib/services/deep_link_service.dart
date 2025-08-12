@@ -76,9 +76,10 @@ class DeepLinkService {
     }
   }
   
-  /// Generate shareable URL for an artist (direct app link)
+  /// Generate shareable URL for an artist.
+  /// Prefer universal link so it opens on web and defers to the app via iOS Universal Links / Android App Links.
   static String generateArtistShareUrl(String artistId) {
-    return 'nachna://artist/$artistId';
+    return '$_baseUrl/artist/$artistId';
   }
 
   /// Generate shareable URL for a studio (direct app link)
