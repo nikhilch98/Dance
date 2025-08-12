@@ -994,14 +994,14 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                 // Header Row with Artist Name + Instagram icons and Date Badge
                 Row(
                   children: [
-                    // Name + Instagram icons tightly beside the name
-                    Flexible(
-                      fit: FlexFit.loose,
+                    // Name + Instagram icons tightly beside the name (no extra gap)
+                    Expanded(
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisSize: MainAxisSize.max,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Flexible(
+                            fit: FlexFit.loose,
                             child: Text(
                               workshop.by?.isNotEmpty == true && workshop.by != 'TBA'
                                   ? toTitleCase(workshop.by!)
@@ -1011,8 +1011,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                 fontSize: ResponsiveUtils.body2(context),
                                 fontWeight: FontWeight.bold,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
                             ),
                           ),
                           SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
@@ -1020,7 +1021,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                         ],
                       ),
                     ),
-                    const Spacer(),
+                    SizedBox(width: ResponsiveUtils.spacingSmall(context)),
 
                     // Date Badge
                     Container(
