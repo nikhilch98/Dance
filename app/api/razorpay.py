@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Query, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 
 from app.database.orders import OrderOperations, WebhookOperations
 from app.models.orders import (
@@ -148,7 +149,13 @@ async def razorpay_webhook(
             processing_error=processing_error
         )
         
-        # 5. Return success response to Razorpay
+        # 5. Redirect to web order status page if we have order ID
+        if razorpay_payment_link_reference_id and (order_updated or razorpay_payment_link_status in ["paid", "completed"]):
+            redirect_url = f"https://nachna.com/order/status?order_id={razorpay_payment_link_reference_id}"
+            logger.info(f"Redirecting to order status page: {redirect_url}")
+            return RedirectResponse(url=redirect_url, status_code=302)
+        
+        # Fallback: Return JSON response for other cases
         response_message = "Webhook processed successfully"
         if processing_error:
             response_message += f" with warnings: {processing_error}"
@@ -162,8 +169,13 @@ async def razorpay_webhook(
     except Exception as e:
         logger.error(f"Critical error in webhook processing: {str(e)}")
         
-        # Even if there's an error, we should return success to Razorpay
-        # to prevent them from retrying the webhook
+        # Try to redirect even on error if we have order ID and payment was successful
+        if razorpay_payment_link_reference_id and razorpay_payment_link_status in ["paid", "completed"]:
+            redirect_url = f"https://nachna.com/order/status?order_id={razorpay_payment_link_reference_id}"
+            logger.info(f"Redirecting to order status page despite error: {redirect_url}")
+            return RedirectResponse(url=redirect_url, status_code=302)
+        
+        # Fallback: Return JSON response
         return WebhookResponse(
             success=True,
             message=f"Webhook received but processing failed: {str(e)}",
