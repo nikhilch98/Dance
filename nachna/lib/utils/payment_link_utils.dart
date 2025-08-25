@@ -1,18 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/order_service.dart';
+
 class PaymentLinkUtils {
   /// Handles launching payment links based on their type
-  /// [paymentLink] - The payment link (URL or phone number)
-  /// [paymentLinkType] - The type of payment link ('url' or 'whatsapp')
-  /// [context] - BuildContext for showing error messages
+  /// [paymentLink] - The payment link (URL or phone number), ignored for 'nachna' type
+  /// [paymentLinkType] - The type of payment link ('url', 'whatsapp', or 'nachna')
+  /// [context] - BuildContext for showing error messages and loading states
   /// [workshopDetails] - Optional workshop details for WhatsApp message
+  /// [workshopUuid] - Required for 'nachna' type to create payment link
   static Future<void> launchPaymentLink({
     required String paymentLink,
     String? paymentLinkType,
     required BuildContext context,
     Map<String, String?>? workshopDetails,
+    String? workshopUuid,
   }) async {
+    // Default to 'url' if paymentLinkType is null or empty for backward compatibility
+    final linkType = paymentLinkType?.toLowerCase() ?? 'url';
+    
+    print('🔍 Debug: paymentLink=$paymentLink, paymentLinkType=$paymentLinkType, linkType=$linkType, workshopUuid=$workshopUuid');
+    
+    // Handle 'nachna' payment type - create payment link via API
+    if (linkType == 'nachna') {
+      await _handleNachnaPayment(context, workshopUuid, workshopDetails);
+      return;
+    }
+    
+    // Handle traditional payment types
     if (paymentLink.isEmpty) {
       _showErrorSnackBar(context, 'Registration link not available');
       return;
@@ -20,11 +36,6 @@ class PaymentLinkUtils {
 
     try {
       Uri uri;
-      
-      // Default to 'url' if paymentLinkType is null or empty for backward compatibility
-      final linkType = paymentLinkType?.toLowerCase() ?? 'url';
-      
-      print('🔍 Debug: paymentLink=$paymentLink, paymentLinkType=$paymentLinkType, linkType=$linkType');
       
       switch (linkType) {
         case 'whatsapp':
@@ -59,6 +70,125 @@ class PaymentLinkUtils {
       
       _showErrorSnackBar(context, errorMessage);
     }
+  }
+
+  /// Handles 'nachna' payment type by creating payment link via API
+  static Future<void> _handleNachnaPayment(
+    BuildContext context,
+    String? workshopUuid,
+    Map<String, String?>? workshopDetails,
+  ) async {
+    if (workshopUuid == null || workshopUuid.isEmpty) {
+      _showErrorSnackBar(context, 'Workshop information not available');
+      return;
+    }
+
+    // Show loading dialog
+    final loadingDialog = _showLoadingDialog(context);
+
+    try {
+      final orderService = OrderService();
+      final result = await orderService.createPaymentLink(workshopUuid);
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (result.isSuccess) {
+        // Success - new payment link created
+        print('✅ Payment link created successfully: ${result.successResponse!.paymentLinkUrl}');
+        await _launchUrl(context, result.successResponse!.paymentLinkUrl);
+        
+      } else if (result.existingResponse != null) {
+        // Existing payment link found
+        final existingUrl = result.existingResponse!.existingPaymentLinkUrl;
+        if (existingUrl != null && existingUrl.isNotEmpty) {
+          print('📋 Using existing payment link: $existingUrl');
+          await _launchUrl(context, existingUrl);
+        } else {
+          _showErrorSnackBar(context, 'Existing payment link is invalid. Please contact support.');
+        }
+        
+      } else {
+        // Error occurred
+        final errorMessage = result.errorMessage ?? 'Failed to create payment link';
+        print('❌ Payment link creation failed: $errorMessage');
+        _showErrorSnackBar(context, errorMessage);
+      }
+      
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      print('❌ Error in _handleNachnaPayment: $e');
+      _showErrorSnackBar(context, e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Helper method to launch URL with error handling
+  static Future<void> _launchUrl(BuildContext context, String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('✅ Successfully launched: $uri');
+      } else {
+        throw Exception('Cannot launch $url');
+      }
+    } catch (e) {
+      print('❌ Error launching URL: $e');
+      _showErrorSnackBar(context, 'Could not open payment link. Please try again.');
+    }
+  }
+
+  /// Shows loading dialog for payment link creation
+  static void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.15),
+                  Colors.white.withOpacity(0.05),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Creating payment link...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Builds WhatsApp URI from phone number with optional message

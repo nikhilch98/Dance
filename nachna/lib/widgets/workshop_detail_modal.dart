@@ -47,6 +47,7 @@ class WorkshopDetailModal extends StatelessWidget {
                         'time': workshop.time,
                         'pricing': workshop.pricingInfo,
                       },
+                      workshopUuid: workshop.timestampEpoch.toString(), // WorkshopSession uses timestampEpoch as ID
                     );
                   },
                   style: ElevatedButton.styleFrom(

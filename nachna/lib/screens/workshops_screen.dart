@@ -1203,6 +1203,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                     'time': workshop.time,
                                     'pricing': workshop.pricingInfo,
                                   },
+                                  workshopUuid: workshop.uuid,
                                 );
                               },
                               child: Container(

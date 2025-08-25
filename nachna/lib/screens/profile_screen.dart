@@ -11,6 +11,7 @@ import '../utils/responsive_utils.dart';
 import '../providers/config_provider.dart';
 import '../providers/global_config_provider.dart';
 import '../providers/reaction_provider.dart';
+import 'orders_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -214,6 +215,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           
                           // Profile Actions
                           _buildProfileActions(user),
+                          
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
+                          
+                          // Orders Section
+                          _buildOrdersSection(user),
                           
                           SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                           
@@ -516,6 +522,88 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icons.edit_rounded,
           const Color(0xFF3B82F6),
           () => _navigateToEditProfile(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrdersSection(User user) {
+    return Container(
+      padding: ResponsiveUtils.paddingLarge(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+          width: ResponsiveUtils.borderWidthThin(context),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: ResponsiveUtils.paddingSmall(context),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long_rounded,
+                      color: Colors.white,
+                      size: ResponsiveUtils.iconSmall(context),
+                    ),
+                  ),
+                  SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                  Expanded(
+                    child: Text(
+                      'My Orders',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.body1(context),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white.withOpacity(0.5),
+                    size: ResponsiveUtils.iconSmall(context),
+                  ),
+                ],
+              ),
+              SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+              Text(
+                'View and manage your workshop registrations',
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.body2(context),
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+              SizedBox(
+                width: double.infinity,
+                child: _buildActionButton(
+                  'View All Orders',
+                  Icons.receipt_long_rounded,
+                  const Color(0xFF3B82F6),
+                  () => _navigateToOrders(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -878,6 +966,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _navigateToEditProfile() {
     Navigator.pushNamed(context, '/profile-setup');
+  }
+
+  void _navigateToOrders() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OrdersScreen()),
+    );
   }
 
   void _showLogoutDialog() {
