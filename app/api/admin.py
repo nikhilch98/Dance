@@ -33,14 +33,14 @@ class TestNotificationPayload(BaseModel):
     body: Optional[str] = "This is a test notification from Nachna admin."
 
 
-@router.get("/api/artists")
+@router.get("/artists")
 def admin_list_artists(user_id: str = Depends(verify_admin_user)):
     """List all artists for admin."""
     client = get_mongo_client()
     return list(client["discovery"]["artists_v2"].find({}, {"_id": 0}).sort("artist_name", 1))
 
 
-@router.post("/api/artist")
+@router.post("/artist")
 def admin_add_artist(
     payload: CreateArtistPayload = Body(...),
     user_id: str = Depends(verify_admin_user)
@@ -74,7 +74,7 @@ def admin_add_artist(
         )
 
 
-@router.get("/api/missing_artist_sessions")
+@router.get("/missing_artist_sessions")
 def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user)):
     """Get workshops with missing artist assignments."""
     from bson import ObjectId
@@ -127,7 +127,7 @@ def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user))
     return missing_artist_sessions
 
 
-@router.get("/api/missing_song_sessions")
+@router.get("/missing_song_sessions")
 def admin_get_missing_song_sessions(user_id: str = Depends(verify_admin_user)):
     """Get workshops with missing song assignments."""
     from bson import ObjectId
@@ -188,7 +188,7 @@ async def admin_panel(request: Request, user_id: str = Depends(verify_admin_user
     )
 
 
-@router.put("/api/workshops/{workshop_uuid}/assign_artist")
+@router.put("/workshops/{workshop_uuid}/assign_artist")
 def admin_assign_artist_to_session(
     workshop_uuid: str, 
     payload: AssignArtistPayload = Body(...), 
@@ -223,7 +223,7 @@ def admin_assign_artist_to_session(
     }
 
 
-@router.put("/api/workshops/{workshop_uuid}/assign_song")
+@router.put("/workshops/{workshop_uuid}/assign_song")
 def admin_assign_song_to_session(
     workshop_uuid: str, 
     payload: AssignSongPayload = Body(...), 
@@ -254,7 +254,7 @@ def admin_assign_song_to_session(
     }
 
 
-@router.post("/api/send-test-notification")
+@router.post("/send-test-notification")
 async def admin_send_test_notification(
     payload: TestNotificationPayload = Body(...), 
     user_id: str = Depends(verify_admin_user)
@@ -403,7 +403,7 @@ async def admin_send_test_notification(
         ) 
 
 
-@router.get("/api/app-insights")
+@router.get("/app-insights")
 async def get_app_insights(user_id: str = Depends(verify_admin_user)):
     """Get application insights and statistics."""
     try:
@@ -446,7 +446,7 @@ async def get_app_insights(user_id: str = Depends(verify_admin_user)):
         )
 
 
-@router.get("/api/workshops/missing-instagram-links")
+@router.get("/workshops/missing-instagram-links")
 async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_admin_user)):
     """Get all workshops that are missing Instagram links."""
     try:
@@ -504,7 +504,7 @@ class UpdateInstagramLinkPayload(BaseModel):
     choreo_insta_link: str
 
 
-@router.put("/api/workshops/{workshop_id}/instagram-link")
+@router.put("/workshops/{workshop_id}/instagram-link")
 async def update_workshop_instagram_link(
     workshop_id: str,
     payload: UpdateInstagramLinkPayload = Body(...),
@@ -575,7 +575,7 @@ async def update_workshop_instagram_link(
         ) 
 
 
-@router.get("/api/artists/{artist_id}/choreo-links")
+@router.get("/artists/{artist_id}/choreo-links")
 async def get_artist_choreo_links(
     artist_id: str,
     user_id: str = Depends(verify_admin_user)
