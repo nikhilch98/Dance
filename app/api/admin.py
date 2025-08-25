@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from app.services.auth import verify_admin_user
-from app.models.admin import AssignArtistPayload, AssignSongPayload, CreateArtistPayload
+from app.models.admin import AssignArtistPayload, AssignSongPayload, CreateArtistPayload, QRVerificationRequest, QRVerificationResponse
 from utils.utils import get_mongo_client
 from app.database.reactions import ReactionOperations
 from app.database.users import UserOperations
@@ -17,6 +17,7 @@ from app.database.notifications import NotificationOperations
 from app.database.workshops import DatabaseOperations
 from app.models.reactions import ReactionType, EntityType
 from app.services.notifications import NotificationService
+from app.services.qr_service import get_qr_service
 import json
 import logging
 
@@ -618,4 +619,40 @@ async def get_artist_choreo_links(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get artist choreo links: {str(e)}"
+        )
+
+
+@router.post("/verify-qr", response_model=QRVerificationResponse)
+async def verify_qr_code(
+    request: QRVerificationRequest,
+    user_id: str = Depends(verify_admin_user)
+):
+    """Verify QR code authenticity and extract registration data."""
+    try:
+        qr_service = get_qr_service()
+        verification_result = qr_service.verify_qr_code(request.qr_data)
+        
+        # Log the verification attempt
+        logging.info(f"Admin {user_id} verified QR code - Valid: {verification_result.get('valid', False)}")
+        
+        if verification_result.get("valid"):
+            # Log successful verification with order details
+            registration_data = verification_result.get("registration_data", {})
+            order_id = registration_data.get("order_id", "unknown")
+            user_name = registration_data.get("registration", {}).get("user_name", "unknown")
+            workshop_title = registration_data.get("workshop", {}).get("title", "unknown")
+            
+            logging.info(f"QR Verification Success - Order: {order_id}, User: {user_name}, Workshop: {workshop_title}")
+        else:
+            # Log verification failure
+            error = verification_result.get("error", "unknown error")
+            logging.warning(f"QR Verification Failed - Admin: {user_id}, Error: {error}")
+        
+        return QRVerificationResponse(**verification_result)
+        
+    except Exception as e:
+        logging.error(f"Error verifying QR code: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to verify QR code: {str(e)}"
         ) 

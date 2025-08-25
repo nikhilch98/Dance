@@ -187,4 +187,53 @@ class OrderService {
       offset: offset,
     );
   }
+
+  /// Fetches the status of a specific order
+  /// This is optimized for order status polling
+  Future<Order> getOrderStatus(String orderId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final response = await _httpClient
+          .get(
+            Uri.parse('$baseUrl/api/orders/$orderId/status'),
+            headers: HttpClientService.getHeaders(authToken: token),
+          )
+          .timeout(requestTimeout);
+
+      print('[OrderService] Get order status response: ${response.statusCode}');
+      print('[OrderService] Order ID: $orderId');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true && responseData['order'] != null) {
+          return Order.fromJson(responseData['order']);
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else if (response.statusCode == 404) {
+        throw Exception('Order not found');
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expired. Please login again.');
+      } else {
+        final responseData = json.decode(response.body);
+        throw Exception(responseData['detail'] ?? 'Failed to fetch order status');
+      }
+      
+    } catch (e) {
+      print('[OrderService] Error fetching order status: $e');
+      
+      // Re-throw with user-friendly message
+      if (e.toString().contains('timeout')) {
+        throw Exception('Request timed out. Please check your internet connection.');
+      } else if (e.toString().contains('network')) {
+        throw Exception('Network error. Please check your internet connection.');
+      } else {
+        throw Exception(e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
 }

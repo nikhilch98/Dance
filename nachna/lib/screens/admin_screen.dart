@@ -16,6 +16,7 @@ import '../models/app_insights.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../widgets/qr_scanner_widget.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -64,7 +65,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _loadMissingArtistSessions();
     _loadMissingSongSessions();
     _loadAllArtists();
@@ -813,6 +814,22 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                              ],
                            ),
                          ),
+                         const Tab(
+                           child: Row(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               Icon(Icons.qr_code_scanner, size: 18),
+                               SizedBox(width: 6),
+                               Flexible(
+                                 child: Text(
+                                   'QR Scanner',
+                                   overflow: TextOverflow.ellipsis,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
                       ],
                     ),
                   ),
@@ -831,6 +848,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     _buildInstagramLinksTab(),
                      _buildInsightsTab(),
                      _buildDataUpdatesTab(),
+                     _buildQRScannerTab(),
                   ],
                 ),
               ),
@@ -4957,5 +4975,10 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
         ),
       ),
     );
+  }
+
+  /// Build QR Scanner tab
+  Widget _buildQRScannerTab() {
+    return const QRScannerWidget();
   }
 } 

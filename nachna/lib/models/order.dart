@@ -56,6 +56,10 @@ class Order {
   final OrderStatus status;
   @JsonKey(name: 'payment_link_url')
   final String? paymentLinkUrl;
+  @JsonKey(name: 'qr_code_data')
+  final String? qrCodeData;
+  @JsonKey(name: 'qr_code_generated_at')
+  final DateTime? qrCodeGeneratedAt;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'updated_at')
@@ -69,6 +73,8 @@ class Order {
     required this.currency,
     required this.status,
     this.paymentLinkUrl,
+    this.qrCodeData,
+    this.qrCodeGeneratedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -78,6 +84,56 @@ class Order {
 
   // Helper getters for UI
   String get formattedAmount => '₹${(amount / 100).toStringAsFixed(2)}';
+  
+  // Format order ID for user-friendly display
+  String get formattedOrderId {
+    // Show full order ID in a readable format: NACHNA-XXXXXXXX (last 8 chars)
+    if (orderId.length > 8) {
+      final lastEight = orderId.substring(orderId.length - 8).toUpperCase();
+      return 'NACHNA-$lastEight';
+    }
+    return orderId.toUpperCase();
+  }
+  
+  // Short order ID for compact display
+  String get shortOrderId {
+    if (orderId.length > 8) {
+      return orderId.substring(orderId.length - 8).toUpperCase();
+    }
+    return orderId.toUpperCase();
+  }
+  
+  // QR Code availability check
+  bool get hasQRCode => qrCodeData != null && qrCodeData!.isNotEmpty;
+  
+  // QR Code status text
+  String get qrCodeStatus {
+    if (status != OrderStatus.paid) {
+      return 'QR Available After Payment';
+    } else if (hasQRCode) {
+      return 'QR Code Ready';
+    } else {
+      return 'QR Code Generating...';
+    }
+  }
+  
+  // QR Code generated time formatted
+  String get qrCodeGeneratedTime {
+    if (qrCodeGeneratedAt == null) return 'Not generated';
+    
+    final now = DateTime.now();
+    final diff = now.difference(qrCodeGeneratedAt!);
+    
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inHours < 1) {
+      return '${diff.inMinutes} minutes ago';
+    } else if (diff.inDays < 1) {
+      return '${diff.inHours} hours ago';
+    } else {
+      return '${diff.inDays} days ago';
+    }
+  }
   
   String get statusText {
     switch (status) {
@@ -157,6 +213,18 @@ class PaymentLinkResponse {
 
   factory PaymentLinkResponse.fromJson(Map<String, dynamic> json) => _$PaymentLinkResponseFromJson(json);
   Map<String, dynamic> toJson() => _$PaymentLinkResponseToJson(this);
+
+  // Helper getters for UI
+  String get formattedOrderId {
+    // Show order ID in a readable format: NACHNA-XXXXXXXX (last 8 chars)
+    if (orderId.length > 8) {
+      final lastEight = orderId.substring(orderId.length - 8).toUpperCase();
+      return 'NACHNA-$lastEight';
+    }
+    return orderId.toUpperCase();
+  }
+
+  String get formattedAmount => '₹${(amount / 100).toStringAsFixed(2)}';
 }
 
 /// Response model for successful payment link creation (kept for backward compatibility)

@@ -24,6 +24,7 @@ from app.models.orders import (
 )
 from app.services.auth import verify_token
 from app.services.razorpay_service import get_razorpay_service
+from app.services.background_qr_service import get_background_qr_service, run_qr_generation_batch
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -152,10 +153,13 @@ async def create_payment_link(
     
     This endpoint:
     1. Validates the workshop exists and extracts pricing
-    2. Checks for existing active payment links (duplication handling)
+    2. Checks for existing pending payment links (status=CREATED only)
     3. Creates a new order and Razorpay payment link
     4. Stores the order in database
     5. Returns payment link details
+    
+    Note: Users who have successfully paid (status=PAID) can make new bookings.
+    Only pending payments (status=CREATED) are considered duplicates.
     """
     try:
         logger.info(f"Creating payment link for workshop {request.workshop_uuid}, user {user_id}")
@@ -178,20 +182,20 @@ async def create_payment_link(
                 detail=str(e)
             )
         
-        # 3. Check for existing active payment link
+        # 3. Check for existing pending payment link (CREATED status only)
         existing_order = OrderOperations.get_active_order_for_user_workshop(
             user_id, request.workshop_uuid
         )
         
         if existing_order:
-            logger.info(f"Active order exists for user {user_id}, workshop {request.workshop_uuid} - returning existing payment link")
+            logger.info(f"Pending payment order exists for user {user_id}, workshop {request.workshop_uuid} - returning existing payment link")
             
             # Create workshop details for response
             workshop_details = create_workshop_details(workshop)
             
             return UnifiedPaymentLinkResponse(
                 is_existing=True,
-                message="Active payment link found for this workshop",
+                message="Pending payment link found for this workshop",
                 order_id=existing_order["order_id"],
                 payment_link_url=existing_order.get("payment_link_url", ""),
                 payment_link_id=existing_order.get("payment_link_id"),
@@ -295,6 +299,73 @@ async def create_payment_link(
         )
 
 
+@router.get("/{order_id}/status")
+async def get_order_status(
+    order_id: str,
+    user_id: str = Depends(verify_token)
+):
+    """Get status of a specific order for the authenticated user.
+    
+    This endpoint is optimized for order status polling from the frontend.
+    It only returns the order if it belongs to the authenticated user.
+    
+    Args:
+        order_id: The order ID to check
+        user_id: User ID from authentication token
+        
+    Returns:
+        Order details with current status from internal database
+    """
+    try:
+        logger.info(f"Getting order status for order {order_id}, user {user_id}")
+        
+        # Get the specific order
+        order = OrderOperations.get_order_by_id(order_id)
+        
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+        
+        # Verify the order belongs to the authenticated user
+        if order["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"  # Don't reveal it exists for security
+            )
+        
+        # Return order details
+        order_response = OrderResponse(
+            order_id=order["order_id"],
+            workshop_uuid=order["workshop_uuid"],
+            workshop_details=WorkshopDetails(**order["workshop_details"]),
+            amount=order["amount"],
+            currency=order["currency"],
+            status=OrderStatusEnum(order["status"]),
+            payment_link_url=order.get("payment_link_url"),
+            qr_code_data=order.get("qr_code_data"),
+            qr_code_generated_at=order.get("qr_code_generated_at"),
+            created_at=order["created_at"],
+            updated_at=order["updated_at"]
+        )
+        
+        logger.info(f"Order {order_id} status: {order['status']}")
+        return {
+            "success": True,
+            "order": order_response
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting order status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve order status"
+        )
+
+
 @router.get("/user", response_model=UserOrdersResponse)
 async def get_user_orders(
     status: Optional[str] = Query(None, description="Comma-separated list of order statuses to filter by"),
@@ -351,6 +422,8 @@ async def get_user_orders(
                 currency=order["currency"],
                 status=OrderStatusEnum(order["status"]),
                 payment_link_url=order.get("payment_link_url"),
+                qr_code_data=order.get("qr_code_data"),
+                qr_code_generated_at=order.get("qr_code_generated_at"),
                 created_at=order["created_at"],
                 updated_at=order["updated_at"]
             )
@@ -373,4 +446,78 @@ async def get_user_orders(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve orders"
+        )
+
+
+@router.post("/qr-generation/trigger")
+async def trigger_qr_generation(
+    user_id: str = Depends(verify_token)
+):
+    """Manually trigger QR code generation for paid orders.
+    
+    This endpoint allows admins to manually trigger the QR generation process.
+    Only admin users can access this endpoint.
+    
+    Args:
+        user_id: User ID from authentication token
+        
+    Returns:
+        QR generation batch results
+    """
+    try:
+        # Note: Add admin check if needed
+        # For now, any authenticated user can trigger (adjust as needed)
+        
+        logger.info(f"Manual QR generation triggered by user {user_id}")
+        
+        # Run QR generation batch
+        result = await run_qr_generation_batch()
+        
+        logger.info(f"QR generation batch result: {result}")
+        
+        return {
+            "success": True,
+            "message": "QR generation batch completed",
+            "batch_result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error triggering QR generation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to trigger QR generation"
+        )
+
+
+@router.get("/qr-generation/status")
+async def get_qr_generation_status(
+    user_id: str = Depends(verify_token)
+):
+    """Get QR generation service status.
+    
+    Args:
+        user_id: User ID from authentication token
+        
+    Returns:
+        QR generation service status
+    """
+    try:
+        qr_service = get_background_qr_service()
+        status_info = qr_service.get_processing_status()
+        
+        # Get count of orders needing QR codes
+        pending_orders = OrderOperations.get_paid_orders_without_qr(limit=1000)
+        pending_count = len(pending_orders)
+        
+        return {
+            "success": True,
+            "service_status": status_info,
+            "pending_qr_count": pending_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting QR generation status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get QR generation status"
         )

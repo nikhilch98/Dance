@@ -39,6 +39,10 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
       currency: json['currency'] as String,
       status: $enumDecode(_$OrderStatusEnumMap, json['status']),
       paymentLinkUrl: json['payment_link_url'] as String?,
+      qrCodeData: json['qr_code_data'] as String?,
+      qrCodeGeneratedAt: json['qr_code_generated_at'] == null
+          ? null
+          : DateTime.parse(json['qr_code_generated_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -51,6 +55,8 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
       'currency': instance.currency,
       'status': _$OrderStatusEnumMap[instance.status]!,
       'payment_link_url': instance.paymentLinkUrl,
+      'qr_code_data': instance.qrCodeData,
+      'qr_code_generated_at': instance.qrCodeGeneratedAt?.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };

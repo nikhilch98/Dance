@@ -97,11 +97,21 @@ class PaymentLinkUtils {
 
       if (result.isSuccess && result.paymentUrl != null) {
         // Success - payment link ready (new or existing)
+        final orderIdText = result.response?.formattedOrderId ?? 'N/A';
+        
         if (result.isExisting) {
           print('📋 Using existing payment link: ${result.paymentUrl}');
+          print('📋 Order ID: $orderIdText');
+          _showSuccessSnackBar(context, 'Using existing order: $orderIdText');
         } else {
           print('✅ Payment link created successfully: ${result.paymentUrl}');
+          print('✅ Order ID: $orderIdText');
+          _showSuccessSnackBar(context, 'Order created: $orderIdText');
         }
+        
+        // Navigate to order status screen before launching payment URL
+        _navigateToOrderStatus(context, result.response!);
+        
         await _launchUrl(context, result.paymentUrl!);
         
       } else {
@@ -269,6 +279,42 @@ class PaymentLinkUtils {
           borderRadius: BorderRadius.circular(12),
         ),
         margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  /// Shows success snackbar with consistent styling
+  static void _showSuccessSnackBar(BuildContext context, String message) {
+    if (!context.mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }

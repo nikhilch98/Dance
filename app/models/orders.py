@@ -59,6 +59,8 @@ class Order(BaseModel):
     payment_link_url: Optional[str] = None
     expires_at: Optional[datetime] = None
     payment_gateway_details: Optional[Dict[str, Any]] = None
+    qr_code_data: Optional[str] = None  # Base64 encoded QR code image
+    qr_code_generated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -72,6 +74,8 @@ class OrderResponse(BaseModel):
     currency: str
     status: OrderStatusEnum
     payment_link_url: Optional[str] = None
+    qr_code_data: Optional[str] = None  # Base64 encoded QR code image
+    qr_code_generated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import '../models/qr_verification.dart';
 
 class AdminService {
   static const String baseUrl = 'https://nachna.com/admin/api';
@@ -173,6 +174,44 @@ class AdminService {
       }
     } catch (e) {
       print('[AdminService] Error adding artist: $e');
+      rethrow;
+    }
+  }
+
+  /// Verify QR code and extract registration data
+  static Future<QRVerificationResponse> verifyQRCode(String qrData) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+
+      final request = QRVerificationRequest(qrData: qrData);
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/verify-qr'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(request.toJson()),
+      );
+
+      print('[AdminService] QR verification response: ${response.statusCode}');
+      print('[AdminService] QR verification body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return QRVerificationResponse.fromJson(data);
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please log in again.');
+      } else if (response.statusCode == 403) {
+        throw Exception('Admin access required.');
+      } else {
+        throw Exception('Failed to verify QR code (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      print('[AdminService] Error verifying QR code: $e');
       rethrow;
     }
   }

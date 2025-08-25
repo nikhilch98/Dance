@@ -1,6 +1,6 @@
 """Admin-related data models."""
 
-from typing import List
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, HttpUrl
 
 
@@ -24,3 +24,25 @@ class CreateArtistPayload(BaseModel):
     """Payload for creating a new artist."""
     artist_id: str
     artist_name: str
+
+
+class QRVerificationRequest(BaseModel):
+    """Request model for QR code verification."""
+    qr_data: str
+
+
+class QRVerificationResponse(BaseModel):
+    """Response model for QR code verification."""
+    valid: bool
+    error: Optional[str] = None
+    registration_data: Optional[Dict[str, Any]] = None
+    verification_details: Optional[Dict[str, Any]] = None
+
+
+class RegistrationData(BaseModel):
+    """Model for registration data extracted from QR code."""
+    order_id: str
+    workshop: Dict[str, Any]
+    registration: Dict[str, Any]
+    verification: Dict[str, Any]
+    payment: Optional[Dict[str, Any]] = None

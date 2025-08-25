@@ -7,6 +7,7 @@ import '../models/order.dart';
 import '../services/order_service.dart';
 import '../providers/auth_provider.dart';
 import '../utils/responsive_utils.dart';
+import '../widgets/qr_code_display.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -409,37 +410,39 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildOrderCard(Order order, int index) {
-    return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.15),
-            Colors.white.withOpacity(0.05),
+    return GestureDetector(
+      onTap: () => _handleOrderTap(order),
+      child: Container(
+        margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingMedium(context)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.15),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: ResponsiveUtils.borderWidthThin(context),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 2),
+              blurRadius: 8,
+            ),
           ],
         ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: ResponsiveUtils.borderWidthThin(context),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: ResponsiveUtils.paddingLarge(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Padding(
+              padding: ResponsiveUtils.paddingLarge(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Header Row
                 Row(
                   children: [
@@ -459,10 +462,12 @@ class _OrdersScreenState extends State<OrdersScreen>
                           ),
                           SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
                           Text(
-                            'Order #${order.orderId.substring(order.orderId.length - 8)}',
+                            'Order ID: ${order.formattedOrderId}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: const Color(0xFF00D4FF),
                               fontSize: ResponsiveUtils.micro(context),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
@@ -543,7 +548,43 @@ class _OrdersScreenState extends State<OrdersScreen>
                     fontSize: ResponsiveUtils.micro(context),
                   ),
                 ),
-              ],
+                
+                // QR Code indicator for paid orders
+                if (order.status == OrderStatus.paid) ...[
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                  Row(
+                    children: [
+                      Icon(
+                        order.hasQRCode ? Icons.qr_code : Icons.hourglass_top,
+                        color: order.hasQRCode ? const Color(0xFF10B981) : Colors.orange,
+                        size: ResponsiveUtils.iconXSmall(context),
+                      ),
+                      SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                      Expanded(
+                        child: Text(
+                          order.hasQRCode 
+                            ? 'Tap to view QR code' 
+                            : 'QR code generating...',
+                          style: TextStyle(
+                            color: order.hasQRCode 
+                              ? const Color(0xFF10B981)
+                              : Colors.orange,
+                            fontSize: ResponsiveUtils.micro(context),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (order.hasQRCode)
+                        Icon(
+                          Icons.touch_app,
+                          color: const Color(0xFF10B981).withOpacity(0.6),
+                          size: ResponsiveUtils.iconXSmall(context),
+                        ),
+                    ],
+                  ),
+                ],
+                ],
+              ),
             ),
           ),
         ),
@@ -645,6 +686,80 @@ class _OrdersScreenState extends State<OrdersScreen>
     final amPm = hour >= 12 ? 'PM' : 'AM';
     final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
     return '$displayHour:$minute $amPm';
+  }
+
+  void _handleOrderTap(Order order) {
+    if (order.status == OrderStatus.paid) {
+      if (order.hasQRCode) {
+        // Show QR code in fullscreen
+        QRCodeDisplay.showFullscreen(context, order);
+      } else {
+        // Show message that QR code is being generated
+        _showInfoSnackBar('Your QR code is being generated. Please check back in a few minutes.');
+      }
+    } else {
+      // For non-paid orders, show order details or payment option
+      if (order.paymentLinkUrl != null) {
+        _showPaymentPrompt(order);
+      } else {
+        _showInfoSnackBar('Order details: ${order.statusText}');
+      }
+    }
+  }
+
+  void _showPaymentPrompt(Order order) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Complete Payment',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Complete your payment for ${order.workshopDetails.title} to receive your QR code.',
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white.withOpacity(0.6)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _launchPaymentUrl(order.paymentLinkUrl!);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Pay Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoSnackBar(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF3B82F6),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
   }
 
   void _showErrorSnackBar(String message) {

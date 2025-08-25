@@ -78,21 +78,24 @@ class OrderOperations:
     
     @staticmethod
     def get_active_order_for_user_workshop(user_id: str, workshop_uuid: str) -> Optional[Dict[str, Any]]:
-        """Get active order for user and workshop combination.
+        """Get active (pending payment) order for user and workshop combination.
+        
+        Only CREATED orders are considered active. PAID orders are considered complete
+        and users should be allowed to make new bookings for the same workshop.
         
         Args:
             user_id: User identifier
             workshop_uuid: Workshop UUID
             
         Returns:
-            Active order document or None
+            Active order document (status=CREATED only) or None
         """
         client = get_mongo_client()
         
-        # Look for orders that are not expired/failed/cancelled
+        # Look for orders that are pending payment only
+        # PAID orders should NOT be considered active - users should be able to book again
         active_statuses = [
-            OrderStatusEnum.CREATED.value,
-            OrderStatusEnum.PAID.value
+            OrderStatusEnum.CREATED.value
         ]
         
         order = client["dance_app"]["orders"].find_one({
@@ -303,3 +306,114 @@ class WebhookOperations:
             {"$set": update_data}
         )
         return result.modified_count > 0
+    
+    @staticmethod
+    def get_paid_orders_without_qr(limit: int = 50) -> List[Dict[str, Any]]:
+        """Get paid orders that don't have QR codes generated.
+        
+        Args:
+            limit: Maximum number of orders to return
+            
+        Returns:
+            List of order documents without QR codes
+        """
+        client = get_mongo_client()
+        
+        pipeline = [
+            {
+                "$match": {
+                    "status": OrderStatusEnum.PAID.value,
+                    "$or": [
+                        {"qr_code_data": {"$exists": False}},
+                        {"qr_code_data": None}
+                    ]
+                }
+            },
+            {
+                "$sort": {"created_at": 1}  # Process older orders first
+            },
+            {
+                "$limit": limit
+            }
+        ]
+        
+        return list(client["dance_app"]["orders"].aggregate(pipeline))
+    
+    @staticmethod
+    def update_order_qr_code(order_id: str, qr_code_data: str) -> bool:
+        """Update an order with QR code data.
+        
+        Args:
+            order_id: Order identifier
+            qr_code_data: Base64 encoded QR code image
+            
+        Returns:
+            Success status
+        """
+        client = get_mongo_client()
+        
+        update_data = {
+            "qr_code_data": qr_code_data,
+            "qr_code_generated_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        result = client["dance_app"]["orders"].update_one(
+            {"order_id": order_id},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
+    
+    @staticmethod
+    def get_order_for_qr_generation(order_id: str) -> Optional[Dict[str, Any]]:
+        """Get order details needed for QR code generation.
+        
+        Args:
+            order_id: Order identifier
+            
+        Returns:
+            Order document with necessary fields for QR generation
+        """
+        client = get_mongo_client()
+        
+        projection = {
+            "order_id": 1,
+            "user_id": 1,
+            "workshop_uuid": 1,
+            "workshop_details": 1,
+            "amount": 1,
+            "status": 1,
+            "payment_gateway_details": 1,
+            "created_at": 1
+        }
+        
+        return client["dance_app"]["orders"].find_one(
+            {"order_id": order_id}, 
+            projection
+        )
+    
+    @staticmethod
+    def get_orders_with_qr_codes(user_id: str) -> List[Dict[str, Any]]:
+        """Get user's orders that have QR codes.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            List of orders with QR code data
+        """
+        client = get_mongo_client()
+        
+        pipeline = [
+            {
+                "$match": {
+                    "user_id": user_id,
+                    "qr_code_data": {"$exists": True, "$ne": None}
+                }
+            },
+            {
+                "$sort": {"created_at": -1}
+            }
+        ]
+        
+        return list(client["dance_app"]["orders"].aggregate(pipeline))
