@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     twilio_account_sid: str = os.getenv("TWILIO_ACCOUNT_SID", "")
     twilio_auth_token: str = os.getenv("TWILIO_AUTH_TOKEN", "")
     twilio_verify_service_sid: str = os.getenv("TWILIO_VERIFY_SERVICE_SID", "")
+
+    razorpay_key_id: str = os.getenv("RAZORPAY_KEY_ID", "")
+    razorpay_secret_key: str = os.getenv("RAZORPAY_SECRET_KEY", "")
+    razorpay_callback_url: str = "https://nachna.com/api/razorpay/webhook"
     
     # Rate Limiting
     rate_limit_window: int = 60  # seconds
