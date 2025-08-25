@@ -227,85 +227,6 @@ class OrderOperations:
             query["status"] = {"$in": status_filter}
         
         return client["dance_app"]["orders"].count_documents(query)
-
-
-class WebhookOperations:
-    """Database operations for webhook log management."""
-    
-    @staticmethod
-    def log_webhook(
-        razorpay_payment_id: Optional[str],
-        razorpay_payment_link_id: Optional[str],
-        razorpay_payment_link_reference_id: Optional[str],
-        razorpay_payment_link_status: Optional[str],
-        razorpay_signature: Optional[str],
-        raw_webhook_data: Dict[str, Any]
-    ) -> str:
-        """Log webhook data to database.
-        
-        Args:
-            razorpay_payment_id: Razorpay payment ID
-            razorpay_payment_link_id: Razorpay payment link ID
-            razorpay_payment_link_reference_id: Reference ID (our order_id)
-            razorpay_payment_link_status: Payment status
-            razorpay_signature: Webhook signature
-            raw_webhook_data: Complete webhook payload
-            
-        Returns:
-            webhook_id: Generated webhook ID
-        """
-        client = get_mongo_client()
-        
-        webhook_id = OrderOperations.generate_webhook_id()
-        
-        webhook_doc = {
-            "webhook_id": webhook_id,
-            "razorpay_payment_id": razorpay_payment_id,
-            "razorpay_payment_link_id": razorpay_payment_link_id,
-            "razorpay_payment_link_reference_id": razorpay_payment_link_reference_id,
-            "razorpay_payment_link_status": razorpay_payment_link_status,
-            "razorpay_signature": razorpay_signature,
-            "raw_webhook_data": raw_webhook_data,
-            "processed": False,
-            "order_updated": False,
-            "processing_error": None,
-            "created_at": datetime.utcnow()
-        }
-        
-        client["dance_app"]["razorpay_webhook_logs"].insert_one(webhook_doc)
-        return webhook_id
-    
-    @staticmethod
-    def update_webhook_processing_status(
-        webhook_id: str,
-        processed: bool,
-        order_updated: bool,
-        processing_error: Optional[str] = None
-    ) -> bool:
-        """Update webhook processing status.
-        
-        Args:
-            webhook_id: Webhook identifier
-            processed: Whether webhook was processed
-            order_updated: Whether order was updated
-            processing_error: Error message if any
-            
-        Returns:
-            Success status
-        """
-        client = get_mongo_client()
-        
-        update_data = {
-            "processed": processed,
-            "order_updated": order_updated,
-            "processing_error": processing_error
-        }
-        
-        result = client["dance_app"]["razorpay_webhook_logs"].update_one(
-            {"webhook_id": webhook_id},
-            {"$set": update_data}
-        )
-        return result.modified_count > 0
     
     @staticmethod
     def get_paid_orders_without_qr(limit: int = 50) -> List[Dict[str, Any]]:
@@ -417,3 +338,82 @@ class WebhookOperations:
         ]
         
         return list(client["dance_app"]["orders"].aggregate(pipeline))
+
+
+class WebhookOperations:
+    """Database operations for webhook log management."""
+    
+    @staticmethod
+    def log_webhook(
+        razorpay_payment_id: Optional[str],
+        razorpay_payment_link_id: Optional[str],
+        razorpay_payment_link_reference_id: Optional[str],
+        razorpay_payment_link_status: Optional[str],
+        razorpay_signature: Optional[str],
+        raw_webhook_data: Dict[str, Any]
+    ) -> str:
+        """Log webhook data to database.
+        
+        Args:
+            razorpay_payment_id: Razorpay payment ID
+            razorpay_payment_link_id: Razorpay payment link ID
+            razorpay_payment_link_reference_id: Reference ID (our order_id)
+            razorpay_payment_link_status: Payment status
+            razorpay_signature: Webhook signature
+            raw_webhook_data: Complete webhook payload
+            
+        Returns:
+            webhook_id: Generated webhook ID
+        """
+        client = get_mongo_client()
+        
+        webhook_id = OrderOperations.generate_webhook_id()
+        
+        webhook_doc = {
+            "webhook_id": webhook_id,
+            "razorpay_payment_id": razorpay_payment_id,
+            "razorpay_payment_link_id": razorpay_payment_link_id,
+            "razorpay_payment_link_reference_id": razorpay_payment_link_reference_id,
+            "razorpay_payment_link_status": razorpay_payment_link_status,
+            "razorpay_signature": razorpay_signature,
+            "raw_webhook_data": raw_webhook_data,
+            "processed": False,
+            "order_updated": False,
+            "processing_error": None,
+            "created_at": datetime.utcnow()
+        }
+        
+        client["dance_app"]["razorpay_webhook_logs"].insert_one(webhook_doc)
+        return webhook_id
+    
+    @staticmethod
+    def update_webhook_processing_status(
+        webhook_id: str,
+        processed: bool,
+        order_updated: bool,
+        processing_error: Optional[str] = None
+    ) -> bool:
+        """Update webhook processing status.
+        
+        Args:
+            webhook_id: Webhook identifier
+            processed: Whether webhook was processed
+            order_updated: Whether order was updated
+            processing_error: Error message if any
+            
+        Returns:
+            Success status
+        """
+        client = get_mongo_client()
+        
+        update_data = {
+            "processed": processed,
+            "order_updated": order_updated,
+            "processing_error": processing_error
+        }
+        
+        result = client["dance_app"]["razorpay_webhook_logs"].update_one(
+            {"webhook_id": webhook_id},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
