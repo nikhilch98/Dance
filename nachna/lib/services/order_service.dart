@@ -43,7 +43,16 @@ class OrderService {
       if (response.statusCode == 200) {
         // Success - payment link created or existing found
         final responseData = json.decode(response.body);
-        final paymentResponse = PaymentLinkResponse.fromJson(responseData);
+        print('[OrderService] Parsed response data: $responseData');
+        
+        PaymentLinkResponse paymentResponse;
+        try {
+          paymentResponse = PaymentLinkResponse.fromJson(responseData);
+          print('[OrderService] PaymentLinkResponse created successfully');
+        } catch (e) {
+          print('[OrderService] Error creating PaymentLinkResponse: $e');
+          return PaymentLinkResult.error('Failed to parse payment response: $e');
+        }
         
         if (paymentResponse.isExisting) {
           print('[OrderService] Using existing payment link: ${paymentResponse.paymentLinkUrl}');

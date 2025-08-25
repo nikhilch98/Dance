@@ -6,18 +6,18 @@ import '../models/order.dart';
 class QRCodeDisplay extends StatelessWidget {
   final Order order;
   final VoidCallback? onClose;
-  final bool showFullscreen;
+  final bool isFullscreen;
 
   const QRCodeDisplay({
     Key? key,
     required this.order,
     this.onClose,
-    this.showFullscreen = false,
+    this.isFullscreen = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (showFullscreen) {
+    if (isFullscreen) {
       return Scaffold(
         backgroundColor: Colors.black.withOpacity(0.9),
         body: SafeArea(
@@ -377,7 +377,7 @@ class QRCodeDisplay extends StatelessWidget {
       barrierColor: Colors.black87,
       builder: (context) => QRCodeDisplay(
         order: order,
-        showFullscreen: true,
+        isFullscreen: true,
       ),
     );
   }

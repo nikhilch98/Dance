@@ -4156,6 +4156,11 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       }
     }
   }
+
+  /// Build QR Scanner tab
+  Widget _buildQRScannerTab() {
+    return const QRScannerWidget();
+  }
 }
 
 class _InstagramLinkWorkshopCard extends StatefulWidget {
@@ -4975,10 +4980,5 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
         ),
       ),
     );
-  }
-
-  /// Build QR Scanner tab
-  Widget _buildQRScannerTab() {
-    return const QRScannerWidget();
   }
 } 

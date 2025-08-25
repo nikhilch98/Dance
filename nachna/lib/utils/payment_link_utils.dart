@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/order.dart';
 import '../services/order_service.dart';
 
 class PaymentLinkUtils {
@@ -110,7 +111,11 @@ class PaymentLinkUtils {
         }
         
         // Navigate to order status screen before launching payment URL
-        _navigateToOrderStatus(context, result.response!);
+        if (result.response != null) {
+          _navigateToOrderStatus(context, result.response!);
+        } else {
+          print('⚠️ Warning: Payment response is null, skipping navigation to order status screen');
+        }
         
         await _launchUrl(context, result.paymentUrl!);
         
@@ -192,6 +197,15 @@ class PaymentLinkUtils {
           ),
         ),
       ),
+    );
+  }
+
+  /// Navigate to order status screen for tracking payment
+  static void _navigateToOrderStatus(BuildContext context, PaymentLinkResponse response) {
+    Navigator.pushNamed(
+      context,
+      '/order-status',
+      arguments: response.orderId,
     );
   }
 

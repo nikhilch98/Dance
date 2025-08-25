@@ -70,7 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(orders_router, prefix="/api/orders", tags=["Orders & Payments"])
     app.include_router(razorpay_router, prefix="/api/razorpay", tags=["Razorpay Webhooks"])
     app.include_router(mcp_router, prefix="/mcp", tags=["MCP (Model Context Protocol)"])
-    app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+    app.include_router(admin_router, prefix="/admin/api", tags=["Admin"])
     app.include_router(web_router, tags=["Web"])
 
     return app
