@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../screens/artist_detail_screen.dart';
 import '../screens/studio_detail_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/order_status_screen.dart';
 import '../models/studio.dart';
 import '../services/api_service.dart';
 import '../main.dart';
@@ -91,6 +92,13 @@ class DeepLinkService {
         if (studioId.isNotEmpty) {
           print('Navigating to studio via custom scheme: $studioId');
           await _navigateToStudioInternal(studioId);
+        }
+      } else if (uri.scheme == 'nachna' && uri.host == 'order-status') {
+        // Handle custom scheme: nachna://order-status/{orderId}
+        final orderId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
+        if (orderId.isNotEmpty) {
+          print('Navigating to order status via custom scheme: $orderId');
+          await _navigateToOrderStatusInternal(orderId);
         }
       }
     } catch (e) {
@@ -342,6 +350,37 @@ class DeepLinkService {
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
         print('Falling back to studios home screen');
+        navigator.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  /// Internal method to navigate to order status (used by deep link handler)
+  Future<void> _navigateToOrderStatusInternal(String orderId) async {
+    try {
+      final navigator = MyApp.navigatorKey.currentState;
+      if (navigator == null) {
+        print('Navigator not available, cannot navigate to order status');
+        return;
+      }
+      
+      print('Navigating to order status: $orderId');
+      
+      // Navigate directly to order status screen
+      navigator.push(
+        MaterialPageRoute(
+          builder: (context) => OrderStatusScreen(orderId: orderId),
+        ),
+      );
+    } catch (e) {
+      print('Error navigating to order status: $e');
+      // Fallback to home screen if available
+      final navigator = MyApp.navigatorKey.currentState;
+      if (navigator != null) {
+        print('Falling back to home screen');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
           (route) => false,

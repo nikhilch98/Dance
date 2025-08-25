@@ -110,13 +110,7 @@ class PaymentLinkUtils {
           _showSuccessSnackBar(context, 'Order created: $orderIdText');
         }
         
-        // Navigate to order status screen before launching payment URL
-        if (result.response != null) {
-          _navigateToOrderStatus(context, result.response!);
-        } else {
-          print('⚠️ Warning: Payment response is null, skipping navigation to order status screen');
-        }
-        
+        // Launch payment URL - the callback will redirect back to app via deep link
         await _launchUrl(context, result.paymentUrl!);
         
       } else {
@@ -200,14 +194,7 @@ class PaymentLinkUtils {
     );
   }
 
-  /// Navigate to order status screen for tracking payment
-  static void _navigateToOrderStatus(BuildContext context, PaymentLinkResponse response) {
-    Navigator.pushNamed(
-      context,
-      '/order-status',
-      arguments: response.orderId,
-    );
-  }
+
 
   /// Builds WhatsApp URI from phone number with optional message
   /// [phoneNumber] - 10-digit phone number without country code

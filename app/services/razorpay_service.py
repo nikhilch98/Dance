@@ -119,7 +119,7 @@ class RazorpayService:
             },
             "reminder_enable": True,
             "notes": notes,
-            "callback_url": settings.razorpay_callback_url,
+            "callback_url": f"{settings.razorpay_callback_url}?order_id={order_id}",
             "callback_method": "get"
         }
 

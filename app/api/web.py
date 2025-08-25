@@ -157,4 +157,117 @@ async def studio_deep_link(request: Request, studio_id: str):
         
     except Exception as e:
         print(f"Error in studio deep link route: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/payment-success", response_class=HTMLResponse)
+async def payment_success(request: Request, order_id: str = None):
+    """Handle payment success callback and redirect to app."""
+    try:
+        if not order_id:
+            raise HTTPException(status_code=400, detail="Order ID is required")
+        
+        # Create deep link to open app's Order Status screen
+        app_deep_link = f"nachna://order-status/{order_id}"
+        
+        # Return HTML that immediately redirects to the app
+        return HTMLResponse(content=f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Payment Successful - Redirecting to Nachna</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #0A0A0F, #1A1A2E, #16213E, #0F3460);
+                    color: white;
+                    text-align: center;
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                }}
+                .container {{
+                    max-width: 400px;
+                    padding: 40px 20px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }}
+                .success-icon {{
+                    font-size: 48px;
+                    margin-bottom: 20px;
+                }}
+                h1 {{
+                    margin: 0 0 10px 0;
+                    font-size: 24px;
+                    color: #00D4FF;
+                }}
+                p {{
+                    margin: 10px 0;
+                    opacity: 0.9;
+                }}
+                .order-id {{
+                    font-family: monospace;
+                    background: rgba(0, 212, 255, 0.2);
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-weight: bold;
+                }}
+                .app-button {{
+                    display: inline-block;
+                    margin-top: 20px;
+                    padding: 12px 24px;
+                    background: linear-gradient(45deg, #00D4FF, #9C27B0);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 12px;
+                    font-weight: 600;
+                }}
+                .fallback {{
+                    margin-top: 20px;
+                    font-size: 14px;
+                    opacity: 0.7;
+                }}
+            </style>
+            <script>
+                // Try to open the app immediately
+                window.location.href = "{app_deep_link}";
+                
+                // Fallback: show the page content if app doesn't open
+                setTimeout(function() {{
+                    document.getElementById('content').style.display = 'block';
+                }}, 2000);
+            </script>
+        </head>
+        <body>
+            <div id="content" style="display: none;">
+                <div class="container">
+                    <div class="success-icon">✅</div>
+                    <h1>Payment Successful!</h1>
+                    <p>Your workshop registration is complete.</p>
+                    <div class="order-id">Order: {order_id}</div>
+                    <p>Opening Nachna app to track your order...</p>
+                    
+                    <a href="{app_deep_link}" class="app-button">
+                        Open Nachna App
+                    </a>
+                    
+                    <div class="fallback">
+                        If the app doesn't open automatically, tap the button above or open the Nachna app manually.
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+    except Exception as e:
+        print(f"Error in payment success route: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") 

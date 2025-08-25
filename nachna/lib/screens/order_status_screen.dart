@@ -8,14 +8,14 @@ import '../utils/responsive_utils.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   final String orderId;
-  final String workshopTitle;
-  final String amount;
+  final String? workshopTitle;
+  final String? amount;
 
   const OrderStatusScreen({
     Key? key,
     required this.orderId,
-    required this.workshopTitle,
-    required this.amount,
+    this.workshopTitle,
+    this.amount,
   }) : super(key: key);
 
   @override

@@ -48,85 +48,180 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
             ],
           ),
         ),
-        child: Column(
-          children: <Widget>[
-            // QR Scanner Area
-            Expanded(
-              flex: 4,
-              child: Container(
-                margin: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: QRView(
-                    key: qrKey,
-                    onQRViewCreated: _onQRViewCreated,
-                    overlay: QrScannerOverlayShape(
-                      borderColor: const Color(0xFF00D4FF),
-                      borderRadius: 16,
-                      borderLength: 50,
-                      borderWidth: 8,
-                      cutOutSize: MediaQuery.of(context).size.width * 0.7,
-                    ),
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              // QR Scanner Area with Controls
+              Expanded(
+                flex: 5,
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  child: Stack(
+                    children: [
+                      // Camera View
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: GestureDetector(
+                            onLongPress: () async {
+                              // Long press to focus camera
+                              await controller?.pauseCamera();
+                              await Future.delayed(const Duration(milliseconds: 200));
+                              await controller?.resumeCamera();
+                              _showFocusIndicator();
+                            },
+                            child: QRView(
+                              key: qrKey,
+                              onQRViewCreated: _onQRViewCreated,
+                              overlay: QrScannerOverlayShape(
+                                borderColor: const Color(0xFF00D4FF),
+                                borderRadius: 16,
+                                borderLength: 50,
+                                borderWidth: 8,
+                                cutOutSize: MediaQuery.of(context).size.width * 0.6,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Compact Control Buttons on the Right
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: Column(
+                          children: [
+                            _buildCompactControlButton(
+                              icon: Icons.flash_on,
+                              onPressed: () async {
+                                await controller?.toggleFlash();
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _buildCompactControlButton(
+                              icon: _isScanning ? Icons.pause : Icons.play_arrow,
+                              onPressed: _toggleScanning,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildCompactControlButton(
+                              icon: Icons.flip_camera_ios,
+                              onPressed: () async {
+                                await controller?.flipCamera();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Instructions overlay at bottom
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Long press camera to focus • Point at QR code',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
 
-            // Controls and Results Area
-            Expanded(
-              flex: 3,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // Scanner Controls
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildControlButton(
-                          icon: Icons.flash_on,
-                          label: 'Flash',
-                          onPressed: () async {
-                            await controller?.toggleFlash();
-                          },
-                        ),
-                        _buildControlButton(
-                          icon: _isScanning ? Icons.pause : Icons.play_arrow,
-                          label: _isScanning ? 'Pause' : 'Resume',
-                          onPressed: _toggleScanning,
-                        ),
-                        _buildControlButton(
-                          icon: Icons.flip_camera_ios,
-                          label: 'Flip',
-                          onPressed: () async {
-                            await controller?.flipCamera();
-                          },
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Verification Status
-                    if (_isVerifying)
-                      _buildVerificationLoading()
-                    else if (_verificationResult != null)
-                      _buildVerificationResult()
-                    else
-                      _buildScanningInstructions(),
-                  ],
+              // Results Area - Fixed Height
+              Container(
+                height: MediaQuery.of(context).size.height * 0.35,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [                    
+                      // Verification Status
+                      if (_isVerifying)
+                        _buildVerificationLoading()
+                      else if (_verificationResult != null)
+                        _buildVerificationResult()
+                      else
+                        _buildScanningInstructions(),
+                    ],
+                  ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.black.withOpacity(0.6),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white.withOpacity(0.9),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  void _showFocusIndicator() {
+    // Show a brief focus indicator animation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.center_focus_strong,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Camera focused',
+              style: TextStyle(color: Colors.white, fontSize: 14),
             ),
           ],
         ),
+        backgroundColor: const Color(0xFF00D4FF),
+        duration: const Duration(milliseconds: 800),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
       ),
     );
   }
