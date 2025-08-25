@@ -12,6 +12,7 @@ from app.database.users import UserOperations
 from app.models.orders import (
     CreatePaymentLinkRequest,
     CreatePaymentLinkResponse,
+    UnifiedPaymentLinkResponse,
     ExistingPaymentResponse,
     OrderCreate,
     OrderResponse,
@@ -142,7 +143,7 @@ def create_workshop_details(workshop: dict) -> WorkshopDetails:
     )
 
 
-@router.post("/create-payment-link", response_model=CreatePaymentLinkResponse)
+@router.post("/create-payment-link", response_model=UnifiedPaymentLinkResponse)
 async def create_payment_link(
     request: CreatePaymentLinkRequest,
     user_id: str = Depends(verify_token)
@@ -183,13 +184,21 @@ async def create_payment_link(
         )
         
         if existing_order:
-            logger.info(f"Active order exists for user {user_id}, workshop {request.workshop_uuid}")
-            return ExistingPaymentResponse(
-                existing_order={
-                    "order_id": existing_order["order_id"],
-                    "payment_link_url": existing_order.get("payment_link_url"),
-                    "expires_at": existing_order.get("expires_at")
-                }
+            logger.info(f"Active order exists for user {user_id}, workshop {request.workshop_uuid} - returning existing payment link")
+            
+            # Create workshop details for response
+            workshop_details = create_workshop_details(workshop)
+            
+            return UnifiedPaymentLinkResponse(
+                is_existing=True,
+                message="Active payment link found for this workshop",
+                order_id=existing_order["order_id"],
+                payment_link_url=existing_order.get("payment_link_url", ""),
+                payment_link_id=existing_order.get("payment_link_id"),
+                amount=existing_order["amount"],
+                currency=existing_order["currency"],
+                expires_at=existing_order.get("expires_at"),
+                workshop_details=workshop_details
             )
         
         # 4. Get user details for payment link
@@ -264,8 +273,9 @@ async def create_payment_link(
             )
         
         # 9. Return success response
-        return CreatePaymentLinkResponse(
-            success=True,
+        return UnifiedPaymentLinkResponse(
+            is_existing=False,
+            message="Payment link created successfully",
             order_id=order_id,
             payment_link_url=razorpay_response["short_url"],
             payment_link_id=razorpay_response["id"],

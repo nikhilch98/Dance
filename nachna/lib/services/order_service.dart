@@ -40,24 +40,18 @@ class OrderService {
       print('[OrderService] Create payment link response: ${response.statusCode}');
       print('[OrderService] Response body: ${response.body}');
 
-      if (response.statusCode == 201) {
-        // Success - new payment link created
+      if (response.statusCode == 200) {
+        // Success - payment link created or existing found
         final responseData = json.decode(response.body);
-        final paymentResponse = CreatePaymentLinkResponse.fromJson(responseData);
-        return PaymentLinkResult.success(paymentResponse);
+        final paymentResponse = PaymentLinkResponse.fromJson(responseData);
         
-      } else if (response.statusCode == 409) {
-        // Conflict - existing payment link found
-        final responseData = json.decode(response.body);
-        
-        // Check if this is the specific "active payment exists" error
-        if (responseData['error'] == 'active_payment_exists') {
-          final existingResponse = ExistingPaymentResponse.fromJson(responseData);
-          return PaymentLinkResult.existing(existingResponse);
+        if (paymentResponse.isExisting) {
+          print('[OrderService] Using existing payment link: ${paymentResponse.paymentLinkUrl}');
         } else {
-          // Other conflict error
-          return PaymentLinkResult.error(responseData['message'] ?? 'Payment link creation failed');
+          print('[OrderService] Created new payment link: ${paymentResponse.paymentLinkUrl}');
         }
+        
+        return PaymentLinkResult.success(paymentResponse);
         
       } else if (response.statusCode == 400) {
         // Bad request - workshop not found or pricing issue

@@ -56,6 +56,7 @@ Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
 
 WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
     WorkshopSession(
+      uuid: json['uuid'] as String,
       date: json['date'] as String,
       time: json['time'] as String,
       song: json['song'] as String?,
@@ -77,6 +78,7 @@ WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
     <String, dynamic>{
+      'uuid': instance.uuid,
       'date': instance.date,
       'time': instance.time,
       'song': instance.song,

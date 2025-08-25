@@ -30,7 +30,7 @@ class WorkshopDetailModal extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Pricing: ${workshop.pricingInfo ?? 'TBA'}', style: const TextStyle(color: Colors.greenAccent)),
             const SizedBox(height: 12),
-            if (workshop.paymentLink.isNotEmpty)
+            if (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: ElevatedButton(
@@ -47,14 +47,24 @@ class WorkshopDetailModal extends StatelessWidget {
                         'time': workshop.time,
                         'pricing': workshop.pricingInfo,
                       },
-                      workshopUuid: workshop.timestampEpoch.toString(), // WorkshopSession uses timestampEpoch as ID
+                      workshopUuid: workshop.uuid, // Use the uuid field from API response
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
+                    backgroundColor: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                      ? const Color(0xFF00D4FF)
+                      : Colors.blueAccent,
                     foregroundColor: Colors.white,
+                    elevation: workshop.paymentLinkType?.toLowerCase() == 'nachna' ? 8 : 2,
+                    shadowColor: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                      ? const Color(0xFF00D4FF).withOpacity(0.5)
+                      : null,
                   ),
-                  child: const Text('Register'),
+                  child: Text(
+                    workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                      ? 'Register with nachna'
+                      : 'Register',
+                  ),
                 ),
               ),
           ],

@@ -75,6 +75,38 @@ Map<String, dynamic> _$CreatePaymentLinkRequestToJson(
       'workshop_uuid': instance.workshopUuid,
     };
 
+PaymentLinkResponse _$PaymentLinkResponseFromJson(Map<String, dynamic> json) =>
+    PaymentLinkResponse(
+      success: json['success'] as bool,
+      isExisting: json['is_existing'] as bool,
+      message: json['message'] as String,
+      orderId: json['order_id'] as String,
+      paymentLinkUrl: json['payment_link_url'] as String,
+      paymentLinkId: json['payment_link_id'] as String?,
+      amount: (json['amount'] as num).toInt(),
+      currency: json['currency'] as String,
+      expiresAt: json['expires_at'] == null
+          ? null
+          : DateTime.parse(json['expires_at'] as String),
+      workshopDetails: OrderWorkshopDetails.fromJson(
+          json['workshop_details'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$PaymentLinkResponseToJson(
+        PaymentLinkResponse instance) =>
+    <String, dynamic>{
+      'success': instance.success,
+      'is_existing': instance.isExisting,
+      'message': instance.message,
+      'order_id': instance.orderId,
+      'payment_link_url': instance.paymentLinkUrl,
+      'payment_link_id': instance.paymentLinkId,
+      'amount': instance.amount,
+      'currency': instance.currency,
+      'expires_at': instance.expiresAt?.toIso8601String(),
+      'workshop_details': instance.workshopDetails,
+    };
+
 CreatePaymentLinkResponse _$CreatePaymentLinkResponseFromJson(
         Map<String, dynamic> json) =>
     CreatePaymentLinkResponse(

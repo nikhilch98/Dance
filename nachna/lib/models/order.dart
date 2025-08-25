@@ -122,7 +122,44 @@ class CreatePaymentLinkRequest {
   Map<String, dynamic> toJson() => _$CreatePaymentLinkRequestToJson(this);
 }
 
-/// Response model for successful payment link creation
+/// Unified response model for payment link creation (new or existing)
+@JsonSerializable()
+class PaymentLinkResponse {
+  final bool success;
+  @JsonKey(name: 'is_existing')
+  final bool isExisting;
+  final String message;
+  @JsonKey(name: 'order_id')
+  final String orderId;
+  @JsonKey(name: 'payment_link_url')
+  final String paymentLinkUrl;
+  @JsonKey(name: 'payment_link_id')
+  final String? paymentLinkId;
+  final int amount;
+  final String currency;
+  @JsonKey(name: 'expires_at')
+  final DateTime? expiresAt;
+  @JsonKey(name: 'workshop_details')
+  final OrderWorkshopDetails workshopDetails;
+
+  PaymentLinkResponse({
+    required this.success,
+    required this.isExisting,
+    required this.message,
+    required this.orderId,
+    required this.paymentLinkUrl,
+    this.paymentLinkId,
+    required this.amount,
+    required this.currency,
+    this.expiresAt,
+    required this.workshopDetails,
+  });
+
+  factory PaymentLinkResponse.fromJson(Map<String, dynamic> json) => _$PaymentLinkResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$PaymentLinkResponseToJson(this);
+}
+
+/// Response model for successful payment link creation (kept for backward compatibility)
 @JsonSerializable()
 class CreatePaymentLinkResponse {
   final bool success;
@@ -203,35 +240,26 @@ class UserOrdersResponse {
   Map<String, dynamic> toJson() => _$UserOrdersResponseToJson(this);
 }
 
-/// Payment link creation result (union type for success/error)
+/// Payment link creation result (simplified with unified response)
 class PaymentLinkResult {
   final bool isSuccess;
-  final CreatePaymentLinkResponse? successResponse;
-  final ExistingPaymentResponse? existingResponse;
+  final PaymentLinkResponse? response;
   final String? errorMessage;
 
-  PaymentLinkResult.success(this.successResponse)
+  PaymentLinkResult.success(this.response)
       : isSuccess = true,
-        existingResponse = null,
-        errorMessage = null;
-
-  PaymentLinkResult.existing(this.existingResponse)
-      : isSuccess = false,
-        successResponse = null,
         errorMessage = null;
 
   PaymentLinkResult.error(this.errorMessage)
       : isSuccess = false,
-        successResponse = null,
-        existingResponse = null;
+        response = null;
 
-  // Helper getter to get payment URL for both success and existing cases
-  String? get paymentUrl {
-    if (successResponse != null) {
-      return successResponse!.paymentLinkUrl;
-    } else if (existingResponse != null) {
-      return existingResponse!.existingPaymentLinkUrl;
-    }
-    return null;
-  }
+  // Helper getters for easier access
+  String? get paymentUrl => response?.paymentLinkUrl;
+  bool get isExisting => response?.isExisting ?? false;
+  String? get message => response?.message;
+  
+  // Backward compatibility getters
+  PaymentLinkResponse? get successResponse => response;
+  ExistingPaymentResponse? get existingResponse => null; // No longer used
 }

@@ -88,12 +88,32 @@ class CreatePaymentLinkResponse(BaseModel):
     workshop_details: WorkshopDetails
 
 
+class UnifiedPaymentLinkResponse(BaseModel):
+    """Unified response for payment link creation (new or existing)."""
+    success: bool = True
+    is_existing: bool = False
+    message: str = "Payment link created successfully"
+    order_id: str
+    payment_link_url: str
+    payment_link_id: Optional[str] = None
+    amount: int
+    currency: str
+    expires_at: Optional[datetime] = None
+    workshop_details: WorkshopDetails
+
+
 class ExistingPaymentResponse(BaseModel):
     """Response when active payment already exists."""
-    success: bool = False
-    error: str = "active_payment_exists"
-    message: str = "Active payment link already exists for this workshop"
-    existing_order: Dict[str, Any]
+    success: bool = True
+    is_existing: bool = True
+    message: str = "Active payment link found for this workshop"
+    order_id: str
+    payment_link_url: str
+    payment_link_id: Optional[str] = None
+    amount: int
+    currency: str
+    expires_at: Optional[datetime] = None
+    workshop_details: WorkshopDetails
 
 
 class RazorpayWebhookRequest(BaseModel):

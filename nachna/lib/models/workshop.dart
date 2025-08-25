@@ -60,6 +60,7 @@ class WorkshopListItem {
 
 @JsonSerializable()
 class WorkshopSession {
+  final String uuid;
   final String date;
   final String time;
   final String? song;
@@ -87,6 +88,7 @@ class WorkshopSession {
   String get id => timestampEpoch.toString();
 
   WorkshopSession({
+    required this.uuid,
     required this.date,
     required this.time,
     this.song,

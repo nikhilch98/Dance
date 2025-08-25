@@ -1166,7 +1166,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                         Container(
                           margin: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
                           width: ResponsiveUtils.isSmallScreen(context) ? 50 : 55,
-                          child: workshop.paymentLink.isNotEmpty
+                          child: (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                               ? GestureDetector(
                                   onTap: () async {
                                     await PaymentLinkUtils.launchPaymentLink(
@@ -1181,6 +1181,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         'time': workshop.time,
                                         'pricing': workshop.pricingInfo,
                                       },
+                                      workshopUuid: workshop.uuid,
                                     );
                                   },
                                   child: Container(
@@ -1190,18 +1191,36 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
-                                      ),
+                                      gradient: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                        ? const LinearGradient(
+                                            colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                                          )
+                                        : const LinearGradient(
+                                            colors: [Color(0xFFFF006E), Color(0xFF8338EC)],
+                                          ),
+                                      boxShadow: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF00D4FF).withOpacity(0.3),
+                                              offset: const Offset(0, 2),
+                                              blurRadius: 6,
+                                            ),
+                                          ]
+                                        : null,
                                     ),
                                     child: Center(
                                       child: Text(
-                                        'Register',
+                                        workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                          ? 'Register with nachna'
+                                          : 'Register',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: ResponsiveUtils.micro(context) * 0.8,
+                                          fontSize: ResponsiveUtils.micro(context) * 0.75,
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ),

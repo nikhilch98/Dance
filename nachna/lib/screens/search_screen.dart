@@ -1042,30 +1042,42 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             'time': workshop.time,
                             'pricing': workshop.pricingInfo,
                           },
+                          workshopUuid: workshop.uuid,
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          ),
+                          gradient: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                            ? const LinearGradient(
+                                colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                              )
+                            : const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF10B981).withOpacity(0.3),
+                              color: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                ? const Color(0xFF00D4FF).withOpacity(0.3)
+                                : const Color(0xFF10B981).withOpacity(0.3),
                               offset: const Offset(0, 2),
                               blurRadius: 4,
                             ),
                           ],
                         ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
+                        child: Text(
+                          workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                            ? 'Register with nachna'
+                            : 'Register',
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),

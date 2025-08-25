@@ -2352,20 +2352,28 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             'date': (session['date'] ?? '').toString(),
                             'time': (session['time'] ?? '').toString(),
                           },
+                          workshopUuid: (session['uuid'] ?? '').toString(),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
+                        backgroundColor: (session['payment_link_type']?.toString().toLowerCase() == 'nachna')
+                          ? const Color(0xFF00D4FF)
+                          : const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 0,
+                        elevation: (session['payment_link_type']?.toString().toLowerCase() == 'nachna') ? 8 : 0,
+                        shadowColor: (session['payment_link_type']?.toString().toLowerCase() == 'nachna')
+                          ? const Color(0xFF00D4FF).withOpacity(0.5)
+                          : null,
                       ),
-                      child: const Text(
-                        'Register',
-                        style: TextStyle(
+                      child: Text(
+                        (session['payment_link_type']?.toString().toLowerCase() == 'nachna')
+                          ? 'Register with nachna'
+                          : 'Register',
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),

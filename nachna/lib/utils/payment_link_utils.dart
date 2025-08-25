@@ -95,20 +95,14 @@ class PaymentLinkUtils {
         Navigator.of(context).pop();
       }
 
-      if (result.isSuccess) {
-        // Success - new payment link created
-        print('✅ Payment link created successfully: ${result.successResponse!.paymentLinkUrl}');
-        await _launchUrl(context, result.successResponse!.paymentLinkUrl);
-        
-      } else if (result.existingResponse != null) {
-        // Existing payment link found
-        final existingUrl = result.existingResponse!.existingPaymentLinkUrl;
-        if (existingUrl != null && existingUrl.isNotEmpty) {
-          print('📋 Using existing payment link: $existingUrl');
-          await _launchUrl(context, existingUrl);
+      if (result.isSuccess && result.paymentUrl != null) {
+        // Success - payment link ready (new or existing)
+        if (result.isExisting) {
+          print('📋 Using existing payment link: ${result.paymentUrl}');
         } else {
-          _showErrorSnackBar(context, 'Existing payment link is invalid. Please contact support.');
+          print('✅ Payment link created successfully: ${result.paymentUrl}');
         }
+        await _launchUrl(context, result.paymentUrl!);
         
       } else {
         // Error occurred

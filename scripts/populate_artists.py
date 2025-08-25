@@ -113,6 +113,11 @@ class ArtistManager:
         """
         result = self.collection.find_one({"artist_id": artist_id}, {"image_url": 1})
         return result.get("image_url") if result else None
+    
+    def get_artists_list_from_db(self) -> List[Artist]:
+        """Get list of artists from database."""
+        result = self.collection.find({}, {"artist_id": 1, "artist_name": 1})
+        return [Artist(artist["artist_name"], artist["artist_id"]) for artist in result]
 
 
 def get_artists_list() -> List[Artist]:
@@ -239,6 +244,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Kiran J","mr.kiranj"),
         Artist("Rupin Kale","rupin_kale"),
         Artist("Amisha Jayaram","amisha_jayaram"),
+        Artist("Heet Samani","heetsamani"),
     ]
 
 
@@ -272,7 +278,6 @@ def sort_artists_by_workshops(artists: list, env: str) -> list:
 
         def has_workshops(artist):
             return workshops_collection.count_documents({"artist_id_list": artist.instagram_id}) > 0
-        return artists
         return sorted(artists, key=lambda artist: (not has_workshops(artist), artist.name))
     except Exception as e:
         print(f"Error sorting artists: {e}")
@@ -287,7 +292,18 @@ def main():
     env = args.env
     manager = ArtistManager(env)
     artists = get_artists_list()
-    artists = sort_artists_by_workshops(artists, env)
+    artists_from_db = manager.get_artists_list_from_db()
+    artist_set = set()
+    artist_final_list = []
+    for artist in artists :
+        if artist.instagram_id not in artist_set :
+            artist_set.add(artist.instagram_id)
+            artist_final_list.append(artist)
+    for artist in artists_from_db :
+        if artist.instagram_id not in artist_set :
+            artist_set.add(artist.instagram_id)
+            artist_final_list.append(artist)
+    artists = sort_artists_by_workshops(artist_final_list, env)
 
     with tqdm(artists, desc="Updating Artists", leave=False) as pbar:
         for artist in pbar:

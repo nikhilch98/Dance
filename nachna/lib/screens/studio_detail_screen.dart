@@ -837,6 +837,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
   // Helper method to convert WorkshopListItem to WorkshopSession
   WorkshopSession _convertToWorkshopSession(WorkshopListItem workshop) {
     return WorkshopSession(
+      uuid: workshop.uuid,
       date: workshop.date ?? 'TBA',
       time: workshop.time ?? 'TBA',
       song: workshop.song,
@@ -1173,7 +1174,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                     SizedBox(
                       width: ResponsiveUtils.isSmallScreen(context) ? 60 : 65,
                       height: ResponsiveUtils.iconLarge(context),
-                      child: workshop.paymentLink.isNotEmpty
+                      child: (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                           ? GestureDetector(
                               onTap: () async {
                                 await PaymentLinkUtils.launchPaymentLink(
@@ -1188,17 +1189,24 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                     'time': workshop.time,
                                     'pricing': workshop.pricingInfo,
                                   },
+                                  workshopUuid: workshop.uuid,
                                 );
                               },
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                                  ),
+                                  gradient: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                    ? const LinearGradient(
+                                        colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                                      )
+                                    : const LinearGradient(
+                                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                      ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                      color: workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                        ? const Color(0xFF00D4FF).withOpacity(0.3)
+                                        : const Color(0xFF3B82F6).withOpacity(0.3),
                                       offset: const Offset(0, 2),
                                       blurRadius: 6,
                                     ),
@@ -1206,12 +1214,17 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    'Register',
+                                    workshop.paymentLinkType?.toLowerCase() == 'nachna'
+                                      ? 'Register with nachna'
+                                      : 'Register',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: ResponsiveUtils.micro(context) * 0.9,
+                                      fontSize: ResponsiveUtils.micro(context) * 0.85,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
