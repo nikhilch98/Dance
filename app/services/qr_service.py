@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
 
-from app.config.settings import settings
+from app.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,8 @@ class QRCodeService:
         self.logo_size_ratio = 0.15  # Logo will be 15% of QR code size
         self.border_ratio = 0.02     # Border around logo (2% of QR code size)
         # Use app secret key for QR code signing
-        self.secret_key = getattr(settings, 'SECRET_KEY', 'nachna-qr-secret-key-2025').encode('utf-8')
+        app_settings = get_settings()
+        self.secret_key = getattr(app_settings, 'secret_key', 'nachna-qr-secret-key-2025').encode('utf-8')
         self.qr_validity_hours = 720  # QR codes valid for 30 days (720 hours)
     
     def generate_order_qr_code(

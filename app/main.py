@@ -23,6 +23,7 @@ from app.api import (
     orders_router,
 )
 from app.services.notifications import notification_service
+from app.services.background_qr_service import schedule_qr_generation_task
 from utils.utils import DatabaseManager, start_cache_invalidation_watcher
 
 settings = get_settings()
@@ -93,6 +94,13 @@ async def startup_event():
     # Start the workshop notification watcher
     notification_service.start_workshop_notification_watcher()
     print("Workshop notification watcher started")
+
+    # Start the background QR code generation service
+    qr_task = schedule_qr_generation_task()
+    if qr_task:
+        print("Background QR code generation service started")
+    else:
+        print("Warning: Failed to start background QR code generation service")
 
 
 @app.on_event("shutdown")
