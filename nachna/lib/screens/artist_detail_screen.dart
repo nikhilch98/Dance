@@ -802,7 +802,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     } else {
                       // Sort workshops by timestamp before displaying
                       final sortedWorkshops = snapshot.data!;
-                      sortedWorkshops.sort((a, b) => a.timestampEpoch.compareTo(b.timestampEpoch));
+                      sortedWorkshops.sort((a, b) => (a.timestampEpoch ?? 0).compareTo(b.timestampEpoch ?? 0));
 
                       return Padding(
                         padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.spacingLarge(context)),
@@ -977,7 +977,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            workshop.date,
+                            workshop.date ?? 'TBA',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: ResponsiveUtils.body2(context),
@@ -1046,7 +1046,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             ),
                           ),
                           child: Text(
-                            workshop.time,
+                            workshop.time ?? 'TBA',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: ResponsiveUtils.micro(context),
@@ -1165,8 +1165,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                         // Right Side - Register Button
                         Container(
                           margin: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
-                          width: ResponsiveUtils.isSmallScreen(context) ? 50 : 55,
-                          child: (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
+                          width: workshop.paymentLinkType?.toLowerCase() == 'nachna' 
+                            ? (ResponsiveUtils.isSmallScreen(context) ? 85 : 95)
+                            : (ResponsiveUtils.isSmallScreen(context) ? 50 : 55),
+                          child: ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                               ? GestureDetector(
                                   onTap: () async {
                                     await PaymentLinkUtils.launchPaymentLink(
@@ -1218,7 +1220,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                           fontSize: ResponsiveUtils.micro(context) * 0.75,
                                           fontWeight: FontWeight.w600,
                                         ),
-                                        maxLines: 1,
+                                        maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         textAlign: TextAlign.center,
                                       ),

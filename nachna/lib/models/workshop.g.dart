@@ -56,9 +56,9 @@ Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
 
 WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
     WorkshopSession(
-      uuid: json['uuid'] as String,
-      date: json['date'] as String,
-      time: json['time'] as String,
+      uuid: json['uuid'] as String?,
+      date: json['date'] as String?,
+      time: json['time'] as String?,
       song: json['song'] as String?,
       studioId: json['studio_id'] as String?,
       artist: json['artist'] as String?,
@@ -68,10 +68,10 @@ WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
       artistImageUrls: (json['artist_image_urls'] as List<dynamic>?)
           ?.map((e) => e as String?)
           .toList(),
-      paymentLink: json['payment_link'] as String,
+      paymentLink: json['payment_link'] as String?,
       paymentLinkType: json['payment_link_type'] as String?,
       pricingInfo: json['pricing_info'] as String?,
-      timestampEpoch: (json['timestamp_epoch'] as num).toInt(),
+      timestampEpoch: (json['timestamp_epoch'] as num?)?.toInt(),
       eventType: json['event_type'] as String?,
       choreoInstaLink: json['choreo_insta_link'] as String?,
     );

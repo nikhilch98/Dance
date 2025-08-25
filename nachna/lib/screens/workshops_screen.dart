@@ -1186,9 +1186,11 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                     
                     // Register Button (vertically aligned with main content)
                     SizedBox(
-                      width: ResponsiveUtils.isSmallScreen(context) ? 60 : 65,
+                      width: workshop.paymentLinkType?.toLowerCase() == 'nachna' 
+                        ? (ResponsiveUtils.isSmallScreen(context) ? 85 : 95)
+                        : (ResponsiveUtils.isSmallScreen(context) ? 60 : 65),
                       height: ResponsiveUtils.iconLarge(context),
-                      child: (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
+                      child: ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                           ? GestureDetector(
                               onTap: () async {
                                 await PaymentLinkUtils.launchPaymentLink(
@@ -1236,8 +1238,9 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                       fontSize: ResponsiveUtils.micro(context) * 0.85,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),

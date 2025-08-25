@@ -18,9 +18,9 @@ class WorkshopDetailModal extends StatelessWidget {
       content: SingleChildScrollView(
         child: ListBody(
           children: <Widget>[
-            Text('Date: ${workshop.date}', style: const TextStyle(color: Colors.white70)),
+            Text('Date: ${workshop.date ?? 'TBA'}', style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 8),
-            Text('Time: ${workshop.time}', style: const TextStyle(color: Colors.white70)),
+            Text('Time: ${workshop.time ?? 'TBA'}', style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 8),
             Text('Instructor: ${workshop.artist ?? 'TBA'}', style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 8),
@@ -30,7 +30,7 @@ class WorkshopDetailModal extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Pricing: ${workshop.pricingInfo ?? 'TBA'}', style: const TextStyle(color: Colors.greenAccent)),
             const SizedBox(height: 12),
-            if (workshop.paymentLink.isNotEmpty || workshop.paymentLinkType?.toLowerCase() == 'nachna')
+            if ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: ElevatedButton(

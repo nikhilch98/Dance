@@ -60,9 +60,9 @@ class WorkshopListItem {
 
 @JsonSerializable()
 class WorkshopSession {
-  final String uuid;
-  final String date;
-  final String time;
+  final String? uuid;
+  final String? date;
+  final String? time;
   final String? song;
   @JsonKey(name: 'studio_id')
   final String? studioId;
@@ -72,34 +72,34 @@ class WorkshopSession {
   @JsonKey(name: 'artist_image_urls')
   final List<String?>? artistImageUrls;
   @JsonKey(name: 'payment_link')
-  final String paymentLink;
+  final String? paymentLink;
   @JsonKey(name: 'payment_link_type')
   final String? paymentLinkType;
   @JsonKey(name: 'pricing_info')
   final String? pricingInfo;
   @JsonKey(name: 'timestamp_epoch')
-  final int timestampEpoch;
+  final int? timestampEpoch;
   @JsonKey(name: 'event_type')
   final String? eventType;
   @JsonKey(name: 'choreo_insta_link')
   final String? choreoInstaLink;
 
   // Getter for unique workshop ID
-  String get id => timestampEpoch.toString();
+  String get id => timestampEpoch?.toString() ?? 'unknown';
 
   WorkshopSession({
-    required this.uuid,
-    required this.date,
-    required this.time,
+    this.uuid,
+    this.date,
+    this.time,
     this.song,
     this.studioId,
     this.artist,
     this.artistIdList,
     this.artistImageUrls,
-    required this.paymentLink,
+    this.paymentLink,
     this.paymentLinkType,
     this.pricingInfo,
-    required this.timestampEpoch,
+    this.timestampEpoch,
     this.eventType,
     this.choreoInstaLink,
   });

@@ -12,7 +12,7 @@ class PaymentLinkUtils {
   /// [workshopDetails] - Optional workshop details for WhatsApp message
   /// [workshopUuid] - Required for 'nachna' type to create payment link
   static Future<void> launchPaymentLink({
-    required String paymentLink,
+    String? paymentLink,
     String? paymentLinkType,
     required BuildContext context,
     Map<String, String?>? workshopDetails,
@@ -30,7 +30,7 @@ class PaymentLinkUtils {
     }
     
     // Handle traditional payment types
-    if (paymentLink.isEmpty) {
+    if (paymentLink == null || paymentLink.isEmpty) {
       _showErrorSnackBar(context, 'Registration link not available');
       return;
     }
