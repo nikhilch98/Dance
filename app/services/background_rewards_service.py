@@ -15,6 +15,7 @@ from app.models.rewards import (
     RewardTransactionStatusEnum,
 )
 from app.models.orders import OrderStatusEnum
+from app.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class BackgroundRewardsService:
     def __init__(self):
         self.order_operations = OrderOperations()
         self.reward_operations = RewardOperations()
+        self.settings = get_settings()
         self.is_running = False
         
     async def start_rewards_generation_service(self):
@@ -110,14 +112,15 @@ class BackgroundRewardsService:
                 logger.debug(f"Rewards already generated for order {order_id}")
                 return
                 
-            # Calculate 15% cashback with proper rounding (in rupees)
+            # Calculate configurable cashback percentage with proper rounding (in rupees)
             cashback_amount = self._calculate_cashback(order_amount)
             
             if cashback_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - no cashback calculated")
                 return
                 
-            logger.info(f"Processing cashback for order {order_id}: Order amount ₹{order_amount/100:.2f} → Cashback ₹{cashback_amount}")
+            cashback_percentage = self.settings.reward_cashback_percentage
+            logger.info(f"Processing {cashback_percentage}% cashback for order {order_id}: Order amount ₹{order_amount/100:.2f} → Cashback ₹{cashback_amount}")
                 
             # Create cashback transaction (with built-in duplicate prevention)
             # The create_transaction method automatically handles duplicates and updates wallet balance
@@ -126,7 +129,7 @@ class BackgroundRewardsService:
                 transaction_type=RewardTransactionTypeEnum.CREDIT,
                 amount=cashback_amount,
                 source=RewardSourceEnum.CASHBACK,
-                description=f"15% cashback for workshop booking (Order: {order.get('order_id', order_id)})",
+                description=f"{cashback_percentage}% cashback for workshop booking (Order: {order.get('order_id', order_id)})",
                 reference_id=order_id
             )
             
@@ -140,7 +143,7 @@ class BackgroundRewardsService:
             raise
             
     def _calculate_cashback(self, order_amount: float) -> float:
-        """Calculate 15% cashback with proper rounding.
+        """Calculate configurable cashback percentage with proper rounding.
         
         Args:
             order_amount: Order amount in paise
@@ -152,8 +155,9 @@ class BackgroundRewardsService:
             # Convert paise to rupees first
             order_amount_rupees = order_amount / 100.0
             
-            # Calculate 15% cashback in rupees
-            cashback_rupees = order_amount_rupees * 0.15
+            # Calculate configurable cashback percentage in rupees
+            cashback_percentage = self.settings.reward_cashback_percentage
+            cashback_rupees = order_amount_rupees * (cashback_percentage / 100.0)
             
             # Round to nearest integer using standard rounding
             # 15.13 → 15, 15.5 → 16, 15.76 → 16
@@ -208,6 +212,7 @@ class BackgroundRewardsService:
             return {
                 "service_running": self.is_running,
                 "pending_orders_count": len(pending_orders),
+                "cashback_percentage": self.settings.reward_cashback_percentage,
                 "last_check": datetime.utcnow().isoformat()
             }
         except Exception as e:
@@ -215,6 +220,7 @@ class BackgroundRewardsService:
             return {
                 "service_running": self.is_running,
                 "pending_orders_count": 0,
+                "cashback_percentage": self.settings.reward_cashback_percentage,
                 "last_check": datetime.utcnow().isoformat(),
                 "error": str(e)
             }

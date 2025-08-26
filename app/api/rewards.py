@@ -18,6 +18,7 @@ from ..models.rewards import (
 )
 from ..database.rewards import RewardOperations
 from ..services.auth import verify_token
+from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -152,9 +153,10 @@ async def calculate_redemption(
         available_balance = wallet.get("available_balance", 0.0)
         redemption_cap = RewardOperations.get_redemption_cap()
         exchange_rate = RewardOperations.get_exchange_rate()
+        redemption_cap_percentage = RewardOperations.get_redemption_cap_percentage()
         
-        # Calculate maximum redeemable based on workshop amount (10% cap)
-        max_discount_amount = request.workshop_amount * 0.10  # Max 10% of workshop cost
+        # Calculate maximum redeemable based on workshop amount (configurable percentage cap)
+        max_discount_amount = request.workshop_amount * (redemption_cap_percentage / 100.0)
         max_redeemable_points = max_discount_amount / exchange_rate
         
         # Consider user's available balance
@@ -171,7 +173,7 @@ async def calculate_redemption(
             if available_balance <= 0:
                 message = "No reward points available for redemption"
             else:
-                message = "Workshop amount too low for redemption"
+                message = f"Workshop amount too low for redemption (minimum required: ₹{redemption_cap_percentage}% of workshop cost)"
         
         workshop_info = WorkshopRedemptionInfo(
             workshop_uuid=request.workshop_uuid,
@@ -203,29 +205,39 @@ async def redeem_rewards(
     """Redeem reward points for workshop booking discount."""
     try:
         
-        # Validate redemption
-        if not RewardOperations.validate_redemption(user_id, request.points_to_redeem):
-            raise HTTPException(status_code=400, detail="Insufficient reward points for redemption")
+        # Validate redemption amount is positive
+        if request.points_to_redeem <= 0:
+            raise HTTPException(status_code=400, detail="Points to redeem must be positive")
         
-        # Get redemption cap and exchange rate
+        # Validate user has sufficient balance
+        if not RewardOperations.validate_redemption(user_id, request.points_to_redeem):
+            wallet = RewardOperations.get_or_create_wallet(user_id)
+            available_balance = wallet.get("available_balance", 0.0)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient reward points. Available: ₹{available_balance}, Requested: ₹{request.points_to_redeem}"
+            )
+        
+        # Get configurable settings
         redemption_cap = RewardOperations.get_redemption_cap()
         exchange_rate = RewardOperations.get_exchange_rate()
+        redemption_cap_percentage = RewardOperations.get_redemption_cap_percentage()
         
-        # Validate against cap
+        # Validate against absolute cap (e.g., ₹500 max per workshop)
         if request.points_to_redeem > redemption_cap:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Cannot redeem more than {redemption_cap} points per workshop"
+                detail=f"Cannot redeem more than ₹{redemption_cap} per workshop"
             )
         
-        # Validate against workshop amount cap (10% max redemption)
-        max_discount_allowed = request.order_amount * 0.10
+        # Validate against workshop amount cap (configurable percentage max redemption)
+        max_discount_allowed = request.order_amount * (redemption_cap_percentage / 100.0)
         discount_amount = request.points_to_redeem * exchange_rate
         
         if discount_amount > max_discount_allowed:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Cannot redeem more than 10% of workshop cost (₹{max_discount_allowed:.0f})"
+                detail=f"Cannot redeem more than {redemption_cap_percentage}% of workshop cost (₹{max_discount_allowed:.0f})"
             )
         
         # Calculate final amount and savings
@@ -236,7 +248,7 @@ async def redeem_rewards(
         import uuid
         redemption_id = str(uuid.uuid4())
         
-        logger.info(f"Calculated redemption for user {user_id}: {request.points_to_redeem} points = {discount_amount} discount")
+        logger.info(f"Calculated redemption for user {user_id}: {request.points_to_redeem} points = ₹{discount_amount} discount (saving {savings_percentage:.1f}%)")
         
         return RewardRedemptionResponse(
             redemption_id=redemption_id,

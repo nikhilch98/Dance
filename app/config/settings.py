@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     rate_limit_window: int = 60  # seconds
     rate_limit_max_requests: int = 30
     
+    # Reward System Configuration
+    reward_cashback_percentage: float = 15.0  # 15% cashback on workshop bookings
+    reward_redemption_cap_percentage: float = 10.0  # Max 10% of workshop cost can be redeemed
+    reward_redemption_cap_per_workshop: float = 500.0  # Max 500 rupees redeemable per workshop
+    reward_exchange_rate: float = 1.0  # 1 reward point = 1 rupee
+    reward_welcome_bonus: float = 100.0  # Welcome bonus in rupees
+    
     # Server Configuration
     host: str = "127.0.0.1"
     port: int = 8002

@@ -215,6 +215,9 @@ async def create_payment_link(
             
             # Validate and process redemption using rewards service
             from app.database.rewards import RewardOperations
+            from app.config.settings import get_settings
+            
+            settings = get_settings()
             
             # Convert discount amount to rupees if needed (ensure it's in rupees)
             discount_rupees = float(request.discount_amount)
@@ -230,23 +233,39 @@ async def create_payment_link(
                 
                 # Calculate final amount after discount
                 order_amount_rupees = amount_paise / 100.0
-                if discount_rupees > order_amount_rupees:
+                
+                # Validate against configurable redemption cap percentage
+                redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
+                max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
+                
+                if discount_rupees > max_discount_allowed:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed order amount (₹{order_amount_rupees})"
+                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})"
                     )
                 
+                # Validate against absolute redemption cap
+                redemption_cap_per_workshop = getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
+                if discount_rupees > redemption_cap_per_workshop:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop"
+                    )
+                
+                # Apply discount
                 final_amount_rupees = order_amount_rupees - discount_rupees
                 final_amount_paise = int(final_amount_rupees * 100)
                 rewards_redeemed_rupees = discount_rupees
                 
-                logger.info(f"Redemption calculated: Order ₹{order_amount_rupees} - Discount ₹{discount_rupees} = Final ₹{final_amount_rupees}")
+                logger.info(f"Applied reward discount: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
                 
+            except HTTPException:
+                raise
             except Exception as e:
-                logger.error(f"Error validating reward redemption: {e}")
+                logger.error(f"Error processing reward redemption: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Error processing reward redemption: {str(e)}"
+                    detail="Failed to process reward redemption"
                 )
         
         # 5. Get user details for payment link

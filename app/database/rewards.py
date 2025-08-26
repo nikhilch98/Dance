@@ -296,19 +296,29 @@ class RewardOperations:
     @staticmethod
     def get_redemption_cap() -> float:
         """Get the maximum points redeemable per workshop."""
-        # This can be made configurable via settings or database
+        # Use configurable setting
         return getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
 
     @staticmethod
     def get_exchange_rate() -> float:
         """Get points to currency exchange rate."""
-        # This can be made configurable via settings
+        # Use configurable setting
         return getattr(settings, 'reward_exchange_rate', 1.0)  # 1 point = 1 rupee
 
     @staticmethod
-    def award_welcome_bonus(user_id: str, amount: float = 100.0) -> str:
+    def get_redemption_cap_percentage() -> float:
+        """Get the maximum percentage of workshop cost that can be redeemed."""
+        # Use configurable setting
+        return getattr(settings, 'reward_redemption_cap_percentage', 10.0)  # 10%
+
+    @staticmethod
+    def award_welcome_bonus(user_id: str, amount: float = None) -> str:
         """Award welcome bonus to new user."""
         try:
+            # Use configurable welcome bonus amount
+            if amount is None:
+                amount = getattr(settings, 'reward_welcome_bonus', 100.0)
+                
             return RewardOperations.create_transaction(
                 user_id=user_id,
                 transaction_type=RewardTransactionTypeEnum.CREDIT,
