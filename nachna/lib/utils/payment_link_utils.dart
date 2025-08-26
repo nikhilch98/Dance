@@ -151,9 +151,12 @@ class PaymentLinkUtils {
       final discountAmount = redemptionResult['discount_amount'] as double? ?? 0.0;
       final finalAmount = redemptionResult['final_amount'] as double? ?? 0.0;
 
-      // For now, use the existing createPaymentLink method
-      // TODO: Implement createPaymentLinkWithRewards in OrderService
-      final result = await orderService.createPaymentLink(workshopUuid);
+      // Create payment link with rewards applied
+      final result = await orderService.createPaymentLink(
+        workshopUuid,
+        pointsRedeemed: pointsRedeemed,
+        discountAmount: discountAmount,
+      );
 
       // Close loading dialog
       if (context.mounted) {

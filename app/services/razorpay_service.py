@@ -131,6 +131,25 @@ class RazorpayService:
             logger.error(f"Failed to create workshop payment link for order {order_id}: {e}")
             raise
 
+    def cancel_payment_link(self, payment_link_id: str) -> bool:
+        """Cancel an existing Razorpay payment link.
+
+        Args:
+            payment_link_id: Razorpay payment link ID
+
+        Returns:
+            True if cancelled (or already cancelled), False otherwise
+        """
+        try:
+            if not payment_link_id:
+                return False
+            resp = self.client.payment_link.cancel(payment_link_id)
+            logger.info(f"Cancelled Razorpay payment link {payment_link_id}: status={resp.get('status')}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to cancel Razorpay payment link {payment_link_id}: {e}")
+            return False
+
 # Global instance with lazy initialization
 def get_razorpay_service() -> RazorpayService:
     """Get Razorpay service instance."""

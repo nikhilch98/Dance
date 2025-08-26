@@ -183,34 +183,81 @@ async def create_payment_link(
                 detail=str(e)
             )
         
-        # 3. Check for existing pending payment link (CREATED status only)
+        # 3. Check for existing pending payment link
         existing_order = OrderOperations.get_active_order_for_user_workshop(
             user_id, request.workshop_uuid
         )
         
-        if existing_order:
-            logger.info(f"Pending payment order exists for user {user_id}, workshop {request.workshop_uuid} - returning existing payment link")
-            
-            # Create workshop details for response
-            workshop_details = create_workshop_details(workshop)
-            
-            return UnifiedPaymentLinkResponse(
-                is_existing=True,
-                message="Pending payment link found for this workshop",
-                order_id=existing_order["order_id"],
-                payment_link_url=existing_order.get("payment_link_url", ""),
-                payment_link_id=existing_order.get("payment_link_id"),
-                amount=existing_order["amount"],
-                currency=existing_order["currency"],
-                expires_at=existing_order.get("expires_at"),
-                workshop_details=workshop_details
-            )
-        
-        # 4. Handle reward redemption if provided
-        final_amount_paise = amount_paise
+        # Determine intended final amount (after discount if any)
+        intended_final_amount_paise = amount_paise
         rewards_redeemed_rupees = 0.0
         
         if request.discount_amount and request.discount_amount > 0:
+            # Perform validation similar to below to compute final amount safely
+            from app.database.rewards import RewardOperations
+            from app.config.settings import get_settings as _get_settings
+            _settings = _get_settings()
+            discount_rupees = float(request.discount_amount)
+            reward_balance = RewardOperations.get_user_balance(user_id)
+            order_amount_rupees = amount_paise / 100.0
+            redemption_cap_percentage = getattr(_settings, 'reward_redemption_cap_percentage', 10.0)
+            max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
+            redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 500.0)
+            if discount_rupees > reward_balance:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient reward balance")
+            if discount_rupees > max_discount_allowed:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})")
+            if discount_rupees > redemption_cap_per_workshop:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop")
+            final_amount_rupees = order_amount_rupees - discount_rupees
+            intended_final_amount_paise = int(final_amount_rupees * 100)
+            rewards_redeemed_rupees = discount_rupees
+
+        # If we have an existing pending order, decide whether to reuse or cancel
+        if existing_order:
+            existing_pg = existing_order.get("payment_gateway_details") or {}
+            existing_amount_paise = (
+                int(existing_order.get("final_amount_paid", 0) * 100)
+                if existing_order.get("final_amount_paid") is not None
+                else int(existing_pg.get("amount") or existing_order.get("amount", amount_paise))
+            )
+            if intended_final_amount_paise != existing_amount_paise:
+                # Different amount requested → cancel old link and proceed to new order
+                try:
+                    rp = get_razorpay_service()
+                    pl_id = existing_order.get("payment_link_id")
+                    if pl_id:
+                        rp.cancel_payment_link(pl_id)
+                except Exception as e:
+                    logger.warning(f"Failed to cancel existing payment link: {e}")
+                # Mark old order cancelled and continue
+                OrderOperations.update_order_status(
+                    existing_order["order_id"],
+                    OrderStatusEnum.CANCELLED,
+                    additional_data={"cancellation_reason": "replaced_by_new_amount"}
+                )
+            else:
+                # Same amount → reuse existing link
+                logger.info(
+                    f"Reusing pending payment link for user {user_id}, workshop {request.workshop_uuid} (same amount)"
+                )
+                workshop_details = create_workshop_details(workshop)
+                return UnifiedPaymentLinkResponse(
+                    is_existing=True,
+                    message="Pending payment link found for this workshop",
+                    order_id=existing_order["order_id"],
+                    payment_link_url=existing_order.get("payment_link_url", ""),
+                    payment_link_id=existing_order.get("payment_link_id"),
+                    amount=existing_order.get("amount", amount_paise),
+                    currency=existing_order.get("currency", "INR"),
+                    expires_at=existing_order.get("expires_at"),
+                    workshop_details=workshop_details
+                )
+        
+        # 4. Handle reward redemption if provided
+        final_amount_paise = intended_final_amount_paise
+        
+        if rewards_redeemed_rupees > 0:
             logger.info(f"Processing reward redemption: ₹{request.discount_amount} discount for user {user_id}")
             
             # Validate and process redemption using rewards service
@@ -220,7 +267,7 @@ async def create_payment_link(
             settings = get_settings()
             
             # Convert discount amount to rupees if needed (ensure it's in rupees)
-            discount_rupees = float(request.discount_amount)
+            discount_rupees = rewards_redeemed_rupees
             
             # Validate user has sufficient balance
             try:
@@ -255,7 +302,6 @@ async def create_payment_link(
                 # Apply discount
                 final_amount_rupees = order_amount_rupees - discount_rupees
                 final_amount_paise = int(final_amount_rupees * 100)
-                rewards_redeemed_rupees = discount_rupees
                 
                 logger.info(f"Applied reward discount: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
                 
@@ -471,6 +517,10 @@ async def get_user_orders(
                 )
             status_filter = status_list
         
+        # Default behavior: exclude cancelled orders from regular list
+        if status_filter is None:
+            status_filter = [s.value for s in OrderStatusEnum if s != OrderStatusEnum.CANCELLED]
+
         # Get orders from database
         orders = OrderOperations.get_user_orders(
             user_id=user_id,

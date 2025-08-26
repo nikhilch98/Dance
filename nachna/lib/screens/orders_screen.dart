@@ -439,156 +439,264 @@ class _OrdersScreenState extends State<OrdersScreen>
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Padding(
-              padding: ResponsiveUtils.paddingLarge(context),
+              padding: ResponsiveUtils.paddingMedium(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                // Header Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            order.workshopDetails.title,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: ResponsiveUtils.body1(context),
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
-                          Text(
-                            'Order ID: ${order.formattedOrderId}',
-                            style: TextStyle(
-                              color: const Color(0xFF00D4FF),
-                              fontSize: ResponsiveUtils.micro(context),
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.spacingSmall(context),
-                        vertical: ResponsiveUtils.spacingXSmall(context),
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                        color: order.statusColor.withOpacity(0.2),
-                        border: Border.all(
-                          color: order.statusColor.withOpacity(0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        order.statusText,
-                        style: TextStyle(
-                          color: order.statusColor,
-                          fontSize: ResponsiveUtils.micro(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-
-                // Workshop Details
-                _buildDetailRow(Icons.person_rounded, 'Artists', order.workshopDetails.artistNames.join(', ')),
-                _buildDetailRow(Icons.business_rounded, 'Studio', order.workshopDetails.studioName),
-                _buildDetailRow(Icons.calendar_today_rounded, 'Date', order.workshopDetails.date),
-                _buildDetailRow(Icons.access_time_rounded, 'Time', order.workshopDetails.time),
-
-                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-
-                // Amount and Action Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Amount',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: ResponsiveUtils.micro(context),
-                            ),
-                          ),
-                          Text(
-                            order.formattedAmount,
-                            style: TextStyle(
-                              color: const Color(0xFF00D4FF),
-                              fontSize: ResponsiveUtils.body1(context),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (order.status == OrderStatus.created && order.paymentLinkUrl != null)
-                      _buildPayNowButton(order),
-                  ],
-                ),
-
-                // Reward Information Section (for paid orders)
-                if (order.status == OrderStatus.paid && (order.hasCashback || order.hasRewardsRedeemed)) ...[
-                  SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-                  _buildRewardSection(order),
-                ],
-
-                SizedBox(height: ResponsiveUtils.spacingSmall(context)),
-
-                // Order Date
-                Text(
-                  'Ordered on ${_formatDateTime(order.createdAt)}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: ResponsiveUtils.micro(context),
-                  ),
-                ),
-                
-                // QR Code indicator for paid orders
-                if (order.status == OrderStatus.paid) ...[
-                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                  // Compact Header Row with Status Badge
                   Row(
                     children: [
-                      Icon(
-                        order.hasQRCode ? Icons.qr_code : Icons.hourglass_top,
-                        color: order.hasQRCode ? const Color(0xFF10B981) : Colors.orange,
-                        size: ResponsiveUtils.iconXSmall(context),
-                      ),
-                      SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
                       Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.workshopDetails.title,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: ResponsiveUtils.body1(context),
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                            Text(
+                              order.formattedOrderId,
+                              style: TextStyle(
+                                color: const Color(0xFF00D4FF),
+                                fontSize: ResponsiveUtils.micro(context),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.spacingSmall(context),
+                          vertical: ResponsiveUtils.spacingXSmall(context),
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                          color: order.statusColor.withOpacity(0.2),
+                          border: Border.all(
+                            color: order.statusColor.withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
                         child: Text(
-                          order.hasQRCode 
-                            ? 'Tap to view QR code' 
-                            : 'QR code generating...',
+                          order.statusText,
                           style: TextStyle(
-                            color: order.hasQRCode 
-                              ? const Color(0xFF10B981)
-                              : Colors.orange,
+                            color: order.statusColor,
                             fontSize: ResponsiveUtils.micro(context),
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      if (order.hasQRCode)
-                        Icon(
-                          Icons.touch_app,
-                          color: const Color(0xFF10B981).withOpacity(0.6),
-                          size: ResponsiveUtils.iconXSmall(context),
-                        ),
                     ],
                   ),
-                ],
+
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+
+                  // Compact Workshop Details in Grid Layout
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildCompactDetailRow(
+                          Icons.person_rounded, 
+                          'Artists', 
+                          order.workshopDetails.artistNames.join(', '),
+                          isCompact: true,
+                        ),
+                      ),
+                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                      Expanded(
+                        child: _buildCompactDetailRow(
+                          Icons.business_rounded, 
+                          'Studio', 
+                          order.workshopDetails.studioName,
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildCompactDetailRow(
+                          Icons.calendar_today_rounded, 
+                          'Date', 
+                          order.workshopDetails.date,
+                          isCompact: true,
+                        ),
+                      ),
+                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                      Expanded(
+                        child: _buildCompactDetailRow(
+                          Icons.access_time_rounded, 
+                          'Time', 
+                          order.workshopDetails.time,
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+
+                  // Amount, Rewards, and Action Row (Compact)
+                  Row(
+                    children: [
+                      // Amount Section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Amount',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: ResponsiveUtils.micro(context),
+                              ),
+                            ),
+                            Text(
+                              order.formattedAmount,
+                              style: TextStyle(
+                                color: const Color(0xFF00D4FF),
+                                fontSize: ResponsiveUtils.body1(context),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Rewards Summary (Compact) - Show inline for paid orders
+                      if (order.status == OrderStatus.paid && order.hasCashback) ...[
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveUtils.spacingSmall(context),
+                              vertical: ResponsiveUtils.spacingXSmall(context),
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                              color: const Color(0xFF10B981).withOpacity(0.15),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.stars_rounded,
+                                  color: const Color(0xFF10B981),
+                                  size: ResponsiveUtils.iconXSmall(context),
+                                ),
+                                SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Cashback (15%)',
+                                        style: TextStyle(
+                                          color: const Color(0xFF10B981),
+                                          fontSize: ResponsiveUtils.micro(context),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '+ ${order.formattedCashbackAmount}',
+                                        style: TextStyle(
+                                          color: const Color(0xFF10B981),
+                                          fontSize: ResponsiveUtils.micro(context),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                      ],
+                      
+                      // Action Button
+                      if (order.status == OrderStatus.created && order.paymentLinkUrl != null)
+                        _buildPayNowButton(order),
+                    ],
+                  ),
+
+                  // Expanded Rewards Section (for complex cases)
+                  if (order.status == OrderStatus.paid && 
+                      (order.hasRewardsRedeemed || order.hasFinalAmountPaid)) ...[
+                    SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                    _buildCompactRewardSection(order),
+                  ],
+
+                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+
+                  // Bottom Row: Order Date + QR Status (Compact)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Ordered on ${_formatDateTime(order.createdAt)}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: ResponsiveUtils.micro(context),
+                          ),
+                        ),
+                      ),
+                      
+                      // QR Code indicator for paid orders
+                      if (order.status == OrderStatus.paid) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              order.hasQRCode ? Icons.qr_code : Icons.hourglass_top,
+                              color: order.hasQRCode ? const Color(0xFF10B981) : Colors.orange,
+                              size: ResponsiveUtils.iconXSmall(context),
+                            ),
+                            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                            Text(
+                              order.hasQRCode 
+                                ? 'View QR' 
+                                : 'Generating...',
+                              style: TextStyle(
+                                color: order.hasQRCode 
+                                  ? const Color(0xFF10B981)
+                                  : Colors.orange,
+                                fontSize: ResponsiveUtils.micro(context),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (order.hasQRCode) ...[
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                              Icon(
+                                Icons.touch_app,
+                                color: const Color(0xFF10B981).withOpacity(0.6),
+                                size: ResponsiveUtils.iconXSmall(context),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -598,9 +706,9 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildCompactDetailRow(IconData icon, String label, String value, {bool isCompact = false}) {
     return Padding(
-      padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingXSmall(context)),
+      padding: EdgeInsets.only(bottom: isCompact ? 0 : ResponsiveUtils.spacingXSmall(context)),
       child: Row(
         children: [
           Icon(
@@ -608,16 +716,29 @@ class _OrdersScreenState extends State<OrdersScreen>
             color: Colors.white.withOpacity(0.7),
             size: ResponsiveUtils.iconXSmall(context),
           ),
-          SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+          SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
           Expanded(
-            child: Text(
-              '$label: $value',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
-                fontSize: ResponsiveUtils.micro(context),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: ResponsiveUtils.micro(context),
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: ResponsiveUtils.micro(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
@@ -773,6 +894,86 @@ class _OrdersScreenState extends State<OrdersScreen>
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactRewardSection(Order order) {
+    return Container(
+      padding: ResponsiveUtils.paddingSmall(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+        color: const Color(0xFF10B981).withOpacity(0.1),
+        border: Border.all(
+          color: const Color(0xFF10B981).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.stars_rounded,
+            color: const Color(0xFF10B981),
+            size: ResponsiveUtils.iconXSmall(context),
+          ),
+          SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Show rewards redeemed if any
+                if (order.hasRewardsRedeemed) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Rewards Redeemed',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: ResponsiveUtils.micro(context),
+                        ),
+                      ),
+                      Text(
+                        '- ${order.formattedRewardsRedeemed}',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: ResponsiveUtils.micro(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                
+                // Show final amount paid if different from original
+                if (order.hasFinalAmountPaid && order.hasRewardsRedeemed) ...[
+                  SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Final Amount',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: ResponsiveUtils.micro(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        order.formattedFinalAmountPaid,
+                        style: TextStyle(
+                          color: const Color(0xFF00D4FF),
+                          fontSize: ResponsiveUtils.micro(context),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
