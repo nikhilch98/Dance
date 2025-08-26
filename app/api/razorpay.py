@@ -124,6 +124,33 @@ async def razorpay_webhook(
                     if success:
                         order_updated = True
                         logger.info(f"Updated order {order['order_id']} status to {new_status.value}")
+                        
+                        # Process reward redemption if payment was successful
+                        if new_status == OrderStatusEnum.PAID and order.get("rewards_redeemed") and order.get("rewards_redeemed") > 0:
+                            try:
+                                from app.database.rewards import RewardOperations
+                                from app.models.rewards import RewardTransactionTypeEnum, RewardSourceEnum
+                                
+                                redemption_amount = float(order.get("rewards_redeemed", 0))
+                                user_id = order.get("user_id")
+                                
+                                logger.info(f"Processing reward redemption for order {order['order_id']}: ₹{redemption_amount} for user {user_id}")
+                                
+                                # Create debit transaction for redemption
+                                RewardOperations.create_transaction(
+                                    user_id=user_id,
+                                    transaction_type=RewardTransactionTypeEnum.DEBIT,
+                                    amount=redemption_amount,
+                                    source=RewardSourceEnum.REDEMPTION,
+                                    description=f"Reward redemption for workshop booking (Order: {order['order_id']})",
+                                    reference_id=order['order_id']
+                                )
+                                
+                                logger.info(f"Successfully processed ₹{redemption_amount} reward redemption for order {order['order_id']}")
+                                
+                            except Exception as redemption_error:
+                                logger.error(f"Error processing reward redemption for order {order['order_id']}: {redemption_error}")
+                                # Don't fail the webhook if redemption fails, just log it
                     else:
                         processing_error = "Failed to update order status in database"
                         logger.error(f"Failed to update order {order['order_id']} status")

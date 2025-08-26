@@ -280,8 +280,12 @@ async def order_status_redirect(request: Request, order_id: str = None):
         if not order_id:
             raise HTTPException(status_code=400, detail="Order ID is required")
         
+        print(f"🔗 Order status redirect requested for order: {order_id}")
+        
         # Create deep link to open app's Order Status screen
         app_deep_link = f"nachna://order-status/{order_id}"
+        
+        print(f"📱 Generated deep link: {app_deep_link}")
         
         # Return HTML that immediately redirects to the app
         return HTMLResponse(content=f"""
@@ -290,6 +294,8 @@ async def order_status_redirect(request: Request, order_id: str = None):
         <head>
             <title>Order Status - Redirecting to Nachna</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta name="apple-mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-status-bar-style" content="default">
             <style>
                 body {{
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -356,15 +362,47 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     50% {{ transform: scale(1.05); }}
                     100% {{ transform: scale(1); }}
                 }}
+                .debug-info {{
+                    background: rgba(255, 255, 255, 0.1);
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-size: 12px;
+                    font-family: monospace;
+                }}
             </style>
             <script>
+                console.log('Order status page loaded for order: {order_id}');
+                console.log('Attempting to open app with deep link: {app_deep_link}');
+                
                 // Try to open the app immediately
                 window.location.href = "{app_deep_link}";
                 
                 // Fallback: show the page content if app doesn't open
                 setTimeout(function() {{
+                    console.log('Showing fallback content after 2 seconds');
                     document.getElementById('content').style.display = 'block';
                 }}, 2000);
+                
+                // Additional fallback: try to detect if app opened
+                let appOpened = false;
+                try {{
+                    // Check if we can detect app opening
+                    window.addEventListener('blur', function() {{
+                        console.log('Window blurred - app may have opened');
+                        appOpened = true;
+                    }});
+                    
+                    // Check if we're still on the page after a delay
+                    setTimeout(function() {{
+                        if (!appOpened) {{
+                            console.log('App may not have opened, showing content');
+                            document.getElementById('content').style.display = 'block';
+                        }}
+                    }}, 1000);
+                }} catch (e) {{
+                    console.error('Error in app detection:', e);
+                }}
             </script>
         </head>
         <body>
@@ -382,6 +420,12 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     
                     <div class="fallback">
                         If the app doesn't open automatically, tap the button above or open the Nachna app manually.
+                    </div>
+                    
+                    <div class="debug-info">
+                        Debug: Deep link = {app_deep_link}<br>
+                        Order ID = {order_id}<br>
+                        URL = {request.url}
                     </div>
                 </div>
             </div>

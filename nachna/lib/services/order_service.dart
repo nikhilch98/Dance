@@ -17,14 +17,24 @@ class OrderService {
 
   /// Creates a payment link for a workshop
   /// Returns PaymentLinkResult which handles success/existing/error cases
-  Future<PaymentLinkResult> createPaymentLink(String workshopUuid) async {
+  /// [pointsRedeemed] - Optional reward points to redeem for discount
+  /// [discountAmount] - Optional discount amount from redeemed points
+  Future<PaymentLinkResult> createPaymentLink(
+    String workshopUuid, {
+    double? pointsRedeemed,
+    double? discountAmount,
+  }) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) {
         return PaymentLinkResult.error('Authentication token not found. Please login again.');
       }
 
-      final request = CreatePaymentLinkRequest(workshopUuid: workshopUuid);
+      final request = CreatePaymentLinkRequest(
+        workshopUuid: workshopUuid,
+        pointsRedeemed: pointsRedeemed ?? 0.0,
+        discountAmount: discountAmount ?? 0.0,
+      );
       
       final response = await _httpClient
           .post(

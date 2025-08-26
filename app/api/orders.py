@@ -206,7 +206,50 @@ async def create_payment_link(
                 workshop_details=workshop_details
             )
         
-        # 4. Get user details for payment link
+        # 4. Handle reward redemption if provided
+        final_amount_paise = amount_paise
+        rewards_redeemed_rupees = 0.0
+        
+        if request.discount_amount and request.discount_amount > 0:
+            logger.info(f"Processing reward redemption: ₹{request.discount_amount} discount for user {user_id}")
+            
+            # Validate and process redemption using rewards service
+            from app.database.rewards import RewardOperations
+            
+            # Convert discount amount to rupees if needed (ensure it's in rupees)
+            discount_rupees = float(request.discount_amount)
+            
+            # Validate user has sufficient balance
+            try:
+                reward_balance = RewardOperations.get_user_balance(user_id)
+                if reward_balance < discount_rupees:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Insufficient reward balance. Available: ₹{reward_balance}, Requested: ₹{discount_rupees}"
+                    )
+                
+                # Calculate final amount after discount
+                order_amount_rupees = amount_paise / 100.0
+                if discount_rupees > order_amount_rupees:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed order amount (₹{order_amount_rupees})"
+                    )
+                
+                final_amount_rupees = order_amount_rupees - discount_rupees
+                final_amount_paise = int(final_amount_rupees * 100)
+                rewards_redeemed_rupees = discount_rupees
+                
+                logger.info(f"Redemption calculated: Order ₹{order_amount_rupees} - Discount ₹{discount_rupees} = Final ₹{final_amount_rupees}")
+                
+            except Exception as e:
+                logger.error(f"Error validating reward redemption: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Error processing reward redemption: {str(e)}"
+                )
+        
+        # 5. Get user details for payment link
         user = UserOperations.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
@@ -214,16 +257,18 @@ async def create_payment_link(
                 detail="User not found"
             )
         
-        # 5. Create workshop details object
+        # 6. Create workshop details object
         workshop_details = create_workshop_details(workshop)
         
-        # 6. Create order in database
+        # 7. Create order in database with redemption info
         order_data = OrderCreate(
             user_id=user_id,
             workshop_uuid=request.workshop_uuid,
             workshop_details=workshop_details,
-            amount=amount_paise,
-            currency="INR"
+            amount=amount_paise,  # Original amount in paise
+            currency="INR",
+            rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
+            final_amount_paid=final_amount_rupees if rewards_redeemed_rupees > 0 else None
         )
         
         order_id = OrderOperations.create_order(order_data)
@@ -237,14 +282,19 @@ async def create_payment_link(
         user_email = f"{user['mobile_number']}@nachna.com"  # Placeholder email
         user_phone = f"+91{user['mobile_number']}"
         
+        # Update workshop title to show discount if applied
+        payment_title = workshop_details.title
+        if rewards_redeemed_rupees > 0:
+            payment_title += f" (₹{rewards_redeemed_rupees} reward discount applied)"
+        
         try:
             razorpay_response = razorpay_service.create_order_payment_link(
                 order_id=order_id,
-                amount=amount_paise,
+                amount=final_amount_paise,  # Use final amount after discount
                 user_name=user_name,
                 user_email=user_email,
                 user_phone=user_phone,
-                workshop_title=workshop_details.title,
+                workshop_title=payment_title,
                 expire_by_mins=60  # 1 hour expiry
             )
             

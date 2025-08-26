@@ -495,15 +495,26 @@ import UserNotifications
   private func handleDeepLink(url: URL) {
     let incoming = url.absoluteString
     let now = Date()
+    
+    print("🔗 iOS AppDelegate: Deep link received: \(incoming)")
+    print("🔗 iOS AppDelegate: URL components:")
+    print("   Absolute string: \(incoming)")
+    print("   Scheme: \(url.scheme ?? 'nil')")
+    print("   Host: \(url.host ?? 'nil')")
+    print("   Path: \(url.path)")
+    print("   Query: \(url.query ?? 'nil')")
+    print("   Fragment: \(url.fragment ?? 'nil')")
+    
     if let lastUrl = lastDeepLinkUrl, let lastAt = lastDeepLinkAt {
       if lastUrl == incoming && now.timeIntervalSince(lastAt) < 2.0 {
-        print("Deep link ignored (native duplicate within window): \(incoming)")
+        print("🔗 iOS AppDelegate: Deep link ignored (native duplicate within window): \(incoming)")
         return
       }
     }
     lastDeepLinkUrl = incoming
     lastDeepLinkAt = now
-    print("Deep link received: \(incoming)")
+    
+    print("🔗 iOS AppDelegate: Sending deep link to Flutter: \(incoming)")
     deepLinkChannel?.invokeMethod("handleDeepLink", arguments: incoming)
   }
 

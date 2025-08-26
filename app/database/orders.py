@@ -56,6 +56,9 @@ class OrderOperations:
             "payment_link_url": None,
             "expires_at": None,
             "payment_gateway_details": None,
+            # Redemption fields (in rupees)
+            "rewards_redeemed": order_data.rewards_redeemed,
+            "final_amount_paid": order_data.final_amount_paid,
             "created_at": now,
             "updated_at": now
         }

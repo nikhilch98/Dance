@@ -79,12 +79,16 @@ CreatePaymentLinkRequest _$CreatePaymentLinkRequestFromJson(
         Map<String, dynamic> json) =>
     CreatePaymentLinkRequest(
       workshopUuid: json['workshop_uuid'] as String,
+      pointsRedeemed: (json['points_redeemed'] as num?)?.toDouble() ?? 0.0,
+      discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
     );
 
 Map<String, dynamic> _$CreatePaymentLinkRequestToJson(
         CreatePaymentLinkRequest instance) =>
     <String, dynamic>{
       'workshop_uuid': instance.workshopUuid,
+      'points_redeemed': instance.pointsRedeemed,
+      'discount_amount': instance.discountAmount,
     };
 
 PaymentLinkResponse _$PaymentLinkResponseFromJson(Map<String, dynamic> json) =>

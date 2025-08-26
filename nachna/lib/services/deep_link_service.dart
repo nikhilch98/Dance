@@ -51,6 +51,8 @@ class DeepLinkService {
   /// Handle incoming deep link
   Future<void> _handleIncomingLink(String url) async {
     try {
+      print('🔗 Deep link service: Processing URL: $url');
+      
       // Drop duplicates within a short window
       final now = DateTime.now();
       if (_lastHandledUrl == url && _lastHandledAt != null && now.difference(_lastHandledAt!).inSeconds < 3) {
@@ -66,7 +68,15 @@ class DeepLinkService {
       _lastHandledAt = now;
 
       final uri = Uri.parse(url);
-      print('Deep link received: $url');
+      print('🔗 Deep link service: Parsed URI - scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}, query: ${uri.queryParameters}');
+      print('🔗 Deep link service: Full URL breakdown:');
+      print('   Original URL: $url');
+      print('   Scheme: ${uri.scheme}');
+      print('   Host: ${uri.host}');
+      print('   Path: ${uri.path}');
+      print('   Path segments: ${uri.pathSegments}');
+      print('   Query parameters: ${uri.queryParameters}');
+      print('   Authority: ${uri.authority}');
       
       // Handle artist deep links: 
       // Custom scheme: nachna://artist/{artistId}
@@ -97,7 +107,21 @@ class DeepLinkService {
         // Handle custom scheme: nachna://order-status/{orderId}
         final orderId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
         if (orderId.isNotEmpty) {
-          print('Navigating to order status via custom scheme: $orderId');
+          print('🔗 Deep link service: Navigating to order status via custom scheme: $orderId');
+          await _navigateToOrderStatusInternal(orderId);
+        }
+      } else if (uri.path == '/order/status' && uri.queryParameters.containsKey('order_id')) {
+        // Handle universal link: https://nachna.com/order/status?order_id={orderId}
+        final orderId = uri.queryParameters['order_id'];
+        if (orderId != null && orderId.isNotEmpty) {
+          print('🔗 Deep link service: Navigating to order status via universal link: $orderId');
+          await _navigateToOrderStatusInternal(orderId);
+        }
+      } else if (uri.scheme == 'nachna' && uri.host == 'order-status' && uri.pathSegments.isNotEmpty) {
+        // Alternative pattern: nachna://order-status/{orderId} (with path segments)
+        final orderId = uri.pathSegments[0];
+        if (orderId.isNotEmpty) {
+          print('🔗 Deep link service: Navigating to order status via alternative pattern: $orderId');
           await _navigateToOrderStatusInternal(orderId);
         }
       }
@@ -361,13 +385,15 @@ class DeepLinkService {
   /// Internal method to navigate to order status (used by deep link handler)
   Future<void> _navigateToOrderStatusInternal(String orderId) async {
     try {
+      print('🔗 Deep link service: Attempting to navigate to order status for order: $orderId');
+      
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('Navigator not available, cannot navigate to order status');
+        print('❌ Navigator not available, cannot navigate to order status');
         return;
       }
       
-      print('Navigating to order status: $orderId');
+      print('✅ Navigator available, navigating to order status: $orderId');
       
       // Navigate directly to order status screen
       navigator.push(
@@ -375,12 +401,14 @@ class DeepLinkService {
           builder: (context) => OrderStatusScreen(orderId: orderId),
         ),
       );
+      
+      print('✅ Successfully navigated to order status screen');
     } catch (e) {
-      print('Error navigating to order status: $e');
+      print('❌ Error navigating to order status: $e');
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
-        print('Falling back to home screen');
+        print('🔄 Falling back to home screen');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
           (route) => false,

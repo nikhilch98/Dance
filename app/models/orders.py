@@ -33,6 +33,8 @@ class WorkshopDetails(BaseModel):
 class CreatePaymentLinkRequest(BaseModel):
     """Request model for creating payment link."""
     workshop_uuid: str = Field(..., description="Workshop UUID to create payment for")
+    points_redeemed: Optional[float] = Field(0.0, description="Reward points redeemed for discount")
+    discount_amount: Optional[float] = Field(0.0, description="Discount amount from redeemed points")
 
 
 class OrderCreate(BaseModel):
@@ -42,6 +44,8 @@ class OrderCreate(BaseModel):
     workshop_details: WorkshopDetails
     amount: int  # Amount in paise
     currency: str = "INR"
+    rewards_redeemed: Optional[float] = None  # Reward points redeemed (in rupees)
+    final_amount_paid: Optional[float] = None  # Final amount after discount (in rupees)
     payment_gateway: PaymentGatewayEnum = PaymentGatewayEnum.RAZORPAY
 
 

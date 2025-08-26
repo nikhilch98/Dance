@@ -190,8 +190,18 @@ class Order {
 class CreatePaymentLinkRequest {
   @JsonKey(name: 'workshop_uuid')
   final String workshopUuid;
+  
+  @JsonKey(name: 'points_redeemed')
+  final double pointsRedeemed;
+  
+  @JsonKey(name: 'discount_amount')
+  final double discountAmount;
 
-  CreatePaymentLinkRequest({required this.workshopUuid});
+  CreatePaymentLinkRequest({
+    required this.workshopUuid,
+    this.pointsRedeemed = 0.0,
+    this.discountAmount = 0.0,
+  });
 
   factory CreatePaymentLinkRequest.fromJson(Map<String, dynamic> json) => _$CreatePaymentLinkRequestFromJson(json);
   Map<String, dynamic> toJson() => _$CreatePaymentLinkRequestToJson(this);
