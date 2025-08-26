@@ -110,21 +110,17 @@ class BackgroundRewardsService:
                 logger.debug(f"Rewards already generated for order {order_id}")
                 return
                 
-            # Check if there's already a reward transaction for this order
-            if self._has_existing_reward_transaction(order_id):
-                logger.warning(f"Reward transaction already exists for order {order_id} - marking as generated")
-                self._mark_order_rewards_generated(order_id, 0)  # Mark as generated to prevent future processing
-                return
-                
-            # Calculate 15% cashback with proper rounding
+            # Calculate 15% cashback with proper rounding (in rupees)
             cashback_amount = self._calculate_cashback(order_amount)
             
             if cashback_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - no cashback calculated")
                 return
                 
-            # Ensure user has a reward wallet and create cashback transaction
-            # The create_transaction method automatically updates the wallet balance
+            logger.info(f"Processing cashback for order {order_id}: Order amount ₹{order_amount/100:.2f} → Cashback ₹{cashback_amount}")
+                
+            # Create cashback transaction (with built-in duplicate prevention)
+            # The create_transaction method automatically handles duplicates and updates wallet balance
             transaction_id = self.reward_operations.create_transaction(
                 user_id=user_id,
                 transaction_type=RewardTransactionTypeEnum.CREDIT,
@@ -168,25 +164,6 @@ class BackgroundRewardsService:
         except Exception as e:
             logger.error(f"Error calculating cashback for amount {order_amount}: {e}")
             return 0.0
-    
-    def _has_existing_reward_transaction(self, order_id: str) -> bool:
-        """Check if there's already a reward transaction for this order."""
-        try:
-            from utils.utils import get_mongo_client
-            client = get_mongo_client()
-            transactions_collection = client["dance_app"]["reward_transactions"]
-            
-            # Check if there's already a reward transaction with this reference_id
-            existing_transaction = transactions_collection.find_one({
-                "reference_id": order_id,
-                "source": RewardSourceEnum.CASHBACK.value
-            })
-            
-            return existing_transaction is not None
-            
-        except Exception as e:
-            logger.error(f"Error checking existing reward transaction for order {order_id}: {e}")
-            return False  # If we can't check, assume no existing transaction
             
     def _mark_order_rewards_generated(self, order_id: str, cashback_amount: float):
         """Mark an order as having rewards generated."""

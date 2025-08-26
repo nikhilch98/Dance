@@ -106,10 +106,22 @@ class RewardOperations:
         reference_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> str:
-        """Create a new reward transaction."""
+        """Create a new reward transaction with duplicate prevention."""
         try:
             client = get_mongo_client()
             collection = client["dance_app"]["reward_transactions"]
+            
+            # Check for existing transaction with same reference_id and source (prevent duplicates)
+            if reference_id and source:
+                existing_transaction = collection.find_one({
+                    "reference_id": reference_id,
+                    "source": source.value,
+                    "user_id": user_id
+                })
+                
+                if existing_transaction:
+                    logger.warning(f"Duplicate transaction prevented for reference_id {reference_id}, source {source.value}, user {user_id}")
+                    return existing_transaction["transaction_id"]
             
             transaction_id = str(uuid.uuid4())
             transaction_data = {
@@ -131,7 +143,7 @@ class RewardOperations:
             # Update wallet balance
             RewardOperations.update_wallet_balance(user_id, amount, transaction_type)
             
-            logger.info(f"Created reward transaction {transaction_id} for user {user_id}")
+            logger.info(f"Created reward transaction {transaction_id} for user {user_id} - Amount: ₹{amount}")
             return transaction_id
             
         except Exception as e:
