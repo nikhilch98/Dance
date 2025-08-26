@@ -43,6 +43,9 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
       qrCodeGeneratedAt: json['qr_code_generated_at'] == null
           ? null
           : DateTime.parse(json['qr_code_generated_at'] as String),
+      cashbackAmount: (json['cashback_amount'] as num?)?.toDouble(),
+      rewardsRedeemed: (json['rewards_redeemed'] as num?)?.toDouble(),
+      finalAmountPaid: (json['final_amount_paid'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -57,6 +60,9 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
       'payment_link_url': instance.paymentLinkUrl,
       'qr_code_data': instance.qrCodeData,
       'qr_code_generated_at': instance.qrCodeGeneratedAt?.toIso8601String(),
+      'cashback_amount': instance.cashbackAmount,
+      'rewards_redeemed': instance.rewardsRedeemed,
+      'final_amount_paid': instance.finalAmountPaid,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };

@@ -153,8 +153,8 @@ async def calculate_redemption(
         redemption_cap = RewardOperations.get_redemption_cap()
         exchange_rate = RewardOperations.get_exchange_rate()
         
-        # Calculate maximum redeemable based on workshop amount and cap
-        max_discount_amount = min(request.workshop_amount * 0.5, redemption_cap * exchange_rate)  # Max 50% of workshop cost
+        # Calculate maximum redeemable based on workshop amount (10% cap)
+        max_discount_amount = request.workshop_amount * 0.10  # Max 10% of workshop cost
         max_redeemable_points = max_discount_amount / exchange_rate
         
         # Consider user's available balance
@@ -218,8 +218,17 @@ async def redeem_rewards(
                 detail=f"Cannot redeem more than {redemption_cap} points per workshop"
             )
         
-        # Calculate discount and final amount
+        # Validate against workshop amount cap (10% max redemption)
+        max_discount_allowed = request.order_amount * 0.10
         discount_amount = request.points_to_redeem * exchange_rate
+        
+        if discount_amount > max_discount_allowed:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot redeem more than 10% of workshop cost (₹{max_discount_allowed:.0f})"
+            )
+        
+        # Calculate final amount and savings
         final_amount = max(0, request.order_amount - discount_amount)
         savings_percentage = (discount_amount / request.order_amount) * 100 if request.order_amount > 0 else 0
         

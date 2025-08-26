@@ -538,6 +538,12 @@ class _OrdersScreenState extends State<OrdersScreen>
                   ],
                 ),
 
+                // Reward Information Section (for paid orders)
+                if (order.status == OrderStatus.paid && (order.hasCashback || order.hasRewardsRedeemed)) ...[
+                  SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                  _buildRewardSection(order),
+                ],
+
                 SizedBox(height: ResponsiveUtils.spacingSmall(context)),
 
                 // Order Date
@@ -648,6 +654,126 @@ class _OrdersScreenState extends State<OrdersScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRewardSection(Order order) {
+    return Container(
+      padding: ResponsiveUtils.paddingMedium(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF10B981).withOpacity(0.15),
+            const Color(0xFF059669).withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: const Color(0xFF10B981).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.stars_rounded,
+                color: const Color(0xFF10B981),
+                size: ResponsiveUtils.iconSmall(context),
+              ),
+              SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+              Text(
+                'Rewards Summary',
+                style: TextStyle(
+                  color: const Color(0xFF10B981),
+                  fontSize: ResponsiveUtils.micro(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+          
+          // Show cashback earned
+          if (order.hasCashback) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Cashback Earned (15%)',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: ResponsiveUtils.micro(context),
+                  ),
+                ),
+                Text(
+                  '+ ${order.formattedCashbackAmount}',
+                  style: TextStyle(
+                    color: const Color(0xFF10B981),
+                    fontSize: ResponsiveUtils.micro(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          
+          // Show rewards redeemed if any
+          if (order.hasRewardsRedeemed) ...[
+            if (order.hasCashback) SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Rewards Redeemed',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: ResponsiveUtils.micro(context),
+                  ),
+                ),
+                Text(
+                  '- ${order.formattedRewardsRedeemed}',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: ResponsiveUtils.micro(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          
+          // Show final amount paid if different from original
+          if (order.hasFinalAmountPaid && order.hasRewardsRedeemed) ...[
+            SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+            Divider(color: Colors.white.withOpacity(0.2), height: 1),
+            SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Final Amount Paid',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: ResponsiveUtils.micro(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  order.formattedFinalAmountPaid,
+                  style: TextStyle(
+                    color: const Color(0xFF00D4FF),
+                    fontSize: ResponsiveUtils.micro(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

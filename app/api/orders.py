@@ -25,6 +25,7 @@ from app.models.orders import (
 from app.services.auth import verify_token
 from app.services.razorpay_service import get_razorpay_service
 from app.services.background_qr_service import get_background_qr_service, run_qr_generation_batch
+from app.services.background_rewards_service import BackgroundRewardsService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -520,4 +521,66 @@ async def get_qr_generation_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get QR generation status"
+        )
+
+
+@router.post("/rewards-generation/trigger")
+async def trigger_rewards_generation(
+    user_id: str = Depends(verify_token)
+):
+    """Manually trigger rewards generation for paid orders.
+    
+    Args:
+        user_id: User ID from authentication token
+        
+    Returns:
+        Trigger confirmation and processing status
+    """
+    try:
+        logger.info(f"Manual rewards generation triggered by user {user_id}")
+        
+        # Create rewards service instance and trigger manual generation
+        rewards_service = BackgroundRewardsService()
+        result = await rewards_service.trigger_manual_rewards_generation()
+        
+        return {
+            "success": True,
+            "message": "Rewards generation triggered manually",
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error triggering rewards generation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to trigger rewards generation"
+        )
+
+
+@router.get("/rewards-generation/status")
+async def get_rewards_generation_status(
+    user_id: str = Depends(verify_token)
+):
+    """Get rewards generation service status.
+    
+    Args:
+        user_id: User ID from authentication token
+        
+    Returns:
+        Rewards generation service status
+    """
+    try:
+        rewards_service = BackgroundRewardsService()
+        status_info = await rewards_service.get_rewards_generation_status()
+        
+        return {
+            "success": True,
+            "service_status": status_info
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting rewards generation status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get rewards generation status"
         )

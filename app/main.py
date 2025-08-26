@@ -1,5 +1,6 @@
 """Main FastAPI application for the Nachna Dance Workshop API."""
 
+import asyncio
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ from app.api import (
 )
 from app.services.notifications import notification_service
 from app.services.background_qr_service import schedule_qr_generation_task
+from app.services.background_rewards_service import BackgroundRewardsService
 from utils.utils import DatabaseManager, start_cache_invalidation_watcher
 
 settings = get_settings()
@@ -103,6 +105,14 @@ async def startup_event():
         print("Background QR code generation service started")
     else:
         print("Warning: Failed to start background QR code generation service")
+
+    # Start the background rewards generation service
+    try:
+        rewards_service = BackgroundRewardsService()
+        asyncio.create_task(rewards_service.start_rewards_generation_service())
+        print("Background rewards generation service started")
+    except Exception as e:
+        print(f"Warning: Failed to start background rewards service: {e}")
 
 
 @app.on_event("shutdown")

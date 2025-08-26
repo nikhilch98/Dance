@@ -286,6 +286,39 @@ class OrderOperations:
         return result.modified_count > 0
     
     @staticmethod
+    def update_order_reward_info(
+        order_id: str, 
+        rewards_redeemed: Optional[float] = None, 
+        final_amount_paid: Optional[float] = None
+    ) -> bool:
+        """Update an order with reward redemption information.
+        
+        Args:
+            order_id: Order identifier
+            rewards_redeemed: Amount of rewards redeemed in rupees
+            final_amount_paid: Final amount paid after reward redemption in rupees
+            
+        Returns:
+            bool: True if update successful
+        """
+        client = get_mongo_client()
+        
+        update_fields = {"updated_at": datetime.utcnow()}
+        
+        if rewards_redeemed is not None:
+            update_fields["rewards_redeemed"] = rewards_redeemed
+            
+        if final_amount_paid is not None:
+            update_fields["final_amount_paid"] = final_amount_paid
+        
+        result = client["dance_app"]["orders"].update_one(
+            {"order_id": order_id},
+            {"$set": update_fields}
+        )
+        
+        return result.modified_count > 0
+    
+    @staticmethod
     def get_order_for_qr_generation(order_id: str) -> Optional[Dict[str, Any]]:
         """Get order details needed for QR code generation.
         

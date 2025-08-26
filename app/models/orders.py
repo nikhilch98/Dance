@@ -61,6 +61,12 @@ class Order(BaseModel):
     payment_gateway_details: Optional[Dict[str, Any]] = None
     qr_code_data: Optional[str] = None  # Base64 encoded QR code image
     qr_code_generated_at: Optional[datetime] = None
+    # Reward-related fields
+    rewards_generated: Optional[bool] = False
+    cashback_amount: Optional[float] = None  # Cashback amount in rupees
+    rewards_generated_at: Optional[datetime] = None
+    rewards_redeemed: Optional[float] = None  # Rewards redeemed for this order in rupees
+    final_amount_paid: Optional[float] = None  # Final amount after reward redemption in rupees
     created_at: datetime
     updated_at: datetime
 
@@ -76,6 +82,10 @@ class OrderResponse(BaseModel):
     payment_link_url: Optional[str] = None
     qr_code_data: Optional[str] = None  # Base64 encoded QR code image
     qr_code_generated_at: Optional[datetime] = None
+    # Reward information for order history
+    cashback_amount: Optional[float] = None  # Cashback earned in rupees
+    rewards_redeemed: Optional[float] = None  # Rewards redeemed in rupees
+    final_amount_paid: Optional[float] = None  # Final amount after redemption in rupees
     created_at: datetime
     updated_at: datetime
 

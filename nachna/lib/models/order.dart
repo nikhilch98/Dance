@@ -60,6 +60,13 @@ class Order {
   final String? qrCodeData;
   @JsonKey(name: 'qr_code_generated_at')
   final DateTime? qrCodeGeneratedAt;
+  // Reward-related fields
+  @JsonKey(name: 'cashback_amount')
+  final double? cashbackAmount; // Cashback earned in rupees
+  @JsonKey(name: 'rewards_redeemed')
+  final double? rewardsRedeemed; // Rewards redeemed in rupees
+  @JsonKey(name: 'final_amount_paid')
+  final double? finalAmountPaid; // Final amount after redemption in rupees
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'updated_at')
@@ -75,6 +82,9 @@ class Order {
     this.paymentLinkUrl,
     this.qrCodeData,
     this.qrCodeGeneratedAt,
+    this.cashbackAmount,
+    this.rewardsRedeemed,
+    this.finalAmountPaid,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -84,6 +94,15 @@ class Order {
 
   // Helper getters for UI
   String get formattedAmount => '₹${(amount / 100).toStringAsFixed(2)}';
+  
+  // Reward-related helper getters
+  String get formattedCashbackAmount => cashbackAmount != null ? '₹${cashbackAmount!.toStringAsFixed(0)}' : '₹0';
+  String get formattedRewardsRedeemed => rewardsRedeemed != null ? '₹${rewardsRedeemed!.toStringAsFixed(0)}' : '₹0';
+  String get formattedFinalAmountPaid => finalAmountPaid != null ? '₹${finalAmountPaid!.toStringAsFixed(0)}' : formattedAmount;
+  
+  bool get hasCashback => cashbackAmount != null && cashbackAmount! > 0;
+  bool get hasRewardsRedeemed => rewardsRedeemed != null && rewardsRedeemed! > 0;
+  bool get hasFinalAmountPaid => finalAmountPaid != null;
   
   // Format order ID for user-friendly display
   String get formattedOrderId {
