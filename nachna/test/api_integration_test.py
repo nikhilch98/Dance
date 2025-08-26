@@ -15,9 +15,13 @@ This file contains integration tests for ALL APIs used in the Nachna Flutter app
 Test Coverage:
 - Authentication APIs (register, login, profile, etc.)
 - Data Fetching APIs (artists, studios, workshops)
+- Reaction APIs (like, follow, notification preferences)
 - Notification APIs (device token management)
+- Reward APIs (balance, transactions, redemption, summary)
 - Admin APIs (workshop management, test notifications)
 - File Upload APIs (profile pictures)
+- Error Handling Tests (invalid auth, 404s, validation errors)
+- Performance Tests (response time validation)
 
 ======================================================================
 """
@@ -135,6 +139,7 @@ class ApiTestRunner:
             self.test_auth_password_apis()
             self.test_error_handling()
             self.test_performance()
+            self.test_reward_apis() # Added reward API tests
             
         except Exception as e:
             print(f"❌ Test suite failed with error: {e}")
@@ -1001,6 +1006,140 @@ class ApiTestRunner:
                 self.log_test_result(f"Performance {endpoint}", True, f"{response_time:.0f}ms")
             except Exception as e:
                 self.log_test_result(f"Performance {endpoint}", False, str(e))
+    
+    def test_reward_apis(self):
+        """Test reward-related APIs"""
+        print("\n🎁 Testing Reward APIs...")
+        
+        # Test reward balance
+        try:
+            response = self.make_request('GET', '/api/rewards/balance', auth_required=True)
+            assert response.status_code == 200
+            data = response.json()
+            assert 'available_balance' in data
+            assert 'total_balance' in data
+            
+            self.log_test_result("GET /api/rewards/balance", True, "Successfully retrieved reward balance")
+        except Exception as e:
+            self.log_test_result("GET /api/rewards/balance", False, str(e))
+        
+        # Test reward summary
+        try:
+            response = self.make_request('GET', '/api/rewards/summary', auth_required=True)
+            assert response.status_code == 200
+            data = response.json()
+            assert 'balance' in data
+            assert 'recent_transactions' in data
+            
+            self.log_test_result("GET /api/rewards/summary", True, "Successfully retrieved reward summary")
+        except Exception as e:
+            self.log_test_result("GET /api/rewards/summary", False, str(e))
+        
+        # Test redemption calculation
+        try:
+            response = self.make_request('POST', '/api/rewards/calculate-redemption', {
+                'workshop_uuid': self.config.test_workshop_uuid,
+                'workshop_amount': 1000.0  # ₹1000 workshop
+            }, auth_required=True)
+            assert response.status_code == 200
+            data = response.json()
+            assert 'workshop_info' in data
+            assert 'can_redeem' in data
+            
+            self.log_test_result("POST /api/rewards/calculate-redemption", True, "Successfully calculated redemption")
+        except Exception as e:
+            self.log_test_result("POST /api/rewards/calculate-redemption", False, str(e))
+        
+        # Test reward redemption (if user has balance)
+        try:
+            # First check if user has any balance
+            balance_response = self.make_request('GET', '/api/rewards/balance', auth_required=True)
+            if balance_response.status_code == 200:
+                balance_data = balance_response.json()
+                available_balance = balance_data.get('available_balance', 0.0)
+                
+                if available_balance > 0:
+                    # Test redemption with available balance
+                    redemption_amount = min(available_balance, 100.0)  # Use up to ₹100
+                    response = self.make_request('POST', '/api/rewards/redeem', {
+                        'workshop_uuid': self.config.test_workshop_uuid,
+                        'points_to_redeem': redemption_amount,
+                        'order_amount': 1000.0  # ₹1000 workshop
+                    }, auth_required=True)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        assert 'redemption_id' in data
+                        assert 'discount_amount' in data
+                        assert 'final_amount' in data
+                        
+                        self.log_test_result("POST /api/rewards/redeem", True, f"Successfully redeemed ₹{redemption_amount}")
+                    else:
+                        self.log_test_result("POST /api/rewards/redeem", False, f"Redemption failed: {response.text}")
+                else:
+                    self.log_test_result("POST /api/rewards/redeem", True, "Skipped - no balance available")
+            else:
+                self.log_test_result("POST /api/rewards/redeem", False, "Could not check balance")
+                
+        except Exception as e:
+            self.log_test_result("POST /api/rewards/redeem", False, str(e))
+        
+        # Test reward transactions
+        try:
+            response = self.make_request('GET', '/api/rewards/transactions', auth_required=True)
+            assert response.status_code == 200
+            data = response.json()
+            assert 'transactions' in data
+            assert 'total_count' in data
+            
+            self.log_test_result("GET /api/rewards/transactions", True, "Successfully retrieved reward transactions")
+        except Exception as e:
+            self.log_test_result("GET /api/rewards/transactions", False, str(e))
+        
+        # Test redemption history
+        try:
+            response = self.make_request('GET', '/api/rewards/redemptions', auth_required=True)
+            assert response.status_code == 200
+            data = response.json()
+            assert 'redemptions' in data
+            assert 'total_count' in data
+            
+            self.log_test_result("GET /api/rewards/redemptions", True, "Successfully retrieved redemption history")
+        except Exception as e:
+            self.log_test_result("GET /api/rewards/redemptions", False, str(e))
+        
+        # Test error cases
+        try:
+            # Test redemption with insufficient balance
+            response = self.make_request('POST', '/api/rewards/redeem', {
+                'workshop_uuid': self.config.test_workshop_uuid,
+                'points_to_redeem': 999999.0,  # Very high amount
+                'order_amount': 1000.0
+            }, auth_required=True)
+            
+            if response.status_code == 400:
+                self.log_test_result("POST /api/rewards/redeem (insufficient balance)", True, "Properly rejected insufficient balance")
+            else:
+                self.log_test_result("POST /api/rewards/redeem (insufficient balance)", False, "Should have rejected insufficient balance")
+                
+        except Exception as e:
+            self.log_test_result("POST /api/rewards/redeem (insufficient balance)", False, str(e))
+        
+        try:
+            # Test redemption exceeding 10% cap
+            response = self.make_request('POST', '/api/rewards/redeem', {
+                'workshop_uuid': self.config.test_workshop_uuid,
+                'points_to_redeem': 200.0,  # 20% of ₹1000 workshop
+                'order_amount': 1000.0
+            }, auth_required=True)
+            
+            if response.status_code == 400:
+                self.log_test_result("POST /api/rewards/redeem (exceeding 10% cap)", True, "Properly rejected exceeding 10% cap")
+            else:
+                self.log_test_result("POST /api/rewards/redeem (exceeding 10% cap)", False, "Should have rejected exceeding 10% cap")
+                
+        except Exception as e:
+            self.log_test_result("POST /api/rewards/redeem (exceeding 10% cap)", False, str(e))
     
     def print_test_summary(self):
         """Print test summary"""

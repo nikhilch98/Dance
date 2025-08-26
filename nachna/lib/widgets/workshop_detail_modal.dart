@@ -35,6 +35,17 @@ class WorkshopDetailModal extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: ElevatedButton(
                   onPressed: () async {
+                    // Ensure workshop UUID is available before proceeding
+                    if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Workshop information not available'),
+                          backgroundColor: Colors.red.withOpacity(0.8),
+                        ),
+                      );
+                      return;
+                    }
+                    
                     await PaymentLinkUtils.launchPaymentLink(
                       paymentLink: workshop.paymentLink,
                       paymentLinkType: workshop.paymentLinkType,
@@ -47,7 +58,7 @@ class WorkshopDetailModal extends StatelessWidget {
                         'time': workshop.time,
                         'pricing': workshop.pricingInfo,
                       },
-                      workshopUuid: workshop.uuid, // Use the uuid field from API response
+                      workshopUuid: workshop.uuid!, // Use the uuid field from API response
                       workshop: workshop, // Pass workshop object for rewards integration
                     );
                   },

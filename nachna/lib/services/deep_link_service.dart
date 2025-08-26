@@ -105,23 +105,39 @@ class DeepLinkService {
         }
       } else if (uri.scheme == 'nachna' && uri.host == 'order-status') {
         // Handle custom scheme: nachna://order-status/{orderId}
-        final orderId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
-        if (orderId.isNotEmpty) {
+        // For nachna://order-status/ord_123, pathSegments will be ['', 'ord_123']
+        // We want the second element (index 1) which contains the actual order ID
+        print('🔗 Deep link service: Processing nachna://order-status pattern');
+        print('   Path segments: ${uri.pathSegments}');
+        print('   Path: ${uri.path}');
+        
+        String? orderId;
+        if (uri.pathSegments.length >= 2) {
+          orderId = uri.pathSegments[1]; // Get the second element (index 1)
+          print('   Using pathSegments[1]: $orderId');
+        } else if (uri.pathSegments.length == 1 && uri.pathSegments[0].isNotEmpty) {
+          orderId = uri.pathSegments[0]; // Fallback for single element
+          print('   Using pathSegments[0]: $orderId');
+        } else {
+          // Try to extract from path
+          final path = uri.path;
+          if (path.startsWith('/') && path.length > 1) {
+            orderId = path.substring(1); // Remove leading slash
+            print('   Using path.substring(1): $orderId');
+          }
+        }
+        
+        if (orderId != null && orderId.isNotEmpty) {
           print('🔗 Deep link service: Navigating to order status via custom scheme: $orderId');
           await _navigateToOrderStatusInternal(orderId);
+        } else {
+          print('🔗 Deep link service: Could not extract order ID from: $url');
         }
       } else if (uri.path == '/order/status' && uri.queryParameters.containsKey('order_id')) {
         // Handle universal link: https://nachna.com/order/status?order_id={orderId}
         final orderId = uri.queryParameters['order_id'];
         if (orderId != null && orderId.isNotEmpty) {
           print('🔗 Deep link service: Navigating to order status via universal link: $orderId');
-          await _navigateToOrderStatusInternal(orderId);
-        }
-      } else if (uri.scheme == 'nachna' && uri.host == 'order-status' && uri.pathSegments.isNotEmpty) {
-        // Alternative pattern: nachna://order-status/{orderId} (with path segments)
-        final orderId = uri.pathSegments[0];
-        if (orderId.isNotEmpty) {
-          print('🔗 Deep link service: Navigating to order status via alternative pattern: $orderId');
           await _navigateToOrderStatusInternal(orderId);
         }
       }

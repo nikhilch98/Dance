@@ -85,7 +85,7 @@ class PaymentLinkUtils {
     WorkshopSession? workshop,
   ) async {
     if (workshopUuid == null || workshopUuid.isEmpty) {
-      _showErrorSnackBar(context, 'Workshop information not available');
+      _showErrorSnackBar(context, 'Workshop information not available. Please try again later.');
       return;
     }
 
@@ -116,6 +116,7 @@ class PaymentLinkUtils {
         }
       } catch (e) {
         print('Error extracting pricing info: $e');
+        // Continue without rewards redemption
       }
     }
 

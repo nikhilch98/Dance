@@ -1171,6 +1171,17 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           child: ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                               ? GestureDetector(
                                   onTap: () async {
+                                    // Ensure workshop UUID is available before proceeding
+                                    if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('Workshop information not available'),
+                                          backgroundColor: Colors.red.withOpacity(0.8),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    
                                     await PaymentLinkUtils.launchPaymentLink(
                                       paymentLink: workshop.paymentLink,
                                       paymentLinkType: workshop.paymentLinkType,
@@ -1183,7 +1194,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         'time': workshop.time,
                                         'pricing': workshop.pricingInfo,
                                       },
-                                      workshopUuid: workshop.uuid,
+                                      workshopUuid: workshop.uuid!,
                                       workshop: workshop,
                                     );
                                   },

@@ -499,11 +499,11 @@ import UserNotifications
     print("🔗 iOS AppDelegate: Deep link received: \(incoming)")
     print("🔗 iOS AppDelegate: URL components:")
     print("   Absolute string: \(incoming)")
-    print("   Scheme: \(url.scheme ?? 'nil')")
-    print("   Host: \(url.host ?? 'nil')")
+    print("   Scheme: \(url.scheme ?? "nil")")
+    print("   Host: \(url.host ?? "nil")")
     print("   Path: \(url.path)")
-    print("   Query: \(url.query ?? 'nil')")
-    print("   Fragment: \(url.fragment ?? 'nil')")
+    print("   Query: \(url.query ?? "nil")")
+    print("   Fragment: \(url.fragment ?? "nil")")
     
     if let lastUrl = lastDeepLinkUrl, let lastAt = lastDeepLinkAt {
       if lastUrl == incoming && now.timeIntervalSince(lastAt) < 2.0 {
