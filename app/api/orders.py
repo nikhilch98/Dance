@@ -347,6 +347,10 @@ async def get_order_status(
             payment_link_url=order.get("payment_link_url"),
             qr_code_data=order.get("qr_code_data"),
             qr_code_generated_at=order.get("qr_code_generated_at"),
+            # Reward-related fields
+            cashback_amount=order.get("cashback_amount"),
+            rewards_redeemed=order.get("rewards_redeemed"),
+            final_amount_paid=order.get("final_amount_paid"),
             created_at=order["created_at"],
             updated_at=order["updated_at"]
         )
@@ -425,6 +429,10 @@ async def get_user_orders(
                 payment_link_url=order.get("payment_link_url"),
                 qr_code_data=order.get("qr_code_data"),
                 qr_code_generated_at=order.get("qr_code_generated_at"),
+                # Reward-related fields
+                cashback_amount=order.get("cashback_amount"),
+                rewards_redeemed=order.get("rewards_redeemed"),
+                final_amount_paid=order.get("final_amount_paid"),
                 created_at=order["created_at"],
                 updated_at=order["updated_at"]
             )

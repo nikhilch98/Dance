@@ -104,6 +104,17 @@ class BackgroundRewardsService:
             if order_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - invalid amount: {order_amount}")
                 return
+            
+            # Check if rewards already generated for this order
+            if order.get("rewards_generated", False):
+                logger.debug(f"Rewards already generated for order {order_id}")
+                return
+                
+            # Check if there's already a reward transaction for this order
+            if self._has_existing_reward_transaction(order_id):
+                logger.warning(f"Reward transaction already exists for order {order_id} - marking as generated")
+                self._mark_order_rewards_generated(order_id, 0)  # Mark as generated to prevent future processing
+                return
                 
             # Calculate 15% cashback with proper rounding
             cashback_amount = self._calculate_cashback(order_amount)
@@ -133,20 +144,49 @@ class BackgroundRewardsService:
             raise
             
     def _calculate_cashback(self, order_amount: float) -> float:
-        """Calculate 15% cashback with proper rounding."""
+        """Calculate 15% cashback with proper rounding.
+        
+        Args:
+            order_amount: Order amount in paise
+            
+        Returns:
+            Cashback amount in rupees (not paise)
+        """
         try:
-            # Calculate 15% cashback
-            cashback = order_amount * 0.15
+            # Convert paise to rupees first
+            order_amount_rupees = order_amount / 100.0
+            
+            # Calculate 15% cashback in rupees
+            cashback_rupees = order_amount_rupees * 0.15
             
             # Round to nearest integer using standard rounding
             # 15.13 → 15, 15.5 → 16, 15.76 → 16
-            rounded_cashback = round(cashback)
+            rounded_cashback = round(cashback_rupees)
             
             return float(rounded_cashback)
             
         except Exception as e:
             logger.error(f"Error calculating cashback for amount {order_amount}: {e}")
             return 0.0
+    
+    def _has_existing_reward_transaction(self, order_id: str) -> bool:
+        """Check if there's already a reward transaction for this order."""
+        try:
+            from utils.utils import get_mongo_client
+            client = get_mongo_client()
+            transactions_collection = client["dance_app"]["reward_transactions"]
+            
+            # Check if there's already a reward transaction with this reference_id
+            existing_transaction = transactions_collection.find_one({
+                "reference_id": order_id,
+                "source": RewardSourceEnum.CASHBACK.value
+            })
+            
+            return existing_transaction is not None
+            
+        except Exception as e:
+            logger.error(f"Error checking existing reward transaction for order {order_id}: {e}")
+            return False  # If we can't check, assume no existing transaction
             
     def _mark_order_rewards_generated(self, order_id: str, cashback_amount: float):
         """Mark an order as having rewards generated."""
