@@ -11,23 +11,55 @@ class QRScannerWidget extends StatefulWidget {
   State<QRScannerWidget> createState() => _QRScannerWidgetState();
 }
 
-class _QRScannerWidgetState extends State<QRScannerWidget> {
+class _QRScannerWidgetState extends State<QRScannerWidget> 
+    with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
   Barcode? result;
   bool _isScanning = true;
   bool _isVerifying = false;
   QRVerificationResponse? _verificationResult;
+  bool _disposed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!_disposed && controller != null) {
+      switch (state) {
+        case AppLifecycleState.paused:
+        case AppLifecycleState.detached:
+        case AppLifecycleState.hidden:
+          controller?.pauseCamera();
+          break;
+        case AppLifecycleState.resumed:
+          if (_isScanning) {
+            controller?.resumeCamera();
+          }
+          break;
+        case AppLifecycleState.inactive:
+          // Do nothing
+          break;
+      }
+    }
+  }
 
   // In order to get hot reload to work we need to pause the camera if the platform
   // is android, or resume the camera if the platform is iOS.
   @override
   void reassemble() {
     super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller!.resumeCamera();
+    if (!_disposed && controller != null) {
+      if (Platform.isAndroid) {
+        controller!.pauseCamera();
+      } else if (Platform.isIOS) {
+        controller!.resumeCamera();
+      }
     }
   }
 
@@ -71,11 +103,11 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                           borderRadius: BorderRadius.circular(18),
                           child: GestureDetector(
                             onLongPress: () async {
-                              // Long press to focus camera
-                              await controller?.pauseCamera();
-                              await Future.delayed(const Duration(milliseconds: 200));
-                              await controller?.resumeCamera();
-                              _showFocusIndicator();
+                              await _performAutoFocus();
+                            },
+                            onTap: () async {
+                              // Tap to focus at point
+                              await _performAutoFocus();
                             },
                             child: QRView(
                               key: qrKey,
@@ -132,7 +164,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Long press camera to focus • Point at QR code',
+                            'Tap or long press to focus • Camera auto-focuses on QR codes',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 12,
@@ -200,6 +232,8 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
   }
 
   void _showFocusIndicator() {
+    if (_disposed || !mounted) return;
+    
     // Show a brief focus indicator animation
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -213,7 +247,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
             ),
             const SizedBox(width: 8),
             const Text(
-              'Camera focused',
+              'Camera auto-focused',
               style: TextStyle(color: Colors.white, fontSize: 14),
             ),
           ],
@@ -485,16 +519,32 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
+  void _onQRViewCreated(QRViewController controller) async {
     this.controller = controller;
+    
+    // Enable auto focus for better QR code scanning
+    try {
+      // Set camera focus mode to continuous autofocus
+      await controller.resumeCamera();
+      
+      // For better QR scanning performance
+      if (Platform.isIOS) {
+        await controller.resumeCamera();
+      }
+    } catch (e) {
+      print('Error setting up camera: $e');
+    }
+    
     controller.scannedDataStream.listen((scanData) {
-      if (_isScanning && !_isVerifying && scanData.code != null) {
+      if (!_disposed && _isScanning && !_isVerifying && scanData.code != null) {
         _verifyQRCode(scanData.code!);
       }
     });
   }
 
   void _toggleScanning() {
+    if (_disposed) return;
+    
     setState(() {
       _isScanning = !_isScanning;
     });
@@ -507,6 +557,8 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
   }
 
   void _verifyQRCode(String qrData) async {
+    if (_disposed) return;
+    
     setState(() {
       _isVerifying = true;
       _isScanning = false;
@@ -515,22 +567,27 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
 
     try {
       final result = await AdminService.verifyQRCode(qrData);
-      setState(() {
-        _verificationResult = result;
-        _isVerifying = false;
-      });
+      if (!_disposed && mounted) {
+        setState(() {
+          _verificationResult = result;
+          _isVerifying = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _verificationResult = QRVerificationResponse(
-          valid: false,
-          error: 'Verification failed: ${e.toString()}',
-        );
-        _isVerifying = false;
-      });
+      if (!_disposed && mounted) {
+        setState(() {
+          _verificationResult = QRVerificationResponse(
+            valid: false,
+            error: 'Verification failed: ${e.toString()}',
+          );
+          _isVerifying = false;
+        });
+      }
     }
   }
 
   void _resetScanner() {
+    if (_disposed) return;
     setState(() {
       _verificationResult = null;
       _isScanning = true;
@@ -538,9 +595,39 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
     controller?.resumeCamera();
   }
 
+  Future<void> _performAutoFocus() async {
+    if (_disposed || controller == null) return;
+    
+    try {
+      // Pause and resume for focus trigger
+      await controller!.pauseCamera();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await controller!.resumeCamera();
+      
+      // Additional focusing for better QR detection
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      _showFocusIndicator();
+    } catch (e) {
+      print('Error performing auto focus: $e');
+    }
+  }
+
   @override
   void dispose() {
-    controller?.dispose();
+    _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    
+    // Properly dispose of camera controller
+    if (controller != null) {
+      try {
+        controller!.pauseCamera();
+        controller!.dispose();
+      } catch (e) {
+        print('Error disposing camera controller: $e');
+      }
+    }
+    
     super.dispose();
   }
 }

@@ -48,6 +48,7 @@ class WorkshopDetailModal extends StatelessWidget {
                         'pricing': workshop.pricingInfo,
                       },
                       workshopUuid: workshop.uuid, // Use the uuid field from API response
+                      workshop: workshop, // Pass workshop object for rewards integration
                     );
                   },
                   style: ElevatedButton.styleFrom(

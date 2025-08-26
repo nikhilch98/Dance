@@ -12,6 +12,7 @@ import '../providers/config_provider.dart';
 import '../providers/global_config_provider.dart';
 import '../providers/reaction_provider.dart';
 import 'orders_screen.dart';
+import 'rewards_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -220,6 +221,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           
                           // Orders Section
                           _buildOrdersSection(user),
+                          
+                          SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
+                          
+                          // Rewards Section
+                          _buildRewardsSection(user),
                           
                           SizedBox(height: ResponsiveUtils.spacingXXLarge(context)),
                           
@@ -609,6 +615,129 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildRewardsSection(User user) {
+    return Container(
+      padding: ResponsiveUtils.paddingLarge(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(ResponsiveUtils.spacingMedium(context)),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF00D4FF),
+                          const Color(0xFF9C27B0),
+                        ],
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.account_balance_wallet,
+                      color: Colors.white,
+                      size: ResponsiveUtils.iconMedium(context),
+                    ),
+                  ),
+                  SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                  Expanded(
+                    child: Text(
+                      'Rewards Center',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.body1(context),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+              Container(
+                padding: ResponsiveUtils.paddingMedium(context),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                  color: const Color(0xFF00D4FF).withOpacity(0.1),
+                  border: Border.all(
+                    color: const Color(0xFF00D4FF).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.stars,
+                          color: const Color(0xFF00D4FF),
+                          size: ResponsiveUtils.iconSmall(context),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        Text(
+                          'Earn points on every workshop booking',
+                          style: TextStyle(
+                            fontSize: ResponsiveUtils.caption(context),
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.discount,
+                          color: const Color(0xFF10B981),
+                          size: ResponsiveUtils.iconSmall(context),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        Text(
+                          'Redeem for discounts on future bookings',
+                          style: TextStyle(
+                            fontSize: ResponsiveUtils.caption(context),
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+              SizedBox(
+                width: double.infinity,
+                child: _buildActionButton(
+                  'View Rewards Center',
+                  Icons.account_balance_wallet,
+                  const Color(0xFF00D4FF),
+                  () => _navigateToRewardsCenter(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButton(String text, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -972,6 +1101,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const OrdersScreen()),
+    );
+  }
+
+  void _navigateToRewardsCenter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RewardsCenterScreen()),
     );
   }
 

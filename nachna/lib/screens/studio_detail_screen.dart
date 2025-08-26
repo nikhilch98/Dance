@@ -1192,6 +1192,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                     'pricing': workshop.pricingInfo,
                                   },
                                   workshopUuid: workshop.uuid,
+                                  workshop: workshop,
                                 );
                               },
                               child: Container(

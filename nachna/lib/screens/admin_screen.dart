@@ -2371,6 +2371,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             'time': (session['time'] ?? '').toString(),
                           },
                           workshopUuid: (session['uuid'] ?? '').toString(),
+                          workshop: null, // Admin screen doesn't support rewards
                         );
                       },
                       style: ElevatedButton.styleFrom(

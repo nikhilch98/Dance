@@ -1043,6 +1043,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             'pricing': workshop.pricingInfo,
                           },
                           workshopUuid: workshop.uuid,
+                          workshop: WorkshopSession(
+                            uuid: workshop.uuid,
+                            date: workshop.date,
+                            time: workshop.time,
+                            song: workshop.song,
+                            artist: workshop.by,
+                            paymentLink: workshop.paymentLink,
+                            paymentLinkType: workshop.paymentLinkType,
+                            pricingInfo: workshop.pricingInfo,
+                            timestampEpoch: workshop.timestampEpoch,
+                          ),
                         );
                       },
                       child: Container(

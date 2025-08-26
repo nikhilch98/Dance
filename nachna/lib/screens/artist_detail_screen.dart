@@ -1184,6 +1184,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         'pricing': workshop.pricingInfo,
                                       },
                                       workshopUuid: workshop.uuid,
+                                      workshop: workshop,
                                     );
                                   },
                                   child: Container(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/order.dart';
+import '../models/workshop.dart';
 import '../services/order_service.dart';
+import '../screens/rewards_redemption_screen.dart';
 
 class PaymentLinkUtils {
   /// Handles launching payment links based on their type
@@ -11,12 +13,14 @@ class PaymentLinkUtils {
   /// [context] - BuildContext for showing error messages and loading states
   /// [workshopDetails] - Optional workshop details for WhatsApp message
   /// [workshopUuid] - Required for 'nachna' type to create payment link
+  /// [workshop] - Optional workshop object for rewards integration
   static Future<void> launchPaymentLink({
     String? paymentLink,
     String? paymentLinkType,
     required BuildContext context,
     Map<String, String?>? workshopDetails,
     String? workshopUuid,
+    WorkshopSession? workshop,
   }) async {
     // Default to 'url' if paymentLinkType is null or empty for backward compatibility
     final linkType = paymentLinkType?.toLowerCase() ?? 'url';
@@ -25,7 +29,7 @@ class PaymentLinkUtils {
     
     // Handle 'nachna' payment type - create payment link via API
     if (linkType == 'nachna') {
-      await _handleNachnaPayment(context, workshopUuid, workshopDetails);
+      await _handleNachnaPayment(context, workshopUuid, workshopDetails, workshop);
       return;
     }
     
@@ -78,12 +82,117 @@ class PaymentLinkUtils {
     BuildContext context,
     String? workshopUuid,
     Map<String, String?>? workshopDetails,
+    WorkshopSession? workshop,
   ) async {
     if (workshopUuid == null || workshopUuid.isEmpty) {
       _showErrorSnackBar(context, 'Workshop information not available');
       return;
     }
 
+    // For rewards redemption, we need the workshop object and pricing info
+    if (workshop != null && workshopDetails?['pricing'] != null) {
+      try {
+        // Extract original amount from pricing info
+        final pricingInfo = workshopDetails!['pricing']!;
+        final originalAmount = _extractAmountFromPricing(pricingInfo);
+        
+        if (originalAmount > 0) {
+          // Show rewards redemption screen
+          final result = await Navigator.of(context).push<Map<String, dynamic>>(
+            MaterialPageRoute(
+              builder: (context) => RewardsRedemptionScreen(
+                workshop: workshop,
+                originalAmount: originalAmount,
+                workshopDetails: workshopDetails,
+              ),
+            ),
+          );
+
+          if (result != null && context.mounted) {
+            // User completed rewards redemption - proceed with payment
+            await _createPaymentWithRedemption(context, workshopUuid, result);
+          }
+          return;
+        }
+      } catch (e) {
+        print('Error extracting pricing info: $e');
+      }
+    }
+
+    // Fallback: proceed without rewards redemption
+    await _createPaymentWithoutRewards(context, workshopUuid);
+  }
+
+  /// Extract amount from pricing string (e.g., "₹799" -> 799.0)
+  static double _extractAmountFromPricing(String pricingInfo) {
+    try {
+      // Remove currency symbols and non-numeric characters except decimal point
+      final numericString = pricingInfo.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(numericString) ?? 0.0;
+    } catch (e) {
+      print('Error parsing pricing: $e');
+      return 0.0;
+    }
+  }
+
+  /// Create payment with redemption result
+  static Future<void> _createPaymentWithRedemption(
+    BuildContext context,
+    String workshopUuid,
+    Map<String, dynamic> redemptionResult,
+  ) async {
+    // Show loading dialog
+    final loadingDialog = _showLoadingDialog(context);
+
+    try {
+      final orderService = OrderService();
+      final pointsRedeemed = redemptionResult['points_redeemed'] as double? ?? 0.0;
+      final discountAmount = redemptionResult['discount_amount'] as double? ?? 0.0;
+      final finalAmount = redemptionResult['final_amount'] as double? ?? 0.0;
+
+      // For now, use the existing createPaymentLink method
+      // TODO: Implement createPaymentLinkWithRewards in OrderService
+      final result = await orderService.createPaymentLink(workshopUuid);
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (result.isSuccess && result.paymentUrl != null) {
+        final orderIdText = result.response?.formattedOrderId ?? 'N/A';
+        
+        if (pointsRedeemed > 0) {
+          _showSuccessSnackBar(
+            context, 
+            'Order created with ₹${discountAmount.toStringAsFixed(0)} reward discount! Order: $orderIdText'
+          );
+        } else {
+          _showSuccessSnackBar(context, 'Order created: $orderIdText');
+        }
+        
+        // Launch payment URL
+        await _launchUrl(context, result.paymentUrl!);
+      } else {
+        final errorMessage = result.errorMessage ?? 'Failed to create payment link';
+        _showErrorSnackBar(context, errorMessage);
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      print('❌ Error creating payment with rewards: $e');
+      _showErrorSnackBar(context, e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Create payment without rewards redemption (fallback)
+  static Future<void> _createPaymentWithoutRewards(
+    BuildContext context,
+    String workshopUuid,
+  ) async {
     // Show loading dialog
     final loadingDialog = _showLoadingDialog(context);
 
@@ -97,36 +206,27 @@ class PaymentLinkUtils {
       }
 
       if (result.isSuccess && result.paymentUrl != null) {
-        // Success - payment link ready (new or existing)
         final orderIdText = result.response?.formattedOrderId ?? 'N/A';
         
         if (result.isExisting) {
-          print('📋 Using existing payment link: ${result.paymentUrl}');
-          print('📋 Order ID: $orderIdText');
           _showSuccessSnackBar(context, 'Using existing order: $orderIdText');
         } else {
-          print('✅ Payment link created successfully: ${result.paymentUrl}');
-          print('✅ Order ID: $orderIdText');
           _showSuccessSnackBar(context, 'Order created: $orderIdText');
         }
         
-        // Launch payment URL - the callback will redirect back to app via deep link
+        // Launch payment URL
         await _launchUrl(context, result.paymentUrl!);
-        
       } else {
-        // Error occurred
         final errorMessage = result.errorMessage ?? 'Failed to create payment link';
-        print('❌ Payment link creation failed: $errorMessage');
         _showErrorSnackBar(context, errorMessage);
       }
-      
     } catch (e) {
       // Close loading dialog if still open
       if (context.mounted) {
         Navigator.of(context).pop();
       }
       
-      print('❌ Error in _handleNachnaPayment: $e');
+      print('❌ Error creating payment: $e');
       _showErrorSnackBar(context, e.toString().replaceAll('Exception: ', ''));
     }
   }
