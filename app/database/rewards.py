@@ -281,14 +281,25 @@ class RewardOperations:
             raise
 
     @staticmethod
+    def get_user_balance(user_id: str) -> float:
+        """Get user's available reward balance."""
+        try:
+            wallet = RewardOperations.get_or_create_wallet(user_id)
+            return wallet.get("available_balance", 0.0)
+
+        except Exception as e:
+            logger.error(f"Error getting user balance for {user_id}: {e}")
+            return 0.0
+
+    @staticmethod
     def validate_redemption(user_id: str, points_to_redeem: float) -> bool:
         """Validate if user can redeem the specified points."""
         try:
             wallet = RewardOperations.get_or_create_wallet(user_id)
             available_balance = wallet.get("available_balance", 0.0)
-            
+
             return available_balance >= points_to_redeem
-            
+
         except Exception as e:
             logger.error(f"Error validating redemption for user {user_id}: {e}")
             return False
