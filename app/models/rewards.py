@@ -14,6 +14,7 @@ class RewardSourceEnum(str, Enum):
     SPECIAL_PROMOTION = "special_promotion"
     WORKSHOP_COMPLETION = "workshop_completion"
     ADMIN_BONUS = "admin_bonus"
+    REFUND = "refund"
 
 
 class RewardTransactionTypeEnum(str, Enum):

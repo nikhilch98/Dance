@@ -101,26 +101,33 @@ class BackgroundRewardsService:
             user_id = str(order["user_id"])
             order_id = str(order["_id"])
             order_amount = float(order.get("amount", 0))
-            
+
+            # Use final amount paid if available (after discounts), otherwise use original amount
+            # This ensures cashback is calculated on the actual amount paid by the user
+            amount_for_cashback = float(order.get("final_amount_paid", 0)) * 100  # Convert rupees to paise
+            if amount_for_cashback <= 0:
+                # Fallback to original amount if final_amount_paid is not set
+                amount_for_cashback = order_amount
+
             # Skip if amount is 0 or invalid
-            if order_amount <= 0:
-                logger.warning(f"Skipping rewards for order {order_id} - invalid amount: {order_amount}")
+            if amount_for_cashback <= 0:
+                logger.warning(f"Skipping rewards for order {order_id} - invalid amount: {amount_for_cashback}")
                 return
-            
+
             # Check if rewards already generated for this order
             if order.get("rewards_generated", False):
                 logger.debug(f"Rewards already generated for order {order_id}")
                 return
-                
+
             # Calculate configurable cashback percentage with proper rounding (in rupees)
-            cashback_amount = self._calculate_cashback(order_amount)
+            cashback_amount = self._calculate_cashback(amount_for_cashback)
             
             if cashback_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - no cashback calculated")
                 return
                 
             cashback_percentage = self.settings.reward_cashback_percentage
-            logger.info(f"Processing {cashback_percentage}% cashback for order {order_id}: Order amount ₹{order_amount/100:.2f} → Cashback ₹{cashback_amount}")
+            logger.info(f"Processing {cashback_percentage}% cashback for order {order_id}: Final amount paid ₹{amount_for_cashback/100:.2f} → Cashback ₹{cashback_amount}")
                 
             # Create cashback transaction (with built-in duplicate prevention)
             # The create_transaction method automatically handles duplicates and updates wallet balance

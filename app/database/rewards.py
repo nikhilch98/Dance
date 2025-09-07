@@ -292,6 +292,42 @@ class RewardOperations:
             return 0.0
 
     @staticmethod
+    def get_available_balance_for_redemption(user_id: str) -> float:
+        """Get user's available balance for redemption, excluding pending redemptions."""
+        try:
+            # Get base wallet balance
+            base_balance = RewardOperations.get_user_balance(user_id)
+
+            # Check for any recent pending redemptions (within last 10 minutes)
+            # This prevents double-booking with rewards
+            from datetime import datetime, timedelta
+            cutoff_time = datetime.utcnow() - timedelta(minutes=10)
+
+            client = get_mongo_client()
+            redemptions_collection = client["dance_app"]["reward_redemptions"]
+
+            # Find pending redemptions that might still be processing
+            pending_redemptions = list(redemptions_collection.find({
+                "user_id": user_id,
+                "status": {"$in": ["pending", "completed"]},  # Include completed to be safe
+                "created_at": {"$gte": cutoff_time}
+            }))
+
+            # Calculate total pending redemption amount
+            total_pending = sum(redemption.get("points_redeemed", 0) for redemption in pending_redemptions)
+
+            # Return available balance minus pending redemptions
+            available_for_redemption = max(0, base_balance - total_pending)
+
+            logger.debug(f"User {user_id}: Base balance ₹{base_balance}, Pending redemptions ₹{total_pending}, Available for redemption ₹{available_for_redemption}")
+
+            return available_for_redemption
+
+        except Exception as e:
+            logger.error(f"Error getting available balance for redemption for {user_id}: {e}")
+            return 0.0
+
+    @staticmethod
     def validate_redemption(user_id: str, points_to_redeem: float) -> bool:
         """Validate if user can redeem the specified points."""
         try:

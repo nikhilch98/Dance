@@ -179,6 +179,7 @@ func ArtistRedirectHandler(w http.ResponseWriter, r *http.Request) {
 		"Description": "View " + artist.ArtistName + "'s dance workshops and profile on Nachna.",
 		"Keywords":    "dance artist, " + artist.ArtistName + ", workshops, choreography",
 		"Artist":      artist,
+		"artist_name": artist.ArtistName, // For template compatibility
 		"DeepLink":    "nachna://artist/" + artistID,
 	}
 

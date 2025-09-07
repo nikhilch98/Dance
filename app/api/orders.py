@@ -269,9 +269,9 @@ async def create_payment_link(
             # Convert discount amount to rupees if needed (ensure it's in rupees)
             discount_rupees = rewards_redeemed_rupees
             
-            # Validate user has sufficient balance
+            # Validate user has sufficient balance (excluding pending redemptions)
             try:
-                reward_balance = RewardOperations.get_user_balance(user_id)
+                reward_balance = RewardOperations.get_available_balance_for_redemption(user_id)
                 if reward_balance < discount_rupees:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -302,9 +302,17 @@ async def create_payment_link(
                 # Apply discount
                 final_amount_rupees = order_amount_rupees - discount_rupees
                 final_amount_paise = int(final_amount_rupees * 100)
-                
+
                 logger.info(f"Applied reward discount: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
-                
+
+                # Store redemption info for later processing (after order creation)
+                redemption_info = {
+                    'points_redeemed': discount_rupees,
+                    'discount_amount': discount_rupees,
+                    'original_amount': order_amount_rupees,
+                    'final_amount': final_amount_rupees
+                }
+
             except HTTPException:
                 raise
             except Exception as e:
@@ -338,7 +346,41 @@ async def create_payment_link(
         
         order_id = OrderOperations.create_order(order_data)
         logger.info(f"Created order {order_id} for user {user_id}")
-        
+
+        # Process reward redemption instantly to prevent double-booking
+        # This ensures the balance is deducted immediately and prevents race conditions
+        if rewards_redeemed_rupees > 0 and 'redemption_info' in locals():
+            try:
+                # Create redemption record and deduct from balance immediately
+                # This prevents the user from using the same balance for multiple bookings
+                redemption_id = RewardOperations.create_redemption(
+                    user_id=user_id,
+                    order_id=order_id,
+                    workshop_uuid=request.workshop_uuid,
+                    points_redeemed=redemption_info['points_redeemed'],
+                    discount_amount=redemption_info['discount_amount'],
+                    original_amount=redemption_info['original_amount'],
+                    final_amount=redemption_info['final_amount']
+                )
+
+                logger.info(f"Instant redemption processed: {redemption_id} - ₹{redemption_info['points_redeemed']} deducted from user {user_id}")
+            except Exception as e:
+                logger.error(f"Failed to process instant redemption for order {order_id}: {e}")
+                # If redemption fails, we should cancel the order and payment link
+                try:
+                    # Clean up the failed order
+                    OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
+                    # Try to cancel the payment link
+                    razorpay_service = get_razorpay_service()
+                    # We don't have the payment link ID yet, but the webhook will handle cleanup
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to cleanup failed order {order_id}: {cleanup_error}")
+
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Failed to process reward redemption - order cancelled"
+                )
+
         # 7. Create Razorpay payment link
         razorpay_service = get_razorpay_service()
         

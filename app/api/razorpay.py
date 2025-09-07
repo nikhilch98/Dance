@@ -124,33 +124,36 @@ async def razorpay_webhook(
                     if success:
                         order_updated = True
                         logger.info(f"Updated order {order['order_id']} status to {new_status.value}")
-                        
-                        # Process reward redemption if payment was successful
-                        if new_status == OrderStatusEnum.PAID and order.get("rewards_redeemed") and order.get("rewards_redeemed") > 0:
-                            try:
-                                from app.database.rewards import RewardOperations
-                                from app.models.rewards import RewardTransactionTypeEnum, RewardSourceEnum
-                                
-                                redemption_amount = float(order.get("rewards_redeemed", 0))
-                                user_id = order.get("user_id")
-                                
-                                logger.info(f"Processing reward redemption for order {order['order_id']}: ₹{redemption_amount} for user {user_id}")
-                                
-                                # Create debit transaction for redemption
-                                RewardOperations.create_transaction(
-                                    user_id=user_id,
-                                    transaction_type=RewardTransactionTypeEnum.DEBIT,
-                                    amount=redemption_amount,
-                                    source=RewardSourceEnum.REDEMPTION,
-                                    description=f"Reward redemption for workshop booking (Order: {order['order_id']})",
-                                    reference_id=order['order_id']
-                                )
-                                
-                                logger.info(f"Successfully processed ₹{redemption_amount} reward redemption for order {order['order_id']}")
-                                
-                            except Exception as redemption_error:
-                                logger.error(f"Error processing reward redemption for order {order['order_id']}: {redemption_error}")
-                                # Don't fail the webhook if redemption fails, just log it
+
+                        # Handle reward redemption based on payment status
+                        rewards_redeemed = order.get("rewards_redeemed")
+                        if rewards_redeemed and rewards_redeemed > 0:
+                            if new_status == OrderStatusEnum.PAID:
+                                # Payment successful - redemption was already processed instantly
+                                logger.info(f"Payment successful for order {order['order_id']} with ₹{rewards_redeemed} rewards redeemed")
+                            elif new_status in [OrderStatusEnum.CANCELLED, OrderStatusEnum.FAILED]:
+                                # Payment failed/cancelled - rollback the rewards
+                                try:
+                                    from app.database.rewards import RewardOperations
+                                    from app.models.rewards import RewardTransactionTypeEnum, RewardSourceEnum
+
+                                    logger.info(f"Rolling back ₹{rewards_redeemed} rewards for failed/cancelled order {order['order_id']}")
+
+                                    # Refund the rewards back to user's balance
+                                    RewardOperations.create_transaction(
+                                        user_id=order.get("user_id"),
+                                        transaction_type=RewardTransactionTypeEnum.CREDIT,
+                                        amount=float(rewards_redeemed),
+                                        source=RewardSourceEnum.REFUND,
+                                        description=f"Refund for cancelled/failed order (Order: {order['order_id']})",
+                                        reference_id=order['order_id']
+                                    )
+
+                                    logger.info(f"Successfully refunded ₹{rewards_redeemed} to user {order.get('user_id')} for order {order['order_id']}")
+
+                                except Exception as refund_error:
+                                    logger.error(f"Failed to refund rewards for cancelled order {order['order_id']}: {refund_error}")
+                                    # This is critical - we need to handle this manually
                     else:
                         processing_error = "Failed to update order status in database"
                         logger.error(f"Failed to update order {order['order_id']} status")
