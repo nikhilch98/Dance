@@ -24,8 +24,8 @@ class QRCodeService:
     """Service for generating QR codes with nachna branding and cryptographic security."""
 
     def __init__(self):
-        self.logo_size_ratio = 0.15  # Logo will be 15% of QR code size
-        self.border_ratio = 0.02     # Border around logo (2% of QR code size)
+        self.logo_size_ratio = 0.20  # Logo will be 20% of QR code size (increased for better visibility)
+        self.border_ratio = 0.03     # Border around logo (3% of QR code size)
         # Use app secret key for QR code signing
         app_settings = get_settings()
         self.secret_key = getattr(app_settings, 'secret_key', 'nachna-qr-secret-key-2025').encode('utf-8')
@@ -109,12 +109,29 @@ class QRCodeService:
                 del self._qr_cache[oldest_key]
                 self._qr_cache[cache_key] = base64_image
 
-            logger.info(f"Generated secure QR code for order {order_id}")
+            logger.info(f"Generated secure QR code for order {order_id} with Nachna logo")
             return base64_image
 
         except Exception as e:
             logger.error(f"Failed to generate QR code for order {order_id}: {str(e)}")
             raise
+
+    def test_logo_generation(self) -> bool:
+        """Test method to verify logo generation is working."""
+        try:
+            # Test with a standard QR code size
+            test_size = (200, 200)
+            logo = self._get_cached_logo(test_size)
+
+            if logo is not None:
+                logger.info("Logo generation test passed - logo created successfully")
+                return True
+            else:
+                logger.warning("Logo generation test failed - logo creation returned None")
+                return False
+        except Exception as e:
+            logger.error(f"Logo generation test failed with error: {str(e)}")
+            return False
 
     def _create_cache_key(
         self,
@@ -281,12 +298,12 @@ class QRCodeService:
     
     def _generate_styled_qr_code(self, data: str) -> Image.Image:
         """Generate QR code with custom styling - optimized for speed."""
-        # Create QR code instance with medium error correction (faster, still reliable)
+        # Create QR code instance with high error correction for logo embedding
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,  # Medium error correction (faster)
+            error_correction=qrcode.constants.ERROR_CORRECT_H,  # High error correction for logo
             box_size=8,  # Smaller box size for faster generation
-            border=3,   # Smaller border
+            border=4,   # Slightly larger border for better logo placement
         )
 
         qr.add_data(data)
@@ -301,7 +318,7 @@ class QRCodeService:
         return qr_image
     
     def _embed_logo(self, qr_image: Image.Image) -> Image.Image:
-        """Embed nachna logo in the center of QR code - optimized with caching."""
+        """Embed nachna logo in the center of QR code with proper background and positioning."""
         try:
             # Convert to RGBA if needed
             if qr_image.mode != 'RGBA':
@@ -312,6 +329,7 @@ class QRCodeService:
 
             if logo is None:
                 # If logo creation failed, return plain QR code
+                logger.warning("Logo creation failed, returning QR code without logo")
                 return qr_image
 
             # Calculate position to center the logo
@@ -323,9 +341,36 @@ class QRCodeService:
                 (qr_size[1] - logo_size[1]) // 2
             )
 
-            # Paste logo onto QR code
+            # Create a circular background for the logo (white circle with slight transparency)
+            background_radius = int(min(logo_size) * 0.6)  # Slightly larger than logo
+            background = Image.new('RGBA', qr_image.size, (255, 255, 255, 0))
+            bg_draw = ImageDraw.Draw(background)
+
+            # Draw white circular background with slight shadow effect
+            bg_center = (qr_size[0] // 2, qr_size[1] // 2)
+            bg_bbox = [
+                bg_center[0] - background_radius,
+                bg_center[1] - background_radius,
+                bg_center[0] + background_radius,
+                bg_center[1] + background_radius
+            ]
+
+            # Draw shadow (dark circle)
+            shadow_offset = 2
+            shadow_bbox = [bg_bbox[0] + shadow_offset, bg_bbox[1] + shadow_offset,
+                          bg_bbox[2] + shadow_offset, bg_bbox[3] + shadow_offset]
+            bg_draw.ellipse(shadow_bbox, fill=(0, 0, 0, 60))
+
+            # Draw white background circle
+            bg_draw.ellipse(bg_bbox, fill=(255, 255, 255, 220))
+
+            # Composite the background onto the QR code
+            qr_image = Image.alpha_composite(qr_image, background)
+
+            # Paste logo onto QR code with proper alpha blending
             qr_image.paste(logo, position, logo)
 
+            logger.debug("Successfully embedded Nachna logo into QR code")
             return qr_image
 
         except Exception as e:
@@ -359,36 +404,118 @@ class QRCodeService:
             return None
     
     def _create_simple_logo(self, size: tuple) -> Optional[Image.Image]:
-        """Create a simple, fast nachna logo for embedding."""
+        """Create nachna logo for embedding using the actual logo file."""
         try:
             width, height = size
 
-            # Create simple circular logo with nachna colors
+            # Try to load the actual Nachna logo file
+            import os
+            # Get the absolute path to the logo file from the project root
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            logo_path = os.path.join(project_root, "static", "assets", "logo.png")
+            try:
+                # Load the actual logo
+                logo = Image.open(logo_path).convert('RGBA')
+
+                # Resize logo to fit within the QR code (maintain aspect ratio)
+                logo.thumbnail((width, height), Image.Resampling.LANCZOS)
+
+                # Create a new image with transparent background
+                final_logo = Image.new('RGBA', (width, height), (255, 255, 255, 0))
+
+                # Center the logo
+                logo_width, logo_height = logo.size
+                x = (width - logo_width) // 2
+                y = (height - logo_height) // 2
+
+                # Paste the logo onto the transparent background
+                final_logo.paste(logo, (x, y), logo)
+
+                logger.info(f"Successfully loaded and embedded Nachna logo from {logo_path} (resized to {logo.size})")
+                return final_logo
+
+            except FileNotFoundError:
+                logger.warning(f"Nachna logo file not found at {logo_path}, creating fallback logo")
+                return self._create_fallback_logo(size)
+            except Exception as e:
+                logger.warning(f"Failed to load logo file {logo_path}: {str(e)}, creating fallback logo")
+                return self._create_fallback_logo(size)
+
+        except Exception as e:
+            logger.warning(f"Failed to create logo: {str(e)}")
+            return None
+
+    def _create_fallback_logo(self, size: tuple) -> Optional[Image.Image]:
+        """Create a fallback nachna logo when the logo file is not available."""
+        try:
+            width, height = size
+
+            # Create circular logo with nachna gradient colors
             logo = Image.new('RGBA', (width, height), (255, 255, 255, 0))
             draw = ImageDraw.Draw(logo)
 
-            # Draw simple circle background
-            circle_bbox = [2, 2, width-2, height-2]
-            draw.ellipse(circle_bbox, fill=(0, 212, 255, 255))  # Nachna blue
+            # Draw gradient circle background (blue to purple)
+            for i in range(width):
+                for j in range(height):
+                    # Calculate distance from center
+                    distance = ((i - width/2)**2 + (j - height/2)**2)**0.5
+                    if distance <= min(width, height)/2 - 2:
+                        # Create gradient from blue to purple
+                        ratio = distance / (min(width, height)/2)
+                        r = int(0 + (138 - 0) * ratio)  # Blue to purple
+                        g = int(212 + (77 - 212) * ratio)  # Blue to purple
+                        b = int(255 + (255 - 255) * ratio)  # Blue to purple
+                        logo.putpixel((i, j), (r, g, b, 255))
 
-            # Draw simple "N" using basic shapes (no font loading needed)
-            center_x, center_y = width // 2, height // 2
+            # Draw "NACHNA" text with white color
+            try:
+                # Try to use a better font if available
+                from PIL import ImageFont
+                try:
+                    # Try to load a system font
+                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", int(height * 0.25))
+                except:
+                    try:
+                        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(height * 0.25))
+                    except:
+                        font = ImageFont.load_default()
 
-            # Draw "N" using lines - much faster than text rendering
-            n_width = int(width * 0.4)
-            n_height = int(height * 0.5)
-            n_x = center_x - n_width // 2
-            n_y = center_y - n_height // 2
+                # Calculate text size and position
+                text = "NACHNA"
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
 
-            # Draw N shape with white lines
-            draw.line([(n_x, n_y), (n_x, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
-            draw.line([(n_x, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
-            draw.line([(n_x + n_width, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
+                x = (width - text_width) // 2
+                y = (height - text_height) // 2
 
+                # Draw text with white color and slight shadow for better visibility
+                # Shadow
+                draw.text((x+1, y+1), text, font=font, fill=(0, 0, 0, 128))
+                # Main text
+                draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+
+            except ImportError:
+                # Fallback if PIL font loading fails
+                logger.debug("PIL ImageFont not available, using simple text drawing")
+
+                # Draw simple "N" using lines as fallback
+                center_x, center_y = width // 2, height // 2
+                n_width = int(width * 0.4)
+                n_height = int(height * 0.5)
+                n_x = center_x - n_width // 2
+                n_y = center_y - n_height // 2
+
+                # Draw N shape with white lines
+                draw.line([(n_x, n_y), (n_x, n_y + n_height)], fill=(255, 255, 255, 255), width=max(1, int(width * 0.05)))
+                draw.line([(n_x, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=max(1, int(width * 0.05)))
+                draw.line([(n_x + n_width, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=max(1, int(width * 0.05)))
+
+            logger.debug("Created fallback Nachna logo")
             return logo
 
         except Exception as e:
-            logger.warning(f"Failed to create simple logo: {str(e)}")
+            logger.warning(f"Failed to create fallback logo: {str(e)}")
             return None
     
     def _image_to_base64(self, image: Image.Image) -> str:

@@ -633,15 +633,43 @@ class _OrdersScreenState extends State<OrdersScreen>
                         SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                       ],
                       
+                      // Final Amount Section - Show for orders with rewards redeemed or specific final amount
+                      if (order.status == OrderStatus.paid && 
+                          (order.hasRewardsRedeemed || order.hasFinalAmountPaid) &&
+                          order.finalAmountPaid != (order.amount / 100)) ...[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Final Amount',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: ResponsiveUtils.micro(context),
+                                ),
+                              ),
+                              Text(
+                                order.formattedFinalAmountPaid,
+                                style: TextStyle(
+                                  color: const Color(0xFF00D4FF),
+                                  fontSize: ResponsiveUtils.body1(context),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                      ],
+                      
                       // Action Button
                       if (order.status == OrderStatus.created && order.paymentLinkUrl != null)
                         _buildPayNowButton(order),
                     ],
                   ),
 
-                  // Expanded Rewards Section (for complex cases)
-                  if (order.status == OrderStatus.paid && 
-                      (order.hasRewardsRedeemed || order.hasFinalAmountPaid)) ...[
+                  // Expanded Rewards Section (only for orders with rewards redeemed)
+                  if (order.status == OrderStatus.paid && order.hasRewardsRedeemed) ...[
                     SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                     _buildCompactRewardSection(order),
                   ],
@@ -900,6 +928,11 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildCompactRewardSection(Order order) {
+    // Only show this section if there are rewards redeemed or complex reward scenarios
+    if (!order.hasRewardsRedeemed && !order.hasFinalAmountPaid) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       padding: ResponsiveUtils.paddingSmall(context),
       decoration: BoxDecoration(
@@ -946,9 +979,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                   ),
                 ],
                 
-                // Show final amount paid if different from original
-                if (order.hasFinalAmountPaid && order.hasRewardsRedeemed) ...[
-                  SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                // Show final amount paid if different from original amount
+                if (order.hasFinalAmountPaid && 
+                    order.finalAmountPaid != (order.amount / 100)) ...[
+                  if (order.hasRewardsRedeemed) SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

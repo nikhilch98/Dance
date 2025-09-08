@@ -364,3 +364,261 @@ async def debug_pending_rewards(user_id: str = Depends(verify_token)):
     except Exception as e:
         logger.error(f"Error getting debug rewards info: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get debug rewards info: {str(e)}")
+
+
+@router.post("/admin/test-qr-logo")
+async def test_qr_logo_generation(user_id: str = Depends(verify_token)):
+    """Test endpoint to verify QR code logo generation is working."""
+    try:
+        from ..services.qr_service import get_qr_service
+
+        qr_service = get_qr_service()
+
+        # Test logo generation
+        logo_test_result = qr_service.test_logo_generation()
+
+        # Generate a test QR code with sample data
+        test_qr_data = qr_service.generate_order_qr_code(
+            order_id="test_order_123",
+            workshop_title="Test Workshop",
+            amount=150000,  # ₹1,500 in paise
+            user_name="Test User",
+            user_phone="9999999999",
+            workshop_uuid="test-workshop-uuid",
+            artist_names=["Test Artist"],
+            studio_name="Test Studio",
+            workshop_date="25/12/2024",
+            workshop_time="10:00 AM - 12:00 PM",
+            payment_gateway_details={"payment_id": "test_payment_123"}
+        )
+
+        return {
+            "success": True,
+            "logo_test_passed": logo_test_result,
+            "qr_code_generated": test_qr_data is not None and len(test_qr_data) > 100,
+            "qr_code_length": len(test_qr_data) if test_qr_data else 0,
+            "logo_size_ratio": qr_service.logo_size_ratio,
+            "error_correction": "High (for logo embedding)",
+            "message": "QR logo generation test completed"
+        }
+
+    except Exception as e:
+        logger.error(f"Error testing QR logo generation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to test QR logo generation: {str(e)}")
+
+
+@router.post("/admin/regenerate-qr-codes")
+async def regenerate_qr_codes(
+    mode: str = "regenerate",
+    limit: Optional[int] = None,
+    user_id: str = Depends(verify_token)
+):
+    """Regenerate QR codes for existing orders with the updated logo.
+
+    Args:
+        mode: "regenerate" for existing QR codes, "missing" for orders without QR codes
+        limit: Optional limit on number of orders to process
+    """
+    try:
+        logger.info(f"QR code regeneration requested by user {user_id}, mode: {mode}, limit: {limit}")
+
+        # Import the regenerator class
+        from app.database.orders import OrderOperations
+        from app.database.users import UserOperations
+        from app.services.qr_service import get_qr_service
+        from app.models.orders import OrderStatusEnum
+        from utils.utils import get_mongo_client
+        import asyncio
+
+        class QuickQRRegenerator:
+            """Quick QR regeneration service for API use."""
+
+            def __init__(self):
+                self.qr_service = get_qr_service()
+                self.client = get_mongo_client()
+                self.orders_collection = self.client["dance_app"]["orders"]
+
+            def get_orders_with_qr_codes(self, limit: Optional[int] = None):
+                query = {
+                    "status": OrderStatusEnum.PAID.value,
+                    "qr_code_data": {"$exists": True, "$ne": None, "$ne": ""}
+                }
+                return list(self.orders_collection.find(query).limit(limit) if limit else self.orders_collection.find(query))
+
+            def get_orders_without_qr_codes(self, limit: Optional[int] = None):
+                query = {
+                    "status": OrderStatusEnum.PAID.value,
+                    "$or": [
+                        {"qr_code_data": {"$exists": False}},
+                        {"qr_code_data": None},
+                        {"qr_code_data": ""}
+                    ]
+                }
+                return list(self.orders_collection.find(query).limit(limit) if limit else self.orders_collection.find(query))
+
+            async def regenerate_qr_for_order(self, order_doc: dict) -> dict:
+                try:
+                    order_id = order_doc['order_id']
+                    user_id = order_doc['user_id']
+                    workshop_details = order_doc['workshop_details']
+                    amount = order_doc['amount']
+                    payment_gateway_details = order_doc.get('payment_gateway_details', {})
+
+                    # Get user details
+                    user_data = UserOperations.get_user_by_id(user_id)
+                    if not user_data:
+                        return {"order_id": order_id, "success": False, "error": "User not found"}
+
+                    user_name = user_data.get('name', 'Unknown User')
+                    user_phone = user_data.get('phone', 'Unknown Phone')
+
+                    # Extract workshop details
+                    workshop_title = workshop_details.get('title', 'Unknown Workshop')
+                    artist_names = workshop_details.get('artist_names', [])
+                    studio_name = workshop_details.get('studio_name', 'Unknown Studio')
+                    workshop_date = workshop_details.get('date', 'Unknown Date')
+                    workshop_time = workshop_details.get('time', 'Unknown Time')
+                    workshop_uuid = order_doc['workshop_uuid']
+
+                    # Generate new QR code with logo
+                    qr_code_data = self.qr_service.generate_order_qr_code(
+                        order_id=order_id,
+                        workshop_title=workshop_title,
+                        amount=amount,
+                        user_name=user_name,
+                        user_phone=user_phone,
+                        workshop_uuid=workshop_uuid,
+                        artist_names=artist_names,
+                        studio_name=studio_name,
+                        workshop_date=workshop_date,
+                        workshop_time=workshop_time,
+                        payment_gateway_details=payment_gateway_details
+                    )
+
+                    # Update order with new QR code data
+                    success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
+
+                    return {
+                        "order_id": order_id,
+                        "success": success,
+                        "qr_code_length": len(qr_code_data) if success else 0
+                    }
+
+                except Exception as e:
+                    return {
+                        "order_id": order_doc.get('order_id', 'unknown'),
+                        "success": False,
+                        "error": str(e)
+                    }
+
+        regenerator = QuickQRRegenerator()
+
+        if mode == "regenerate":
+            orders = regenerator.get_orders_with_qr_codes(limit)
+            operation = "regeneration"
+        elif mode == "missing":
+            orders = regenerator.get_orders_without_qr_codes(limit)
+            operation = "generation for missing"
+        else:
+            raise HTTPException(status_code=400, detail="Invalid mode. Use 'regenerate' or 'missing'")
+
+        if not orders:
+            return {
+                "success": True,
+                "message": f"No orders found for {operation}",
+                "total_orders": 0,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0
+            }
+
+        logger.info(f"Starting {operation} of {len(orders)} QR codes...")
+
+        # Process in smaller batches for API (limit concurrency)
+        batch_size = 5  # Smaller batch for API to avoid timeouts
+        processed = 0
+        successful = 0
+        failed = 0
+
+        for i in range(0, len(orders), batch_size):
+            batch = orders[i:i + batch_size]
+
+            # Process batch concurrently
+            tasks = [regenerator.regenerate_qr_for_order(order) for order in batch]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Process results
+            for result in batch_results:
+                processed += 1
+                if isinstance(result, Exception):
+                    failed += 1
+                    logger.error(f"Exception in batch processing: {result}")
+                elif result.get("success"):
+                    successful += 1
+                else:
+                    failed += 1
+
+        result = {
+            "success": True,
+            "message": f"QR code {operation} completed",
+            "total_orders": len(orders),
+            "processed": processed,
+            "successful": successful,
+            "failed": failed,
+            "success_rate": round((successful / processed * 100), 2) if processed > 0 else 0
+        }
+
+        logger.info(f"QR code {operation} completed: {successful}/{processed} successful")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in QR code regeneration API: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to regenerate QR codes: {str(e)}")
+
+
+@router.get("/admin/qr-statistics")
+async def get_qr_statistics(user_id: str = Depends(verify_token)):
+    """Get QR code statistics for the system."""
+    try:
+        from app.models.orders import OrderStatusEnum
+        from utils.utils import get_mongo_client
+
+        client = get_mongo_client()
+        orders_collection = client["dance_app"]["orders"]
+
+        # Total paid orders
+        total_paid = orders_collection.count_documents({
+            "status": OrderStatusEnum.PAID.value
+        })
+
+        # Orders with QR codes
+        with_qr = orders_collection.count_documents({
+            "status": OrderStatusEnum.PAID.value,
+            "qr_code_data": {"$exists": True, "$ne": None, "$ne": ""}
+        })
+
+        # Orders without QR codes
+        without_qr = orders_collection.count_documents({
+            "status": OrderStatusEnum.PAID.value,
+            "$or": [
+                {"qr_code_data": {"$exists": False}},
+                {"qr_code_data": None},
+                {"qr_code_data": ""}
+            ]
+        })
+
+        return {
+            "success": True,
+            "total_paid_orders": total_paid,
+            "orders_with_qr_codes": with_qr,
+            "orders_without_qr_codes": without_qr,
+            "qr_coverage_percentage": round((with_qr / total_paid * 100), 2) if total_paid > 0 else 0,
+            "needs_regeneration": with_qr,  # All existing QR codes might need regeneration
+            "needs_generation": without_qr
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting QR statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get QR statistics: {str(e)}")
