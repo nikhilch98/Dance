@@ -51,7 +51,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>
-	<string>16.0</string>
+	<string>15.0</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to camera to take profile pictures</string>
 	<key>NSPhotoLibraryUsageDescription</key>
