@@ -206,6 +206,45 @@ class RewardOperations:
             raise
 
     @staticmethod
+    def create_pending_redemption(
+        user_id: str,
+        order_id: str,
+        workshop_uuid: str,
+        points_redeemed: float,
+        discount_amount: float,
+        original_amount: float,
+        final_amount: float
+    ) -> str:
+        """Create a pending reward redemption record without deducting balance."""
+        try:
+            client = get_mongo_client()
+            collection = client["dance_app"]["reward_redemptions"]
+            
+            redemption_id = str(uuid.uuid4())
+            redemption_data = {
+                "redemption_id": redemption_id,
+                "user_id": user_id,
+                "order_id": order_id,
+                "workshop_uuid": workshop_uuid,
+                "points_redeemed": points_redeemed,
+                "discount_amount": discount_amount,
+                "original_amount": original_amount,
+                "final_amount": final_amount,
+                "status": RewardTransactionStatusEnum.PENDING.value,  # PENDING status
+                "created_at": datetime.utcnow(),
+                "processed_at": None  # Will be set when completed
+            }
+            
+            collection.insert_one(redemption_data)
+            logger.info(f"Created pending redemption {redemption_id} for order {order_id}")
+            
+            return redemption_id
+            
+        except Exception as e:
+            logger.error(f"Error creating pending redemption: {e}")
+            raise
+
+    @staticmethod
     def create_redemption(
         user_id: str,
         order_id: str,
@@ -215,7 +254,7 @@ class RewardOperations:
         original_amount: float,
         final_amount: float
     ) -> str:
-        """Create a reward redemption record."""
+        """Create a completed reward redemption record with immediate balance deduction."""
         try:
             client = get_mongo_client()
             collection = client["dance_app"]["reward_redemptions"]
@@ -302,6 +341,91 @@ class RewardOperations:
         except Exception as e:
             logger.error(f"Error getting user balance for {user_id}: {e}")
             return 0.0
+
+    @staticmethod
+    def complete_pending_redemption(order_id: str) -> bool:
+        """Complete a pending redemption after successful payment."""
+        try:
+            client = get_mongo_client()
+            collection = client["dance_app"]["reward_redemptions"]
+            
+            # Find the pending redemption for this order
+            redemption = collection.find_one({
+                "order_id": order_id,
+                "status": RewardTransactionStatusEnum.PENDING.value
+            })
+            
+            if not redemption:
+                logger.warning(f"No pending redemption found for order {order_id}")
+                return False
+            
+            # Update redemption status to completed
+            collection.update_one(
+                {"order_id": order_id, "status": RewardTransactionStatusEnum.PENDING.value},
+                {
+                    "$set": {
+                        "status": RewardTransactionStatusEnum.COMPLETED.value,
+                        "processed_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Now deduct from user's balance
+            RewardOperations.create_transaction(
+                user_id=redemption["user_id"],
+                transaction_type=RewardTransactionTypeEnum.DEBIT,
+                amount=redemption["points_redeemed"],
+                source=RewardSourceEnum.CASHBACK,
+                description=f"Redeemed for workshop booking - {redemption['workshop_uuid']}",
+                reference_id=order_id,
+                metadata={
+                    "redemption_id": redemption["redemption_id"],
+                    "workshop_uuid": redemption["workshop_uuid"],
+                    "discount_amount": redemption["discount_amount"]
+                }
+            )
+            
+            logger.info(f"Completed pending redemption for order {order_id}: ₹{redemption['points_redeemed']} deducted")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error completing pending redemption for order {order_id}: {e}")
+            return False
+
+    @staticmethod
+    def rollback_pending_redemption(order_id: str) -> bool:
+        """Rollback/cancel a pending redemption."""
+        try:
+            client = get_mongo_client()
+            collection = client["dance_app"]["reward_redemptions"]
+            
+            # Find the pending redemption for this order
+            redemption = collection.find_one({
+                "order_id": order_id,
+                "status": RewardTransactionStatusEnum.PENDING.value
+            })
+            
+            if not redemption:
+                logger.warning(f"No pending redemption found for order {order_id}")
+                return False
+            
+            # Update redemption status to cancelled
+            collection.update_one(
+                {"order_id": order_id, "status": RewardTransactionStatusEnum.PENDING.value},
+                {
+                    "$set": {
+                        "status": RewardTransactionStatusEnum.CANCELLED.value,
+                        "processed_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            logger.info(f"Rolled back pending redemption for order {order_id}: ₹{redemption['points_redeemed']} reservation cancelled")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error rolling back pending redemption for order {order_id}: {e}")
+            return False
 
     @staticmethod
     def get_available_balance_for_redemption(user_id: str) -> float:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/config_provider.dart';
+import '../services/pending_order_service.dart';
 import './studios_screen.dart';
 import './artists_screen.dart';
 import './workshops_screen.dart';
@@ -29,6 +30,15 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
     _pageController = PageController(initialPage: _selectedIndex);
+  }
+  
+  /// Check for pending orders (can be called when user returns to app)
+  Future<void> checkPendingOrders() async {
+    try {
+      await PendingOrderService.instance.checkAndNavigateToPendingOrder();
+    } catch (e) {
+      print('[HomeScreen] Error checking pending orders: $e');
+    }
   }
 
   void _onItemTapped(int index) {

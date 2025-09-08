@@ -13,6 +13,7 @@ import './services/notification_service.dart';
 import './services/global_config.dart';
 import './services/first_launch_service.dart';
 import './services/deep_link_service.dart';
+import './services/pending_order_service.dart';
 import './widgets/notification_permission_dialog.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
@@ -234,6 +235,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
     });
   }
 
+  Future<void> _checkPendingOrders() async {
+    try {
+      print('[AuthWrapper] Checking for pending orders...');
+      await PendingOrderService.instance.checkAndNavigateToPendingOrder();
+    } catch (e) {
+      print('[AuthWrapper] Error checking pending orders: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer3<AuthProvider, ConfigProvider, ReactionProvider>(
@@ -260,7 +270,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
               });
             }
             
-            // Initialize reaction provider
+            // Initialize reaction provider and check for pending orders
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               final token = await AuthService.getToken();
               if (token != null) {
@@ -274,6 +284,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 // Device token sync now happens during ConfigProvider.loadConfig()
                 // so we don't need to do it here anymore
                 _hasRegisteredDeviceToken = true; // Mark as handled
+                
+                // Check for pending orders and navigate if found
+                await _checkPendingOrders();
               }
               
               // Show notification permission dialog if appropriate
@@ -298,6 +311,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               print('[AuthWrapper] Clearing config provider after logout');
               configProvider.clearConfig();
+              // Reset pending order check flag
+              PendingOrderService.instance.resetCheckFlag();
               // Note: ReactionProvider doesn't need explicit clearing as it relies on auth token
             });
             

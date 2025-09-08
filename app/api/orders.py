@@ -231,6 +231,16 @@ async def create_payment_link(
                         rp.cancel_payment_link(pl_id)
                 except Exception as e:
                     logger.warning(f"Failed to cancel existing payment link: {e}")
+                
+                # Rollback any pending redemptions from the existing order
+                existing_rewards_redeemed = existing_order.get("rewards_redeemed")
+                if existing_rewards_redeemed and existing_rewards_redeemed > 0:
+                    try:
+                        logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for cancelled order {existing_order['order_id']}")
+                        RewardOperations.rollback_pending_redemption(existing_order["order_id"])
+                    except Exception as e:
+                        logger.error(f"Failed to rollback pending redemption for order {existing_order['order_id']}: {e}")
+                
                 # Mark old order cancelled and continue
                 OrderOperations.update_order_status(
                     existing_order["order_id"],
@@ -348,13 +358,13 @@ async def create_payment_link(
         order_id = OrderOperations.create_order(order_data)
         logger.info(f"Created order {order_id} for user {user_id}")
 
-        # Process reward redemption instantly to prevent double-booking
-        # This ensures the balance is deducted immediately and prevents race conditions
+        # Store redemption info in order for later processing (after payment success)
+        # Do NOT deduct rewards immediately - this will be done after payment is confirmed
         if rewards_redeemed_rupees > 0 and redemption_info is not None:
             try:
-                # Create redemption record and deduct from balance immediately
-                # This prevents the user from using the same balance for multiple bookings
-                redemption_id = RewardOperations.create_redemption(
+                # Create pending redemption record without deducting balance
+                # This prevents double-booking while keeping rewards available until payment
+                redemption_id = RewardOperations.create_pending_redemption(
                     user_id=user_id,
                     order_id=order_id,
                     workshop_uuid=request.workshop_uuid,
@@ -364,22 +374,18 @@ async def create_payment_link(
                     final_amount=redemption_info['final_amount']
                 )
 
-                logger.info(f"Instant redemption processed: {redemption_id} - ₹{redemption_info['points_redeemed']} deducted from user {user_id}")
+                logger.info(f"Pending redemption created: {redemption_id} - ₹{redemption_info['points_redeemed']} reserved for user {user_id} (will be deducted after payment)")
             except Exception as e:
-                logger.error(f"Failed to process instant redemption for order {order_id}: {e}")
-                # If redemption fails, we should cancel the order and payment link
+                logger.error(f"Failed to create pending redemption for order {order_id}: {e}")
+                # If redemption setup fails, we should cancel the order
                 try:
-                    # Clean up the failed order
                     OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
-                    # Try to cancel the payment link
-                    razorpay_service = get_razorpay_service()
-                    # We don't have the payment link ID yet, but the webhook will handle cleanup
                 except Exception as cleanup_error:
                     logger.error(f"Failed to cleanup failed order {order_id}: {cleanup_error}")
 
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to process reward redemption - order cancelled"
+                    detail="Failed to setup reward redemption - order cancelled"
                 )
 
         # 7. Create Razorpay payment link

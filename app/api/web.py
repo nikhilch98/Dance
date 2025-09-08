@@ -297,6 +297,7 @@ async def order_status_redirect(request: Request, order_id: str = None):
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <meta name="apple-mobile-web-app-capable" content="yes">
             <meta name="apple-mobile-web-app-status-bar-style" content="default">
+            <meta name="robots" content="noindex, nofollow">
             <style>
                 * {{
                     margin: 0;
@@ -468,6 +469,7 @@ async def order_status_redirect(request: Request, order_id: str = None):
                 let attemptsMade = 0;
                 const maxAttempts = 3;
                 let isAttempting = false; // Prevent multiple simultaneous attempts
+                let fallbackShown = false; // Track if fallback has been shown
 
                 // Function to try opening app
                 function tryOpenApp(url, attemptNumber) {{
@@ -531,14 +533,28 @@ async def order_status_redirect(request: Request, order_id: str = None):
                 // Start the attempts
                 startAppOpenAttempts();
 
-                // Fallback: show the page content if app doesn't open
-                setTimeout(function() {{
-                    document.getElementById('content').style.display = 'block';
+                // Function to show fallback content
+                function showFallbackContent() {{
+                    if (fallbackShown) return; // Prevent multiple calls
+                    fallbackShown = true;
+                    
+                    console.log('Showing fallback content');
+                    const contentDiv = document.getElementById('content');
                     const attemptingDiv = document.getElementById('attempting');
+                    
+                    if (contentDiv) {{
+                        contentDiv.style.display = 'block';
+                    }}
                     if (attemptingDiv) {{
                         attemptingDiv.style.display = 'none';
                     }}
-                }}, 3000);
+                }}
+
+                // Fallback: show the page content if app doesn't open
+                setTimeout(showFallbackContent, 3000);
+                
+                // Additional safety - show content after 5 seconds no matter what
+                setTimeout(showFallbackContent, 5000);
 
                 // Detection methods
                 try {{
@@ -574,14 +590,23 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     startAppOpenAttempts();
 
                     // Show content after manual attempt
-                    setTimeout(function() {{
-                        document.getElementById('content').style.display = 'block';
-                        const attemptingDiv = document.getElementById('attempting');
-                        if (attemptingDiv) {{
-                            attemptingDiv.style.display = 'none';
-                        }}
-                    }}, 1000);
+                    setTimeout(showFallbackContent, 1000);
                 }}
+                
+                // Prevent page refreshing or navigation away
+                window.addEventListener('beforeunload', function(e) {{
+                    // Don't prevent if app was successfully opened
+                    if (appOpened) return;
+                    
+                    // Show fallback immediately if user tries to navigate away
+                    showFallbackContent();
+                }});
+                
+                // Handle page load to ensure content is shown
+                window.addEventListener('load', function() {{
+                    // Show fallback after 6 seconds as final safety net
+                    setTimeout(showFallbackContent, 6000);
+                }});
             </script>
         </head>
         <body>
@@ -594,6 +619,11 @@ async def order_status_redirect(request: Request, order_id: str = None):
             <div id="attempting" class="attempting" style="display: none;">
                 <span class="loading"></span>
                 Opening Nachna app...
+                <div style="margin-top: 15px;">
+                    <a href="javascript:void(0)" onclick="showFallbackContent()" style="color: rgba(255,255,255,0.7); font-size: 12px; text-decoration: underline;">
+                        Having trouble? Click here
+                    </a>
+                </div>
             </div>
 
             <div id="content" style="display: none;">

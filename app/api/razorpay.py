@@ -129,31 +129,31 @@ async def razorpay_webhook(
                         rewards_redeemed = order.get("rewards_redeemed")
                         if rewards_redeemed and rewards_redeemed > 0:
                             if new_status == OrderStatusEnum.PAID:
-                                # Payment successful - redemption was already processed instantly
-                                logger.info(f"Payment successful for order {order['order_id']} with ₹{rewards_redeemed} rewards redeemed")
-                            elif new_status in [OrderStatusEnum.CANCELLED, OrderStatusEnum.FAILED]:
-                                # Payment failed/cancelled - rollback the rewards
+                                # Payment successful - complete the pending redemption
                                 try:
                                     from app.database.rewards import RewardOperations
-                                    from app.models.rewards import RewardTransactionTypeEnum, RewardSourceEnum
+                                    success = RewardOperations.complete_pending_redemption(order['order_id'])
+                                    if success:
+                                        logger.info(f"Payment successful for order {order['order_id']} - completed pending redemption of ₹{rewards_redeemed}")
+                                    else:
+                                        logger.warning(f"Failed to complete pending redemption for order {order['order_id']}")
+                                except Exception as e:
+                                    logger.error(f"Error completing pending redemption for order {order['order_id']}: {e}")
+                            elif new_status in [OrderStatusEnum.CANCELLED, OrderStatusEnum.FAILED]:
+                                # Payment failed/cancelled - rollback the pending redemption
+                                try:
+                                    from app.database.rewards import RewardOperations
 
-                                    logger.info(f"Rolling back ₹{rewards_redeemed} rewards for failed/cancelled order {order['order_id']}")
+                                    logger.info(f"Rolling back pending redemption of ₹{rewards_redeemed} for failed/cancelled order {order['order_id']}")
 
-                                    # Refund the rewards back to user's balance
-                                    RewardOperations.create_transaction(
-                                        user_id=order.get("user_id"),
-                                        transaction_type=RewardTransactionTypeEnum.CREDIT,
-                                        amount=float(rewards_redeemed),
-                                        source=RewardSourceEnum.REFUND,
-                                        description=f"Refund for cancelled/failed order (Order: {order['order_id']})",
-                                        reference_id=order['order_id']
-                                    )
+                                    success = RewardOperations.rollback_pending_redemption(order['order_id'])
+                                    if success:
+                                        logger.info(f"Successfully rolled back pending redemption for order {order['order_id']}")
+                                    else:
+                                        logger.warning(f"Failed to rollback pending redemption for order {order['order_id']}")
 
-                                    logger.info(f"Successfully refunded ₹{rewards_redeemed} to user {order.get('user_id')} for order {order['order_id']}")
-
-                                except Exception as refund_error:
-                                    logger.error(f"Failed to refund rewards for cancelled order {order['order_id']}: {refund_error}")
-                                    # This is critical - we need to handle this manually
+                                except Exception as e:
+                                    logger.error(f"Failed to rollback pending redemption for order {order['order_id']}: {e}")
                     else:
                         processing_error = "Failed to update order status in database"
                         logger.error(f"Failed to update order {order['order_id']} status")
