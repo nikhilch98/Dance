@@ -191,6 +191,8 @@ async def create_payment_link(
         # Determine intended final amount (after discount if any)
         intended_final_amount_paise = amount_paise
         rewards_redeemed_rupees = 0.0
+        order_amount_rupees = amount_paise / 100.0
+        final_amount_rupees = order_amount_rupees  # Initialize with original amount
         
         if request.discount_amount and request.discount_amount > 0:
             # Perform validation similar to below to compute final amount safely
@@ -199,7 +201,6 @@ async def create_payment_link(
             _settings = _get_settings()
             discount_rupees = float(request.discount_amount)
             reward_balance = RewardOperations.get_user_balance(user_id)
-            order_amount_rupees = amount_paise / 100.0
             redemption_cap_percentage = getattr(_settings, 'reward_redemption_cap_percentage', 10.0)
             max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
             redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 500.0)
@@ -256,19 +257,22 @@ async def create_payment_link(
         
         # 4. Handle reward redemption if provided
         final_amount_paise = intended_final_amount_paise
-        
+
+        # Initialize redemption_info outside the conditional block
+        redemption_info = None
+
         if rewards_redeemed_rupees > 0:
             logger.info(f"Processing reward redemption: ₹{request.discount_amount} discount for user {user_id}")
-            
+
             # Validate and process redemption using rewards service
             from app.database.rewards import RewardOperations
             from app.config.settings import get_settings
-            
+
             settings = get_settings()
-            
+
             # Convert discount amount to rupees if needed (ensure it's in rupees)
             discount_rupees = rewards_redeemed_rupees
-            
+
             # Validate user has sufficient balance (excluding pending redemptions)
             try:
                 reward_balance = RewardOperations.get_available_balance_for_redemption(user_id)
@@ -277,9 +281,6 @@ async def create_payment_link(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Insufficient reward balance. Available: ₹{reward_balance}, Requested: ₹{discount_rupees}"
                     )
-                
-                # Calculate final amount after discount
-                order_amount_rupees = amount_paise / 100.0
                 
                 # Validate against configurable redemption cap percentage
                 redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
@@ -349,7 +350,7 @@ async def create_payment_link(
 
         # Process reward redemption instantly to prevent double-booking
         # This ensures the balance is deducted immediately and prevents race conditions
-        if rewards_redeemed_rupees > 0 and 'redemption_info' in locals():
+        if rewards_redeemed_rupees > 0 and redemption_info is not None:
             try:
                 # Create redemption record and deduct from balance immediately
                 # This prevents the user from using the same balance for multiple bookings
