@@ -277,16 +277,22 @@ async def payment_success(request: Request, order_id: str = None):
 async def order_status_redirect(request: Request, order_id: str = None):
     """Handle order status page redirect to app."""
     try:
+        # Get order_id from query parameters
+        query_params = request.query_params
+        order_id = query_params.get('order_id')
+
         if not order_id:
             raise HTTPException(status_code=400, detail="Order ID is required")
-        
+
         print(f"🔗 Order status redirect requested for order: {order_id}")
-        
+
         # Create deep link to open app's Order Status screen
         app_deep_link = f"nachna://order-status/{order_id}"
-        
+        universal_link = f"https://nachna.com/order/status?order_id={order_id}"
+
         print(f"📱 Generated deep link: {app_deep_link}")
-        
+        print(f"🌐 Universal link: {universal_link}")
+
         # Return HTML that immediately redirects to the app
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
@@ -297,11 +303,17 @@ async def order_status_redirect(request: Request, order_id: str = None):
             <meta name="apple-mobile-web-app-capable" content="yes">
             <meta name="apple-mobile-web-app-status-bar-style" content="default">
             <style>
+                * {{
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }}
+
                 body {{
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     margin: 0;
-                    padding: 20px;
-                    background: linear-gradient(135deg, #0A0A0F, #1A1A2E, #16213E, #0F3460);
+                    padding: 0;
+                    background: linear-gradient(135deg, #0A0A0F 0%, #1A1A2E 25%, #16213E 50%, #0F3460 100%);
                     color: white;
                     text-align: center;
                     min-height: 100vh;
@@ -309,7 +321,9 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
+                    overflow-x: hidden;
                 }}
+
                 .container {{
                     max-width: 400px;
                     padding: 40px 20px;
@@ -317,20 +331,48 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     border-radius: 20px;
                     backdrop-filter: blur(10px);
                     border: 1px solid rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
                 }}
+
+                .logo {{
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(45deg, #FF006E, #8338EC);
+                    border-radius: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 1.5rem;
+                    box-shadow: 0 8px 32px rgba(255, 0, 110, 0.3);
+                }}
+
+                .logo svg {{
+                    width: 40px;
+                    height: 40px;
+                    fill: white;
+                }}
+
                 .status-icon {{
                     font-size: 48px;
                     margin-bottom: 20px;
                 }}
+
                 h1 {{
                     margin: 0 0 10px 0;
                     font-size: 24px;
                     color: #00D4FF;
+                    background: linear-gradient(45deg, #FF006E, #00D4FF);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
                 }}
+
                 p {{
                     margin: 10px 0;
                     opacity: 0.9;
+                    line-height: 1.5;
                 }}
+
                 .order-id {{
                     font-family: monospace;
                     background: rgba(0, 212, 255, 0.2);
@@ -338,7 +380,9 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     border-radius: 8px;
                     margin: 20px 0;
                     font-weight: bold;
+                    border: 1px solid rgba(0, 212, 255, 0.3);
                 }}
+
                 .app-button {{
                     display: inline-block;
                     margin-top: 20px;
@@ -348,20 +392,31 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     text-decoration: none;
                     border-radius: 12px;
                     font-weight: 600;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
                 }}
+
+                .app-button:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+                }}
+
                 .fallback {{
                     margin-top: 20px;
                     font-size: 14px;
                     opacity: 0.7;
                 }}
+
                 .pulse {{
                     animation: pulse 2s infinite;
                 }}
+
                 @keyframes pulse {{
                     0% {{ transform: scale(1); }}
                     50% {{ transform: scale(1.05); }}
                     100% {{ transform: scale(1); }}
                 }}
+
                 .debug-info {{
                     background: rgba(255, 255, 255, 0.1);
                     padding: 10px;
@@ -369,70 +424,228 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     margin: 20px 0;
                     font-size: 12px;
                     font-family: monospace;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                }}
+
+                .loading {{
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    border-top-color: #00D4FF;
+                    animation: spin 1s ease-in-out infinite;
+                    margin-right: 10px;
+                }}
+
+                @keyframes spin {{
+                    to {{ transform: rotate(360deg); }}
+                }}
+
+                .attempting {{
+                    font-size: 16px;
+                    color: #00D4FF;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }}
+
+                @media (max-width: 480px) {{
+                    .container {{
+                        padding: 30px 15px;
+                        margin: 20px;
+                    }}
+
+                    h1 {{
+                        font-size: 20px;
+                    }}
+
+                    .app-button {{
+                        padding: 10px 20px;
+                        font-size: 14px;
+                    }}
                 }}
             </style>
             <script>
                 console.log('Order status page loaded for order: {order_id}');
                 console.log('Attempting to open app with deep link: {app_deep_link}');
-                
-                // Try to open the app immediately
-                window.location.href = "{app_deep_link}";
-                
+                console.log('Universal link fallback: {universal_link}');
+
+                // Show attempting message immediately
+                setTimeout(function() {{
+                    const attemptingDiv = document.getElementById('attempting');
+                    if (attemptingDiv) {{
+                        attemptingDiv.style.display = 'flex';
+                    }}
+                }}, 100);
+
+                let appOpened = false;
+                let attemptsMade = 0;
+                const maxAttempts = 3;
+
+                // Function to try opening app
+                function tryOpenApp(url, attemptNumber) {{
+                    console.log(`Attempt ${{attemptNumber}}: Trying to open ${{url}}`);
+
+                    // For mobile browsers, try multiple methods
+                    if (navigator.userAgent.match(/Android/i)) {{
+                        // Android - try intent URL first
+                        if (url.startsWith('nachna://')) {{
+                            const intentUrl = `intent:${{url}}#Intent;scheme=nachna;package=com.nachna.nachna;end`;
+                            console.log('Android: Trying intent URL:', intentUrl);
+                            window.location.href = intentUrl;
+                        }} else {{
+                            window.location.href = url;
+                        }}
+                    }} else if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {{
+                        // iOS - use window.location.href
+                        window.location.href = url;
+                    }} else {{
+                        // Desktop/other - use window.location.href
+                        window.location.href = url;
+                    }}
+                }}
+
+                // Try multiple approaches
+                function attemptAppOpen() {{
+                    attemptsMade++;
+
+                    if (attemptsMade === 1) {{
+                        // First attempt: Try custom scheme
+                        console.log('First attempt: Custom scheme');
+                        tryOpenApp("{app_deep_link}", 1);
+                    }} else if (attemptsMade === 2) {{
+                        // Second attempt: Try universal link
+                        console.log('Second attempt: Universal link');
+                        tryOpenApp("{universal_link}", 2);
+                    }} else if (attemptsMade === 3) {{
+                        // Third attempt: Try with different timing
+                        console.log('Third attempt: Delayed custom scheme');
+                        setTimeout(function() {{
+                            tryOpenApp("{app_deep_link}", 3);
+                        }}, 500);
+                    }}
+                }}
+
+                // Start attempts
+                setTimeout(attemptAppOpen, 200);
+                setTimeout(attemptAppOpen, 1000);
+                setTimeout(attemptAppOpen, 2000);
+
                 // Fallback: show the page content if app doesn't open
                 setTimeout(function() {{
-                    console.log('Showing fallback content after 2 seconds');
+                    console.log('Showing fallback content after 3 seconds');
                     document.getElementById('content').style.display = 'block';
-                }}, 2000);
-                
-                // Additional fallback: try to detect if app opened
-                let appOpened = false;
+                    const attemptingDiv = document.getElementById('attempting');
+                    if (attemptingDiv) {{
+                        attemptingDiv.style.display = 'none';
+                    }}
+                }}, 3000);
+
+                // Detection methods
                 try {{
-                    // Check if we can detect app opening
+                    // Check if page becomes hidden (app opened)
+                    document.addEventListener('visibilitychange', function() {{
+                        if (document.hidden) {{
+                            console.log('Page hidden - app likely opened');
+                            appOpened = true;
+                        }} else {{
+                            console.log('Page visible again');
+                        }}
+                    }});
+
+                    // Check if we can detect app opening via page blur
                     window.addEventListener('blur', function() {{
                         console.log('Window blurred - app may have opened');
                         appOpened = true;
                     }});
-                    
-                    // Check if we're still on the page after a delay
-                    setTimeout(function() {{
-                        if (!appOpened) {{
-                            console.log('App may not have opened, showing content');
-                            document.getElementById('content').style.display = 'block';
-                        }}
-                    }}, 1000);
+
+                    // Check if page becomes inactive
+                    window.addEventListener('pagehide', function() {{
+                        console.log('Page hidden (pagehide event) - app may have opened');
+                        appOpened = true;
+                    }});
+
                 }} catch (e) {{
                     console.error('Error in app detection:', e);
                 }}
+
+                // Handle button click
+                function handleButtonClick() {{
+                    console.log('Button clicked, trying to open app...');
+
+                    // Reset attempts for manual click
+                    attemptsMade = 0;
+
+                    // Try both links
+                    setTimeout(function() {{ tryOpenApp("{app_deep_link}", 'manual1'); }}, 0);
+                    setTimeout(function() {{ tryOpenApp("{universal_link}", 'manual2'); }}, 500);
+
+                    // Show content after button click
+                    setTimeout(function() {{
+                        document.getElementById('content').style.display = 'block';
+                        const attemptingDiv = document.getElementById('attempting');
+                        if (attemptingDiv) {{
+                            attemptingDiv.style.display = 'none';
+                        }}
+                    }}, 1000);
+                }}
+
+                // Add some debugging info
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Platform:', navigator.platform);
+                console.log('Is mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
             </script>
         </head>
         <body>
+            <div class="logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+
+            <div id="attempting" class="attempting" style="display: none;">
+                <span class="loading"></span>
+                Opening Nachna app...
+            </div>
+
             <div id="content" style="display: none;">
                 <div class="container">
                     <div class="status-icon pulse">📱</div>
-                    <h1>Order Status Ready</h1>
-                    <p>Your order is being tracked...</p>
+                    <h1>Payment Successful!</h1>
+                    <p>Your workshop registration is complete.</p>
                     <div class="order-id">Order: {order_id}</div>
-                    <p>Opening Nachna app to view order status...</p>
-                    
-                    <a href="{app_deep_link}" class="app-button">
-                        View Order Status
+                    <p>Nachna app will open automatically to show your order status.</p>
+
+                    <a href="javascript:void(0)" class="app-button" onclick="handleButtonClick()">
+                        Open Nachna App
                     </a>
-                    
+
                     <div class="fallback">
-                        If the app doesn't open automatically, tap the button above or open the Nachna app manually.
+                        If the app doesn't open automatically, tap the button above or open the Nachna app manually to view your order.
                     </div>
-                    
+
                     <div class="debug-info">
                         Debug: Deep link = {app_deep_link}<br>
+                        Universal link = {universal_link}<br>
                         Order ID = {order_id}<br>
                         URL = {request.url}
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; font-size: 12px;">
+                        <strong>Troubleshooting:</strong><br>
+                        • If app doesn't open, check browser console for errors<br>
+                        • Try refreshing the page and clicking the button<br>
+                        • Make sure Nachna app is installed on your device<br>
+                        • On iOS, ensure Universal Links are enabled in Settings
                     </div>
                 </div>
             </div>
         </body>
         </html>
         """)
-        
+
     except Exception as e:
         print(f"Error in order status route: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") 

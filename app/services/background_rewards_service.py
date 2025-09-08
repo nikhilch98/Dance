@@ -33,11 +33,15 @@ class BackgroundRewardsService:
         if self.is_running:
             logger.info("Background rewards generation service is already running")
             return
-            
+
         self.is_running = True
         logger.info("Starting background rewards generation service...")
-        
+
         try:
+            # Process immediately on startup
+            logger.info("Processing rewards batch on startup...")
+            await self._process_rewards_batch()
+
             while self.is_running:
                 await self._process_rewards_batch()
                 # Wait 30 seconds before next batch
@@ -46,6 +50,11 @@ class BackgroundRewardsService:
             logger.info("Background rewards generation service cancelled")
         except Exception as e:
             logger.error(f"Critical error in rewards generation service: {e}")
+            # Try to restart the service after error
+            if self.is_running:
+                logger.info("Attempting to restart rewards service after error...")
+                await asyncio.sleep(5)
+                asyncio.create_task(self.start_rewards_generation_service())
         finally:
             self.is_running = False
             
@@ -59,20 +68,33 @@ class BackgroundRewardsService:
         try:
             # Get paid orders without rewards generated
             orders = self._get_paid_orders_without_rewards()
-            
+
+            logger.info(f"Rewards service check: Found {len(orders)} orders needing rewards generation")
+
             if not orders:
-                logger.debug("No orders found requiring rewards generation")
+                logger.info("No orders found requiring rewards generation")
                 return
-                
+
             logger.info(f"Processing {len(orders)} orders for rewards generation")
-            
+
+            processed_count = 0
+            failed_count = 0
+
             for order in orders:
                 try:
-                    self._generate_rewards_for_order(order)
-                    logger.info(f"Successfully generated rewards for order {order['order_id']}")
+                    success = self._generate_rewards_for_order(order)
+                    if success:
+                        processed_count += 1
+                        logger.info(f"Successfully generated rewards for order {order['order_id']}")
+                    else:
+                        failed_count += 1
+                        logger.warning(f"Failed to generate rewards for order {order['order_id']}")
                 except Exception as e:
-                    logger.error(f"Failed to generate rewards for order {order['order_id']}: {e}")
-                    
+                    failed_count += 1
+                    logger.error(f"Exception generating rewards for order {order['order_id']}: {e}")
+
+            logger.info(f"Rewards batch completed: {processed_count} successful, {failed_count} failed")
+
         except Exception as e:
             logger.error(f"Error processing rewards batch: {e}")
             
@@ -95,7 +117,7 @@ class BackgroundRewardsService:
             logger.error(f"Error fetching orders for rewards generation: {e}")
             return []
             
-    def _generate_rewards_for_order(self, order: dict):
+    def _generate_rewards_for_order(self, order: dict) -> bool:
         """Generate cashback rewards for a specific order."""
         try:
             user_id = str(order["user_id"])
@@ -112,23 +134,23 @@ class BackgroundRewardsService:
             # Skip if amount is 0 or invalid
             if amount_for_cashback <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - invalid amount: {amount_for_cashback}")
-                return
+                return False
 
             # Check if rewards already generated for this order
             if order.get("rewards_generated", False):
                 logger.debug(f"Rewards already generated for order {order_id}")
-                return
+                return True
 
             # Calculate configurable cashback percentage with proper rounding (in rupees)
             cashback_amount = self._calculate_cashback(amount_for_cashback)
-            
+
             if cashback_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - no cashback calculated")
-                return
-                
+                return False
+
             cashback_percentage = self.settings.reward_cashback_percentage
             logger.info(f"Processing {cashback_percentage}% cashback for order {order_id}: Final amount paid ₹{amount_for_cashback/100:.2f} → Cashback ₹{cashback_amount}")
-                
+
             # Create cashback transaction (with built-in duplicate prevention)
             # The create_transaction method automatically handles duplicates and updates wallet balance
             transaction_id = self.reward_operations.create_transaction(
@@ -139,15 +161,20 @@ class BackgroundRewardsService:
                 description=f"{cashback_percentage}% cashback for workshop booking (Order: {order.get('order_id', order_id)})",
                 reference_id=order_id
             )
-            
+
             # Mark order as having rewards generated
-            self._mark_order_rewards_generated(order_id, cashback_amount)
-            
-            logger.info(f"Generated ₹{cashback_amount} cashback for order {order_id} (user: {user_id})")
-            
+            success = self._mark_order_rewards_generated(order_id, cashback_amount)
+
+            if success:
+                logger.info(f"Generated ₹{cashback_amount} cashback for order {order_id} (user: {user_id})")
+                return True
+            else:
+                logger.error(f"Failed to mark order {order_id} as rewards generated")
+                return False
+
         except Exception as e:
             logger.error(f"Error generating rewards for order {order.get('_id')}: {e}")
-            raise
+            return False
             
     def _calculate_cashback(self, order_amount: float) -> float:
         """Calculate configurable cashback percentage with proper rounding.

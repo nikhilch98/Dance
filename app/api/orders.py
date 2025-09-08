@@ -731,25 +731,70 @@ async def get_rewards_generation_status(
     user_id: str = Depends(verify_token)
 ):
     """Get rewards generation service status.
-    
+
     Args:
         user_id: User ID from authentication token
-        
+
     Returns:
         Rewards generation service status
     """
     try:
         rewards_service = BackgroundRewardsService()
         status_info = await rewards_service.get_rewards_generation_status()
-        
+
         return {
             "success": True,
             "service_status": status_info
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting rewards generation status: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get rewards generation status"
+        )
+
+
+@router.post("/admin/trigger-qr-generation")
+async def trigger_qr_generation(user_id: str = Depends(verify_token)):
+    """Manually trigger QR code generation for testing purposes."""
+    try:
+        from ..services.background_qr_service import BackgroundQRService
+
+        qr_service = BackgroundQRService()
+        result = await qr_service.process_pending_qr_generation()
+
+        return {
+            "success": True,
+            "message": "QR generation triggered manually",
+            "result": result
+        }
+
+    except Exception as e:
+        logger.error(f"Error triggering QR generation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to trigger QR generation"
+        )
+
+
+@router.get("/qr-generation/status")
+async def get_qr_generation_status(user_id: str = Depends(verify_token)):
+    """Get QR code generation service status."""
+    try:
+        from ..services.background_qr_service import BackgroundQRService
+
+        qr_service = BackgroundQRService()
+        status_info = qr_service.get_processing_status()
+
+        return {
+            "success": True,
+            "service_status": status_info
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting QR generation status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get QR generation status"
         )

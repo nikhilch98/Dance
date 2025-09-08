@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class QRCodeService:
     """Service for generating QR codes with nachna branding and cryptographic security."""
-    
+
     def __init__(self):
         self.logo_size_ratio = 0.15  # Logo will be 15% of QR code size
         self.border_ratio = 0.02     # Border around logo (2% of QR code size)
@@ -30,6 +30,14 @@ class QRCodeService:
         app_settings = get_settings()
         self.secret_key = getattr(app_settings, 'secret_key', 'nachna-qr-secret-key-2025').encode('utf-8')
         self.qr_validity_hours = 720  # QR codes valid for 30 days (720 hours)
+
+        # Cache for pre-generated logo to avoid recreation
+        self._cached_logo = None
+        self._cached_logo_size = None
+
+        # Cache for QR code data to avoid duplicate generation
+        self._qr_cache = {}
+        self._cache_max_size = 100  # Maximum cached QR codes
     
     def generate_order_qr_code(
         self,
@@ -46,7 +54,7 @@ class QRCodeService:
         payment_gateway_details: Optional[Dict[str, Any]] = None
     ) -> str:
         """Generate secure QR code for an order with embedded nachna logo.
-        
+
         Args:
             order_id: Order identifier
             workshop_title: Workshop title
@@ -59,33 +67,89 @@ class QRCodeService:
             workshop_date: Workshop date
             workshop_time: Workshop time
             payment_gateway_details: Payment gateway transaction details
-            
+
         Returns:
             Base64 encoded QR code image
         """
         try:
+            # Create cache key from order data
+            cache_key = self._create_cache_key(
+                order_id, workshop_title, amount, user_name, user_phone,
+                workshop_uuid, artist_names, studio_name, workshop_date, workshop_time,
+                payment_gateway_details
+            )
+
+            # Check cache first
+            if cache_key in self._qr_cache:
+                logger.debug(f"Using cached QR code for order {order_id}")
+                return self._qr_cache[cache_key]
+
             # Create secure QR code data with comprehensive details
             qr_data = self._create_secure_qr_data(
                 order_id, workshop_title, amount, user_name, user_phone,
                 workshop_uuid, artist_names, studio_name, workshop_date, workshop_time,
                 payment_gateway_details
             )
-            
+
             # Generate QR code with custom styling
             qr_image = self._generate_styled_qr_code(qr_data)
-            
+
             # Embed nachna logo
             qr_with_logo = self._embed_logo(qr_image)
-            
+
             # Convert to base64
             base64_image = self._image_to_base64(qr_with_logo)
-            
+
+            # Cache the result (with size limit)
+            if len(self._qr_cache) < self._cache_max_size:
+                self._qr_cache[cache_key] = base64_image
+            elif len(self._qr_cache) >= self._cache_max_size:
+                # Remove oldest entry if cache is full
+                oldest_key = next(iter(self._qr_cache))
+                del self._qr_cache[oldest_key]
+                self._qr_cache[cache_key] = base64_image
+
             logger.info(f"Generated secure QR code for order {order_id}")
             return base64_image
-            
+
         except Exception as e:
             logger.error(f"Failed to generate QR code for order {order_id}: {str(e)}")
             raise
+
+    def _create_cache_key(
+        self,
+        order_id: str,
+        workshop_title: str,
+        amount: int,
+        user_name: str,
+        user_phone: str,
+        workshop_uuid: str,
+        artist_names: list,
+        studio_name: str,
+        workshop_date: str,
+        workshop_time: str,
+        payment_gateway_details: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Create a cache key from order data."""
+        # Create a deterministic string from all parameters
+        cache_data = {
+            "order_id": order_id,
+            "workshop_title": workshop_title,
+            "amount": amount,
+            "user_name": user_name,
+            "user_phone": user_phone,
+            "workshop_uuid": workshop_uuid,
+            "artist_names": sorted(artist_names) if artist_names else [],
+            "studio_name": studio_name,
+            "workshop_date": workshop_date,
+            "workshop_time": workshop_time,
+            "payment_details": payment_gateway_details or {}
+        }
+
+        # Create hash for cache key
+        import json
+        data_str = json.dumps(cache_data, sort_keys=True)
+        return hashlib.md5(data_str.encode('utf-8')).hexdigest()
     
     def _create_secure_qr_data(
         self,
@@ -216,123 +280,127 @@ class QRCodeService:
             return {"valid": False, "error": f"Verification failed: {str(e)}"}
     
     def _generate_styled_qr_code(self, data: str) -> Image.Image:
-        """Generate QR code with custom styling."""
-        # Create QR code instance with high error correction for logo embedding
+        """Generate QR code with custom styling - optimized for speed."""
+        # Create QR code instance with medium error correction (faster, still reliable)
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_H,  # High error correction
-            box_size=10,
-            border=4,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,  # Medium error correction (faster)
+            box_size=8,  # Smaller box size for faster generation
+            border=3,   # Smaller border
         )
-        
+
         qr.add_data(data)
         qr.make(fit=True)
-        
-        # Create QR code image with styled appearance
+
+        # Use simpler image generation for better performance
         qr_image = qr.make_image(
-            image_factory=StyledPilImage,
-            module_drawer=RoundedModuleDrawer(),
             fill_color="#1A1A2E",      # Dark blue for nachna theme
             back_color="#FFFFFF"       # White background
         )
-        
+
         return qr_image
     
     def _embed_logo(self, qr_image: Image.Image) -> Image.Image:
-        """Embed nachna logo in the center of QR code."""
+        """Embed nachna logo in the center of QR code - optimized with caching."""
         try:
             # Convert to RGBA if needed
             if qr_image.mode != 'RGBA':
                 qr_image = qr_image.convert('RGBA')
-            
-            # Create nachna logo (since we don't have the actual file, create a styled text logo)
-            logo = self._create_nachna_logo(qr_image.size)
-            
+
+            # Get cached logo or create new one
+            logo = self._get_cached_logo(qr_image.size)
+
+            if logo is None:
+                # If logo creation failed, return plain QR code
+                return qr_image
+
             # Calculate position to center the logo
             logo_size = logo.size
             qr_size = qr_image.size
-            
+
             position = (
                 (qr_size[0] - logo_size[0]) // 2,
                 (qr_size[1] - logo_size[1]) // 2
             )
-            
+
             # Paste logo onto QR code
             qr_image.paste(logo, position, logo)
-            
+
             return qr_image
-            
+
         except Exception as e:
             logger.warning(f"Failed to embed logo, returning plain QR code: {str(e)}")
             return qr_image
-    
-    def _create_nachna_logo(self, qr_size: tuple) -> Image.Image:
-        """Create a styled nachna logo for embedding."""
-        # Calculate logo size
-        logo_size = int(min(qr_size) * self.logo_size_ratio)
-        border_size = int(min(qr_size) * self.border_ratio)
-        total_size = logo_size + (border_size * 2)
-        
-        # Create logo image
-        logo = Image.new('RGBA', (total_size, total_size), (255, 255, 255, 0))
-        draw = ImageDraw.Draw(logo)
-        
-        # Draw white circle background with border
-        circle_bbox = [border_size, border_size, total_size - border_size, total_size - border_size]
-        draw.ellipse(circle_bbox, fill=(255, 255, 255, 255), outline=(26, 26, 46, 255), width=2)
-        
-        # Draw nachna logo elements
-        center_x, center_y = total_size // 2, total_size // 2
-        
-        # Create gradient-like effect with multiple circles
-        gradient_colors = [
-            (0, 212, 255, 255),    # #00D4FF - nachna blue
-            (156, 39, 176, 255),   # #9C27B0 - nachna purple
-        ]
-        
-        # Draw gradient circles
-        circle_radius = logo_size // 6
-        for i, color in enumerate(gradient_colors):
-            offset = (i - 0.5) * circle_radius
-            circle_x = center_x + int(offset)
-            circle_y = center_y
-            
-            circle_bbox = [
-                circle_x - circle_radius, circle_y - circle_radius,
-                circle_x + circle_radius, circle_y + circle_radius
-            ]
-            draw.ellipse(circle_bbox, fill=color)
-        
-        # Add "N" text in the center
+
+    def _get_cached_logo(self, qr_size: tuple) -> Optional[Image.Image]:
+        """Get cached logo or create new one if needed."""
         try:
-            from PIL import ImageFont
-            # Try to use a system font
-            font_size = logo_size // 4
-            font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", font_size)
-        except:
-            # Fallback to default font
-            font = ImageFont.load_default()
-        
-        # Draw "N" for nachna
-        text = "N"
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        
-        text_x = center_x - (text_width // 2)
-        text_y = center_y - (text_height // 2)
-        
-        draw.text((text_x, text_y), text, fill=(255, 255, 255, 255), font=font)
-        
-        return logo
+            # Calculate expected logo size
+            logo_size = int(min(qr_size) * self.logo_size_ratio)
+            cache_key = (logo_size, logo_size)
+
+            # Check if we have a cached logo of the right size
+            if (self._cached_logo is not None and
+                self._cached_logo_size == cache_key and
+                self._cached_logo.size == cache_key):
+                return self._cached_logo.copy()  # Return a copy to avoid modification
+
+            # Create and cache new logo
+            logo = self._create_simple_logo(cache_key)
+            if logo is not None:
+                self._cached_logo = logo
+                self._cached_logo_size = cache_key
+                return logo.copy()
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Failed to get cached logo: {str(e)}")
+            return None
+    
+    def _create_simple_logo(self, size: tuple) -> Optional[Image.Image]:
+        """Create a simple, fast nachna logo for embedding."""
+        try:
+            width, height = size
+
+            # Create simple circular logo with nachna colors
+            logo = Image.new('RGBA', (width, height), (255, 255, 255, 0))
+            draw = ImageDraw.Draw(logo)
+
+            # Draw simple circle background
+            circle_bbox = [2, 2, width-2, height-2]
+            draw.ellipse(circle_bbox, fill=(0, 212, 255, 255))  # Nachna blue
+
+            # Draw simple "N" using basic shapes (no font loading needed)
+            center_x, center_y = width // 2, height // 2
+
+            # Draw "N" using lines - much faster than text rendering
+            n_width = int(width * 0.4)
+            n_height = int(height * 0.5)
+            n_x = center_x - n_width // 2
+            n_y = center_y - n_height // 2
+
+            # Draw N shape with white lines
+            draw.line([(n_x, n_y), (n_x, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
+            draw.line([(n_x, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
+            draw.line([(n_x + n_width, n_y), (n_x + n_width, n_y + n_height)], fill=(255, 255, 255, 255), width=2)
+
+            return logo
+
+        except Exception as e:
+            logger.warning(f"Failed to create simple logo: {str(e)}")
+            return None
     
     def _image_to_base64(self, image: Image.Image) -> str:
-        """Convert PIL Image to base64 string."""
+        """Convert PIL Image to base64 string - optimized version."""
         buffer = BytesIO()
-        image.save(buffer, format='PNG')
+
+        # Use optimized PNG saving with reduced quality for smaller file size
+        image.save(buffer, format='PNG', optimize=True)
         buffer.seek(0)
-        
-        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+        # Use base64 encode directly without intermediate decoding
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('ascii')
         return f"data:image/png;base64,{image_base64}"
 
 

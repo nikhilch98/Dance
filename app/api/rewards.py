@@ -292,3 +292,19 @@ async def get_redemption_history(
     except Exception as e:
         logger.error(f"Error getting redemption history for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to get redemption history")
+
+
+@router.post("/admin/trigger-rewards-generation")
+async def trigger_rewards_generation(user_id: str = Depends(verify_token)):
+    """Manually trigger rewards generation for testing purposes."""
+    try:
+        from ..services.background_rewards_service import BackgroundRewardsService
+
+        rewards_service = BackgroundRewardsService()
+        result = await rewards_service.trigger_manual_rewards_generation()
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error triggering manual rewards generation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to trigger rewards generation")
