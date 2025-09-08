@@ -633,9 +633,11 @@ class _OrdersScreenState extends State<OrdersScreen>
                         SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                       ],
                       
-                      // Final Amount Section - Show for orders with rewards redeemed or specific final amount
+                      // Final Amount Section - Show only for orders with final amount but NO rewards redeemed
+                      // (If rewards are redeemed, final amount will be shown in the expanded section below)
                       if (order.status == OrderStatus.paid && 
-                          (order.hasRewardsRedeemed || order.hasFinalAmountPaid) &&
+                          !order.hasRewardsRedeemed &&
+                          order.hasFinalAmountPaid &&
                           order.finalAmountPaid != (order.amount / 100)) ...[
                         Expanded(
                           child: Column(

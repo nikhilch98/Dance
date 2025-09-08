@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../models/order.dart';
 import '../services/order_service.dart';
 import '../utils/responsive_utils.dart';
+import '../screens/orders_screen.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   final String orderId;
@@ -553,8 +554,9 @@ class _OrderStatusScreenState extends State<OrderStatusScreen>
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pushReplacementNamed('/orders');
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const OrdersScreen()),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
