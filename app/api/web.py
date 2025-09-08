@@ -483,6 +483,7 @@ async def order_status_redirect(request: Request, order_id: str = None):
                 let appOpened = false;
                 let attemptsMade = 0;
                 const maxAttempts = 3;
+                let isAttempting = false; // Prevent multiple simultaneous attempts
 
                 // Function to try opening app
                 function tryOpenApp(url, attemptNumber) {{
@@ -507,20 +508,25 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     }}
                 }}
 
-                // Try multiple approaches
-                function attemptAppOpen() {{
-                    attemptsMade++;
+                // Sequential attempt function
+                function performAttempt(attemptNumber) {{
+                    if (appOpened || attemptsMade >= maxAttempts) {{
+                        console.log('Stopping attempts - app opened or max attempts reached');
+                        return;
+                    }}
 
-                    if (attemptsMade === 1) {{
+                    attemptsMade = attemptNumber;
+
+                    if (attemptNumber === 1) {{
                         // First attempt: Try custom scheme
                         console.log('First attempt: Custom scheme');
                         tryOpenApp("{app_deep_link}", 1);
-                    }} else if (attemptsMade === 2) {{
+                    }} else if (attemptNumber === 2) {{
                         // Second attempt: Try universal link
                         console.log('Second attempt: Universal link');
                         tryOpenApp("{universal_link}", 2);
-                    }} else if (attemptsMade === 3) {{
-                        // Third attempt: Try with different timing
+                    }} else if (attemptNumber === 3) {{
+                        // Third attempt: Try custom scheme with delay
                         console.log('Third attempt: Delayed custom scheme');
                         setTimeout(function() {{
                             tryOpenApp("{app_deep_link}", 3);
@@ -528,10 +534,26 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     }}
                 }}
 
-                // Start attempts
-                setTimeout(attemptAppOpen, 200);
-                setTimeout(attemptAppOpen, 1000);
-                setTimeout(attemptAppOpen, 2000);
+                // Start sequential attempts
+                function startAppOpenAttempts() {{
+                    if (isAttempting) {{
+                        console.log('Already attempting to open app');
+                        return;
+                    }}
+                    isAttempting = true;
+
+                    // Attempt 1: Immediate custom scheme
+                    setTimeout(function() {{ performAttempt(1); }}, 200);
+
+                    // Attempt 2: Universal link after 1 second
+                    setTimeout(function() {{ performAttempt(2); }}, 1200);
+
+                    // Attempt 3: Delayed custom scheme after 2.5 seconds
+                    setTimeout(function() {{ performAttempt(3); }}, 2500);
+                }}
+
+                // Start the attempts
+                startAppOpenAttempts();
 
                 // Fallback: show the page content if app doesn't open
                 setTimeout(function() {{
@@ -575,14 +597,15 @@ async def order_status_redirect(request: Request, order_id: str = None):
                 function handleButtonClick() {{
                     console.log('Button clicked, trying to open app...');
 
-                    // Reset attempts for manual click
+                    // Reset state for manual attempt
+                    appOpened = false;
                     attemptsMade = 0;
+                    isAttempting = false;
 
-                    // Try both links
-                    setTimeout(function() {{ tryOpenApp("{app_deep_link}", 'manual1'); }}, 0);
-                    setTimeout(function() {{ tryOpenApp("{universal_link}", 'manual2'); }}, 500);
+                    // Start fresh attempts
+                    startAppOpenAttempts();
 
-                    // Show content after button click
+                    // Show content after manual attempt
                     setTimeout(function() {{
                         document.getElementById('content').style.display = 'block';
                         const attemptingDiv = document.getElementById('attempting');

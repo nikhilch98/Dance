@@ -296,32 +296,50 @@ async def get_redemption_history(
 
 @router.post("/admin/trigger-rewards-generation")
 async def trigger_rewards_generation(user_id: str = Depends(verify_token)):
-    """Manually trigger rewards generation for testing purposes."""
+    """Manually trigger rewards generation for testing purposes with enhanced duplicate prevention."""
     try:
         from ..services.background_rewards_service import BackgroundRewardsService
 
+        logger.info(f"Manual rewards generation triggered by user {user_id}")
         rewards_service = BackgroundRewardsService()
         result = await rewards_service.trigger_manual_rewards_generation()
 
+        logger.info(f"Manual rewards generation completed: {result}")
         return result
 
     except Exception as e:
-        logger.error(f"Error triggering manual rewards generation: {e}")
+        logger.error(f"Error triggering manual rewards generation by user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger rewards generation")
 
 
 @router.get("/admin/debug-rewards-pending")
 async def debug_pending_rewards(user_id: str = Depends(verify_token)):
-    """Debug endpoint to see pending orders that need rewards generation."""
+    """Debug endpoint to see pending orders that need rewards generation with duplicate prevention info."""
     try:
         from ..services.background_rewards_service import BackgroundRewardsService
 
         rewards_service = BackgroundRewardsService()
-        orders = rewards_service._get_paid_orders_without_rewards()
 
-        # Get detailed info about each order
+        # Get orders before filtering (for comparison)
+        from utils.utils import get_mongo_client
+        from app.models.orders import OrderStatusEnum
+        client = get_mongo_client()
+        orders_collection = client["dance_app"]["orders"]
+
+        raw_orders = list(orders_collection.find({
+            "status": OrderStatusEnum.PAID.value,
+            "rewards_generated": {"$ne": True}
+        }).limit(50))
+
+        # Get filtered orders (after duplicate prevention)
+        filtered_orders = rewards_service._get_paid_orders_without_rewards()
+
+        # Check for inconsistent orders
+        inconsistent_count = rewards_service._cleanup_inconsistent_orders()
+
+        # Get detailed info about each filtered order
         detailed_orders = []
-        for order in orders:
+        for order in filtered_orders[:10]:  # Limit to first 10 for readability
             detailed_orders.append({
                 "order_id": order.get("order_id", str(order.get("_id", "unknown"))),
                 "user_id": order.get("user_id"),
@@ -334,9 +352,13 @@ async def debug_pending_rewards(user_id: str = Depends(verify_token)):
 
         return {
             "success": True,
-            "pending_orders_count": len(detailed_orders),
-            "pending_orders": detailed_orders[:10],  # Limit to first 10 for readability
-            "cashback_percentage": rewards_service.settings.reward_cashback_percentage
+            "raw_pending_count": len(raw_orders),
+            "filtered_pending_count": len(filtered_orders),
+            "inconsistent_orders_cleaned": inconsistent_count,
+            "duplicate_prevention_active": True,
+            "pending_orders": detailed_orders,
+            "cashback_percentage": rewards_service.settings.reward_cashback_percentage,
+            "message": f"Enhanced duplicate prevention active. Found {len(raw_orders)} raw orders, {len(filtered_orders)} after filtering duplicates."
         }
 
     except Exception as e:

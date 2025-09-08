@@ -106,23 +106,35 @@ class RewardOperations:
         reference_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> str:
-        """Create a new reward transaction with duplicate prevention."""
+        """Create a new reward transaction with enhanced duplicate prevention."""
         try:
             client = get_mongo_client()
             collection = client["dance_app"]["reward_transactions"]
-            
-            # Check for existing transaction with same reference_id and source (prevent duplicates)
+
+            # Enhanced duplicate prevention: Check for existing transaction with same parameters
             if reference_id and source:
-                existing_transaction = collection.find_one({
-                    "reference_id": reference_id,
-                    "source": source.value,
-                    "user_id": user_id
-                })
-                
+                # For cashback transactions, be more strict about duplicates
+                if source == RewardSourceEnum.CASHBACK:
+                    existing_transaction = collection.find_one({
+                        "reference_id": reference_id,
+                        "source": source.value,
+                        "user_id": user_id,
+                        "transaction_type": transaction_type.value
+                    })
+                else:
+                    # For other sources, allow multiple transactions with same reference
+                    existing_transaction = collection.find_one({
+                        "reference_id": reference_id,
+                        "source": source.value,
+                        "user_id": user_id,
+                        "transaction_type": transaction_type.value,
+                        "amount": amount  # Same amount to be more restrictive
+                    })
+
                 if existing_transaction:
-                    logger.warning(f"Duplicate transaction prevented for reference_id {reference_id}, source {source.value}, user {user_id}")
+                    logger.warning(f"Duplicate transaction prevented for reference_id {reference_id}, source {source.value}, user {user_id}, amount {amount}")
                     return existing_transaction["transaction_id"]
-            
+
             transaction_id = str(uuid.uuid4())
             transaction_data = {
                 "transaction_id": transaction_id,
@@ -137,17 +149,17 @@ class RewardOperations:
                 "created_at": datetime.utcnow(),
                 "processed_at": datetime.utcnow()
             }
-            
+
             collection.insert_one(transaction_data)
-            
+
             # Update wallet balance
             RewardOperations.update_wallet_balance(user_id, amount, transaction_type)
-            
-            logger.info(f"Created reward transaction {transaction_id} for user {user_id} - Amount: ₹{amount}")
+
+            logger.info(f"Created reward transaction {transaction_id} for user {user_id} - Amount: ₹{amount}, Source: {source.value}")
             return transaction_id
-            
+
         except Exception as e:
-            logger.error(f"Error creating reward transaction: {e}")
+            logger.error(f"Error creating reward transaction for user {user_id}: {e}")
             raise
 
     @staticmethod

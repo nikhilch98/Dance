@@ -35,9 +35,15 @@ class BackgroundRewardsService:
             return
 
         self.is_running = True
-        logger.info("Starting background rewards generation service...")
+        logger.info("Starting background rewards generation service with enhanced duplicate prevention...")
 
         try:
+            # Clean up any inconsistent state on startup
+            logger.info("Cleaning up inconsistent orders on startup...")
+            cleanup_count = self._cleanup_inconsistent_orders()
+            if cleanup_count > 0:
+                logger.info(f"Cleaned up {cleanup_count} inconsistent orders on startup")
+
             # Process immediately on startup
             logger.info("Processing rewards batch on startup...")
             await self._process_rewards_batch()
@@ -99,29 +105,106 @@ class BackgroundRewardsService:
             logger.error(f"Error processing rewards batch: {e}")
             
     def _get_paid_orders_without_rewards(self) -> List[dict]:
-        """Get all paid orders that don't have rewards generated yet."""
+        """Get all paid orders that don't have rewards generated yet.
+
+        This method includes enhanced duplicate prevention by checking both:
+        1. The rewards_generated flag
+        2. Whether a cashback transaction already exists for the order
+        """
         try:
             from utils.utils import get_mongo_client
             client = get_mongo_client()
             orders_collection = client["dance_app"]["orders"]
-            
-            # Get orders that are paid and don't have rewards generated flag
-            orders = orders_collection.find({
+            transactions_collection = client["dance_app"]["reward_transactions"]
+
+            # First, get orders that are paid and don't have rewards_generated flag
+            candidate_orders = list(orders_collection.find({
                 "status": OrderStatusEnum.PAID.value,
                 "rewards_generated": {"$ne": True}
-            }).limit(100)  # Process max 100 at a time
-            
-            return list(orders)
-            
+            }).limit(200))  # Get more candidates to account for filtering
+
+            if not candidate_orders:
+                return []
+
+            # Extract order IDs to check for existing transactions
+            order_ids = [str(order["_id"]) for order in candidate_orders]
+
+            # Find orders that already have cashback transactions
+            existing_transaction_orders = set()
+            for order_id in order_ids:
+                # Check if there's already a cashback transaction for this order
+                existing_tx = transactions_collection.find_one({
+                    "reference_id": order_id,
+                    "source": RewardSourceEnum.CASHBACK.value,
+                    "transaction_type": RewardTransactionTypeEnum.CREDIT.value
+                })
+                if existing_tx:
+                    existing_transaction_orders.add(order_id)
+                    logger.debug(f"Order {order_id} already has cashback transaction {existing_tx['transaction_id']}")
+
+            # Filter out orders that already have transactions
+            filtered_orders = [
+                order for order in candidate_orders
+                if str(order["_id"]) not in existing_transaction_orders
+            ]
+
+            # Return only orders that truly need processing
+            result_orders = filtered_orders[:100]  # Limit to 100 for processing
+
+            if existing_transaction_orders:
+                logger.info(f"Filtered out {len(existing_transaction_orders)} orders that already have cashback transactions")
+
+            logger.info(f"Found {len(result_orders)} orders requiring rewards generation after duplicate check")
+            return result_orders
+
         except Exception as e:
             logger.error(f"Error fetching orders for rewards generation: {e}")
             return []
-            
+
+    def _order_has_existing_cashback_transaction(self, order_id: str) -> bool:
+        """Check if an order already has a cashback transaction.
+
+        Args:
+            order_id: The order ID to check
+
+        Returns:
+            True if cashback transaction exists, False otherwise
+        """
+        try:
+            from utils.utils import get_mongo_client
+            client = get_mongo_client()
+            transactions_collection = client["dance_app"]["reward_transactions"]
+
+            # Check if there's already a cashback transaction for this order
+            existing_tx = transactions_collection.find_one({
+                "reference_id": order_id,
+                "source": RewardSourceEnum.CASHBACK.value,
+                "transaction_type": RewardTransactionTypeEnum.CREDIT.value
+            })
+
+            if existing_tx:
+                logger.debug(f"Found existing cashback transaction {existing_tx['transaction_id']} for order {order_id}")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error checking for existing cashback transaction for order {order_id}: {e}")
+            # If we can't check, assume no transaction exists to avoid blocking processing
+            return False
+
     def _generate_rewards_for_order(self, order: dict) -> bool:
-        """Generate cashback rewards for a specific order."""
+        """Generate cashback rewards for a specific order with enhanced duplicate prevention."""
         try:
             user_id = str(order["user_id"])
             order_id = str(order["_id"])
+
+            # Additional duplicate check: Verify no existing cashback transaction
+            if self._order_has_existing_cashback_transaction(order_id):
+                logger.info(f"Order {order_id} already has cashback transaction, skipping")
+                # Mark as processed to prevent future reprocessing
+                self._mark_order_rewards_generated(order_id, 0.0)
+                return True
 
             # Safely get and validate order amount
             raw_amount = order.get("amount", 0)
@@ -186,30 +269,40 @@ class BackgroundRewardsService:
 
             if cashback_amount <= 0:
                 logger.warning(f"Skipping rewards for order {order_id} - no cashback calculated")
-                return False
+                # Still mark as processed to avoid reprocessing
+                self._mark_order_rewards_generated(order_id, 0.0)
+                return True
 
             cashback_percentage = self.settings.reward_cashback_percentage
             logger.info(f"Processing {cashback_percentage}% cashback for order {order_id}: Final amount paid ₹{amount_for_cashback/100:.2f} → Cashback ₹{cashback_amount}")
 
-            # Create cashback transaction (with built-in duplicate prevention)
-            # The create_transaction method automatically handles duplicates and updates wallet balance
-            transaction_id = self.reward_operations.create_transaction(
-                user_id=user_id,
-                transaction_type=RewardTransactionTypeEnum.CREDIT,
-                amount=cashback_amount,
-                source=RewardSourceEnum.CASHBACK,
-                description=f"{cashback_percentage}% cashback for workshop booking (Order: {order.get('order_id', order_id)})",
-                reference_id=order_id
-            )
+            # Create cashback transaction with error handling and rollback
+            transaction_id = None
+            try:
+                transaction_id = self.reward_operations.create_transaction(
+                    user_id=user_id,
+                    transaction_type=RewardTransactionTypeEnum.CREDIT,
+                    amount=cashback_amount,
+                    source=RewardSourceEnum.CASHBACK,
+                    description=f"{cashback_percentage}% cashback for workshop booking (Order: {order.get('order_id', order_id)})",
+                    reference_id=order_id
+                )
 
-            # Mark order as having rewards generated
-            success = self._mark_order_rewards_generated(order_id, cashback_amount)
+                # Mark order as having rewards generated
+                success = self._mark_order_rewards_generated(order_id, cashback_amount)
 
-            if success:
-                logger.info(f"Generated ₹{cashback_amount} cashback for order {order_id} (user: {user_id})")
-                return True
-            else:
-                logger.error(f"Failed to mark order {order_id} as rewards generated")
+                if success:
+                    logger.info(f"Successfully generated ₹{cashback_amount} cashback for order {order_id} (user: {user_id})")
+                    return True
+                else:
+                    logger.error(f"Failed to mark order {order_id} as rewards generated after creating transaction")
+                    # Transaction was created but order marking failed - this is a problem
+                    # The transaction exists but order will be reprocessed
+                    # This should be handled by the duplicate check on next run
+                    return False
+
+            except Exception as transaction_error:
+                logger.error(f"Failed to create cashback transaction for order {order_id}: {transaction_error}")
                 return False
 
         except Exception as e:
@@ -243,40 +336,139 @@ class BackgroundRewardsService:
             logger.error(f"Error calculating cashback for amount {order_amount}: {e}")
             return 0.0
             
-    def _mark_order_rewards_generated(self, order_id: str, cashback_amount: float):
-        """Mark an order as having rewards generated."""
+    def _mark_order_rewards_generated(self, order_id: str, cashback_amount: float) -> bool:
+        """Mark an order as having rewards generated.
+
+        Args:
+            order_id: The order ID to mark
+            cashback_amount: The cashback amount awarded (0.0 for no rewards)
+
+        Returns:
+            True if successfully marked, False otherwise
+        """
         try:
             from utils.utils import get_mongo_client
             client = get_mongo_client()
             orders_collection = client["dance_app"]["orders"]
-            
+
+            update_data = {
+                "rewards_generated": True,
+                "rewards_generated_at": datetime.utcnow()
+            }
+
+            # Only set cashback_amount if it's greater than 0
+            if cashback_amount > 0:
+                update_data["cashback_amount"] = cashback_amount
+
             result = orders_collection.update_one(
                 {"_id": ObjectId(order_id)},
-                {
-                    "$set": {
-                        "rewards_generated": True,
-                        "cashback_amount": cashback_amount,
-                        "rewards_generated_at": datetime.utcnow()
-                    }
-                }
+                {"$set": update_data}
             )
-            
+
             if result.modified_count == 0:
-                logger.warning(f"Failed to mark order {order_id} as rewards generated")
-                
+                logger.warning(f"Failed to mark order {order_id} as rewards generated (modified_count: 0)")
+                return False
+            else:
+                logger.debug(f"Successfully marked order {order_id} as rewards generated")
+                return True
+
         except Exception as e:
             logger.error(f"Error marking order {order_id} as rewards generated: {e}")
-            raise
+            return False
             
     async def trigger_manual_rewards_generation(self) -> dict:
         """Manually trigger rewards generation for testing purposes."""
         try:
             logger.info("Manual rewards generation triggered")
+
+            # First, clean up any inconsistent state
+            cleanup_count = self._cleanup_inconsistent_orders()
+            if cleanup_count > 0:
+                logger.info(f"Cleaned up {cleanup_count} inconsistent orders before processing")
+
             await self._process_rewards_batch()
-            return {"success": True, "message": "Manual rewards generation completed"}
+            return {"success": True, "message": f"Manual rewards generation completed (cleaned up {cleanup_count} inconsistent orders)"}
         except Exception as e:
             logger.error(f"Error in manual rewards generation: {e}")
             return {"success": False, "error": str(e)}
+
+    def _cleanup_inconsistent_orders(self) -> int:
+        """Clean up orders that have cashback transactions but are not marked as processed.
+
+        Returns:
+            Number of orders cleaned up
+        """
+        try:
+            from utils.utils import get_mongo_client
+            client = get_mongo_client()
+            orders_collection = client["dance_app"]["orders"]
+            transactions_collection = client["dance_app"]["reward_transactions"]
+
+            # Find orders that have cashback transactions but are not marked as rewards_generated
+            pipeline = [
+                {
+                    "$match": {
+                        "status": OrderStatusEnum.PAID.value,
+                        "rewards_generated": {"$ne": True}
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "reward_transactions",
+                        "let": {"order_id": {"$toString": "$_id"}},
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {"$eq": ["$reference_id", "$$order_id"]},
+                                            {"$eq": ["$source", RewardSourceEnum.CASHBACK.value]},
+                                            {"$eq": ["$transaction_type", RewardTransactionTypeEnum.CREDIT.value]}
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "as": "cashback_transactions"
+                    }
+                },
+                {
+                    "$match": {
+                        "cashback_transactions": {"$ne": []}
+                    }
+                }
+            ]
+
+            inconsistent_orders = list(orders_collection.aggregate(pipeline))
+
+            if not inconsistent_orders:
+                return 0
+
+            logger.info(f"Found {len(inconsistent_orders)} orders with cashback transactions but not marked as processed")
+
+            cleaned_count = 0
+            for order in inconsistent_orders:
+                order_id = str(order["_id"])
+                transactions = order.get("cashback_transactions", [])
+
+                if transactions:
+                    # Get the total cashback amount
+                    total_cashback = sum(tx.get("amount", 0) for tx in transactions)
+
+                    # Mark the order as processed with the total cashback amount
+                    success = self._mark_order_rewards_generated(order_id, total_cashback)
+
+                    if success:
+                        cleaned_count += 1
+                        logger.info(f"Cleaned up order {order_id} with total cashback ₹{total_cashback}")
+                    else:
+                        logger.error(f"Failed to clean up order {order_id}")
+
+            return cleaned_count
+
+        except Exception as e:
+            logger.error(f"Error cleaning up inconsistent orders: {e}")
+            return 0
             
     async def get_rewards_generation_status(self) -> dict:
         """Get the current status of the rewards generation service."""
