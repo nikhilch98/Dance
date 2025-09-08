@@ -122,13 +122,53 @@ class BackgroundRewardsService:
         try:
             user_id = str(order["user_id"])
             order_id = str(order["_id"])
-            order_amount = float(order.get("amount", 0))
+
+            # Safely get and validate order amount
+            raw_amount = order.get("amount", 0)
+            try:
+                if raw_amount is None:
+                    logger.warning(f"Order {order_id} has None amount, skipping rewards generation")
+                    return False
+
+                order_amount = float(raw_amount)
+                if order_amount <= 0:
+                    logger.warning(f"Order {order_id} has invalid amount: {order_amount}, skipping rewards generation")
+                    return False
+
+                logger.debug(f"Processing order {order_id} with amount: {order_amount} paise")
+
+            except (ValueError, TypeError) as e:
+                logger.error(f"Invalid amount format for order {order_id}: {raw_amount} ({type(raw_amount)}), error: {e}")
+                return False
 
             # Use final amount paid if available (after discounts), otherwise use original amount
             # This ensures cashback is calculated on the actual amount paid by the user
-            amount_for_cashback = float(order.get("final_amount_paid", 0)) * 100  # Convert rupees to paise
-            if amount_for_cashback <= 0:
-                # Fallback to original amount if final_amount_paid is not set
+            final_amount_paid = order.get("final_amount_paid")
+
+            try:
+                if final_amount_paid is not None:
+                    # Handle case where final_amount_paid might be a string
+                    if isinstance(final_amount_paid, str):
+                        final_amount_paid = float(final_amount_paid)
+                    elif not isinstance(final_amount_paid, (int, float)):
+                        final_amount_paid = None
+
+                    if final_amount_paid is not None and final_amount_paid > 0:
+                        # Convert rupees to paise and use final amount
+                        amount_for_cashback = float(final_amount_paid) * 100
+                        logger.debug(f"Using final amount paid for order {order_id}: ₹{final_amount_paid} → {amount_for_cashback} paise")
+                    else:
+                        # Fallback to original amount if final_amount_paid is 0 or invalid
+                        amount_for_cashback = order_amount
+                        logger.debug(f"Using original amount for order {order_id}: {amount_for_cashback} paise (final_amount_paid was 0 or invalid)")
+                else:
+                    # Fallback to original amount if final_amount_paid is None
+                    amount_for_cashback = order_amount
+                    logger.debug(f"Using original amount for order {order_id}: {amount_for_cashback} paise (final_amount_paid was None)")
+
+            except (ValueError, TypeError) as e:
+                # If there's any conversion error, fallback to original amount
+                logger.warning(f"Error converting final_amount_paid for order {order_id}: {e}, using original amount")
                 amount_for_cashback = order_amount
 
             # Skip if amount is 0 or invalid

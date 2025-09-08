@@ -308,3 +308,37 @@ async def trigger_rewards_generation(user_id: str = Depends(verify_token)):
     except Exception as e:
         logger.error(f"Error triggering manual rewards generation: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger rewards generation")
+
+
+@router.get("/admin/debug-rewards-pending")
+async def debug_pending_rewards(user_id: str = Depends(verify_token)):
+    """Debug endpoint to see pending orders that need rewards generation."""
+    try:
+        from ..services.background_rewards_service import BackgroundRewardsService
+
+        rewards_service = BackgroundRewardsService()
+        orders = rewards_service._get_paid_orders_without_rewards()
+
+        # Get detailed info about each order
+        detailed_orders = []
+        for order in orders:
+            detailed_orders.append({
+                "order_id": order.get("order_id", str(order.get("_id", "unknown"))),
+                "user_id": order.get("user_id"),
+                "amount": order.get("amount"),
+                "final_amount_paid": order.get("final_amount_paid"),
+                "rewards_redeemed": order.get("rewards_redeemed"),
+                "rewards_generated": order.get("rewards_generated", False),
+                "status": order.get("status")
+            })
+
+        return {
+            "success": True,
+            "pending_orders_count": len(detailed_orders),
+            "pending_orders": detailed_orders[:10],  # Limit to first 10 for readability
+            "cashback_percentage": rewards_service.settings.reward_cashback_percentage
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting debug rewards info: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get debug rewards info: {str(e)}")

@@ -341,7 +341,7 @@ async def create_payment_link(
             amount=amount_paise,  # Original amount in paise
             currency="INR",
             rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
-            final_amount_paid=final_amount_rupees if rewards_redeemed_rupees > 0 else None
+            final_amount_paid=final_amount_rupees  # Always set the final amount paid
         )
         
         order_id = OrderOperations.create_order(order_data)
