@@ -980,6 +980,7 @@
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
                 backdrop-filter: blur(2px);
                 overflow: hidden;
+                padding: 1rem;
             }
             
             .workshop-card:hover {
@@ -987,22 +988,18 @@
                 transform: none;
             }
             
-            .workshop-card-content {
-                padding: 1rem;
-            }
-            
             /* Workshop header - matches app's header Row with artist name and date */
             .workshop-header {
                 display: flex;
                 justify-content: space-between;
-                align-items: flex-start;
+                align-items: center;
                 margin-bottom: 0.75rem;
                 gap: 0.75rem;
             }
             
             /* Artist name - matches app's main title style */
             .workshop-artist-name {
-                font-size: 0.95rem;
+                font-size: 1rem;
                 font-weight: 700;
                 line-height: 1.2;
                 color: white;
@@ -1015,25 +1012,70 @@
             
             /* Date badge - matches app's blue gradient badge */
             .workshop-date-badge {
-                font-size: 0.7rem;
+                font-size: 0.75rem;
                 font-weight: 600;
-                padding: 0.25rem 0.5rem;
-                border-radius: 6px;
+                padding: 0.375rem 0.75rem;
+                border-radius: 8px;
                 background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
                 color: white;
                 flex-shrink: 0;
                 white-space: nowrap;
                 text-align: center;
-                max-width: 120px;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                min-width: 90px;
             }
             
             /* Workshop content - matches app's main content Row */
             .workshop-content {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
+                gap: 0;
+                justify-content: space-between;
+            }
+            
+            /* Action buttons container */
+            .action-buttons {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-shrink: 0;
+            }
+            
+            /* Register button styling */
+            .register-button {
+                flex: 0 0 auto;
+                padding: 0.75rem 1.25rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border-radius: 8px;
+                border: none;
+                color: white;
+                cursor: pointer;
+                min-width: 85px;
+                text-align: center;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+                transition: all 0.2s ease;
+            }
+            
+            .register-button:hover:not(.disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+            
+            .register-button.nachna {
+                background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+                box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+            }
+            
+            .register-button.disabled {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+                cursor: not-allowed;
+                box-shadow: none;
             }
             
             /* Artist avatars - matches app's _buildArtistAvatars exactly */
@@ -1143,15 +1185,6 @@
                 white-space: nowrap;
             }
             
-            /* Workshop actions - matches app's action row layout */
-            .workshop-actions {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                margin-top: 0.75rem;
-                gap: 0.5rem;
-            }
             
             .action-buttons {
                 display: flex;
@@ -1160,8 +1193,8 @@
                 flex-shrink: 0;
             }
             
-            /* Action buttons - matches app's Instagram/choreo buttons */
-            .choreo-button, .artist-instagram-button {
+            /* Action buttons - matches app's Instagram buttons */
+            .artist-instagram-button {
                 width: 36px;
                 height: 36px;
                 border-radius: 8px;
@@ -1174,11 +1207,17 @@
                 position: relative;
                 flex-shrink: 0;
                 box-shadow: 0 2px 6px rgba(225, 48, 108, 0.3);
+                transition: all 0.2s ease;
             }
             
-            .choreo-button svg, .artist-instagram-button svg {
-                width: 18px;
-                height: 18px;
+            .artist-instagram-button:hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(225, 48, 108, 0.4);
+            }
+            
+            .artist-instagram-button svg {
+                width: 16px;
+                height: 16px;
                 fill: white;
             }
             
@@ -1199,43 +1238,6 @@
                 border: 2px solid white;
             }
             
-            /* Register button - matches app's register button */
-            .register-button {
-                flex: 1;
-                padding: 0.75rem 1rem;
-                font-size: 0.8rem;
-                font-weight: 700;
-                border-radius: 10px;
-                border: none;
-                color: white;
-                cursor: pointer;
-                min-width: 85px;
-                margin-left: 0.5rem;
-                text-align: center;
-                text-decoration: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .register-button.nachna {
-                background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
-                box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
-            }
-            
-            .register-button.external {
-                background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-                box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-            }
-            
-            .register-button.disabled {
-                background: rgba(255, 255, 255, 0.1);
-                color: rgba(255, 255, 255, 0.5);
-                box-shadow: none;
-                cursor: not-allowed;
-                padding: 0.75rem 0.75rem;
-                font-size: 0.75rem;
-            }
             
             /* Upcoming workshops grid - single column like app */
             #upcoming-content.workshops-grid {
@@ -1977,10 +1979,7 @@
             const card = document.createElement('div');
             card.className = 'workshop-card';
             
-            // Create content wrapper to match app structure
-            const cardContent = document.createElement('div');
-            cardContent.className = 'workshop-card-content';
-            
+            // Header: Artist name and date badge
             const header = document.createElement('div');
             header.className = 'workshop-header';
             
@@ -1995,137 +1994,96 @@
             header.appendChild(artistName);
             header.appendChild(dateBadge);
             
+            // Content row: Avatar + Studio info + Action buttons
             const content = document.createElement('div');
             content.className = 'workshop-content';
             
-            // Artist avatars
+            // Artist avatar
             const avatars = createArtistAvatars(workshop);
             content.appendChild(avatars);
             
-            // Workshop details
-            const details = document.createElement('div');
-            details.className = 'workshop-details';
-            
-            if (workshop.song && workshop.song.trim() && workshop.song !== 'TBA') {
-                const song = document.createElement('div');
-                song.className = 'workshop-song';
-                song.textContent = toTitleCase(workshop.song);
-                details.appendChild(song);
-            }
-            
-            // Studio info
-            const studioRow = document.createElement('div');
-            studioRow.className = 'workshop-info-row';
-            studioRow.innerHTML = `
-                <svg viewBox="0 0 24 24">
+            // Studio building icon (matches the screenshot)
+            const studioIcon = document.createElement('div');
+            studioIcon.style.cssText = `
+                width: 20px;
+                height: 20px;
+                margin-left: 8px;
+                margin-right: 8px;
+                opacity: 0.7;
+                flex-shrink: 0;
+            `;
+            studioIcon.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
                     <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
                 </svg>
-                <span class="workshop-info-text">${studioData ? toTitleCase(studioData.name) : 'Studio'}</span>
             `;
-            details.appendChild(studioRow);
+            content.appendChild(studioIcon);
             
-            // Time info
-            const timeRow = document.createElement('div');
-            timeRow.className = 'workshop-info-row';
-            timeRow.innerHTML = `
-                <svg viewBox="0 0 24 24">
+            // Check mark icon (matches the screenshot)
+            const checkIcon = document.createElement('div');
+            checkIcon.style.cssText = `
+                width: 20px;
+                height: 20px;
+                margin-right: 12px;
+                opacity: 0.7;
+                flex-shrink: 0;
+            `;
+            checkIcon.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
-                <span class="workshop-info-text">${formatTime(workshop.time)}</span>
             `;
-            details.appendChild(timeRow);
-            
-            content.appendChild(details);
-            
-            // Actions
-            const actions = document.createElement('div');
-            actions.className = 'workshop-actions';
+            content.appendChild(checkIcon);
             
             // Action buttons container
             const actionButtons = document.createElement('div');
             actionButtons.className = 'action-buttons';
             
-            // Artist Instagram button(s)
+            // Artist Instagram button
             const artistInstagramLinks = workshop.artist_instagram_links || [];
             const validInstagramLinks = artistInstagramLinks.filter(link => link && link.trim());
             
             if (validInstagramLinks.length > 0) {
                 const artistInstagramBtn = document.createElement('button');
                 artistInstagramBtn.className = 'artist-instagram-button';
-                artistInstagramBtn.title = `View artist${validInstagramLinks.length > 1 ? 's' : ''} on Instagram`;
-                
-                if (validInstagramLinks.length === 1) {
-                    // Single artist Instagram
-                    artistInstagramBtn.onclick = function() {
+                artistInstagramBtn.title = 'View artist on Instagram';
+                artistInstagramBtn.onclick = function() {
+                    if (validInstagramLinks.length === 1) {
                         trackArtistInstagramClick(validInstagramLinks[0], workshop);
                         window.open(validInstagramLinks[0], '_blank', 'noopener,noreferrer');
-                    };
-                    artistInstagramBtn.innerHTML = `
-                        <svg viewBox="0 0 24 24">
-                            <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
-                        </svg>
-                    `;
-                } else {
-                    // Multiple artists Instagram - show a modal or cycle through them
-                    artistInstagramBtn.onclick = function() {
+                    } else {
                         showArtistInstagramModal(validInstagramLinks, workshop);
-                    };
-                    artistInstagramBtn.innerHTML = `
-                        <svg viewBox="0 0 24 24">
-                            <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
-                        </svg>
-                    `;
-                    
-                    // Add count badge for multiple artists
-                    const countBadge = document.createElement('div');
-                    countBadge.className = 'multiple-instagram-count';
-                    countBadge.textContent = validInstagramLinks.length;
-                    artistInstagramBtn.appendChild(countBadge);
-                }
-                
+                    }
+                };
+                artistInstagramBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24">
+                        <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
+                    </svg>
+                `;
                 actionButtons.appendChild(artistInstagramBtn);
             }
             
-            // Choreo link button
-            if (workshop.choreo_insta_link && workshop.choreo_insta_link.trim()) {
-                const choreoBtn = document.createElement('button');
-                choreoBtn.className = 'choreo-button';
-                choreoBtn.title = 'View choreography video';
-                choreoBtn.onclick = function() {
-                    trackChoreoClick(workshop.choreo_insta_link, workshop);
-                    window.open(workshop.choreo_insta_link, '_blank', 'noopener,noreferrer');
-                };
-                choreoBtn.innerHTML = `
-                    <svg viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                `;
-                actionButtons.appendChild(choreoBtn);
-            }
+            content.appendChild(actionButtons);
             
-            actions.appendChild(actionButtons);
-            
-            // Register button
+            // Register button (takes remaining space)
             const registerBtn = document.createElement('button');
             if (workshop.payment_link && workshop.payment_link.trim()) {
                 registerBtn.className = `register-button ${workshop.payment_link_type?.toLowerCase() === 'nachna' ? 'nachna' : 'external'}`;
-                registerBtn.textContent = workshop.payment_link_type?.toLowerCase() === 'nachna' ? 'Register with Nachna' : 'Register';
+                registerBtn.textContent = 'Register';
                 registerBtn.onclick = function() {
                     trackWorkshopClick(workshop);
                     window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
                 };
             } else {
                 registerBtn.className = 'register-button disabled';
-                registerBtn.textContent = 'Soon';
+                registerBtn.textContent = 'Register';
                 registerBtn.disabled = true;
             }
             
-            actions.appendChild(registerBtn);
-            content.appendChild(actions);
+            content.appendChild(registerBtn);
             
-            cardContent.appendChild(header);
-            cardContent.appendChild(content);
-            card.appendChild(cardContent);
+            card.appendChild(header);
+            card.appendChild(content);
             
             return card;
         }
