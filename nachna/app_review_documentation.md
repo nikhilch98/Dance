@@ -298,6 +298,7 @@ This test account demonstrates:
 - Version 1.1.0: Push notifications
 - Version 1.2.0: Social features
 - Version 1.3.0: Offline mode
+- Version 1.4.0: Web booking integration, enhanced studio detail screens
 - Version 2.0.0: Enhanced UI/UX
 
 ---
