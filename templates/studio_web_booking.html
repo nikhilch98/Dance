@@ -772,90 +772,171 @@
             color: var(--text-secondary);
         }
         
-        /* MOBILE APP-LIKE DESIGN */
+        /* MOBILE APP-LIKE DESIGN - EXACT MATCH TO FLUTTER APP */
         @media (max-width: 768px) {
             /* Reset base styles for mobile */
             body {
                 font-size: 14px;
                 line-height: 1.4;
                 -webkit-text-size-adjust: 100%;
+                padding: 0;
+                margin: 0;
             }
             
-            /* Back button - exactly like app */
+            /* Back button - positioned like app's SafeArea */
             .back-button {
                 position: fixed;
-                top: env(safe-area-inset-top, 1rem);
-                left: 1rem;
+                top: calc(env(safe-area-inset-top, 0px) + 2rem);
+                left: 1.5rem;
                 width: 32px;
                 height: 32px;
-                padding: 6px;
-                background: rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px);
+                padding: 8px;
+                background: transparent;
+                border: none;
+                z-index: 1000;
             }
             
             .back-button svg {
-                width: 20px;
-                height: 20px;
+                width: 16px;
+                height: 16px;
+                fill: white;
             }
             
-            /* Main content - app-like spacing */
+            /* Main content - matches ListView padding in app */
             .content {
-                padding-top: calc(env(safe-area-inset-top, 0px) + 4rem);
-                padding-left: 1rem;
-                padding-right: 1rem;
-                padding-bottom: env(safe-area-inset-bottom, 1rem);
+                padding-top: calc(env(safe-area-inset-top, 0px) + 5rem);
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
             }
             
-            /* Studio Header - matching app exactly */
+            /* Studio Header - exact match to app's Container with decoration */
             .studio-header {
-                padding: 1.5rem;
                 margin-bottom: 1.5rem;
+                padding: 1.5rem;
                 border-radius: 20px;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+                border: 1.5px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(10px);
             }
             
             .studio-header-content {
-                gap: 1rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 1.5rem;
             }
             
+            /* Studio image - matches app's avatarSizeLarge */
             .studio-image, .studio-image-fallback {
                 width: 80px;
                 height: 80px;
                 border-radius: 16px;
+                border: 1.5px solid rgba(255, 255, 255, 0.2);
+                flex-shrink: 0;
+            }
+            
+            .studio-image-fallback {
+                background: linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(157, 78, 221, 0.3) 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .studio-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            /* Studio name row - matches app's Row with crossAxisAlignment.center */
+            .studio-name-row {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
             }
             
             .studio-name {
-                font-size: 1.5rem;
+                font-size: 1.375rem;
                 font-weight: 700;
                 letter-spacing: 0.5px;
+                color: white;
+                line-height: 1.2;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
             }
             
-            .studio-name-row {
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            
+            /* Instagram icon - matches app's small icon size */
             .instagram-icon {
-                width: 28px;
-                height: 28px;
-                border-radius: 6px;
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                background: var(--instagram-gradient);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                cursor: pointer;
             }
             
+            .instagram-icon svg {
+                width: 12px;
+                height: 12px;
+                fill: white;
+            }
+            
+            /* Studio badges row - matches app's Row layout */
             .studio-badges {
+                display: flex;
+                align-items: center;
                 gap: 0.5rem;
-                flex-wrap: wrap;
+                margin-top: 0.5rem;
             }
             
+            /* Dance Studio badge - matches app's Container with gradient */
             .studio-type-badge {
-                font-size: 0.75rem;
+                display: flex;
+                align-items: center;
+                gap: 0.375rem;
                 padding: 0.375rem 0.75rem;
                 border-radius: 16px;
+                background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(157, 78, 221, 0.2) 100%);
+                border: 1px solid rgba(0, 212, 255, 0.3);
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #00D4FF;
             }
             
+            .studio-type-badge svg {
+                width: 12px;
+                height: 12px;
+                fill: currentColor;
+            }
+            
+            /* Share button - matches app's small GestureDetector */
             .share-button {
-                width: 28px;
-                height: 28px;
-                padding: 4px;
+                width: 32px;
+                height: 32px;
+                padding: 0.375rem;
                 border-radius: 8px;
+                background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(157, 78, 221, 0.2) 100%);
+                border: 1px solid rgba(0, 212, 255, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: #00D4FF;
+            }
+            
+            .share-button svg {
+                width: 12px;
+                height: 12px;
+                fill: currentColor;
             }
             
             /* Section headers - app style */
@@ -890,167 +971,268 @@
                 grid-template-columns: 1fr;
             }
             
-            /* Workshop cards - exactly like app */
+            /* Workshop cards - matches app's _buildWorkshopCard exactly */
             .workshop-card {
-                padding: 1rem;
-                border-radius: 12px;
-                background: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.12);
+                margin-bottom: 1rem;
+                border-radius: 16px;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                backdrop-filter: blur(2px);
+                overflow: hidden;
             }
             
             .workshop-card:hover {
-                background: rgba(255, 255, 255, 0.12);
-                transform: none; /* Remove desktop hover transform */
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+                transform: none;
             }
             
-            /* Workshop header - app layout */
+            .workshop-card-content {
+                padding: 1rem;
+            }
+            
+            /* Workshop header - matches app's header Row with artist name and date */
             .workshop-header {
+                display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
                 margin-bottom: 0.75rem;
                 gap: 0.75rem;
             }
             
+            /* Artist name - matches app's main title style */
             .workshop-artist-name {
-                font-size: 1rem;
+                font-size: 0.95rem;
                 font-weight: 700;
                 line-height: 1.2;
+                color: white;
                 flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
+            /* Date badge - matches app's blue gradient badge */
             .workshop-date-badge {
                 font-size: 0.7rem;
+                font-weight: 600;
                 padding: 0.25rem 0.5rem;
                 border-radius: 6px;
+                background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+                color: white;
                 flex-shrink: 0;
+                white-space: nowrap;
+                text-align: center;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
-            /* Workshop content - app layout */
+            /* Workshop content - matches app's main content Row */
             .workshop-content {
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 gap: 0.75rem;
             }
             
-            /* Artist avatars - app sizing */
+            /* Artist avatars - matches app's _buildArtistAvatars exactly */
             .artist-avatars {
                 flex-shrink: 0;
             }
             
             .single-avatar, .avatar-fallback {
-                width: 40px;
-                height: 40px;
+                width: 42px;
+                height: 42px;
                 border-radius: 10px;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                object-fit: cover;
             }
             
             .avatar-fallback {
-                font-size: 1rem;
+                font-size: 1.1rem;
                 font-weight: 700;
+                background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
+            /* Multiple avatars - matches app's overlapping avatar system */
             .multiple-avatars {
-                width: 64px;
-                height: 40px;
+                width: 66px;
+                height: 42px;
+                position: relative;
             }
             
             .avatar-stack {
-                width: 34px;
-                height: 34px;
+                position: absolute;
+                width: 36px;
+                height: 36px;
                 border-radius: 8px;
-                border-width: 2px;
+                border: 2px solid white;
+                object-fit: cover;
+                box-shadow: 0 2px 4px rgba(0, 212, 255, 0.2);
             }
             
-            .avatar-stack:nth-child(1) { left: 0; }
-            .avatar-stack:nth-child(2) { left: 20px; }
-            .avatar-stack:nth-child(3) { left: 40px; }
+            .avatar-stack:nth-child(1) { left: 0; z-index: 3; }
+            .avatar-stack:nth-child(2) { left: 24px; z-index: 2; }
+            .avatar-stack:nth-child(3) { left: 48px; z-index: 1; }
             
             .avatar-count {
-                width: 34px;
-                height: 34px;
+                position: absolute;
+                right: 0;
+                width: 36px;
+                height: 36px;
                 border-radius: 8px;
+                background: rgba(26, 26, 46, 0.9);
+                border: 2px solid white;
                 font-size: 0.7rem;
                 font-weight: 700;
-                border-width: 2px;
-                right: 0;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 4;
             }
             
-            /* Workshop details - app style */
+            /* Workshop details - matches app's info column */
             .workshop-details {
                 flex: 1;
                 min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
             }
             
+            /* Song name - matches app's blue song title */
             .workshop-song {
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 font-weight: 600;
-                margin-bottom: 0.375rem;
+                color: #00D4FF;
                 line-height: 1.2;
+                margin-bottom: 0.125rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
+            /* Info rows - matches app's icon + text rows */
             .workshop-info-row {
+                display: flex;
+                align-items: center;
                 gap: 0.375rem;
-                margin-bottom: 0.25rem;
+                margin-bottom: 0.125rem;
             }
             
             .workshop-info-row svg {
                 width: 12px;
                 height: 12px;
                 flex-shrink: 0;
+                opacity: 0.7;
             }
             
             .workshop-info-text {
                 font-size: 0.75rem;
                 font-weight: 500;
+                color: rgba(255, 255, 255, 0.8);
                 line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
-            /* Workshop actions - app layout */
+            /* Workshop actions - matches app's action row layout */
             .workshop-actions {
-                align-self: flex-end;
-                gap: 0.5rem;
-                margin-top: 0.75rem;
-                width: 100%;
+                display: flex;
+                align-items: center;
                 justify-content: space-between;
+                width: 100%;
+                margin-top: 0.75rem;
+                gap: 0.5rem;
             }
             
             .action-buttons {
                 display: flex;
+                align-items: center;
                 gap: 0.375rem;
                 flex-shrink: 0;
             }
             
+            /* Action buttons - matches app's Instagram/choreo buttons */
             .choreo-button, .artist-instagram-button {
                 width: 36px;
                 height: 36px;
                 border-radius: 8px;
+                background: var(--instagram-gradient);
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                position: relative;
                 flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(225, 48, 108, 0.3);
             }
             
             .choreo-button svg, .artist-instagram-button svg {
                 width: 18px;
                 height: 18px;
+                fill: white;
             }
             
             .multiple-instagram-count {
-                width: 16px;
-                height: 16px;
-                font-size: 0.6rem;
-                font-weight: 700;
+                position: absolute;
                 top: -4px;
                 right: -4px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #FF006E;
+                color: white;
+                font-size: 0.6rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid white;
             }
             
+            /* Register button - matches app's register button */
             .register-button {
                 flex: 1;
                 padding: 0.75rem 1rem;
                 font-size: 0.8rem;
                 font-weight: 700;
                 border-radius: 10px;
-                min-width: 80px;
+                border: none;
+                color: white;
+                cursor: pointer;
+                min-width: 85px;
                 margin-left: 0.5rem;
+                text-align: center;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .register-button.nachna {
+                background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+                box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+            }
+            
+            .register-button.external {
+                background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+                box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             }
             
             .register-button.disabled {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+                box-shadow: none;
+                cursor: not-allowed;
                 padding: 0.75rem 0.75rem;
                 font-size: 0.75rem;
             }
@@ -1443,6 +1625,71 @@
             ).join(' ');
         }
         
+        // Load image with gzip compression support
+        async function loadImageWithCompression(imageElement, url) {
+            console.log('🔄 loadImageWithCompression called with URL:', url);
+            try {
+                // Use fetch to load image with gzip compression
+                console.log('📡 Making fetch request to:', url);
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'image/*,*/*;q=0.8',
+                        'Accept-Encoding': 'gzip, deflate, br'
+                    }
+                });
+                console.log('📡 Fetch response status:', response.status, response.statusText);
+                
+                if (response.ok) {
+                    console.log('✅ Response OK, processing blob...');
+                    const blob = await response.blob();
+                    console.log('✅ Blob created, size:', blob.size);
+                    const imageUrl = URL.createObjectURL(blob);
+                    console.log('✅ Object URL created:', imageUrl);
+                    
+                    // Store the original onload handler
+                    const originalOnLoad = imageElement.onload;
+                    
+                    imageElement.src = imageUrl;
+                    console.log('✅ Image src set to blob URL');
+                    
+                    // Set up cleanup and call original handler
+                    imageElement.onload = function() {
+                        console.log('✅ Image onload triggered via compression');
+                        URL.revokeObjectURL(imageUrl);
+                        if (originalOnLoad) {
+                            originalOnLoad.call(this);
+                        }
+                    };
+                    
+                    // Also handle onerror to clean up
+                    const originalOnError = imageElement.onerror;
+                    imageElement.onerror = function() {
+                        console.log('❌ Image onerror triggered via compression');
+                        URL.revokeObjectURL(imageUrl);
+                        if (originalOnError) {
+                            originalOnError.call(this);
+                        }
+                    };
+                    
+                    return Promise.resolve();
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.log(`Failed to load image with compression from ${url}:`, error);
+                // Fallback to direct assignment - trigger onerror if it fails
+                const originalOnError = imageElement.onerror;
+                imageElement.onerror = function() {
+                    console.log(`Direct image load also failed for ${url}`);
+                    if (originalOnError) {
+                        originalOnError.call(this);
+                    }
+                };
+                imageElement.src = url;
+                return Promise.reject(error);
+            }
+        }
+        
         function getInitials(name) {
             if (!name) return '?';
             return name.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2);
@@ -1495,7 +1742,12 @@
                 }
                 
                 const allStudios = await studiosResponse.json();
+                console.log('All studios loaded:', allStudios.length, 'studios');
+                console.log('Looking for studio ID:', studioId);
+                console.log('Available studio IDs:', allStudios.map(s => s.id));
+                
                 studioData = allStudios.find(studio => studio.id === studioId);
+                console.log('Found studio data:', studioData);
                 
                 if (!studioData) {
                     throw new Error(`Studio with ID ${studioId} not found`);
@@ -1534,36 +1786,81 @@
             studioName.textContent = toTitleCase(studioData.name);
             document.title = `${toTitleCase(studioData.name)} - Dance Workshops | Nachna`;
             
-            // Handle studio image - check multiple possible field names
-            const imageUrl = studioData.image_url || studioData.imageUrl || studioData.img_url;
+            // Handle studio image - Try centralized API first, fallback to proxy
+            const studioIdForImage = studioData.id;
+            console.log('Studio data for image loading:', studioData);
+            console.log('Studio ID for image loading:', studioIdForImage);
             
-            if (imageUrl && imageUrl.trim()) {
-                console.log('Loading studio image:', imageUrl);
+            if (studioIdForImage) {
+                console.log('Loading studio image from centralized API:', studioIdForImage);
                 
-                // Try direct URL first
-                studioImage.src = imageUrl;
+                // Try the new centralized image API first
+                const centralizedImageUrl = `https://nachna.com/api/image/studio/${studioIdForImage}`;
+                console.log('Centralized image URL:', centralizedImageUrl);
+                
+                // Add visual feedback that we're trying to load the image
+                studioImageFallback.style.background = 'linear-gradient(45deg, #ff006e, #00d4ff)';
+                studioImageFallback.innerHTML = '<div style="color: white; font-size: 12px; text-align: center;">Loading...</div>';
+                
+                // Set up onload handler first
                 studioImage.onload = function() {
-                    console.log('Studio image loaded successfully');
+                    console.log('✅ Studio image loaded successfully from centralized API');
                     studioImage.style.display = 'block';
                     studioImageFallback.style.display = 'none';
                 };
+                
+                // Load image with gzip compression support
+                console.log('🚀 About to call loadImageWithCompression');
+                
+                // Try simple direct loading first for debugging
+                console.log('🧪 TESTING: Direct image load as fallback');
+                const testImg = new Image();
+                testImg.onload = () => console.log('🧪 DIRECT LOAD SUCCESS!');
+                testImg.onerror = () => console.log('🧪 DIRECT LOAD FAILED!');
+                testImg.src = centralizedImageUrl;
+                
+                loadImageWithCompression(studioImage, centralizedImageUrl).then(() => {
+                    console.log('🎉 loadImageWithCompression completed successfully');
+                }).catch(error => {
+                    console.log('💥 loadImageWithCompression failed:', error);
+                });
+                
                 studioImage.onerror = function() {
-                    console.log('Direct image failed, trying proxy...');
-                    // If direct fails, try proxy
-                    studioImage.src = `/api/proxy-image/?url=${encodeURIComponent(imageUrl)}`;
-                    studioImage.onload = function() {
-                        console.log('Studio image loaded via proxy');
-                        studioImage.style.display = 'block';
-                        studioImageFallback.style.display = 'none';
-                    };
-                    studioImage.onerror = function() {
-                        console.log('Proxy image also failed, showing fallback');
+                    console.log('❌ Centralized image failed, trying proxy fallback...');
+                    // Update visual feedback
+                    studioImageFallback.style.background = 'linear-gradient(45deg, #ffaa00, #ff6600)';
+                    studioImageFallback.innerHTML = '<div style="color: white; font-size: 12px; text-align: center;">Fallback...</div>';
+                    
+                    // Fallback to proxy approach (backward compatibility)
+                    const imageUrl = studioData.image_url || studioData.imageUrl || studioData.img_url;
+                    
+                    if (imageUrl && imageUrl.trim()) {
+                        const proxyImageUrl = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(imageUrl)}`;
+                        console.log('Trying proxy fallback:', proxyImageUrl);
+                        
+                        studioImage.src = proxyImageUrl;
+                        studioImage.onload = function() {
+                            console.log('Studio image loaded successfully via proxy fallback');
+                            studioImage.style.display = 'block';
+                            studioImageFallback.style.display = 'none';
+                        };
+                        
+                        studioImage.onerror = function() {
+                            console.log('💥 Both centralized and proxy failed, showing fallback');
+                            studioImage.style.display = 'none';
+                            studioImageFallback.style.display = 'flex';
+                            // Reset fallback to original style
+                            studioImageFallback.style.background = '';
+                            studioImageFallback.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>';
+                        };
+                    } else {
+                        console.log('No image URL for proxy fallback, showing fallback');
                         studioImage.style.display = 'none';
                         studioImageFallback.style.display = 'flex';
-                    };
+                    }
                 };
             } else {
-                console.log('No image URL found, showing fallback');
+                console.log('No studio ID found, showing fallback');
                 studioImage.style.display = 'none';
                 studioImageFallback.style.display = 'flex';
             }
@@ -1579,26 +1876,38 @@
             }
         }
         
-        // Create artist avatars
+        // Create artist avatars using centralized image API
         function createArtistAvatars(workshop) {
-            const artistImageUrls = workshop.artist_image_urls || [];
-            const validImageUrls = artistImageUrls.filter(url => url && url.trim());
+            const artistIds = workshop.artist_id_list || [];
+            const validArtistIds = artistIds.filter(id => id && id.trim());
             
-            if (validImageUrls.length <= 1) {
+            if (validArtistIds.length <= 1) {
                 // Single avatar
                 const container = document.createElement('div');
                 container.className = 'artist-avatars';
                 
-                if (validImageUrls.length === 1) {
+                if (validArtistIds.length === 1) {
                     const img = document.createElement('img');
                     img.className = 'single-avatar';
-                    img.src = `/api/proxy-image/?url=${encodeURIComponent(validImageUrls[0])}`;
+                    img.src = `https://nachna.com/api/image/artist/${validArtistIds[0]}`;
                     img.alt = workshop.by || 'Artist';
                     img.onerror = function() {
-                        const fallback = document.createElement('div');
-                        fallback.className = 'avatar-fallback';
-                        fallback.textContent = getInitials(workshop.by);
-                        container.replaceChild(fallback, img);
+                        // Fallback to proxy if centralized API fails
+                        const artistImageUrls = workshop.artist_image_urls || [];
+                        if (artistImageUrls[0]) {
+                            img.src = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[0])}`;
+                            img.onerror = function() {
+                                const fallback = document.createElement('div');
+                                fallback.className = 'avatar-fallback';
+                                fallback.textContent = getInitials(workshop.by);
+                                container.replaceChild(fallback, img);
+                            };
+                        } else {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'avatar-fallback';
+                            fallback.textContent = getInitials(workshop.by);
+                            container.replaceChild(fallback, img);
+                        }
                     };
                     container.appendChild(img);
                 } else {
@@ -1617,29 +1926,44 @@
                 const multipleContainer = document.createElement('div');
                 multipleContainer.className = 'multiple-avatars';
                 
-                const maxAvatars = Math.min(validImageUrls.length, 3);
+                const maxAvatars = Math.min(validArtistIds.length, 3);
                 for (let i = 0; i < maxAvatars; i++) {
                     const img = document.createElement('img');
                     img.className = 'avatar-stack';
-                    img.src = `/api/proxy-image/?url=${encodeURIComponent(validImageUrls[i])}`;
+                    img.src = `https://nachna.com/api/image/artist/${validArtistIds[i]}`;
                     img.alt = `Artist ${i + 1}`;
                     img.onerror = function() {
-                        const fallback = document.createElement('div');
-                        fallback.className = 'avatar-stack avatar-fallback';
-                        fallback.style.width = '36px';
-                        fallback.style.height = '36px';
-                        fallback.style.fontSize = '0.8rem';
-                        fallback.textContent = getInitials(workshop.by);
-                        multipleContainer.replaceChild(fallback, img);
+                        // Fallback to proxy if centralized API fails
+                        const artistImageUrls = workshop.artist_image_urls || [];
+                        if (artistImageUrls[i]) {
+                            img.src = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[i])}`;
+                            img.onerror = function() {
+                                const fallback = document.createElement('div');
+                                fallback.className = 'avatar-stack avatar-fallback';
+                                fallback.style.width = '36px';
+                                fallback.style.height = '36px';
+                                fallback.style.fontSize = '0.8rem';
+                                fallback.textContent = getInitials(workshop.by);
+                                multipleContainer.replaceChild(fallback, img);
+                            };
+                        } else {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'avatar-stack avatar-fallback';
+                            fallback.style.width = '36px';
+                            fallback.style.height = '36px';
+                            fallback.style.fontSize = '0.8rem';
+                            fallback.textContent = getInitials(workshop.by);
+                            multipleContainer.replaceChild(fallback, img);
+                        }
                     };
                     multipleContainer.appendChild(img);
                 }
                 
                 // Show count if more than 3 artists
-                if (validImageUrls.length > 3) {
+                if (validArtistIds.length > 3) {
                     const countDiv = document.createElement('div');
                     countDiv.className = 'avatar-count';
-                    countDiv.textContent = `+${validImageUrls.length - 2}`;
+                    countDiv.textContent = `+${validArtistIds.length - 2}`;
                     multipleContainer.appendChild(countDiv);
                 }
                 
@@ -1652,6 +1976,10 @@
         function createWorkshopCard(workshop) {
             const card = document.createElement('div');
             card.className = 'workshop-card';
+            
+            // Create content wrapper to match app structure
+            const cardContent = document.createElement('div');
+            cardContent.className = 'workshop-card-content';
             
             const header = document.createElement('div');
             header.className = 'workshop-header';
@@ -1795,8 +2123,9 @@
             actions.appendChild(registerBtn);
             content.appendChild(actions);
             
-            card.appendChild(header);
-            card.appendChild(content);
+            cardContent.appendChild(header);
+            cardContent.appendChild(content);
+            card.appendChild(cardContent);
             
             return card;
         }

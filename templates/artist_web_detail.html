@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="description" content="View {{ artist_name }}'s dance workshops and classes. Book sessions with this amazing choreographer.">
+    <meta name="keywords" content="dance artist, {{ artist_name }}, choreographer, dance classes, workshops">
+    <meta property="og:title" content="{{ artist_name }} - Dance Artist">
+    <meta property="og:description" content="View {{ artist_name }}'s dance workshops and classes. Book sessions with this amazing choreographer.">
+    <meta property="og:image" content="{{ artist.image_url if artist.image_url else '/static/assets/logo.png' }}">
+    <meta property="og:url" content="{{ current_url }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>{{ artist_name }} - Dance Artist | Nachna</title>
+    <link rel="icon" type="image/png" href="/static/assets/logo.png">
+    <link rel="apple-touch-icon" href="/static/assets/logo.png">
+    
+    <style>
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+            --artist-gradient: linear-gradient(135deg, #FF006E 0%, #8338EC 100%);
+            --background-gradient: linear-gradient(135deg, #0A0A0F 0%, #1A1A2E 25%, #16213E 50%, #0F3460 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+            --accent-blue: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            --accent-green: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            --accent-purple: #8B5CF6;
+            --accent-pink: linear-gradient(135deg, #FF006E 0%, #DC2626 100%);
+            --instagram-gradient: linear-gradient(135deg, #E4405F 0%, #C13584 50%, #833AB4 100%);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --hover-shadow: 0 12px 40px rgba(255, 0, 110, 0.2);
+            --like-color: #FF006E;
+            --follow-color: #8338EC;
+            --share-color: #00D4FF;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--background-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--background-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #FF006E;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        /* Main Container */
+        .main-container {
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            width: 44px;
+            height: 44px;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .back-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        /* Content Container */
+        .content {
+            padding-top: 6rem;
+            padding-bottom: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        
+        /* Artist Header Card */
+        .artist-header {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1.5px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--card-shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .artist-header-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+        
+        .artist-image-container {
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .artist-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            object-fit: cover;
+            border: 2px solid var(--glass-border);
+            background: var(--artist-gradient);
+        }
+        
+        .artist-image-fallback {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            background: var(--artist-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--glass-border);
+        }
+        
+        .artist-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .artist-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 1.2px;
+            line-height: 1.3;
+            margin-bottom: 0.75rem;
+            overflow-wrap: break-word;
+        }
+        
+        .artist-badges-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .instructor-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            color: var(--like-color);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .instagram-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--instagram-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .instagram-icon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(228, 64, 95, 0.4);
+        }
+        
+        .instagram-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+        
+        /* Action Buttons Row */
+        .action-buttons-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-button {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            min-height: 44px;
+        }
+        
+        .like-button {
+            background: rgba(255, 0, 110, 0.2);
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            color: white;
+        }
+        
+        .like-button.liked {
+            background: rgba(255, 0, 110, 0.4);
+            border: 1px solid rgba(255, 0, 110, 0.6);
+        }
+        
+        .follow-button {
+            background: rgba(131, 56, 236, 0.2);
+            border: 1px solid rgba(131, 56, 236, 0.3);
+            color: white;
+        }
+        
+        .follow-button.following {
+            background: rgba(131, 56, 236, 0.4);
+            border: 1px solid rgba(131, 56, 236, 0.6);
+        }
+        
+        .share-button-action {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: white;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(255, 0, 110, 0.3);
+        }
+        
+        .action-button svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        /* Workshops Section */
+        .workshops-section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 0, 110, 0.2);
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            border-radius: 16px;
+        }
+        
+        .section-icon-container {
+            background: rgba(255, 0, 110, 0.2);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--like-color);
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--like-color);
+            letter-spacing: 0.5px;
+        }
+        
+        /* Workshop Cards Grid */
+        .workshops-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        /* Workshop Card Styles - Artist Detail Layout */
+        .workshop-card {
+            margin-bottom: 1rem;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(255, 0, 110, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            padding: 1.5rem;
+        }
+        
+        .workshop-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--artist-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .workshop-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .workshop-card:hover::before {
+            opacity: 1;
+        }
+        
+        /* Workshop Header - Date and Action Buttons Row */
+        .workshop-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        
+        .workshop-date-main {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+            flex: 1;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .choreo-button-header {
+            width: 44px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--instagram-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 6px rgba(225, 48, 108, 0.3);
+        }
+        
+        .choreo-button-header:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(225, 48, 108, 0.4);
+        }
+        
+        .choreo-button-header svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+        
+        .time-badge {
+            background: var(--artist-gradient);
+            color: white;
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        /* Main Content Row */
+        .workshop-main-row {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        /* Left Side - Workshop Details */
+        .workshop-info-column {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .workshop-song-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--like-color);
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+        
+        .workshop-detail-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .workshop-detail-row svg {
+            width: 14px;
+            height: 14px;
+            fill: rgba(255, 255, 255, 0.7);
+            flex-shrink: 0;
+        }
+        
+        .workshop-detail-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .workshop-pricing-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            font-weight: 400;
+            line-height: 1.2;
+        }
+        
+        /* Right Side - Register Button */
+        .workshop-register-column {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .register-button-main {
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            min-width: 100px;
+            white-space: nowrap;
+        }
+        
+        .register-button-main.nachna {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .register-button-main.external {
+            background: var(--accent-blue);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .register-button-main.disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .register-button-main:not(.disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+        }
+        
+        .register-button-main svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        
+        .choreo-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--instagram-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .choreo-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(228, 64, 95, 0.4);
+        }
+        
+        .choreo-button svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+        
+        .book-button {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .book-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+        }
+        
+        .book-button.external {
+            background: var(--accent-blue);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .book-button.disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-message {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: rgba(220, 38, 38, 0.1);
+            border-radius: 24px;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #DC2626;
+        }
+        
+        .error-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #DC2626;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message {
+            color: rgba(220, 38, 38, 0.8);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        
+        .retry-button {
+            background: #DC2626;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-button:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+        
+        /* Share Modal */
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .share-modal.show {
+            display: flex;
+        }
+        
+        .share-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            max-width: 400px;
+            width: calc(100% - 2rem);
+            position: relative;
+        }
+        
+        .share-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .share-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .share-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .share-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .share-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .share-option-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .share-option-text {
+            font-weight: 600;
+            flex: 1;
+        }
+        
+        .share-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        /* Mobile Responsive Design */
+        @media (max-width: 768px) {
+            /* Reset base styles for mobile */
+            body {
+                font-size: 14px;
+                line-height: 1.4;
+                -webkit-text-size-adjust: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            
+            /* Back button - positioned like app's SafeArea */
+            .back-button {
+                position: fixed;
+                top: calc(env(safe-area-inset-top, 0px) + 2rem);
+                left: 1.5rem;
+                width: 32px;
+                height: 32px;
+                padding: 8px;
+                background: transparent;
+                border: none;
+                z-index: 1000;
+            }
+            
+            .back-button svg {
+                width: 16px;
+                height: 16px;
+                fill: white;
+            }
+            
+            /* Main content - matches ListView padding in app */
+            .content {
+                padding-top: calc(env(safe-area-inset-top, 0px) + 5rem);
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+            }
+            
+            /* Artist Header - exact match to app's Container with decoration */
+            .artist-header {
+                margin-bottom: 1.5rem;
+                padding: 1.5rem;
+                border-radius: 20px;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+                border: 1.5px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(10px);
+            }
+            
+            .artist-header-content {
+                display: flex;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+            
+            /* Artist image - larger than studio (1.4x) */
+            .artist-image, .artist-image-fallback {
+                width: 112px;
+                height: 112px;
+                border-radius: 16px;
+                border: 1.5px solid rgba(255, 255, 255, 0.2);
+                flex-shrink: 0;
+            }
+            
+            .artist-image-fallback {
+                background: linear-gradient(135deg, rgba(255, 0, 110, 0.3) 0%, rgba(131, 56, 236, 0.3) 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .artist-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            /* Artist name */
+            .artist-name {
+                font-size: 1.5rem;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                color: white;
+                line-height: 1.2;
+                margin-bottom: 0.75rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            
+            /* Artist badges row */
+            .artist-badges-row {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+            }
+            
+            /* Dance Instructor badge */
+            .instructor-badge {
+                display: flex;
+                align-items: center;
+                gap: 0.375rem;
+                padding: 0.375rem 0.75rem;
+                border-radius: 16px;
+                background: linear-gradient(135deg, rgba(255, 0, 110, 0.2) 0%, rgba(131, 56, 236, 0.2) 100%);
+                border: 1px solid rgba(255, 0, 110, 0.3);
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--like-color);
+            }
+            
+            .instructor-badge svg {
+                width: 12px;
+                height: 12px;
+                fill: currentColor;
+            }
+            
+            /* Instagram icon */
+            .instagram-icon {
+                width: 24px;
+                height: 24px;
+                border-radius: 6px;
+                background: var(--instagram-gradient);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+            
+            .instagram-icon svg {
+                width: 12px;
+                height: 12px;
+                fill: white;
+            }
+            
+            /* Action buttons row */
+            .action-buttons-row {
+                display: flex;
+                gap: 0.375rem;
+                margin-top: 0.5rem;
+            }
+            
+            .action-button {
+                flex: 1;
+                padding: 0.6rem 0.75rem;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                min-height: 36px;
+            }
+            
+            .action-button svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Workshops grid - single column like app */
+            .workshops-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            /* Workshop cards - mobile app layout */
+            .workshop-card {
+                padding: 1.5rem;
+                border-radius: 16px;
+                margin-bottom: 1rem;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(255, 0, 110, 0.05);
+                backdrop-filter: blur(2px);
+            }
+            
+            /* Header row - date + choreo + time */
+            .workshop-header-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+                gap: 1rem;
+            }
+            
+            .workshop-date-main {
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: white;
+                flex: 1;
+                line-height: 1.2;
+            }
+            
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-shrink: 0;
+            }
+            
+            .choreo-button-header {
+                width: 38px;
+                height: 28px;
+                border-radius: 6px;
+            }
+            
+            .choreo-button-header svg {
+                width: 16px;
+                height: 16px;
+            }
+            
+            .time-badge {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+                border-radius: 6px;
+                background: var(--artist-gradient);
+            }
+            
+            /* Main content row */
+            .workshop-main-row {
+                display: flex;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .workshop-info-column {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .workshop-song-title {
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--like-color);
+                margin-bottom: 0.5rem;
+                line-height: 1.2;
+            }
+            
+            .workshop-detail-row {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                margin-bottom: 0.375rem;
+            }
+            
+            .workshop-detail-row svg {
+                width: 12px;
+                height: 12px;
+                flex-shrink: 0;
+            }
+            
+            .workshop-detail-text {
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.9);
+                line-height: 1.2;
+            }
+            
+            .workshop-pricing-text {
+                font-size: 0.7rem;
+                font-weight: 400;
+                color: rgba(255, 255, 255, 0.8);
+                line-height: 1.2;
+            }
+            
+            .workshop-register-column {
+                flex-shrink: 0;
+                align-self: flex-end;
+            }
+            
+            .register-button-main {
+                padding: 0.75rem 1rem;
+                border-radius: 8px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                min-width: 80px;
+                min-height: 36px;
+            }
+            
+            .register-button-main svg {
+                width: 14px;
+                height: 14px;
+            }
+            
+            /* Section header mobile */
+            .section-header {
+                padding: 1rem 1.25rem;
+                margin-bottom: 1rem;
+                border-radius: 16px;
+            }
+            
+            .section-title {
+                font-size: 1rem;
+                font-weight: 700;
+            }
+            
+            /* Touch-friendly improvements */
+            html {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            body {
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+            
+            /* Remove tap highlights and selections */
+            .workshop-card,
+            .action-button,
+            .book-button,
+            .choreo-button,
+            .back-button,
+            .instagram-icon {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            /* Touch feedback */
+            .action-button:active {
+                transform: scale(0.95);
+                transition: transform 0.1s ease;
+            }
+            
+            .book-button:active,
+            .choreo-button:active {
+                transform: scale(0.95);
+                transition: transform 0.1s ease;
+            }
+            
+            .back-button:active,
+            .instagram-icon:active {
+                transform: scale(0.85);
+                transition: transform 0.1s ease;
+            }
+            
+            .workshop-card:active {
+                background: rgba(255, 255, 255, 0.18);
+                transition: background 0.1s ease;
+            }
+            
+            /* Remove desktop hover effects on mobile */
+            .workshop-card:hover,
+            .book-button:hover,
+            .choreo-button:hover,
+            .action-button:hover {
+                transform: none !important;
+            }
+            
+            /* Share modal mobile */
+            .share-modal {
+                padding: 0;
+                align-items: flex-end;
+            }
+            
+            .share-content {
+                margin: 0;
+                width: 100%;
+                max-width: none;
+                border-radius: 20px 20px 0 0;
+                padding: 1.5rem 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem);
+            }
+        }
+        
+        /* Desktop responsive */
+        @media (min-width: 769px) {
+            .content {
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
+            
+            .workshops-grid {
+                grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .workshops-grid {
+                grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            }
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Focus States */
+        .action-button:focus,
+        .book-button:focus,
+        .choreo-button:focus,
+        .back-button:focus,
+        .instagram-icon:focus {
+            outline: 2px solid #FF006E;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading artist details...</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="main-container" class="main-container" style="display: none;">
+        <!-- Back Button -->
+        <a href="/" class="back-button" aria-label="Go back to home">
+            <svg viewBox="0 0 24 24">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z"/>
+            </svg>
+        </a>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Artist Header -->
+            <div class="artist-header">
+                <div class="artist-header-content">
+                    <!-- Artist Image -->
+                    <div class="artist-image-container">
+                        <img id="artist-image" class="artist-image" src="" alt="Artist" loading="lazy" style="display: none;">
+                        <div id="artist-image-fallback" class="artist-image-fallback">
+                            <svg width="50" height="50" viewBox="0 0 24 24" fill="white">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Artist Info -->
+                    <div class="artist-info">
+                        <h1 id="artist-name" class="artist-name">Loading...</h1>
+                        
+                        <div class="artist-badges-row">
+                            <div class="instructor-badge">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                                Dance Instructor
+                            </div>
+                            <div id="instagram-icon" class="instagram-icon" style="display: none;">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons (Like, Follow, Share) -->
+                        <div class="action-buttons-row">
+                            <button id="like-button" class="action-button like-button">
+                                <svg id="like-icon" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span id="like-text">Like</span>
+                            </button>
+                            <button id="follow-button" class="action-button follow-button">
+                                <svg id="follow-icon" viewBox="0 0 24 24">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                <span id="follow-text">Follow</span>
+                            </button>
+                            <button id="share-button-action" class="action-button share-button-action" onclick="openShareModal()">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.50-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+                                </svg>
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Workshops Section -->
+            <div id="workshops-section" style="display: none;">
+                <div class="section-header">
+                    <div class="section-icon-container">
+                        <svg class="section-icon" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    </div>
+                    <h2 class="section-title">Workshops by {{ artist_name }}</h2>
+                </div>
+                <div id="workshops-content" class="workshops-grid"></div>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-icon">🎭</div>
+                <h3 class="empty-title">No Workshops Scheduled</h3>
+                <p class="empty-message">This artist doesn't have any workshops scheduled at the moment. Follow them to get notified when new workshops are available!</p>
+            </div>
+            
+            <!-- Error State -->
+            <div id="error-state" class="error-state" style="display: none;">
+                <div class="error-icon">❌</div>
+                <h3 class="error-title">Error Loading Workshops</h3>
+                <p id="error-message" class="error-message">Failed to load workshops. Please check your internet connection and try again.</p>
+                <button class="retry-button" onclick="loadData()">Try Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div id="share-modal" class="share-modal">
+        <div class="share-content">
+            <div class="share-close" onclick="closeShareModal()">×</div>
+            <div class="share-header">
+                <h3 class="share-title">Share Artist</h3>
+                <p class="share-subtitle">Let others discover this amazing dance instructor!</p>
+            </div>
+            <div class="share-options">
+                <a href="#" id="whatsapp-share" class="share-option">
+                    <div class="share-option-icon" style="background: #25D366;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.465 3.488"/>
+                        </svg>
+                    </div>
+                    <span class="share-option-text">Share on WhatsApp</span>
+                </a>
+                
+                <a href="#" id="instagram-share" class="share-option">
+                    <div class="share-option-icon" style="background: linear-gradient(45deg, #E4405F, #C13584, #833AB4);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
+                        </svg>
+                    </div>
+                    <span class="share-option-text">Share to Instagram Story</span>
+                </a>
+                
+                <a href="#" id="generic-share" class="share-option">
+                    <div class="share-option-icon" style="background: var(--artist-gradient);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.50-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+                        </svg>
+                    </div>
+                    <span class="share-option-text">More...</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let artistData = null;
+        let workshopsData = null;
+        const artistId = "{{ artist_id }}";
+        let isLiked = false;
+        let isFollowing = false;
+        
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const mainContainer = document.getElementById('main-container');
+        const artistImage = document.getElementById('artist-image');
+        const artistImageFallback = document.getElementById('artist-image-fallback');
+        const artistName = document.getElementById('artist-name');
+        const instagramIcon = document.getElementById('instagram-icon');
+        const workshopsSection = document.getElementById('workshops-section');
+        const workshopsContent = document.getElementById('workshops-content');
+        const emptyState = document.getElementById('empty-state');
+        const errorState = document.getElementById('error-state');
+        const errorMessage = document.getElementById('error-message');
+        const shareModal = document.getElementById('share-modal');
+        const likeButton = document.getElementById('like-button');
+        const followButton = document.getElementById('follow-button');
+        const likeIcon = document.getElementById('like-icon');
+        const followIcon = document.getElementById('follow-icon');
+        const likeText = document.getElementById('like-text');
+        const followText = document.getElementById('follow-text');
+        
+        // Utility functions
+        function toTitleCase(str) {
+            if (!str) return '';
+            return str.toLowerCase().split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+        
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2);
+        }
+        
+        function formatTime(timeStr) {
+            if (!timeStr) return 'TBA';
+            return timeStr;
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return 'TBA';
+            return dateStr;
+        }
+        
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+            mainContainer.style.display = 'none';
+        }
+        
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+            mainContainer.style.display = 'block';
+        }
+        
+        function showError(message) {
+            hideLoading();
+            errorMessage.textContent = message;
+            errorState.style.display = 'block';
+            workshopsSection.style.display = 'none';
+            emptyState.style.display = 'none';
+        }
+        
+        function showEmpty() {
+            hideLoading();
+            emptyState.style.display = 'block';
+            workshopsSection.style.display = 'none';
+            errorState.style.display = 'none';
+        }
+        
+        // Load artist data
+        async function loadArtistData() {
+            try {
+                const response = await fetch(`/api/artists`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load artists (${response.status})`);
+                }
+                
+                const allArtists = await response.json();
+                artistData = allArtists.find(artist => artist.id === artistId);
+                
+                if (!artistData) {
+                    throw new Error(`Artist with ID ${artistId} not found`);
+                }
+                
+                displayArtistInfo();
+            } catch (error) {
+                console.error('Error loading artist data:', error);
+                throw error;
+            }
+        }
+        
+        // Load workshops data
+        async function loadWorkshopsData() {
+            try {
+                const response = await fetch(`/api/workshops_by_artist/${artistId}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load workshops (${response.status})`);
+                }
+                workshopsData = await response.json();
+                displayWorkshops();
+            } catch (error) {
+                console.error('Error loading workshops data:', error);
+                throw error;
+            }
+        }
+        
+        // Display artist information
+        function displayArtistInfo() {
+            if (!artistData) return;
+            
+            console.log('Artist data:', artistData);
+            
+            // Update artist name
+            artistName.textContent = toTitleCase(artistData.name);
+            document.title = `${toTitleCase(artistData.name)} - Dance Artist | Nachna`;
+            
+            // Handle artist image - Try centralized API first, fallback to proxy
+            const artistId = artistData.id;
+            
+            if (artistId) {
+                console.log('Loading artist image from centralized API:', artistId);
+                
+                // Try the new centralized image API first
+                const centralizedImageUrl = `https://nachna.com/api/image/artist/${artistId}`;
+                console.log('Centralized image URL:', centralizedImageUrl);
+                
+                artistImage.src = centralizedImageUrl;
+                artistImage.onload = function() {
+                    console.log('Artist image loaded successfully from centralized API');
+                    artistImage.style.display = 'block';
+                    artistImageFallback.style.display = 'none';
+                };
+                
+                artistImage.onerror = function() {
+                    console.log('Centralized image failed, trying proxy fallback...');
+                    
+                    // Fallback to proxy approach (backward compatibility)
+                    const imageUrl = artistData.image_url || artistData.imageUrl || artistData.img_url;
+                    
+                    if (imageUrl && imageUrl.trim()) {
+                        const proxyImageUrl = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(imageUrl)}`;
+                        console.log('Trying proxy fallback:', proxyImageUrl);
+                        
+                        artistImage.src = proxyImageUrl;
+                        artistImage.onload = function() {
+                            console.log('Artist image loaded successfully via proxy fallback');
+                            artistImage.style.display = 'block';
+                            artistImageFallback.style.display = 'none';
+                        };
+                        
+                        artistImage.onerror = function() {
+                            console.log('Both centralized and proxy failed, showing fallback');
+                            artistImage.style.display = 'none';
+                            artistImageFallback.style.display = 'flex';
+                        };
+                    } else {
+                        console.log('No image URL for proxy fallback, showing fallback');
+                        artistImage.style.display = 'none';
+                        artistImageFallback.style.display = 'flex';
+                    }
+                };
+            } else {
+                console.log('No artist ID found, showing fallback');
+                artistImage.style.display = 'none';
+                artistImageFallback.style.display = 'flex';
+            }
+            
+            // Handle Instagram icon
+            if (artistData.instagram_link) {
+                instagramIcon.style.display = 'flex';
+                instagramIcon.onclick = function() {
+                    window.open(artistData.instagram_link, '_blank', 'noopener,noreferrer');
+                };
+            } else {
+                instagramIcon.style.display = 'none';
+            }
+        }
+        
+        // Load studio data for workshop details
+        let studiosData = null;
+        
+        async function loadStudiosData() {
+            try {
+                const response = await fetch(`/api/studios`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load studios (${response.status})`);
+                }
+                studiosData = await response.json();
+            } catch (error) {
+                console.error('Error loading studios data:', error);
+                studiosData = [];
+            }
+        }
+        
+        function getStudioName(studioId) {
+            if (!studiosData || !studioId) return 'Studio';
+            const studio = studiosData.find(s => s.id === studioId);
+            return studio ? toTitleCase(studio.name) : 'Studio';
+        }
+        
+        // Create workshop card
+        function createWorkshopCard(workshop) {
+            console.log('Creating workshop card for:', workshop);
+            console.log('All workshop keys:', Object.keys(workshop));
+            
+            const card = document.createElement('div');
+            card.className = 'workshop-card';
+            
+            // Check multiple possible field name variations
+            const songName = workshop.song || workshop.songName || workshop.song_name || 'Dance Workshop';
+            const studioName = getStudioName(workshop.studioId || workshop.studio_id);
+            const pricing = workshop.pricingInfo || workshop.pricing_info || workshop.price || workshop.pricing || 'Contact for pricing';
+            const eventType = workshop.eventType || workshop.event_type || workshop.type || 'workshop';
+            const paymentLink = workshop.paymentLink || workshop.payment_link || '';
+            const paymentLinkType = workshop.paymentLinkType || workshop.payment_link_type || '';
+            const choreoLink = workshop.choreoInstaLink || workshop.choreo_insta_link || '';
+            const date = workshop.date || workshop.workshop_date || '';
+            const time = workshop.time || workshop.workshop_time || '';
+            
+            console.log('Workshop details (mapped):', {
+                songName,
+                studioName,
+                pricing,
+                eventType,
+                date,
+                time,
+                paymentLink,
+                paymentLinkType,
+                choreoLink
+            });
+            
+            card.innerHTML = `
+                <!-- Header Row: Date + Choreo Button + Time Badge -->
+                <div class="workshop-header-row">
+                    <div class="workshop-date-main">${formatDate(date)}</div>
+                    <div class="header-actions">
+                        ${choreoLink && choreoLink.trim() ? `
+                            <button class="choreo-button-header" onclick="trackChoreoClick('${choreoLink}', ${JSON.stringify(workshop).replace(/"/g, '&quot;')})">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </button>
+                        ` : ''}
+                        <div class="time-badge">${formatTime(time)}</div>
+                    </div>
+                </div>
+                
+                <!-- Main Content Row: Workshop Details + Register Button -->
+                <div class="workshop-main-row">
+                    <div class="workshop-info-column">
+                        <!-- Song Name -->
+                        ${songName && songName !== 'Dance Workshop' ? `
+                            <div class="workshop-song-title">${toTitleCase(songName)}</div>
+                        ` : ''}
+                        
+                        <!-- Studio Information -->
+                        <div class="workshop-detail-row">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+                            </svg>
+                            <span class="workshop-detail-text">${studioName}</span>
+                        </div>
+                        
+                        <!-- Pricing Information -->
+                        ${pricing && pricing !== 'Contact for pricing' ? `
+                            <div class="workshop-detail-row">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                                </svg>
+                                <span class="workshop-pricing-text">${pricing}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Event Type -->
+                        ${eventType && eventType !== 'workshop' ? `
+                            <div class="workshop-detail-row">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                <span class="workshop-detail-text">${toTitleCase(eventType)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="workshop-register-column">
+                        ${paymentLink && paymentLink.trim() ? `
+                            <a href="${paymentLink}" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               class="register-button-main ${paymentLinkType?.toLowerCase() === 'nachna' ? 'nachna' : 'external'}"
+                               onclick="trackWorkshopClick(${JSON.stringify(workshop).replace(/"/g, '&quot;')})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2-7h-3V2h-2v2H8V2H6v2H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H3V8h14v12z"/>
+                                </svg>
+                                ${paymentLinkType?.toLowerCase() === 'nachna' ? 'Register with Nachna' : 'Book Now'}
+                            </a>
+                        ` : `
+                            <button class="register-button-main disabled" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                                Coming Soon
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Display workshops
+        function displayWorkshops() {
+            console.log('Workshops data received:', workshopsData);
+            
+            if (!workshopsData || workshopsData.length === 0) {
+                showEmpty();
+                return;
+            }
+            
+            hideLoading();
+            errorState.style.display = 'none';
+            emptyState.style.display = 'none';
+            workshopsSection.style.display = 'block';
+            
+            workshopsContent.innerHTML = '';
+            
+            workshopsData.forEach((workshop, index) => {
+                console.log(`Workshop ${index + 1}:`, workshop);
+                const workshopCard = createWorkshopCard(workshop);
+                workshopsContent.appendChild(workshopCard);
+            });
+        }
+        
+        // Action button handlers
+        function handleLike() {
+            isLiked = !isLiked;
+            updateLikeButton();
+            trackLikeClick();
+        }
+        
+        function handleFollow() {
+            isFollowing = !isFollowing;
+            updateFollowButton();
+            trackFollowClick();
+        }
+        
+        function updateLikeButton() {
+            if (isLiked) {
+                likeButton.classList.add('liked');
+                likeIcon.innerHTML = `<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>`;
+                likeText.textContent = 'Liked';
+            } else {
+                likeButton.classList.remove('liked');
+                likeIcon.innerHTML = `<path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>`;
+                likeText.textContent = 'Like';
+            }
+        }
+        
+        function updateFollowButton() {
+            if (isFollowing) {
+                followButton.classList.add('following');
+                followIcon.innerHTML = `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`;
+                followText.textContent = 'Following';
+            } else {
+                followButton.classList.remove('following');
+                followIcon.innerHTML = `<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>`;
+                followText.textContent = 'Follow';
+            }
+        }
+        
+        // Analytics tracking
+        function trackWorkshopClick(workshop) {
+            console.log('Workshop clicked:', {
+                workshop_id: workshop.uuid,
+                song_name: workshop.song,
+                artist_id: artistId,
+                artist_name: artistData?.name
+            });
+            
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'workshop_book_click', {
+                    workshop_id: workshop.uuid,
+                    song_name: workshop.song,
+                    artist_id: artistId,
+                    artist_name: artistData?.name
+                });
+            }
+        }
+        
+        function trackChoreoClick(choreoUrl, workshop) {
+            console.log('Choreography video clicked:', {
+                choreo_url: choreoUrl,
+                workshop_id: workshop.uuid,
+                artist_id: artistId,
+                artist_name: artistData?.name
+            });
+            
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'choreo_video_click', {
+                    choreo_url: choreoUrl,
+                    workshop_id: workshop.uuid,
+                    artist_id: artistId,
+                    artist_name: artistData?.name
+                });
+            }
+            
+            window.open(choreoUrl, '_blank', 'noopener,noreferrer');
+        }
+        
+        function trackLikeClick() {
+            console.log('Artist like clicked:', {
+                artist_id: artistId,
+                artist_name: artistData?.name,
+                action: isLiked ? 'like' : 'unlike'
+            });
+            
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'artist_like', {
+                    artist_id: artistId,
+                    artist_name: artistData?.name,
+                    action: isLiked ? 'like' : 'unlike'
+                });
+            }
+        }
+        
+        function trackFollowClick() {
+            console.log('Artist follow clicked:', {
+                artist_id: artistId,
+                artist_name: artistData?.name,
+                action: isFollowing ? 'follow' : 'unfollow'
+            });
+            
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'artist_follow', {
+                    artist_id: artistId,
+                    artist_name: artistData?.name,
+                    action: isFollowing ? 'follow' : 'unfollow'
+                });
+            }
+        }
+        
+        // Share functionality
+        function openShareModal() {
+            if (!artistData) return;
+            
+            const shareUrl = window.location.href;
+            const shareText = `Check out ${toTitleCase(artistData.name)} on Nachna! 💃🕺\n\nAmazing dance instructor with incredible workshops.\n\nView workshops: ${shareUrl}\n\nDon't have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742`;
+            
+            // Update share links
+            const whatsappShare = document.getElementById('whatsapp-share');
+            const instagramShare = document.getElementById('instagram-share');
+            const genericShare = document.getElementById('generic-share');
+            
+            whatsappShare.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            instagramShare.onclick = function(e) {
+                e.preventDefault();
+                if (navigator.share) {
+                    navigator.share({
+                        title: `${toTitleCase(artistData.name)} - Nachna`,
+                        text: shareText,
+                        url: shareUrl
+                    });
+                } else {
+                    copyToClipboard(shareText);
+                }
+            };
+            genericShare.onclick = function(e) {
+                e.preventDefault();
+                if (navigator.share) {
+                    navigator.share({
+                        title: `${toTitleCase(artistData.name)} - Nachna`,
+                        text: shareText,
+                        url: shareUrl
+                    });
+                } else {
+                    copyToClipboard(shareText);
+                }
+            };
+            
+            shareModal.classList.add('show');
+        }
+        
+        function closeShareModal() {
+            shareModal.classList.remove('show');
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Link copied to clipboard!');
+            });
+        }
+        
+        // Main load function
+        async function loadData() {
+            showLoading();
+            errorState.style.display = 'none';
+            
+            try {
+                await Promise.all([
+                    loadArtistData(),
+                    loadStudiosData(),
+                    loadWorkshopsData()
+                ]);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError(error.message || 'Failed to load artist data. Please try again.');
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            
+            // Setup action buttons
+            likeButton.onclick = handleLike;
+            followButton.onclick = handleFollow;
+        });
+        
+        // Close modal when clicking outside
+        shareModal.addEventListener('click', function(e) {
+            if (e.target === shareModal) {
+                closeShareModal();
+            }
+        });
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                const now = new Date().getTime();
+                const lastLoad = parseInt(localStorage.getItem('lastArtistLoad') || '0');
+                if (now - lastLoad > 5 * 60 * 1000) {
+                    loadData();
+                    localStorage.setItem('lastArtistLoad', now.toString());
+                }
+            }
+        });
+        
+        // Set initial load timestamp
+        localStorage.setItem('lastArtistLoad', new Date().getTime().toString());
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && shareModal.classList.contains('show')) {
+                closeShareModal();
+            }
+        });
+    </script>
+</body>
+</html>

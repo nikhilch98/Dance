@@ -295,15 +295,26 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: ClipRRect(
                             borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
                             child: Image.network(
-                              'https://nachna.com/api/profile-picture/${user.userId}',
+                              'https://nachna.com/api/image/user/${user.userId}',
                               fit: BoxFit.cover,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return _buildDefaultAvatar(user);
                               },
                               errorBuilder: (context, error, stackTrace) {
-                                // Fallback to default avatar if profile picture doesn't exist or fails to load
-                                return _buildDefaultAvatar(user);
+                                // Fallback to old profile-picture endpoint
+                                return Image.network(
+                                  'https://nachna.com/api/profile-picture/${user.userId}',
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildDefaultAvatar(user);
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Final fallback to default avatar
+                                    return _buildDefaultAvatar(user);
+                                  },
+                                );
                               },
             ),
                           ),

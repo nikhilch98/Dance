@@ -13,6 +13,7 @@ from fastapi.responses import Response
 from PIL import Image, UnidentifiedImageError
 
 from app.database.users import UserOperations
+from app.database.images import ImageDatabase
 from app.models.auth import (
     AuthResponse,
     DeviceTokenRequest,
@@ -231,10 +232,19 @@ async def upload_profile_picture(
         image.save(img_byte_arr, "JPEG", quality=85, optimize=True)
         img_byte_arr = img_byte_arr.getvalue()
         
-        # Get MongoDB client
-        client = get_mongo_client()
+        # Store image in centralized image collection
+        image_id = ImageDatabase.store_image(
+            data=img_byte_arr,
+            image_type="user",
+            entity_id=user_id,
+            content_type="image/jpeg"
+        )
         
-        # Save new image to MongoDB
+        # Create URL for the new centralized image API
+        image_url = f"/api/image/user/{user_id}"
+        
+        # Also store in old collection for backward compatibility during transition
+        client = get_mongo_client()
         profile_picture_doc = {
             "user_id": user_id,
             "image_data": img_byte_arr,
@@ -244,22 +254,17 @@ async def upload_profile_picture(
             "created_at": datetime.utcnow(),
         }
         
-        result = client["dance_app"]["profile_pictures"].update_one(
+        client["dance_app"]["profile_pictures"].update_one(
             {"user_id": user_id},
             {"$set": profile_picture_doc},
             upsert=True
         )
-
-        picture_id = str(result.upserted_id)
         
-        # Create URL for the image
-        image_url = f"/api/profile-picture/{picture_id}"
-        
-        # Update user profile in database with picture ID
+        # Update user profile in database
         update_result = client["dance_app"]["users"].update_one(
             {"_id": ObjectId(user_id)},
             {"$set": {
-                "profile_picture_id": picture_id,
+                "profile_picture_id": image_id,
                 "profile_picture_url": image_url,
                 "updated_at": datetime.utcnow()
             }}
@@ -267,6 +272,7 @@ async def upload_profile_picture(
         
         if update_result.modified_count == 0:
             # Clean up uploaded image if database update fails
+            ImageDatabase.delete_image("user", user_id)
             client["dance_app"]["profile_pictures"].delete_one({"user_id": user_id})
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -308,7 +314,10 @@ async def remove_profile_picture(user_id: str = Depends(verify_token)):
                 detail="User not found"
             )
         
-        # Remove profile picture from MongoDB if it exists
+        # Remove profile picture from centralized image collection
+        ImageDatabase.delete_image("user", user_id)
+        
+        # Also remove from old collection for backward compatibility
         if user.get("profile_picture_id"):
             client["dance_app"]["profile_pictures"].delete_one(
                 {"user_id": user_id}

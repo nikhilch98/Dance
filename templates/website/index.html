@@ -1943,8 +1943,8 @@
           if (studioData.length > 0) {
             // Preload first few images for faster initial display
             const imagesToPreload = studioData.slice(0, 6).map(studio => {
-              return studio.image_url 
-                ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
+              return studio.id 
+                ? `https://nachna.com/api/image/studio/${studio.id}` 
                 : '/static/assets/studios/studios.png';
             });
             
@@ -1956,8 +1956,8 @@
             
             // Prepare all cards HTML first, then append at once for better performance
             const cardsHTML = studioData.map((studio, index) => {
-              const imageUrl = studio.image_url 
-                ? `/proxy-image/?url=${encodeURIComponent(studio.image_url)}` 
+              const imageUrl = studio.id 
+                ? `https://nachna.com/api/image/studio/${studio.id}` 
                 : '/static/assets/studios/studios.png';
                 
               const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';
@@ -2051,8 +2051,8 @@
       if (artists.length > 0) {
         // Preload first few images for faster initial display
         const imagesToPreload = artists.slice(0, 6).map(artist => {
-          return artist.image_url 
-            ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
+          return artist.id 
+            ? `https://nachna.com/api/image/artist/${artist.id}` 
             : '/static/assets/artists/artists.png';
         });
         
@@ -2064,8 +2064,8 @@
         
         // Prepare all cards HTML first, then append at once for better performance
         const cardsHTML = artists.map((artist, index) => {
-          const imageUrl = artist.image_url 
-            ? `/proxy-image/?url=${encodeURIComponent(artist.image_url)}` 
+          const imageUrl = artist.id 
+            ? `https://nachna.com/api/image/artist/${artist.id}` 
             : '/static/assets/artists/artists.png';
           
           const fetchPriority = index < 6 ? 'fetchpriority="high"' : '';

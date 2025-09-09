@@ -314,14 +314,25 @@ class _StudiosScreenState extends State<StudiosScreen> {
                         borderRadius: BorderRadius.circular(spacingLarge),
                         child: Stack(
                           children: [
-                            studio.imageUrl != null
+                            studio.id.isNotEmpty
                                 ? Image.network(
-                                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(studio.imageUrl!)}',
+                                    'https://nachna.com/api/image/studio/${studio.id}',
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return _buildFallbackIcon(spacingLarge);
+                                      // Fallback to proxy if centralized API fails
+                                      return studio.imageUrl != null
+                                          ? Image.network(
+                                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(studio.imageUrl!)}',
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return _buildFallbackIcon(spacingLarge);
+                                              },
+                                            )
+                                          : _buildFallbackIcon(spacingLarge);
                                     },
                                   )
                                 : _buildFallbackIcon(spacingLarge),

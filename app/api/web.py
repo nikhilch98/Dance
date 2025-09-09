@@ -84,6 +84,44 @@ async def aasa_root() -> JSONResponse:
     return JSONResponse(content=_aasa_payload(), media_type="application/json")
 
 
+@router.get("/web/artist/{artist_id}", response_class=HTMLResponse)
+async def artist_web_detail(request: Request, artist_id: str):
+    """Serve the artist web detail page."""
+    try:
+        # Get artist data from database
+        artists = DatabaseOperations.get_artists()
+        
+        # Find the specific artist
+        artist = None
+        for art in artists:
+            if art.get('id') == artist_id:
+                artist = art
+                break
+        
+        if not artist:
+            raise HTTPException(status_code=404, detail="Artist not found")
+        
+        # Get artist name with proper title case
+        artist_name = artist.get('name', 'Unknown Artist')
+        if artist_name:
+            artist_name = ' '.join(word.capitalize() for word in artist_name.split())
+        
+        # Get current URL for social sharing
+        current_url = str(request.url)
+        
+        return templates.TemplateResponse("artist_web_detail.html", {
+            "request": request,
+            "artist_name": artist_name,
+            "artist_id": artist_id,
+            "artist": artist,
+            "current_url": current_url
+        })
+        
+    except Exception as e:
+        print(f"Error in artist web detail route: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.get("/artist/{artist_id}", response_class=HTMLResponse)
 async def artist_deep_link(request: Request, artist_id: str):
     """Serve the artist deep link page that attempts to open the app or redirects to app store."""

@@ -167,6 +167,7 @@ Container(
 3. **Services**: Place in `lib/services/` directory
 4. **Providers**: Place in `lib/providers/` directory
 5. **Widgets**: Place reusable widgets in `lib/widgets/` directory
+6. **Screenshots**: Store app screenshots in `nachna/app_screenshots/` directory for design reference and UI visualization during development
 
 ### Naming Conventions
 1. **Files**: Use snake_case for file names
@@ -179,13 +180,23 @@ Container(
 1. **Comments**: Add meaningful comments for complex logic
 2. **Method Documentation**: Use dartdoc comments for public methods
 3. **README**: Keep README updated with setup instructions
+4. **Design Reference**: Use screenshots in `nachna/app_screenshots/` to understand UI patterns, spacing, and visual hierarchy when implementing new features or web pages
 
 ## UI/UX Consistency Rules
 
+### Design Reference Guidelines
+- **Screenshot Reference**: Before implementing any UI component, check `nachna/app_screenshots/` for visual reference
+- **Exact Matching**: Web implementations must match mobile app screenshots exactly on mobile browsers
+- **Spacing Consistency**: Use screenshots to verify proper margins, padding, and element spacing
+- **Color Accuracy**: Match exact gradients, opacity levels, and color schemes from screenshots
+- **Component Sizing**: Reference screenshots for proper button sizes, avatar dimensions, and card proportions
+- **Typography Matching**: Ensure font sizes, weights, and letter spacing match the app screenshots
+- **Visual Hierarchy**: Follow the same information hierarchy and emphasis patterns shown in screenshots
+
 ### Profile & User Management
-- **Profile Pictures**: Always show circular avatars with gradient fallbacks
-- **User Info**: Display in card format with glassmorphism
-- **Edit States**: Use inline editing or modal dialogs consistently
+- **Profile Pictures**: Always show circular avatars with gradient fallbacks (reference screenshots for exact sizing)
+- **User Info**: Display in card format with glassmorphism (match glassmorphism effects from screenshots)
+- **Edit States**: Use inline editing or modal dialogs consistently (follow modal patterns from screenshots)
 
 ### Forms & Input
 - **Validation**: Show validation errors with red color and clear messages
@@ -347,6 +358,7 @@ Remember: Consistency is key. When implementing new features or making changes, 
   │   ├── android/            # Android platform code
   │   ├── ios/                # iOS platform code
   │   ├── web/                # Web platform code
+  │   ├── app_screenshots/    # App screenshots for design reference and UI visualization
   │   ├── pubspec.yaml        # Flutter dependencies
   │   └── ...                 # Other Flutter files
   ├── utils/                  # Shared utilities (cross-platform)
@@ -615,6 +627,74 @@ A change is successful ONLY if:
 - New services for new functionality
 - New middleware for new requirements
 - New utilities for new needs
+
+## 🌐 WEB BOOKING INTEGRATION
+
+### Web Platform Features (Version 1.4.0+)
+The Nachna platform now includes comprehensive web booking functionality that mirrors the mobile app experience:
+
+#### Web Studio Pages
+- **URL Pattern**: `nachna.com/web/{studio_id}`
+- **Template Location**: `templates/studio_web_booking.html`
+- **API Integration**: Uses existing workshop and studio APIs
+- **Responsive Design**: Mobile-first with desktop scaling
+
+#### Key Web Features Implemented:
+1. **Studio Detail Pages**:
+   - Studio information with image and Instagram link
+   - Share functionality (WhatsApp, Instagram, generic)
+   - App-identical design language with glassmorphism effects
+
+2. **Workshop Display**:
+   - "This Week" workshops organized by day
+   - "Upcoming" workshops in responsive grid
+   - Artist avatars (single and multiple overlapping)
+   - Workshop cards with song, timing, and pricing info
+
+3. **Interactive Elements**:
+   - Artist Instagram buttons (single or multi-select modal)
+   - Choreography video buttons for Instagram content
+   - Direct booking links (Nachna payment and external)
+   - Native-style modals and touch feedback
+
+4. **Mobile Experience**:
+   - App-identical layout and spacing on mobile browsers
+   - Touch-optimized interactions with proper feedback
+   - iOS safe area support for notched devices
+   - Smooth scrolling and native-feeling navigation
+
+#### Web API Endpoints:
+- `GET /web/{studio_id}` - Serve studio web booking page
+- `GET /api/studio/{studio_id}` - Get specific studio details
+- Uses existing: `/api/studios`, `/api/workshops_by_studio/{studio_id}`, `/api/proxy-image/`
+
+#### Web Design Language:
+- **Matches Flutter app exactly** with same colors, gradients, and effects
+- **Responsive breakpoints**: 768px mobile, 375px small mobile, landscape support
+- **Touch targets**: 44px minimum for mobile accessibility
+- **Typography**: 14px base on mobile, proper font weights and spacing
+- **Animations**: Scale feedback, smooth transitions, reduced motion support
+
+#### Development Guidelines for Web:
+1. **Template Location**: All HTML templates in `templates/` directory
+2. **Static Assets**: Global web assets in `static/` directory  
+3. **Responsive First**: Design mobile-first, then scale to desktop
+4. **API Consistency**: Use existing APIs, don't create web-specific endpoints
+5. **Design Matching**: Web must look identical to mobile app on small screens
+6. **Performance**: Optimize for mobile networks and touch interactions
+
+#### Web Testing Requirements:
+- Test on mobile browsers (iOS Safari, Android Chrome)
+- Verify responsive design at different screen sizes
+- Ensure touch interactions work properly
+- Test all booking and sharing functionality
+- Validate API integration and error handling
+
+#### Browser Support:
+- **Primary**: iOS Safari, Android Chrome, Desktop Chrome/Firefox
+- **Features**: Modern CSS Grid, Flexbox, CSS Custom Properties
+- **Fallbacks**: Graceful degradation for older browsers
+- **Accessibility**: Proper focus states, semantic HTML, ARIA labels
 
 ## 🐹 GOLANG SERVER SPECIFICATIONS
 

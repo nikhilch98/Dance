@@ -7,6 +7,7 @@ from .notifications import (
     NotificationOperations,
 )
 from .workshops import DatabaseOperations
+from .images import ImageDatabase, ImageMigration
 
 __all__ = [
     "UserOperations",
@@ -14,4 +15,6 @@ __all__ = [
     "PushNotificationOperations",
     "NotificationOperations",
     "DatabaseOperations",
+    "ImageDatabase",
+    "ImageMigration",
 ] 

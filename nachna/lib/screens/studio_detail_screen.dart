@@ -298,12 +298,21 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                                  child: widget.studio.imageUrl != null
+                                  child: widget.studio.id.isNotEmpty
                                       ? Image.network(
-                                          'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(widget.studio.imageUrl!)}',
+                                          'https://nachna.com/api/image/studio/${widget.studio.id}',
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
-                                            return _buildStudioIcon();
+                                            // Fallback to proxy if centralized API fails
+                                            return widget.studio.imageUrl != null
+                                                ? Image.network(
+                                                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(widget.studio.imageUrl!)}',
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return _buildStudioIcon();
+                                                    },
+                                                  )
+                                                : _buildStudioIcon();
                                           },
                                         )
                                       : _buildStudioIcon(),

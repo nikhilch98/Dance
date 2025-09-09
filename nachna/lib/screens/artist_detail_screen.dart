@@ -445,12 +445,21 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                                      child: _artist?.imageUrl != null
+                                      child: _artist?.id != null && _artist!.id.isNotEmpty
                                           ? Image.network(
-                                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
+                                              'https://nachna.com/api/image/artist/${_artist!.id}',
                                               fit: BoxFit.cover,
                                               errorBuilder: (context, error, stackTrace) {
-                                                return _buildArtistIcon();
+                                                // Fallback to proxy if centralized API fails
+                                                return _artist?.imageUrl != null
+                                                    ? Image.network(
+                                                        'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return _buildArtistIcon();
+                                                        },
+                                                      )
+                                                    : _buildArtistIcon();
                                               },
                                             )
                                           : _buildArtistIcon(),

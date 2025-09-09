@@ -453,14 +453,25 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                         borderRadius: BorderRadius.circular(16),
                         child: Stack(
                           children: [
-                            artist.imageUrl != null
+                            artist.id.isNotEmpty
                                 ? Image.network(
-                                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
+                                    'https://nachna.com/api/image/artist/${artist.id}',
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return _buildFallbackIcon();
+                                      // Fallback to proxy if centralized API fails
+                                      return artist.imageUrl != null
+                                          ? Image.network(
+                                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return _buildFallbackIcon();
+                                              },
+                                            )
+                                          : _buildFallbackIcon();
                                     },
                                   )
                                 : _buildFallbackIcon(),
