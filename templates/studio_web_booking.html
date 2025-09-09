@@ -868,6 +868,7 @@
                 text-overflow: ellipsis;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
+                line-clamp: 2;
                 -webkit-box-orient: vertical;
             }
             
@@ -1024,12 +1025,50 @@
                 min-width: 90px;
             }
             
+            /* Workshop song row - cyan colored song name */
+            .workshop-song-row {
+                color: #00D4FF;
+                font-size: 0.85rem;
+                font-weight: 600;
+                margin-bottom: 0.75rem;
+                line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
             /* Workshop content - matches app's main content Row */
             .workshop-content {
                 display: flex;
                 align-items: center;
-                gap: 0;
+                gap: 0.75rem;
                 justify-content: space-between;
+            }
+            
+            /* Workshop details column */
+            .workshop-details-column {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            /* Workshop detail rows with icons */
+            .workshop-detail-row {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .workshop-detail-text {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.8rem;
+                font-weight: 500;
+                line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             /* Action buttons container */
@@ -1976,6 +2015,7 @@
         
         // Create workshop card
         function createWorkshopCard(workshop) {
+            console.log('Creating workshop card with data:', workshop);
             const card = document.createElement('div');
             card.className = 'workshop-card';
             
@@ -1994,7 +2034,17 @@
             header.appendChild(artistName);
             header.appendChild(dateBadge);
             
-            // Content row: Avatar + Studio info + Action buttons
+            card.appendChild(header);
+            
+            // Song name row (if available)
+            if (workshop.song && workshop.song.trim() && workshop.song !== 'TBA') {
+                const songRow = document.createElement('div');
+                songRow.className = 'workshop-song-row';
+                songRow.textContent = toTitleCase(workshop.song);
+                card.appendChild(songRow);
+            }
+            
+            // Content row: Avatar + Details + Action buttons
             const content = document.createElement('div');
             content.className = 'workshop-content';
             
@@ -2002,38 +2052,33 @@
             const avatars = createArtistAvatars(workshop);
             content.appendChild(avatars);
             
-            // Studio building icon (matches the screenshot)
-            const studioIcon = document.createElement('div');
-            studioIcon.style.cssText = `
-                width: 20px;
-                height: 20px;
-                margin-left: 8px;
-                margin-right: 8px;
-                opacity: 0.7;
-                flex-shrink: 0;
-            `;
-            studioIcon.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
+            // Workshop details column
+            const detailsColumn = document.createElement('div');
+            detailsColumn.className = 'workshop-details-column';
+            
+            // Studio info with icon
+            const studioRow = document.createElement('div');
+            studioRow.className = 'workshop-detail-row';
+            studioRow.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
                     <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
                 </svg>
+                <span class="workshop-detail-text">${studioData ? toTitleCase(studioData.name) : 'Dance Inn'}</span>
             `;
-            content.appendChild(studioIcon);
+            detailsColumn.appendChild(studioRow);
             
-            // Check mark icon (matches the screenshot)
-            const checkIcon = document.createElement('div');
-            checkIcon.style.cssText = `
-                width: 20px;
-                height: 20px;
-                margin-right: 12px;
-                opacity: 0.7;
-                flex-shrink: 0;
-            `;
-            checkIcon.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            // Time info with icon
+            const timeRow = document.createElement('div');
+            timeRow.className = 'workshop-detail-row';
+            timeRow.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 6L12 10.5 9.5 8 11 6.5 12 7.5 13 6.5 14.5 8z"/>
                 </svg>
+                <span class="workshop-detail-text">${formatTime(workshop.time) || '6 PM'}</span>
             `;
-            content.appendChild(checkIcon);
+            detailsColumn.appendChild(timeRow);
+            
+            content.appendChild(detailsColumn);
             
             // Action buttons container
             const actionButtons = document.createElement('div');
@@ -2082,7 +2127,6 @@
             
             content.appendChild(registerBtn);
             
-            card.appendChild(header);
             card.appendChild(content);
             
             return card;
