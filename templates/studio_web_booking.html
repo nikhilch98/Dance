@@ -1785,28 +1785,9 @@
                     studioImageFallback.style.display = 'none';
                 };
                 studioImage.onerror = function() {
-                    console.log('❌ Studio image failed, trying proxy fallback...');
-                    // Fallback to proxy if centralized API fails (same logic as artists)
-                    const imageUrl = studioData.image_url || studioData.imageUrl || studioData.img_url;
-                    if (imageUrl && imageUrl.trim()) {
-                        // Add cache-busting to proxy URL as well
-                        const cacheBust = Date.now();
-                        studioImage.src = `/api/proxy-image/?url=${encodeURIComponent(imageUrl)}&t=${cacheBust}`;
-                        studioImage.onload = function() {
-                            console.log('✅ Studio image loaded successfully via proxy fallback');
-                            studioImage.style.display = 'block';
-                            studioImageFallback.style.display = 'none';
-                        };
-                        studioImage.onerror = function() {
-                            console.log('❌ Both centralized and proxy failed, showing fallback');
-                            studioImage.style.display = 'none';
-                            studioImageFallback.style.display = 'flex';
-                        };
-                    } else {
-                        console.log('❌ No image URL for proxy fallback, showing fallback');
-                        studioImage.style.display = 'none';
-                        studioImageFallback.style.display = 'flex';
-                    }
+                    console.log('❌ Studio image failed, showing fallback');
+                    studioImage.style.display = 'none';
+                    studioImageFallback.style.display = 'flex';
                 };
             } else {
                 console.log('❌ No studio ID found, showing fallback');
@@ -1841,22 +1822,11 @@
                     img.src = `/api/image/artist/${validArtistIds[0]}`;
                     img.alt = workshop.by || 'Artist';
                     img.onerror = function() {
-                        // Fallback to proxy if centralized API fails
-                        const artistImageUrls = workshop.artist_image_urls || [];
-                        if (artistImageUrls[0]) {
-                            img.src = `/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[0])}`;
-                            img.onerror = function() {
-                                const fallback = document.createElement('div');
-                                fallback.className = 'avatar-fallback';
-                                fallback.textContent = getInitials(workshop.by);
-                                container.replaceChild(fallback, img);
-                            };
-                        } else {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'avatar-fallback';
-                            fallback.textContent = getInitials(workshop.by);
-                            container.replaceChild(fallback, img);
-                        }
+                        // No proxy fallback - just show initials
+                        const fallback = document.createElement('div');
+                        fallback.className = 'avatar-fallback';
+                        fallback.textContent = getInitials(workshop.by);
+                        container.replaceChild(fallback, img);
                     };
                     container.appendChild(img);
                 } else {
@@ -1882,28 +1852,14 @@
                     img.src = `/api/image/artist/${validArtistIds[i]}`;
                     img.alt = `Artist ${i + 1}`;
                     img.onerror = function() {
-                        // Fallback to proxy if centralized API fails
-                        const artistImageUrls = workshop.artist_image_urls || [];
-                        if (artistImageUrls[i]) {
-                            img.src = `/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[i])}`;
-                            img.onerror = function() {
-                                const fallback = document.createElement('div');
-                                fallback.className = 'avatar-stack avatar-fallback';
-                                fallback.style.width = '36px';
-                                fallback.style.height = '36px';
-                                fallback.style.fontSize = '0.8rem';
-                                fallback.textContent = getInitials(workshop.by);
-                                multipleContainer.replaceChild(fallback, img);
-                            };
-                        } else {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'avatar-stack avatar-fallback';
-                            fallback.style.width = '36px';
-                            fallback.style.height = '36px';
-                            fallback.style.fontSize = '0.8rem';
-                            fallback.textContent = getInitials(workshop.by);
-                            multipleContainer.replaceChild(fallback, img);
-                        }
+                        // No proxy fallback - just show initials
+                        const fallback = document.createElement('div');
+                        fallback.className = 'avatar-stack avatar-fallback';
+                        fallback.style.width = '36px';
+                        fallback.style.height = '36px';
+                        fallback.style.fontSize = '0.8rem';
+                        fallback.textContent = getInitials(workshop.by);
+                        multipleContainer.replaceChild(fallback, img);
                     };
                     multipleContainer.appendChild(img);
                 }
