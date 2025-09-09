@@ -467,7 +467,7 @@
         }
         
         .workshop-song {
-            color: #00D4FF;
+            color: #00D4FF !important;
             font-size: 0.95rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
@@ -1027,10 +1027,10 @@
             
             /* Workshop song row - cyan colored song name */
             .workshop-song-row {
-                color: #00D4FF;
+                color: #00D4FF !important;
                 font-size: 0.85rem;
                 font-weight: 600;
-                margin-bottom: 0.75rem;
+                margin-bottom: 0.5rem;
                 line-height: 1.2;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1666,70 +1666,6 @@
             ).join(' ');
         }
         
-        // Load image with gzip compression support
-        async function loadImageWithCompression(imageElement, url) {
-            console.log('🔄 loadImageWithCompression called with URL:', url);
-            try {
-                // Use fetch to load image with gzip compression
-                console.log('📡 Making fetch request to:', url);
-                const response = await fetch(url, {
-                    headers: {
-                        'Accept': 'image/*,*/*;q=0.8',
-                        'Accept-Encoding': 'gzip, deflate, br'
-                    }
-                });
-                console.log('📡 Fetch response status:', response.status, response.statusText);
-                
-                if (response.ok) {
-                    console.log('✅ Response OK, processing blob...');
-                    const blob = await response.blob();
-                    console.log('✅ Blob created, size:', blob.size);
-                    const imageUrl = URL.createObjectURL(blob);
-                    console.log('✅ Object URL created:', imageUrl);
-                    
-                    // Store the original onload handler
-                    const originalOnLoad = imageElement.onload;
-                    
-                    imageElement.src = imageUrl;
-                    console.log('✅ Image src set to blob URL');
-                    
-                    // Set up cleanup and call original handler
-                    imageElement.onload = function() {
-                        console.log('✅ Image onload triggered via compression');
-                        URL.revokeObjectURL(imageUrl);
-                        if (originalOnLoad) {
-                            originalOnLoad.call(this);
-                        }
-                    };
-                    
-                    // Also handle onerror to clean up
-                    const originalOnError = imageElement.onerror;
-                    imageElement.onerror = function() {
-                        console.log('❌ Image onerror triggered via compression');
-                        URL.revokeObjectURL(imageUrl);
-                        if (originalOnError) {
-                            originalOnError.call(this);
-                        }
-                    };
-                    
-                    return Promise.resolve();
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (error) {
-                console.log(`Failed to load image with compression from ${url}:`, error);
-                // Fallback to direct assignment - trigger onerror if it fails
-                const originalOnError = imageElement.onerror;
-                imageElement.onerror = function() {
-                    console.log(`Direct image load also failed for ${url}`);
-                    if (originalOnError) {
-                        originalOnError.call(this);
-                    }
-                };
-                imageElement.src = url;
-                return Promise.reject(error);
-            }
-        }
         
         function getInitials(name) {
             if (!name) return '?';
@@ -1777,7 +1713,12 @@
         async function loadStudioData() {
             try {
                 // First try to get all studios and find the specific one
-                const studiosResponse = await fetch(`/api/studios`);
+                const studiosResponse = await fetch(`/api/studios`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (!studiosResponse.ok) {
                     throw new Error(`Failed to load studios (${studiosResponse.status})`);
                 }
@@ -1804,7 +1745,12 @@
         // Load workshops data
         async function loadWorkshopsData() {
             try {
-                const response = await fetch(`/api/workshops_by_studio/${studioId}`);
+                const response = await fetch(`/api/workshops_by_studio/${studioId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error(`Failed to load workshops (${response.status})`);
                 }
@@ -1827,81 +1773,43 @@
             studioName.textContent = toTitleCase(studioData.name);
             document.title = `${toTitleCase(studioData.name)} - Dance Workshops | Nachna`;
             
-            // Handle studio image - Try centralized API first, fallback to proxy
-            const studioIdForImage = studioData.id;
-            console.log('Studio data for image loading:', studioData);
-            console.log('Studio ID for image loading:', studioIdForImage);
-            
-            if (studioIdForImage) {
-                console.log('Loading studio image from centralized API:', studioIdForImage);
-                
-                // Try the new centralized image API first
-                const centralizedImageUrl = `https://nachna.com/api/image/studio/${studioIdForImage}`;
-                console.log('Centralized image URL:', centralizedImageUrl);
-                
-                // Add visual feedback that we're trying to load the image
-                studioImageFallback.style.background = 'linear-gradient(45deg, #ff006e, #00d4ff)';
-                studioImageFallback.innerHTML = '<div style="color: white; font-size: 12px; text-align: center;">Loading...</div>';
-                
-                // Set up onload handler first
+            // Handle studio image - Use EXACT same logic as artist images
+            if (studioId) {
+                // Add cache-busting timestamp to prevent HEAD requests from cache
+                const cacheBust = Date.now();
+                studioImage.src = `/api/image/studio/${studioId}?t=${cacheBust}`;
+                studioImage.alt = studioData?.name || 'Studio';
                 studioImage.onload = function() {
                     console.log('✅ Studio image loaded successfully from centralized API');
                     studioImage.style.display = 'block';
                     studioImageFallback.style.display = 'none';
                 };
-                
-                // Load image with gzip compression support
-                console.log('🚀 About to call loadImageWithCompression');
-                
-                // Try simple direct loading first for debugging
-                console.log('🧪 TESTING: Direct image load as fallback');
-                const testImg = new Image();
-                testImg.onload = () => console.log('🧪 DIRECT LOAD SUCCESS!');
-                testImg.onerror = () => console.log('🧪 DIRECT LOAD FAILED!');
-                testImg.src = centralizedImageUrl;
-                
-                loadImageWithCompression(studioImage, centralizedImageUrl).then(() => {
-                    console.log('🎉 loadImageWithCompression completed successfully');
-                }).catch(error => {
-                    console.log('💥 loadImageWithCompression failed:', error);
-                });
-                
                 studioImage.onerror = function() {
-                    console.log('❌ Centralized image failed, trying proxy fallback...');
-                    // Update visual feedback
-                    studioImageFallback.style.background = 'linear-gradient(45deg, #ffaa00, #ff6600)';
-                    studioImageFallback.innerHTML = '<div style="color: white; font-size: 12px; text-align: center;">Fallback...</div>';
-                    
-                    // Fallback to proxy approach (backward compatibility)
+                    console.log('❌ Studio image failed, trying proxy fallback...');
+                    // Fallback to proxy if centralized API fails (same logic as artists)
                     const imageUrl = studioData.image_url || studioData.imageUrl || studioData.img_url;
-                    
                     if (imageUrl && imageUrl.trim()) {
-                        const proxyImageUrl = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(imageUrl)}`;
-                        console.log('Trying proxy fallback:', proxyImageUrl);
-                        
-                        studioImage.src = proxyImageUrl;
+                        // Add cache-busting to proxy URL as well
+                        const cacheBust = Date.now();
+                        studioImage.src = `/api/proxy-image/?url=${encodeURIComponent(imageUrl)}&t=${cacheBust}`;
                         studioImage.onload = function() {
-                            console.log('Studio image loaded successfully via proxy fallback');
+                            console.log('✅ Studio image loaded successfully via proxy fallback');
                             studioImage.style.display = 'block';
                             studioImageFallback.style.display = 'none';
                         };
-                        
                         studioImage.onerror = function() {
-                            console.log('💥 Both centralized and proxy failed, showing fallback');
+                            console.log('❌ Both centralized and proxy failed, showing fallback');
                             studioImage.style.display = 'none';
                             studioImageFallback.style.display = 'flex';
-                            // Reset fallback to original style
-                            studioImageFallback.style.background = '';
-                            studioImageFallback.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>';
                         };
                     } else {
-                        console.log('No image URL for proxy fallback, showing fallback');
+                        console.log('❌ No image URL for proxy fallback, showing fallback');
                         studioImage.style.display = 'none';
                         studioImageFallback.style.display = 'flex';
                     }
                 };
             } else {
-                console.log('No studio ID found, showing fallback');
+                console.log('❌ No studio ID found, showing fallback');
                 studioImage.style.display = 'none';
                 studioImageFallback.style.display = 'flex';
             }
@@ -1930,13 +1838,13 @@
                 if (validArtistIds.length === 1) {
                     const img = document.createElement('img');
                     img.className = 'single-avatar';
-                    img.src = `https://nachna.com/api/image/artist/${validArtistIds[0]}`;
+                    img.src = `/api/image/artist/${validArtistIds[0]}`;
                     img.alt = workshop.by || 'Artist';
                     img.onerror = function() {
                         // Fallback to proxy if centralized API fails
                         const artistImageUrls = workshop.artist_image_urls || [];
                         if (artistImageUrls[0]) {
-                            img.src = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[0])}`;
+                            img.src = `/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[0])}`;
                             img.onerror = function() {
                                 const fallback = document.createElement('div');
                                 fallback.className = 'avatar-fallback';
@@ -1971,13 +1879,13 @@
                 for (let i = 0; i < maxAvatars; i++) {
                     const img = document.createElement('img');
                     img.className = 'avatar-stack';
-                    img.src = `https://nachna.com/api/image/artist/${validArtistIds[i]}`;
+                    img.src = `/api/image/artist/${validArtistIds[i]}`;
                     img.alt = `Artist ${i + 1}`;
                     img.onerror = function() {
                         // Fallback to proxy if centralized API fails
                         const artistImageUrls = workshop.artist_image_urls || [];
                         if (artistImageUrls[i]) {
-                            img.src = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[i])}`;
+                            img.src = `/api/proxy-image/?url=${encodeURIComponent(artistImageUrls[i])}`;
                             img.onerror = function() {
                                 const fallback = document.createElement('div');
                                 fallback.className = 'avatar-stack avatar-fallback';
@@ -2036,14 +1944,6 @@
             
             card.appendChild(header);
             
-            // Song name row (if available)
-            if (workshop.song && workshop.song.trim() && workshop.song !== 'TBA') {
-                const songRow = document.createElement('div');
-                songRow.className = 'workshop-song-row';
-                songRow.textContent = toTitleCase(workshop.song);
-                card.appendChild(songRow);
-            }
-            
             // Content row: Avatar + Details + Action buttons
             const content = document.createElement('div');
             content.className = 'workshop-content';
@@ -2055,6 +1955,14 @@
             // Workshop details column
             const detailsColumn = document.createElement('div');
             detailsColumn.className = 'workshop-details-column';
+            
+            // Song name (if available) - positioned beside avatar
+            if (workshop.song && workshop.song.trim() && workshop.song !== 'TBA') {
+                const songRow = document.createElement('div');
+                songRow.className = 'workshop-song-row';
+                songRow.textContent = toTitleCase(workshop.song);
+                detailsColumn.appendChild(songRow);
+            }
             
             // Studio info with icon
             const studioRow = document.createElement('div');
