@@ -127,8 +127,7 @@ async def studio_deep_link(request: Request, studio_id: str):
     """Serve the studio deep link page that attempts to open the app or redirects to app store."""
     try:
         # Get studio data from database
-        db_ops = DatabaseOperations()
-        studios = await db_ops.get_studios()
+        studios = DatabaseOperations.get_studios()
         
         # Find the specific studio
         studio = None
@@ -270,6 +269,44 @@ async def payment_success(request: Request, order_id: str = None):
         
     except Exception as e:
         print(f"Error in payment success route: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/web/{studio_id}", response_class=HTMLResponse)
+async def studio_web_booking(request: Request, studio_id: str):
+    """Serve the studio web booking page."""
+    try:
+        # Get studio data from database
+        studios = DatabaseOperations.get_studios()
+        
+        # Find the specific studio
+        studio = None
+        for std in studios:
+            if std.get('id') == studio_id:
+                studio = std
+                break
+        
+        if not studio:
+            raise HTTPException(status_code=404, detail="Studio not found")
+        
+        # Get studio name with proper title case
+        studio_name = studio.get('name', 'Unknown Studio')
+        if studio_name:
+            studio_name = ' '.join(word.capitalize() for word in studio_name.split())
+        
+        # Get current URL for social sharing
+        current_url = str(request.url)
+        
+        return templates.TemplateResponse("studio_web_booking.html", {
+            "request": request,
+            "studio_name": studio_name,
+            "studio_id": studio_id,
+            "studio": studio,
+            "current_url": current_url
+        })
+        
+    except Exception as e:
+        print(f"Error in studio web booking route: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

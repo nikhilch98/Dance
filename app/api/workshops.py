@@ -49,6 +49,23 @@ async def get_studios():
         return []
 
 
+@router.get("/studio/{studio_id}", response_model=Studio)
+@cache_response(expire=3600) 
+async def get_studio_by_id(studio_id: str):
+    """Get a specific studio by ID."""
+    try:
+        studios = DatabaseOperations.get_studios()
+        for studio in studios:
+            if studio.get('id') == studio_id:
+                return studio
+        raise HTTPException(status_code=404, detail="Studio not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.get("/artists", response_model=List[Artist])
 @cache_response(expire=3600)
 async def get_artists(has_workshops: Optional[bool] = None):
