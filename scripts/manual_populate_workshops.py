@@ -90,21 +90,21 @@ def main():
     GOOD_MOVE_STUDIOS_NUMBER = "9826000000"
 
     manual_populate_workshops("theroyaldancespace", [
-        ManualWorkshopEntry(by="Amisha Jayaram", song="o mama Tetema", pricing_info="Till 19th 800/-\nLater:950/-",
+        ManualWorkshopEntry(by="Amisha Jayaram", song="o mama Tetema", pricing_info="800",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="03:00 PM",
-                            end_time="05:00 PM", choreo_insta_link=None, registration_link="", artist_id_list=["amisha_jayaram"],registration_link_type="nachna"), 
-        ManualWorkshopEntry(by="Kiran J", song="azul", pricing_info="First 15: 999/-\nTill 20th: 1100/-\nOTS: 1300/-",
+                            end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna"), 
+        ManualWorkshopEntry(by="Kiran J", song="azul", pricing_info="999",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="05:00 PM",
-                            end_time="07:00 PM", choreo_insta_link=None, registration_link="", artist_id_list=["mr.kiranj"],registration_link_type="nachna"), 
-        ManualWorkshopEntry(by="Kiran J", song="bijuria", pricing_info="First 15: 999/-\nTill 20th: 1100/-\nOTS: 1300/-",
+                            end_time="07:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["mr.kiranj"],registration_link_type="nachna"), 
+        ManualWorkshopEntry(by="Kiran J", song="bijuria", pricing_info="999",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, registration_link="", artist_id_list=["mr.kiranj"],registration_link_type="nachna"), 
-        ManualWorkshopEntry(by="Vivek & Aakanksha", song="mayya mayya", pricing_info="Single Class Fee\n799/- till 18th sept\n999/- later \n Both Class 1500/- till 18th Sept\nLater 1700/-",
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["mr.kiranj"],registration_link_type="nachna"), 
+        ManualWorkshopEntry(by="Vivek & Aakanksha", song="mayya mayya", pricing_info="799",
                             event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, registration_link="", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"), 
-        ManualWorkshopEntry(by="Vivek & Aakanksha", song="aavan jaavan", pricing_info="Single Class Fee\n799/- till 18th sept\n999/- later \n Both Class 1500/- till 18th Sept\nLater 1700/-",
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"), 
+        ManualWorkshopEntry(by="Vivek & Aakanksha", song="aavan jaavan", pricing_info="799",
                             event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="06:00 PM",
-                            end_time="08:00 PM", choreo_insta_link=None, registration_link="", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"), 
+                            end_time="08:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"), 
     ], remove_existing_workshops = True)
 
     # manual_populate_workshops("beinrtribe", [

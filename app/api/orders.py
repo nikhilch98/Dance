@@ -442,6 +442,7 @@ async def create_payment_link(
             )
         
         # 9. Return success response
+        print("payment_link_url", payment_link_url)
         return UnifiedPaymentLinkResponse(
             is_existing=False,
             message="Payment link created successfully",

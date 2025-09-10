@@ -1,9 +1,11 @@
 """Web routes for serving static pages."""
 
-from fastapi import APIRouter, Request, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.database.workshops import DatabaseOperations
+from app.services.auth import verify_token
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -349,8 +351,8 @@ async def studio_web_booking(request: Request, studio_id: str):
 
 
 @router.get("/order/status", response_class=HTMLResponse)
-async def order_status_redirect(request: Request, order_id: str = None):
-    """Handle order status page redirect to app."""
+async def order_status_redirect(request: Request, order_id: str = None, user_id: Optional[str] = Depends(verify_token)):
+    """Handle order status page with web-based order details."""
     try:
         # Get order_id from query parameters
         query_params = request.query_params
@@ -363,7 +365,43 @@ async def order_status_redirect(request: Request, order_id: str = None):
         app_deep_link = f"nachna://order-status/{order_id}"
         universal_link = f"https://nachna.com/order/status?order_id={order_id}"
 
-        # Return HTML that immediately redirects to the app
+        # Check if user is authenticated and get order details
+        order_details = None
+        user_authenticated = user_id is not None
+
+        if user_authenticated:
+            try:
+                from app.database.orders import OrderOperations
+                from app.database.workshops import DatabaseOperations as WorkshopOperations
+                from utils.utils import get_mongo_client
+
+                # Get order details
+                order = OrderOperations.get_order_by_id(order_id)
+                if order and order.get('user_id') == user_id:
+                    # Get workshop details
+                    client = get_mongo_client()
+                    workshop = client["discovery"]["workshops_v2"].find_one({"uuid": order.get("workshop_uuid")})
+
+                    # Get QR code status
+                    qr_code_data = order.get('qr_code_data')
+                    qr_status = 'available' if qr_code_data else ('generating' if order.get('status') == 'paid' else 'not_available')
+
+                    order_details = {
+                        'order_id': order_id,
+                        'status': order.get('status', 'unknown'),
+                        'amount': order.get('amount', 0) / 100,  # Convert from paise
+                        'workshop_name': workshop.get('song', 'Unknown Workshop') if workshop else 'Unknown Workshop',
+                        'artist_name': workshop.get('by', 'Unknown Artist') if workshop else 'Unknown Artist',
+                        'date': workshop.get('date', 'TBA') if workshop else 'TBA',
+                        'time': workshop.get('time', 'TBA') if workshop else 'TBA',
+                        'qr_code_data': qr_code_data,
+                        'qr_status': qr_status
+                    }
+            except Exception as e:
+                print(f"Error fetching order details: {e}")
+                user_authenticated = False
+
+        # Return enhanced HTML with order details
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
         <html>
@@ -513,6 +551,287 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     justify-content: center;
                 }}
 
+                /* Order Details Styles */
+                .order-details-section {{
+                    margin: 30px 0;
+                }}
+
+                .order-details-card {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }}
+
+                .order-details-card h3 {{
+                    margin: 0 0 16px 0;
+                    color: #00D4FF;
+                    font-size: 18px;
+                    font-weight: 600;
+                }}
+
+                .detail-row {{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 8px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                }}
+
+                .detail-row:last-child {{
+                    border-bottom: none;
+                }}
+
+                .detail-row .label {{
+                    font-weight: 500;
+                    color: rgba(255, 255, 255, 0.9);
+                }}
+
+                .detail-row .value {{
+                    font-weight: 600;
+                    color: white;
+                    text-align: right;
+                }}
+
+                .status-badge {{
+                    padding: 4px 12px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }}
+
+                .status-badge.paid {{
+                    background: rgba(16, 185, 129, 0.2);
+                    color: #10B981;
+                    border: 1px solid rgba(16, 185, 129, 0.3);
+                }}
+
+                .status-badge.processing {{
+                    background: rgba(255, 136, 0, 0.2);
+                    color: #FF8800;
+                    border: 1px solid rgba(255, 136, 0, 0.3);
+                }}
+
+                /* QR Code Section */
+                .qr-section {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    text-align: center;
+                }}
+
+                .qr-section h3 {{
+                    margin: 0 0 20px 0;
+                    color: #00D4FF;
+                    font-size: 18px;
+                    font-weight: 600;
+                }}
+
+                .qr-code-container {{
+                    margin: 20px 0;
+                }}
+
+                .qr-code-image {{
+                    width: 200px;
+                    height: 200px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+                    border: 2px solid rgba(255, 255, 255, 0.2);
+                }}
+
+                .qr-instruction {{
+                    margin-top: 16px;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.8);
+                    font-weight: 500;
+                }}
+
+                .qr-loading {{
+                    padding: 40px 20px;
+                }}
+
+                .loading-spinner {{
+                    width: 50px;
+                    height: 50px;
+                    border: 3px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    border-top-color: #00D4FF;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                }}
+
+                .loading-note {{
+                    margin-top: 8px;
+                    font-size: 12px;
+                    color: rgba(255, 255, 255, 0.6);
+                }}
+
+                .qr-placeholder {{
+                    padding: 40px 20px;
+                }}
+
+                .qr-placeholder-icon {{
+                    font-size: 48px;
+                    margin-bottom: 16px;
+                    opacity: 0.7;
+                }}
+
+                /* App Section */
+                .app-section {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }}
+
+                .app-section h3 {{
+                    margin: 0 0 12px 0;
+                    color: #00D4FF;
+                    font-size: 18px;
+                    font-weight: 600;
+                }}
+
+                .app-description {{
+                    margin: 0 0 20px 0;
+                    color: rgba(255, 255, 255, 0.9);
+                    line-height: 1.5;
+                    font-size: 14px;
+                }}
+
+                .app-actions {{
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }}
+
+                .app-button.primary {{
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    background: linear-gradient(45deg, #00D4FF, #9C27B0);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+                    margin-bottom: 16px;
+                }}
+
+                .app-button.primary:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+                }}
+
+                .button-icon {{
+                    font-size: 16px;
+                }}
+
+                .app-links {{
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                }}
+
+                .store-link {{
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    background: rgba(255, 255, 255, 0.1);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    transition: all 0.2s ease;
+                }}
+
+                .store-link:hover {{
+                    background: rgba(255, 255, 255, 0.2);
+                    transform: translateY(-1px);
+                }}
+
+                .store-icon {{
+                    font-size: 14px;
+                }}
+
+                /* Login Section */
+                .login-section {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    text-align: center;
+                }}
+
+                .login-section h3 {{
+                    margin: 0 0 12px 0;
+                    color: #00D4FF;
+                    font-size: 18px;
+                    font-weight: 600;
+                }}
+
+                .login-description {{
+                    margin: 0 0 20px 0;
+                    color: rgba(255, 255, 255, 0.9);
+                    line-height: 1.5;
+                    font-size: 14px;
+                }}
+
+                .login-actions {{
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 16px;
+                }}
+
+                .login-button.primary {{
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: linear-gradient(45deg, #00D4FF, #9C27B0);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 12px;
+                    padding: 12px 24px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+                    border: none;
+                    cursor: pointer;
+                }}
+
+                .login-button.primary:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+                }}
+
+                .login-note {{
+                    margin: 0;
+                    font-size: 12px;
+                    color: rgba(255, 255, 255, 0.7);
+                    text-align: center;
+                }}
+
+                .login-note a {{
+                    color: #00D4FF;
+                    text-decoration: none;
+                }}
+
+                .login-note a:hover {{
+                    text-decoration: underline;
+                }}
+
                 @media (max-width: 480px) {{
                     .container {{
                         padding: 30px 15px;
@@ -526,6 +845,39 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     .app-button {{
                         padding: 10px 20px;
                         font-size: 14px;
+                    }}
+
+                    .qr-code-image {{
+                        width: 150px;
+                        height: 150px;
+                    }}
+
+                    .app-links {{
+                        flex-direction: column;
+                        align-items: center;
+                    }}
+
+                    .detail-row {{
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 4px;
+                    }}
+
+                    .detail-row .value {{
+                        text-align: left;
+                    }}
+
+                    .login-section {{
+                        padding: 16px;
+                    }}
+
+                    .login-button.primary {{
+                        padding: 10px 20px;
+                        font-size: 13px;
+                    }}
+
+                    .login-description {{
+                        font-size: 13px;
                     }}
                 }}
             </style>
@@ -707,11 +1059,162 @@ async def order_status_redirect(request: Request, order_id: str = None):
                     <h1>Payment Successful!</h1>
                     <p>Your workshop registration is complete.</p>
                     <div class="order-id">Order: {order_id}</div>
-                    <p>Nachna app will open automatically to show your order status.</p>
 
-                    <a href="javascript:void(0)" class="app-button" onclick="handleButtonClick()">
-                        Open Nachna App
-                    </a>
+                    {f'''
+                    <div class="login-section">
+                        <h3>🔐 Login Required</h3>
+                        <p class="login-description">
+                            Please log in to view your complete order details, QR code, and workshop information.
+                        </p>
+                        <div class="login-actions">
+                            <a href="/studio" class="login-button primary">
+                                <span class="button-icon">🔑</span>
+                                Login to View Details
+                            </a>
+                            <p class="login-note">
+                                <small>Don't have an account? <a href="/studio" style="color: #00D4FF;">Sign up</a> to access all features.</small>
+                            </p>
+                        </div>
+                    </div>
+                    ''' if not user_authenticated else f'''
+                    <div class="order-details-section">
+                    <div class="order-details-card">
+                        <h3>🎵 Workshop Details</h3>
+                        <div class="detail-row">
+                            <span class="label">Workshop:</span>
+                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Artist:</span>
+                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Date & Time:</span>
+                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Amount Paid:</span>
+                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Status:</span>
+                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
+                                {order_details["status"].title() if order_details else "Processing"}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section">
+                        <h3>🎫 Your QR Code</h3>
+                    ''' if order_details and order_details["qr_status"] == "available" else f'''
+                    <div class="order-details-section">
+                    <div class="order-details-card">
+                        <h3>🎵 Workshop Details</h3>
+                        <div class="detail-row">
+                            <span class="label">Workshop:</span>
+                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Artist:</span>
+                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Date & Time:</span>
+                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Amount Paid:</span>
+                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Status:</span>
+                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
+                                {order_details["status"].title() if order_details else "Processing"}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section">
+                        <h3>🎫 QR Code Generation</h3>
+                    ''' if order_details and order_details["qr_status"] == "generating" else f'''
+                    <div class="order-details-section">
+                    <div class="order-details-card">
+                        <h3>🎵 Workshop Details</h3>
+                        <div class="detail-row">
+                            <span class="label">Workshop:</span>
+                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Artist:</span>
+                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Date & Time:</span>
+                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Amount Paid:</span>
+                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Status:</span>
+                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
+                                {order_details["status"].title() if order_details else "Processing"}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section">
+                        <h3>🎫 QR Code</h3>
+                    '''}
+
+                    {f'''
+                        <div class="qr-code-container">
+                            <img src="data:image/png;base64,{order_details["qr_code_data"] if order_details else ""}" alt="QR Code" class="qr-code-image">
+                            <p class="qr-instruction">Show this QR code at the workshop venue</p>
+                        </div>
+                    </div>
+                    </div>
+                    ''' if order_details and order_details["qr_status"] == "available" else f'''
+                        <div class="qr-loading">
+                            <div class="loading-spinner"></div>
+                            <p>Generating your QR code...</p>
+                            <p class="loading-note">This usually takes 1-2 minutes</p>
+                        </div>
+                    </div>
+                    </div>
+                    ''' if order_details and order_details["qr_status"] == "generating" else f'''
+                        <div class="qr-placeholder">
+                            <div class="qr-placeholder-icon">🎫</div>
+                            <p>QR code will be available once payment is confirmed</p>
+                        </div>
+                    </div>
+                    </div>
+                    ''' if user_authenticated and order_details else ""}
+
+                    <div class="app-section">
+                        <h3>📱 Have Nachna Installed?</h3>
+                        <p class="app-description">
+                            Get the full experience with our mobile app! View detailed order history, get notifications, and manage your bookings on the go.
+                        </p>
+
+                        <div class="app-actions">
+                            <a href="javascript:void(0)" class="app-button primary" onclick="handleButtonClick()">
+                                <span class="button-icon">📱</span>
+                                Open Nachna App
+                            </a>
+                            <div class="app-links">
+                                <a href="https://play.google.com/store/apps/details?id=com.nachna.nachna" class="store-link" target="_blank">
+                                    <span class="store-icon">🤖</span>
+                                    Get on Google Play
+                                </a>
+                                <a href="https://apps.apple.com/app/nachna/id[YOUR_APP_ID]" class="store-link" target="_blank">
+                                    <span class="store-icon">🍎</span>
+                                    Download on App Store
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="fallback">
                         If the app doesn't open automatically, tap the button above or open the Nachna app manually to view your order.
