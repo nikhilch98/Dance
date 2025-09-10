@@ -260,17 +260,15 @@ def parse_arguments():
 
     return parser.parse_args()
 
-def sort_artists_by_workshops(artists: list, env: str) -> list:
-    """Sort artists based on whether they have existing workshops.
-
-    Artists with workshops will be placed before artists without workshops.
+def filter_artists_with_workshops(artists: list, env: str) -> list:
+    """Filter artists to include only those who have existing workshops.
 
     Args:
         artists: List of Artist objects.
         env: Environment ('prod' or 'dev') to connect to the database.
 
     Returns:
-        Sorted list of Artist objects.
+        Filtered list of Artist objects that have workshops.
     """
     try:
         client = DatabaseManager.get_mongo_client(env)
@@ -278,9 +276,13 @@ def sort_artists_by_workshops(artists: list, env: str) -> list:
 
         def has_workshops(artist):
             return workshops_collection.count_documents({"artist_id_list": artist.instagram_id}) > 0
-        return sorted(artists, key=lambda artist: (not has_workshops(artist), artist.name))
+
+        # Filter to only include artists with workshops
+        filtered_artists = [artist for artist in artists if has_workshops(artist)]
+        print(f"Filtered {len(artists)} artists down to {len(filtered_artists)} artists with workshops")
+        return filtered_artists
     except Exception as e:
-        print(f"Error sorting artists: {e}")
+        print(f"Error filtering artists: {e}")
         return artists  # Return original list in case of error
 
 def main():
@@ -303,7 +305,7 @@ def main():
         if artist.instagram_id not in artist_set :
             artist_set.add(artist.instagram_id)
             artist_final_list.append(artist)
-    artists = sort_artists_by_workshops(artist_final_list, env)
+    artists = filter_artists_with_workshops(artist_final_list, env)
 
     with tqdm(artists, desc="Updating Artists", leave=False) as pbar:
         for artist in pbar:

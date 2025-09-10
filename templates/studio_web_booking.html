@@ -115,16 +115,87 @@
             width: 44px;
             height: 44px;
         }
-        
+
         .back-button:hover {
             background: rgba(255, 255, 255, 0.15);
             transform: translateY(-1px);
         }
-        
+
         .back-button svg {
             width: 20px;
             height: 20px;
             fill: currentColor;
+        }
+
+        /* Auth Container */
+        .auth-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+
+        .auth-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-size: 0.875rem;
+            font-weight: 600;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .auth-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .auth-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid var(--primary-gradient);
+            transition: transform 0.2s ease;
+            padding: 0;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-fallback {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s ease;
+            padding: 0;
+        }
+
+        .profile-fallback:hover {
+            transform: scale(1.05);
         }
         
         /* Content Container */
@@ -695,7 +766,12 @@
             background: var(--primary-gradient);
             box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
         }
-        
+
+        .register-button.whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+
         .register-button.external {
             background: var(--accent-blue);
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
@@ -889,6 +965,1060 @@
             cursor: pointer;
             color: var(--text-secondary);
         }
+
+        /* Authentication Modals */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .auth-modal.show {
+            display: flex;
+        }
+
+        .auth-modal-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            max-width: 400px;
+            width: calc(100% - 2rem);
+            position: relative;
+        }
+
+        .auth-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .auth-modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .auth-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .phone-input-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .country-code {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* OTP Input */
+        .otp-input-container {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .otp-input {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #00D4FF;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .otp-input:valid {
+            border-color: #10B981;
+        }
+
+        .otp-actions {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Button Styles */
+        .auth-primary-btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .auth-primary-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .auth-primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-secondary-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .auth-secondary-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .auth-secondary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .resend-text {
+            display: none;
+        }
+
+        .countdown-text {
+            display: block;
+        }
+
+        .auth-secondary-btn:not([disabled]) .resend-text {
+            display: block;
+        }
+
+        .auth-secondary-btn:not([disabled]) .countdown-text {
+            display: none;
+        }
+
+        .btn-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .auth-error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #EF4444;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Profile Dropdown */
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            min-width: 160px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 10001;
+        }
+
+        .profile-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .profile-dropdown-content {
+            padding: 0.5rem;
+        }
+
+        .profile-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .profile-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-dropdown-item svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            flex-shrink: 0;
+        }
+
+        /* Profile Modal */
+        .profile-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .profile-modal.show {
+            display: flex;
+        }
+
+        .profile-modal-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            padding: 0;
+            max-width: 420px;
+            width: calc(100% - 2rem);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .profile-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            font-weight: 700;
+            z-index: 1;
+        }
+
+        .profile-modal-header {
+            padding: 2rem 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .profile-modal-body {
+            padding: 1.5rem 2rem 2rem;
+        }
+
+        /* Profile Header */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar-large {
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-large img,
+        .profile-avatar-large .profile-fallback-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 3px solid var(--primary-gradient);
+        }
+
+        .profile-fallback-large {
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            word-break: break-word;
+        }
+
+        .profile-mobile {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .profile-status {
+            display: inline-block;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.complete {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+        }
+
+        .status-badge.incomplete {
+            background: linear-gradient(135deg, #FF006E 0%, #DC2626 100%);
+            color: white;
+        }
+
+        /* Profile Actions */
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            width: 100%;
+        }
+
+        .profile-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .action-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-profile .action-icon {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+        }
+
+        .view-orders .action-icon {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+
+        .view-rewards .action-icon {
+            background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+        }
+
+        .action-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .action-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .action-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .action-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .action-arrow {
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+
+        .action-arrow svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-secondary);
+        }
+
+        /* Profile Footer */
+        .profile-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1.5rem;
+        }
+
+        .logout-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 12px;
+            color: #EF4444;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 38, 38, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .logout-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+        }
+
+        /* Tab Navigation */
+        .profile-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px 12px 0 0;
+            padding: 4px;
+            margin-bottom: 0;
+        }
+
+        .profile-tab {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 8px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .profile-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .profile-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+        }
+
+        .profile-tab svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+        }
+
+        /* Tab Content */
+        .profile-tab-content {
+            display: none;
+            flex-direction: column;
+        }
+
+        .profile-tab-content.active {
+            display: flex;
+        }
+
+        /* Orders Section */
+        .orders-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .refresh-btn {
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+        }
+
+        .refresh-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filter-chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .filter-chip.active {
+            background: var(--primary-gradient);
+            border-color: rgba(0, 212, 255, 0.3);
+            color: white;
+        }
+
+        .orders-loading, .rewards-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        .orders-loading .loading-spinner,
+        .rewards-loading .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #00D4FF;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .orders-error, .orders-empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        .orders-error button, .rewards-error button {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .order-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .order-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .order-artists {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .order-status.created {
+            background: rgba(255, 136, 0, 0.2);
+            color: #FF8800;
+        }
+
+        .order-status.paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .order-status.failed, .order-status.expired {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+        }
+
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .order-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .order-value {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .order-amount {
+            color: #00D4FF;
+            font-weight: 600;
+        }
+
+        /* Rewards Section */
+        .rewards-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .rewards-balance {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .balance-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .balance-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .balance-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .balance-info {
+            flex: 1;
+        }
+
+        .balance-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .balance-amount {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .balance-stats {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon.earned {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .stat-icon.redeemed {
+            background: rgba(245, 158, 11, 0.2);
+            color: #F59E0B;
+        }
+
+        .stat-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .rewards-transactions {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .transactions-header h4 {
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .transaction-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .transaction-tab {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .transaction-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .transactions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .transaction-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .transaction-icon.credit {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .transaction-icon.debit {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+        }
+
+        .transaction-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .transaction-title {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.125rem;
+        }
+
+        .transaction-desc {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .transaction-amount {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .transaction-amount.credit {
+            color: #10B981;
+        }
+
+        .transaction-amount.debit {
+            color: #EF4444;
+        }
+
+        .load-more-btn {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .load-more-btn button {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .load-more-btn button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
         
         /* MOBILE APP-LIKE DESIGN - EXACT MATCH TO FLUTTER APP */
         @media (max-width: 768px) {
@@ -912,6 +2042,255 @@
                 background: transparent;
                 border: none;
                 z-index: 1000;
+            }
+
+            /* Auth button - positioned like app's SafeArea */
+            .auth-container {
+                position: fixed;
+                top: calc(env(safe-area-inset-top, 0px) + 2rem);
+                right: 1.5rem;
+                z-index: 1000;
+            }
+
+            .auth-button {
+                width: 32px;
+                height: 32px;
+                padding: 8px;
+                font-size: 0.75rem;
+                min-width: 32px;
+            }
+
+            .auth-icon {
+                width: 16px;
+                height: 16px;
+            }
+
+            .profile-avatar, .profile-fallback {
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
+
+            /* Profile Modal Mobile Styles */
+            .profile-modal-content {
+                width: calc(100% - 1rem);
+                max-width: none;
+                margin: 0 0.5rem;
+                max-height: calc(100vh - 2rem);
+            }
+
+            .profile-modal-header {
+                padding: 1.5rem 1.5rem 1rem;
+            }
+
+            .profile-modal-body {
+                padding: 1.5rem;
+            }
+
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .profile-avatar-large img,
+            .profile-avatar-large .profile-fallback-large {
+                width: 70px;
+                height: 70px;
+                font-size: 1.75rem;
+            }
+
+            .profile-info {
+                text-align: center;
+            }
+
+            .profile-name {
+                font-size: 1.125rem;
+            }
+
+            .profile-actions {
+                gap: 0.5rem;
+            }
+
+            .profile-action-btn {
+                padding: 0.875rem;
+            }
+
+            .action-icon {
+                width: 36px;
+                height: 36px;
+            }
+
+            .action-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .action-title {
+                font-size: 0.9rem;
+            }
+
+            .action-subtitle {
+                font-size: 0.8rem;
+            }
+
+            /* Profile Modal Mobile Styles */
+            .profile-modal-content {
+                width: calc(100% - 1rem);
+                max-width: none;
+                margin: 0 0.5rem;
+                max-height: calc(100vh - 2rem);
+            }
+
+            .profile-tabs {
+                padding: 4px;
+                margin-bottom: 0;
+            }
+
+            .profile-tab {
+                font-size: 0.8rem;
+                padding: 10px 6px;
+            }
+
+            .profile-modal-header {
+                padding: 1.5rem 1.5rem 1rem;
+            }
+
+            .profile-modal-body {
+                padding: 1.5rem;
+            }
+
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .profile-avatar-large img,
+            .profile-avatar-large .profile-fallback-large {
+                width: 70px;
+                height: 70px;
+                font-size: 1.75rem;
+            }
+
+            .profile-info {
+                text-align: center;
+            }
+
+            .profile-name {
+                font-size: 1.125rem;
+            }
+
+            .profile-actions {
+                gap: 0.75rem;
+            }
+
+            .profile-action-btn {
+                padding: 0.875rem;
+                gap: 0.75rem;
+            }
+
+            .action-icon {
+                width: 36px;
+                height: 36px;
+            }
+
+            .action-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .action-title {
+                font-size: 0.9rem;
+            }
+
+            .action-subtitle {
+                font-size: 0.8rem;
+            }
+
+            .filter-chips {
+                gap: 6px;
+            }
+
+            .filter-chip {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+                flex-shrink: 0;
+            }
+
+            .order-card {
+                padding: 0.875rem;
+            }
+
+            .order-title {
+                font-size: 0.9rem;
+            }
+
+            .order-artists {
+                font-size: 0.8rem;
+            }
+
+            .order-status {
+                font-size: 0.7rem;
+                padding: 3px 10px;
+            }
+
+            .order-label,
+            .order-value {
+                font-size: 0.8rem;
+            }
+
+            .balance-card {
+                padding: 1.25rem;
+            }
+
+            .balance-amount {
+                font-size: 1.25rem;
+            }
+
+            .balance-stats {
+                gap: 0.75rem;
+            }
+
+            .stat-card {
+                padding: 0.875rem;
+            }
+
+            .stat-value {
+                font-size: 1rem;
+            }
+
+            .rewards-transactions {
+                padding: 1.25rem;
+            }
+
+            .transactions-header h4 {
+                font-size: 1rem;
+            }
+
+            .transaction-tab {
+                font-size: 0.7rem;
+                padding: 5px 10px;
+            }
+
+            .transaction-item {
+                padding: 0.875rem;
+            }
+
+            .transaction-title {
+                font-size: 0.8rem;
+            }
+
+            .transaction-desc,
+            .transaction-amount {
+                font-size: 0.75rem;
+            }
+
+            .load-more-btn button {
+                padding: 0.625rem 1.5rem;
+                font-size: 0.8rem;
             }
             
             .back-button svg {
@@ -1258,7 +2637,12 @@
                 background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
                 box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
             }
-            
+
+            .register-button.whatsapp {
+                background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+            }
+
             .register-button.disabled {
                 background: rgba(255, 255, 255, 0.1);
                 color: rgba(255, 255, 255, 0.5);
@@ -1667,6 +3051,16 @@
                 <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z"/>
             </svg>
         </a>
+
+        <!-- Login/Profile Button -->
+        <div id="auth-container" class="auth-container">
+            <button id="auth-button" class="auth-button" onclick="handleAuth()">
+                <span class="auth-text">Login</span>
+                <svg class="auth-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </button>
+        </div>
         
         <!-- Content -->
         <div class="content">
@@ -1799,12 +3193,312 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-modal-close" onclick="closeLoginModal()">×</div>
+            <div class="auth-modal-header">
+                <h3 class="auth-modal-title">Welcome to Nachna</h3>
+                <p class="auth-modal-subtitle">Enter your mobile number to continue</p>
+            </div>
+            <div class="auth-modal-body">
+                <form id="login-form" onsubmit="handleSendOTP(event)">
+                    <div class="form-group">
+                        <label for="mobile-number" class="form-label">Mobile Number</label>
+                        <div class="phone-input-container">
+                            <span class="country-code">+91</span>
+                            <input
+                                type="tel"
+                                id="mobile-number"
+                                class="form-input"
+                                placeholder="Enter your mobile number"
+                                maxlength="10"
+                                pattern="[0-9]{10}"
+                                required
+                            >
+                        </div>
+                    </div>
+                    <button type="submit" id="send-otp-btn" class="auth-primary-btn">
+                        <span class="btn-text">Send OTP</span>
+                        <div class="btn-loader" style="display: none;"></div>
+                    </button>
+                </form>
+                <div id="login-error" class="auth-error" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Modal -->
+    <div id="otp-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-modal-close" onclick="closeOTPModal()">×</div>
+            <div class="auth-modal-header">
+                <h3 class="auth-modal-title">Verify Your Number</h3>
+                <p class="auth-modal-subtitle">Enter the 6-digit code sent to <span id="otp-mobile-number"></span></p>
+            </div>
+            <div class="auth-modal-body">
+                <form id="otp-form" onsubmit="handleVerifyOTP(event)">
+                    <div class="otp-input-container">
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+                    </div>
+                    <div class="otp-actions">
+                        <button type="button" id="resend-otp-btn" class="auth-secondary-btn" onclick="resendOTP()" disabled>
+                            <span class="resend-text">Resend OTP</span>
+                            <span class="countdown-text">Resend in 30s</span>
+                        </button>
+                    </div>
+                    <button type="submit" id="verify-otp-btn" class="auth-primary-btn">
+                        <span class="btn-text">Verify & Login</span>
+                        <div class="btn-loader" style="display: none;"></div>
+                    </button>
+                </form>
+                <div id="otp-error" class="auth-error" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="profile-modal">
+        <div class="profile-modal-content">
+            <div class="profile-modal-close" onclick="closeProfileModal()">×</div>
+
+            <!-- Tab Navigation -->
+            <div class="profile-tabs">
+                <button class="profile-tab active" onclick="switchProfileTab('profile')" id="profile-tab-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span>Profile</span>
+                </button>
+                <button class="profile-tab" onclick="switchProfileTab('orders')" id="orders-tab-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span>My Orders</span>
+                </button>
+                <button class="profile-tab" onclick="switchProfileTab('rewards')" id="rewards-tab-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <span>Rewards</span>
+                </button>
+            </div>
+
+            <!-- Profile Tab Content -->
+            <div class="profile-tab-content active" id="profile-content">
+                <div class="profile-modal-header">
+                    <h3 class="profile-modal-title">Profile</h3>
+                </div>
+                <div class="profile-modal-body">
+                    <!-- Profile Header -->
+                    <div class="profile-header">
+                        <div class="profile-avatar-large">
+                            <div id="profile-avatar-container"></div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name" id="profile-name">Loading...</div>
+                            <div class="profile-mobile" id="profile-mobile">Loading...</div>
+                            <div class="profile-status" id="profile-status">
+                                <span class="status-badge">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Actions -->
+                    <div class="profile-actions">
+                        <button class="profile-action-btn edit-profile" onclick="navigateToEditProfile()">
+                            <div class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </div>
+                            <div class="action-text">
+                                <div class="action-title">Edit Profile</div>
+                                <div class="action-subtitle">Update your information</div>
+                            </div>
+                            <div class="action-arrow">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Logout Button -->
+                    <div class="profile-footer">
+                        <button class="logout-btn" onclick="logout()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16,17 21,12 16,7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab Content -->
+            <div class="profile-tab-content" id="orders-content">
+                <div class="profile-modal-header">
+                    <div class="orders-header">
+                        <h3 class="profile-modal-title">My Orders</h3>
+                        <button class="refresh-btn" onclick="refreshOrders()" id="orders-refresh-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <polyline points="1 20 1 14 7 14"/>
+                                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Filter Chips -->
+                    <div class="filter-chips" id="orders-filter-chips">
+                        <button class="filter-chip active" onclick="applyOrderFilter('all')">All Orders</button>
+                        <button class="filter-chip" onclick="applyOrderFilter('pending')">Pending</button>
+                        <button class="filter-chip" onclick="applyOrderFilter('completed')">Completed</button>
+                        <button class="filter-chip" onclick="applyOrderFilter('failed')">Failed</button>
+                    </div>
+                </div>
+
+                <div class="profile-modal-body">
+                    <div id="orders-loading" class="orders-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading orders...</p>
+                    </div>
+                    <div id="orders-error" class="orders-error" style="display: none;">
+                        <p>Failed to load orders. <button onclick="refreshOrders()">Try Again</button></p>
+                    </div>
+                    <div id="orders-empty" class="orders-empty" style="display: none;">
+                        <p>No orders found</p>
+                    </div>
+                    <div id="orders-list" class="orders-list"></div>
+                </div>
+            </div>
+
+            <!-- Rewards Tab Content -->
+            <div class="profile-tab-content" id="rewards-content">
+                <div class="profile-modal-header">
+                    <div class="rewards-header">
+                        <h3 class="profile-modal-title">Rewards Center</h3>
+                        <button class="refresh-btn" onclick="refreshRewards()" id="rewards-refresh-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <polyline points="1 20 1 14 7 14"/>
+                                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="profile-modal-body">
+                    <div id="rewards-loading" class="rewards-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading rewards...</p>
+                    </div>
+                    <div id="rewards-error" class="rewards-error" style="display: none;">
+                        <p>Failed to load rewards. <button onclick="refreshRewards()">Try Again</button></p>
+                    </div>
+
+                    <!-- Balance Overview -->
+                    <div id="rewards-balance" class="rewards-balance" style="display: none;">
+                        <div class="balance-card">
+                            <div class="balance-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="2" y1="10" x2="22" y2="10"/>
+                                </svg>
+                            </div>
+                            <div class="balance-info">
+                                <div class="balance-label">Available Balance</div>
+                                <div class="balance-amount" id="available-balance">₹0</div>
+                            </div>
+                        </div>
+
+                        <div class="balance-stats">
+                            <div class="stat-card">
+                                <div class="stat-icon earned">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                        <polyline points="17 6 23 6 23 12"/>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Earned</div>
+                                    <div class="stat-value" id="earned-amount">₹0</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon redeemed">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="9" cy="12" r="1"/>
+                                        <circle cx="15" cy="12" r="1"/>
+                                        <path d="M12 2l3 3-3 3-3-3 3-3z"/>
+                                        <path d="M12 22l3-3-3-3-3 3 3 3z"/>
+                                    </svg>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Redeemed</div>
+                                    <div class="stat-value" id="redeemed-amount">₹0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transaction History -->
+                    <div class="rewards-transactions">
+                        <div class="transactions-header">
+                            <h4>Transaction History</h4>
+                            <div class="transaction-tabs">
+                                <button class="transaction-tab active" onclick="switchTransactionTab('all')">All</button>
+                                <button class="transaction-tab" onclick="switchTransactionTab('credit')">Earned</button>
+                                <button class="transaction-tab" onclick="switchTransactionTab('debit')">Redeemed</button>
+                            </div>
+                        </div>
+                        <div id="transactions-list" class="transactions-list"></div>
+                        <div id="load-more-btn" class="load-more-btn" style="display: none;">
+                            <button onclick="loadMoreTransactions()">Load More</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let studioData = null;
         let workshopsData = null;
         const studioId = "{{ studio_id }}";
+
+        // Authentication variables
+        let currentUser = null;
+        let authToken = null;
+        let otpTimer = null;
+        let resendCountdown = 30;
+        let currentMobileNumber = '';
+
+        // Profile modal variables
+        let currentProfileTab = 'profile';
+        let ordersData = null;
+        let rewardsData = null;
+        let currentOrderFilter = 'all';
+        let currentTransactionFilter = 'all';
+        let ordersPage = 0;
+        let transactionsPage = 1;
+        let hasMoreOrders = true;
+        let hasMoreTransactions = true;
         
         // DOM Elements
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -1821,6 +3515,27 @@
         const errorState = document.getElementById('error-state');
         const errorMessage = document.getElementById('error-message');
         const shareModal = document.getElementById('share-modal');
+
+        // Auth DOM Elements
+        const authContainer = document.getElementById('auth-container');
+        const authButton = document.getElementById('auth-button');
+        const profileModal = document.getElementById('profile-modal');
+        const loginModal = document.getElementById('login-modal');
+        const otpModal = document.getElementById('otp-modal');
+        const mobileInput = document.getElementById('mobile-number');
+        const otpMobileNumber = document.getElementById('otp-mobile-number');
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const sendOtpBtn = document.getElementById('send-otp-btn');
+        const verifyOtpBtn = document.getElementById('verify-otp-btn');
+        const resendOtpBtn = document.getElementById('resend-otp-btn');
+        const loginError = document.getElementById('login-error');
+        const otpError = document.getElementById('otp-error');
+
+        // Profile Modal Elements
+        const profileAvatarContainer = document.getElementById('profile-avatar-container');
+        const profileName = document.getElementById('profile-name');
+        const profileMobile = document.getElementById('profile-mobile');
+        const profileStatus = document.getElementById('profile-status');
         
         // Utility functions
         function toTitleCase(str) {
@@ -1855,7 +3570,7 @@
             }
             
             // Validate image type
-            if (!['artist', 'studio'].includes(type)) {
+            if (!['artist', 'studio', 'user'].includes(type)) {
                 if (onError) onError(element);
                 return;
             }
@@ -2315,11 +4030,23 @@
             // Register button (takes remaining space)
             const registerBtn = document.createElement('button');
             if (workshop.payment_link && workshop.payment_link.trim()) {
-                registerBtn.className = `register-button ${workshop.payment_link_type?.toLowerCase() === 'nachna' ? 'nachna' : 'external'}`;
-                registerBtn.textContent = 'Register';
+                const linkType = workshop.payment_link_type?.toLowerCase() || 'external';
+                registerBtn.className = `register-button ${linkType}`;
+                registerBtn.textContent = linkType === 'nachna' ? 'Register with nachna' : 'Register';
+
                 registerBtn.onclick = function() {
                     trackWorkshopClick(workshop);
-                    window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+
+                    if (linkType === 'whatsapp') {
+                        // Handle WhatsApp registration
+                        handleWhatsAppRegistration(workshop);
+                    } else if (linkType === 'nachna') {
+                        // Handle Nachna payment link creation
+                        handleNachnaRegistration(workshop, registerBtn);
+                    } else {
+                        // Handle external registration links
+                        window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+                    }
                 };
             } else {
                 registerBtn.className = 'register-button disabled';
@@ -2389,9 +4116,126 @@
             }
         }
         
+        // Handle WhatsApp registration
+        function handleWhatsAppRegistration(workshop) {
+            try {
+                // Create WhatsApp message with workshop details
+                const workshopDetails = `💃 *${toTitleCase(workshop.by || 'Dance Workshop')}*\n\n` +
+                    `🎵 Song: ${toTitleCase(workshop.song || 'Special Dance')}\n` +
+                    `📅 Date: ${formatDate(workshop.date)}\n` +
+                    `⏰ Time: ${formatTime(workshop.time)}\n` +
+                    `🏢 Studio: ${studioData ? toTitleCase(studioData.name) : 'Dance Studio'}\n\n` +
+                    `Register for this workshop!`;
+
+                // Encode the message for WhatsApp
+                const encodedMessage = encodeURIComponent(workshopDetails);
+
+                // Try WhatsApp Business first, then regular WhatsApp
+                const whatsappBizUrl = `whatsapp://send?text=${encodedMessage}`;
+                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+
+                // Try to open WhatsApp app
+                window.open(whatsappBizUrl, '_blank');
+
+                // Fallback to WhatsApp Web if app doesn't open
+                setTimeout(() => {
+                    window.open(whatsappUrl, '_blank');
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error opening WhatsApp:', error);
+                // Fallback to regular link
+                window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        // Handle Nachna payment link creation
+        async function handleNachnaRegistration(workshop, button) {
+            try {
+                // Show loading state
+                const originalText = button.textContent;
+                button.textContent = 'Creating payment link...';
+                button.disabled = true;
+
+                // Create workshop identifier (use timestamp if UUID is not available)
+                const workshopIdentifier = workshop.uuid || workshop.timestamp_epoch?.toString();
+
+                if (!workshopIdentifier) {
+                    throw new Error('Workshop information not available');
+                }
+
+                // Prepare workshop details for the payment request
+                const workshopDetails = {
+                    song: workshop.song || '',
+                    artist: workshop.by || '',
+                    studio: studioData?.name || '',
+                    date: workshop.date || '',
+                    time: workshop.time || '',
+                    pricing: workshop.pricing_info || ''
+                };
+
+                // Create payment link via API
+                const response = await fetch('/api/create_payment_link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        workshop_uuid: workshopIdentifier,
+                        workshop_details: workshopDetails,
+                        user_agent: navigator.userAgent
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create payment link');
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.payment_url) {
+                    // Open payment URL
+                    window.open(result.payment_url, '_blank', 'noopener,noreferrer');
+
+                    // Send analytics
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'nachna_payment_created', {
+                            workshop_id: workshop.uuid,
+                            workshop_identifier: workshopIdentifier,
+                            song_name: workshop.song,
+                            artist_name: workshop.by,
+                            studio_id: studioId,
+                            studio_name: studioData?.name
+                        });
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to create payment link');
+                }
+
+            } catch (error) {
+                console.error('Error creating Nachna payment:', error);
+
+                // Show error message
+                showError('Failed to create payment link. Please try again.');
+
+                // Fallback to direct link if available
+                if (workshop.payment_link) {
+                    setTimeout(() => {
+                        window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+                    }, 2000);
+                }
+            } finally {
+                // Restore button state
+                if (button) {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            }
+        }
+
         // Analytics tracking
         function trackWorkshopClick(workshop) {
-            
+
             // Send analytics event if available
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'workshop_book_click', {
@@ -2614,29 +4458,926 @@
                 alert('Link copied to clipboard!');
             });
         }
+
+        // Authentication Functions
+        function handleAuth() {
+            if (currentUser) {
+                // Show profile modal
+                openProfileModal();
+            } else {
+                // Show login modal
+                openLoginModal();
+            }
+        }
+
+        function openLoginModal() {
+            loginModal.classList.add('show');
+            mobileInput.focus();
+            hideAuthErrors();
+        }
+
+        function closeLoginModal() {
+            loginModal.classList.remove('show');
+            document.getElementById('login-form').reset();
+            hideAuthErrors();
+        }
+
+        function openOTPModal() {
+            loginModal.classList.remove('show');
+            otpModal.classList.add('show');
+            otpMobileNumber.textContent = currentMobileNumber;
+            setupOTPInputs();
+            startResendTimer();
+        }
+
+        function closeOTPModal() {
+            otpModal.classList.remove('show');
+            clearResendTimer();
+            hideAuthErrors();
+            // Reset OTP inputs
+            otpInputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('valid');
+            });
+        }
+
+        function openProfileModal() {
+            if (!currentUser) return;
+
+            // Reset to profile tab
+            switchProfileTab('profile');
+
+            // Populate profile data
+            populateProfileModal();
+
+            // Show modal
+            profileModal.classList.add('show');
+        }
+
+        function closeProfileModal() {
+            profileModal.classList.remove('show');
+        }
+
+        function populateProfileModal() {
+            if (!currentUser) return;
+
+            // Set profile name
+            profileName.textContent = currentUser.name || 'Dance Enthusiast';
+
+            // Set mobile number
+            profileMobile.textContent = '+91 ' + currentUser.mobile_number;
+
+            // Set profile status
+            const statusBadge = profileStatus.querySelector('.status-badge');
+            if (currentUser.profile_complete) {
+                statusBadge.textContent = 'Profile Complete';
+                statusBadge.className = 'status-badge complete';
+            } else {
+                statusBadge.textContent = 'Complete Profile';
+                statusBadge.className = 'status-badge incomplete';
+            }
+
+            // Set profile avatar
+            profileAvatarContainer.innerHTML = '';
+
+            if (currentUser.profile_picture_url) {
+                const avatar = document.createElement('img');
+                avatar.className = 'profile-avatar-large';
+
+                // Use centralized image loading function
+                loadImage({
+                    element: avatar,
+                    type: 'user',
+                    entityId: currentUser.user_id,
+                    altText: currentUser.name || 'Profile',
+                    onSuccess: function(img) {
+                        profileAvatarContainer.appendChild(img);
+                    },
+                    onError: function(img) {
+                        showProfileFallbackLarge();
+                    }
+                });
+            } else {
+                showProfileFallbackLarge();
+            }
+        }
+
+        function showProfileFallbackLarge() {
+            const fallback = document.createElement('div');
+            fallback.className = 'profile-fallback-large';
+            fallback.textContent = getInitials(currentUser.name || currentUser.mobile_number);
+            profileAvatarContainer.appendChild(fallback);
+        }
+
+        function navigateToEditProfile() {
+            closeProfileModal();
+            // For web, redirect to profile setup page
+            window.location.href = '/profile-setup';
+        }
+
+        function navigateToOrders() {
+            closeProfileModal();
+            // For web, redirect to orders page
+            window.location.href = '/orders';
+        }
+
+        function navigateToRewards() {
+            closeProfileModal();
+            // For web, redirect to rewards page
+            window.location.href = '/rewards';
+        }
+
+        // Tab switching functionality
+        function switchProfileTab(tabName) {
+            currentProfileTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.profile-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab-btn').classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.profile-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-content').classList.add('active');
+
+            // Load data for the selected tab
+            if (tabName === 'orders' && !ordersData) {
+                loadOrdersData();
+            } else if (tabName === 'rewards' && !rewardsData) {
+                loadRewardsData();
+            }
+        }
+
+        // Orders functionality
+        async function loadOrdersData() {
+            if (!authToken) return;
+
+            const ordersLoading = document.getElementById('orders-loading');
+            const ordersError = document.getElementById('orders-error');
+            const ordersList = document.getElementById('orders-list');
+
+            ordersLoading.style.display = 'flex';
+            ordersError.style.display = 'none';
+            ordersList.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/orders/user', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load orders');
+                }
+
+                ordersData = await response.json();
+                displayOrders(ordersData.orders);
+
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                ordersLoading.style.display = 'none';
+                ordersError.style.display = 'block';
+                ordersError.querySelector('p').textContent = error.message || 'Failed to load orders. Please try again.';
+            } finally {
+                ordersLoading.style.display = 'none';
+            }
+        }
+
+        function displayOrders(orders) {
+            const ordersList = document.getElementById('orders-list');
+            const ordersEmpty = document.getElementById('orders-empty');
+
+            if (!orders || orders.length === 0) {
+                ordersEmpty.style.display = 'block';
+                return;
+            }
+
+            ordersEmpty.style.display = 'none';
+            ordersList.innerHTML = '';
+
+            orders.forEach(order => {
+                const orderCard = createOrderCard(order);
+                ordersList.appendChild(orderCard);
+            });
+        }
+
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-card';
+
+            const statusClass = order.status.toLowerCase();
+            const statusText = getOrderStatusText(order.status);
+
+            card.innerHTML = `
+                <div class="order-header">
+                    <div>
+                        <div class="order-title">${order.workshop_details.title}</div>
+                        <div class="order-artists">${order.workshop_details.artist_names.join(', ')}</div>
+                    </div>
+                    <div class="order-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="order-details">
+                    <div class="order-detail">
+                        <span class="order-label">Studio:</span>
+                        <span class="order-value">${order.workshop_details.studio_name}</span>
+                    </div>
+                    <div class="order-detail">
+                        <span class="order-label">Date:</span>
+                        <span class="order-value">${order.workshop_details.date}</span>
+                    </div>
+                    <div class="order-detail">
+                        <span class="order-label">Time:</span>
+                        <span class="order-value">${order.workshop_details.time}</span>
+                    </div>
+                    <div class="order-detail">
+                        <span class="order-label">Amount:</span>
+                        <span class="order-value order-amount">₹${(order.amount / 100).toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getOrderStatusText(status) {
+            switch (status) {
+                case 'created': return 'Pending';
+                case 'paid': return 'Completed';
+                case 'failed': return 'Failed';
+                case 'expired': return 'Expired';
+                case 'cancelled': return 'Cancelled';
+                default: return status;
+            }
+        }
+
+        function applyOrderFilter(filter) {
+            currentOrderFilter = filter;
+
+            // Update filter chips
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+
+            const activeChip = document.querySelector(`.filter-chip[onclick*="${filter}"]`);
+            if (activeChip) {
+                activeChip.classList.add('active');
+            }
+
+            // Filter orders
+            if (ordersData && ordersData.orders) {
+                let filteredOrders = ordersData.orders;
+
+                switch (filter) {
+                    case 'pending':
+                        filteredOrders = ordersData.orders.filter(order => order.status === 'created');
+                        break;
+                    case 'completed':
+                        filteredOrders = ordersData.orders.filter(order => order.status === 'paid');
+                        break;
+                    case 'failed':
+                        filteredOrders = ordersData.orders.filter(order => ['failed', 'expired'].includes(order.status));
+                        break;
+                }
+
+                displayOrders(filteredOrders);
+            }
+        }
+
+        function refreshOrders() {
+            ordersData = null;
+            loadOrdersData();
+        }
+
+        // Rewards functionality
+        async function loadRewardsData() {
+            if (!authToken) return;
+
+            const rewardsLoading = document.getElementById('rewards-loading');
+            const rewardsError = document.getElementById('rewards-error');
+
+            rewardsLoading.style.display = 'flex';
+            rewardsError.style.display = 'none';
+
+            try {
+                // Load both balance and transactions
+                const [balanceResponse, transactionsResponse] = await Promise.all([
+                    fetch('/api/rewards/balance', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }),
+                    fetch('/api/rewards/transactions?page=1&page_size=20', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                ]);
+
+                if (!balanceResponse.ok || !transactionsResponse.ok) {
+                    throw new Error('Failed to load rewards data');
+                }
+
+                const balanceData = await balanceResponse.json();
+                const transactionsData = await transactionsResponse.json();
+
+                rewardsData = {
+                    balance: balanceData,
+                    transactions: transactionsData.transactions,
+                    hasMore: transactionsData.transactions.length >= 20
+                };
+
+                displayRewardsData();
+
+            } catch (error) {
+                console.error('Error loading rewards:', error);
+                rewardsLoading.style.display = 'none';
+                rewardsError.style.display = 'block';
+                rewardsError.querySelector('p').textContent = error.message || 'Failed to load rewards. Please try again.';
+            } finally {
+                rewardsLoading.style.display = 'none';
+            }
+        }
+
+        function displayRewardsData() {
+            if (!rewardsData) return;
+
+            const rewardsBalance = document.getElementById('rewards-balance');
+            const transactionsList = document.getElementById('transactions-list');
+
+            // Display balance
+            document.getElementById('available-balance').textContent = `₹${rewardsData.balance.available_balance}`;
+            document.getElementById('earned-amount').textContent = `₹${rewardsData.balance.lifetime_earned}`;
+            document.getElementById('redeemed-amount').textContent = `₹${rewardsData.balance.lifetime_redeemed}`;
+
+            rewardsBalance.style.display = 'block';
+
+            // Display transactions
+            displayTransactions(rewardsData.transactions);
+        }
+
+        function displayTransactions(transactions) {
+            const transactionsList = document.getElementById('transactions-list');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+
+            if (!transactions || transactions.length === 0) {
+                transactionsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No transactions found</div>';
+                loadMoreBtn.style.display = 'none';
+                return;
+            }
+
+            // Filter transactions based on current filter
+            let filteredTransactions = transactions;
+            if (currentTransactionFilter === 'credit') {
+                filteredTransactions = transactions.filter(t => t.transaction_type === 'credit');
+            } else if (currentTransactionFilter === 'debit') {
+                filteredTransactions = transactions.filter(t => t.transaction_type === 'debit');
+            }
+
+            transactionsList.innerHTML = '';
+
+            filteredTransactions.forEach(transaction => {
+                const transactionItem = createTransactionItem(transaction);
+                transactionsList.appendChild(transactionItem);
+            });
+
+            // Show/hide load more button
+            loadMoreBtn.style.display = hasMoreTransactions ? 'block' : 'none';
+        }
+
+        function createTransactionItem(transaction) {
+            const item = document.createElement('div');
+            item.className = 'transaction-item';
+
+            const typeClass = transaction.transaction_type === 'credit' ? 'credit' : 'debit';
+            const amountClass = transaction.transaction_type === 'credit' ? 'credit' : 'debit';
+            const sign = transaction.transaction_type === 'credit' ? '+' : '-';
+
+            item.innerHTML = `
+                <div class="transaction-icon ${typeClass}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${transaction.transaction_type === 'credit'
+                            ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>'
+                            : '<circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M12 2l3 3-3 3-3-3 3-3z"/><path d="M12 22l3-3-3-3-3 3 3 3z"/>'
+                        }
+                    </svg>
+                </div>
+                <div class="transaction-info">
+                    <div class="transaction-title">${transaction.description}</div>
+                    <div class="transaction-desc">${formatTransactionDate(transaction.created_at)}</div>
+                </div>
+                <div class="transaction-amount ${amountClass}">${sign}₹${transaction.amount}</div>
+            `;
+
+            return item;
+        }
+
+        function formatTransactionDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function switchTransactionTab(filter) {
+            currentTransactionFilter = filter;
+
+            // Update tab buttons
+            document.querySelectorAll('.transaction-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            const activeTab = document.querySelector(`.transaction-tab[onclick*="${filter}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+
+            // Filter transactions
+            if (rewardsData && rewardsData.transactions) {
+                displayTransactions(rewardsData.transactions);
+            }
+        }
+
+        async function loadMoreTransactions() {
+            if (!authToken || !hasMoreTransactions) return;
+
+            try {
+                transactionsPage++;
+                const response = await fetch(`/api/rewards/transactions?page=${transactionsPage}&page_size=20`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load more transactions');
+                }
+
+                const data = await response.json();
+                rewardsData.transactions.push(...data.transactions);
+                hasMoreTransactions = data.transactions.length >= 20;
+
+                displayTransactions(rewardsData.transactions);
+
+            } catch (error) {
+                console.error('Error loading more transactions:', error);
+            }
+        }
+
+        function refreshRewards() {
+            rewardsData = null;
+            loadRewardsData();
+        }
+
+        function hideAuthErrors() {
+            loginError.style.display = 'none';
+            otpError.style.display = 'none';
+        }
+
+        function showAuthError(errorElement, message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function setLoading(button, isLoading) {
+            const btnText = button.querySelector('.btn-text');
+            const btnLoader = button.querySelector('.btn-loader');
+
+            if (isLoading) {
+                btnText.style.display = 'none';
+                btnLoader.style.display = 'block';
+                button.disabled = true;
+            } else {
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+                button.disabled = false;
+            }
+        }
+
+        // OTP Input Management
+        function setupOTPInputs() {
+            otpInputs.forEach((input, index) => {
+                input.addEventListener('input', function(e) {
+                    // Only allow numbers
+                    this.value = this.value.replace(/[^0-9]/g, '');
+
+                    // Auto focus next input
+                    if (this.value.length === 1 && index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+
+                    // Mark as valid when filled
+                    if (this.value.length === 1) {
+                        this.classList.add('valid');
+                    } else {
+                        this.classList.remove('valid');
+                    }
+
+                    // Auto submit when all filled
+                    const allFilled = Array.from(otpInputs).every(inp => inp.value.length === 1);
+                    if (allFilled) {
+                        handleVerifyOTP();
+                    }
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && this.value.length === 0 && index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                });
+
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const paste = e.clipboardData.getData('text');
+                    const digits = paste.replace(/[^0-9]/g, '').split('');
+
+                    digits.forEach((digit, i) => {
+                        if (index + i < otpInputs.length) {
+                            otpInputs[index + i].value = digit;
+                            otpInputs[index + i].classList.add('valid');
+                        }
+                    });
+
+                    // Focus next empty input or last input
+                    const nextIndex = Math.min(index + digits.length, otpInputs.length - 1);
+                    otpInputs[nextIndex].focus();
+
+                    // Auto submit if all filled
+                    const allFilled = Array.from(otpInputs).every(inp => inp.value.length === 1);
+                    if (allFilled) {
+                        setTimeout(() => handleVerifyOTP(), 100);
+                    }
+                });
+            });
+
+            // Focus first input
+            if (otpInputs.length > 0) {
+                otpInputs[0].focus();
+            }
+        }
+
+        function getOTPValue() {
+            return Array.from(otpInputs).map(input => input.value).join('');
+        }
+
+        // Timer Management
+        function startResendTimer() {
+            clearResendTimer();
+            resendCountdown = 30;
+
+            otpTimer = setInterval(() => {
+                resendCountdown--;
+                updateResendButton();
+
+                if (resendCountdown <= 0) {
+                    clearResendTimer();
+                }
+            }, 1000);
+        }
+
+        function clearResendTimer() {
+            if (otpTimer) {
+                clearInterval(otpTimer);
+                otpTimer = null;
+            }
+            resendCountdown = 30;
+            updateResendButton();
+        }
+
+        function updateResendButton() {
+            const countdownText = resendOtpBtn.querySelector('.countdown-text');
+            const resendText = resendOtpBtn.querySelector('.resend-text');
+
+            if (resendCountdown > 0) {
+                resendOtpBtn.disabled = true;
+                countdownText.textContent = `Resend in ${resendCountdown}s`;
+            } else {
+                resendOtpBtn.disabled = false;
+            }
+        }
+
+        // API Calls
+        async function sendOTP(mobileNumber) {
+            try {
+                const response = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mobile_number: mobileNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to send OTP');
+                }
+
+                return data.message || 'OTP sent successfully';
+            } catch (error) {
+                console.error('Send OTP error:', error);
+                throw error;
+            }
+        }
+
+        async function verifyOTP(mobileNumber, otp) {
+            try {
+                const response = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mobile_number: mobileNumber,
+                        otp: otp
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'OTP verification failed');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                throw error;
+            }
+        }
+
+        async function getUserProfile(token) {
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Get profile error:', error);
+                throw error;
+            }
+        }
+
+        // Form Handlers
+        async function handleSendOTP(event) {
+            event.preventDefault();
+
+            const mobileNumber = mobileInput.value.trim();
+
+            if (!mobileNumber || mobileNumber.length !== 10) {
+                showAuthError(loginError, 'Please enter a valid 10-digit mobile number');
+                return;
+            }
+
+            setLoading(sendOtpBtn, true);
+            hideAuthErrors();
+
+            try {
+                await sendOTP(mobileNumber);
+                currentMobileNumber = mobileNumber;
+                openOTPModal();
+            } catch (error) {
+                showAuthError(loginError, error.message || 'Failed to send OTP. Please try again.');
+            } finally {
+                setLoading(sendOtpBtn, false);
+            }
+        }
+
+        async function handleVerifyOTP(event) {
+            if (event) event.preventDefault();
+
+            const otp = getOTPValue();
+
+            if (otp.length !== 6) {
+                showAuthError(otpError, 'Please enter the complete 6-digit OTP');
+                return;
+            }
+
+            setLoading(verifyOtpBtn, true);
+            hideAuthErrors();
+
+            try {
+                const result = await verifyOTP(currentMobileNumber, otp);
+                authToken = result.access_token;
+
+                // Get user profile
+                const userProfile = await getUserProfile(authToken);
+                currentUser = userProfile;
+
+                // Save to localStorage
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                // Update UI
+                updateAuthUI();
+                closeOTPModal();
+
+                // Show success message
+                alert('Login successful! Welcome to Nachna.');
+
+            } catch (error) {
+                showAuthError(otpError, error.message || 'Invalid OTP. Please try again.');
+            } finally {
+                setLoading(verifyOtpBtn, false);
+            }
+        }
+
+        function resendOTP() {
+            if (resendCountdown > 0) return;
+
+            handleSendOTP({ preventDefault: () => {} });
+        }
+
+        function logout() {
+            // Clear local storage
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+
+            // Clear variables
+            authToken = null;
+            currentUser = null;
+
+            // Update UI
+            updateAuthUI();
+
+            // Hide profile modal
+            closeProfileModal();
+
+            // Show logout message
+            alert('You have been logged out successfully.');
+        }
+
+        // UI Updates
+        function updateAuthUI() {
+            const authText = authButton.querySelector('.auth-text');
+
+            if (currentUser) {
+                // Show profile avatar
+                authButton.innerHTML = '';
+
+                if (currentUser.profile_picture_url) {
+                    const avatar = document.createElement('img');
+                    avatar.className = 'profile-avatar';
+                    avatar.alt = currentUser.name || 'Profile';
+
+                    // Use centralized image loading function
+                    loadImage({
+                        element: avatar,
+                        type: 'user',
+                        entityId: currentUser.user_id,
+                        altText: currentUser.name || 'Profile',
+                        onSuccess: function(img) {
+                            authButton.appendChild(img);
+                        },
+                        onError: function(img) {
+                            showProfileFallback();
+                        }
+                    });
+                } else {
+                    showProfileFallback();
+                }
+
+                // Add click handler for profile dropdown
+                authButton.onclick = function() {
+                    handleAuth();
+                };
+
+            } else {
+                // Show login button
+                authButton.innerHTML = `
+                    <span class="auth-text">Login</span>
+                    <svg class="auth-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                `;
+
+                // Add click handler for login
+                authButton.onclick = function() {
+                    handleAuth();
+                };
+            }
+        }
+
+        function showProfileFallback() {
+            const fallback = document.createElement('div');
+            fallback.className = 'profile-fallback';
+            fallback.textContent = getInitials(currentUser.name || currentUser.mobile_number);
+            authButton.appendChild(fallback);
+        }
+
+        // Initialization
+        function initializeAuth() {
+            // Check for existing session
+            const savedToken = localStorage.getItem('authToken');
+            const savedUser = localStorage.getItem('currentUser');
+
+            if (savedToken && savedUser) {
+                try {
+                    authToken = savedToken;
+                    currentUser = JSON.parse(savedUser);
+                    updateAuthUI();
+                } catch (error) {
+                    console.error('Error restoring auth session:', error);
+                    logout();
+                }
+            }
+
+            // Set up event listeners
+            setupAuthEventListeners();
+        }
+
+        function setupAuthEventListeners() {
+            // Close modals when clicking outside
+            loginModal.addEventListener('click', function(e) {
+                if (e.target === loginModal) {
+                    closeLoginModal();
+                }
+            });
+
+            otpModal.addEventListener('click', function(e) {
+                if (e.target === otpModal) {
+                    closeOTPModal();
+                }
+            });
+
+            profileModal.addEventListener('click', function(e) {
+                if (e.target === profileModal) {
+                    closeProfileModal();
+                }
+            });
+
+            // Close modals when clicking outside auth container (for profile modal)
+            document.addEventListener('click', function(e) {
+                if (!authContainer.contains(e.target) && !profileModal.contains(e.target)) {
+                    closeProfileModal();
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    if (loginModal.classList.contains('show')) {
+                        closeLoginModal();
+                    } else if (otpModal.classList.contains('show')) {
+                        closeOTPModal();
+                    } else if (profileModal.classList.contains('show')) {
+                        closeProfileModal();
+                    }
+                }
+            });
+        }
         
         // Main load function
         async function loadData() {
             showLoading();
             errorState.style.display = 'none';
-            
+
             try {
+                // Initialize authentication first
+                initializeAuth();
+
                 // Load both in parallel
                 const results = await Promise.allSettled([
                     loadStudioData(),
                     loadWorkshopsData()
                 ]);
-                
+
                 // Check if studio data loaded successfully
                 if (results[0].status === 'rejected') {
                     throw new Error('Failed to load studio data: ' + results[0].reason);
                 }
-                
+
                 // Workshop data failure is less critical
                 if (results[1].status === 'rejected') {
                     // Workshop load failed - continue with studio info only
                 }
-                
+
             } catch (error) {
                 showError(error.message || 'Failed to load studio data. Please try again.');
             }
