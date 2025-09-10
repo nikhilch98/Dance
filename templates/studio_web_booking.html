@@ -166,7 +166,6 @@
             height: 100px;
             border-radius: 20px;
             object-fit: cover;
-            border: 2px solid var(--glass-border);
             background: var(--primary-gradient);
         }
         
@@ -1653,8 +1652,8 @@
                 <div class="studio-header-content">
                     <!-- Studio Image -->
                     <div class="studio-image-container">
-                        <img id="studio-image" class="studio-image" src="" alt="Studio" loading="lazy" style="display: none;">
-                        <div id="studio-image-fallback" class="studio-image-fallback">
+                        <img id="studio-image" class="studio-image" src="" alt="Studio" style="display: none;">
+                        <div id="studio-image-fallback" class="studio-image-fallback" style="display: flex;">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
                                 <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
                             </svg>
@@ -1814,6 +1813,101 @@
             return name.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2);
         }
         
+        // Centralized image loading function for both artists and studios
+        function loadImage(options) {
+            const {
+                element,           // Image element to load into
+                type,             // 'artist' or 'studio'
+                entityId,         // Artist ID or Studio ID
+                altText,          // Alt text for image
+                onSuccess,        // Callback when image loads successfully
+                onError,          // Callback when image fails to load
+                fallbackElement   // Optional fallback element to show on error
+            } = options;
+            
+            // Validate required parameters
+            if (!element || !type || !entityId) {
+                if (onError) onError(element);
+                return;
+            }
+            
+            // Validate image type
+            if (!['artist', 'studio'].includes(type)) {
+                if (onError) onError(element);
+                return;
+            }
+            
+            // Force the browser to make a new request
+            const timestamp = new Date().getTime();
+            const imageUrl = `/api/image/${type}/${entityId}?t=${timestamp}`;
+            
+            // Create a new image to test loading first
+            const testImg = new Image();
+            
+            testImg.onload = function() {
+                // Clear any existing handlers
+                element.onload = null;
+                element.onerror = null;
+                
+                // Set up success handler for display element
+                element.onload = function() {
+                    if (onSuccess) {
+                        onSuccess(this);
+                    } else {
+                        this.style.display = 'block';
+                        if (fallbackElement) {
+                            fallbackElement.style.display = 'none';
+                        }
+                    }
+                };
+                
+                // Set up error handler for display element
+                element.onerror = function() {
+                    if (onError) {
+                        onError(this);
+                    } else {
+                        this.style.display = 'none';
+                        if (fallbackElement) {
+                            fallbackElement.style.display = 'flex';
+                        }
+                    }
+                };
+                
+                // Set the source on the actual element
+                element.alt = altText || `${type} image`;
+                element.src = imageUrl;
+                
+                // Fallback: If the display element doesn't fire onload within 2 seconds, 
+                // assume it loaded and call success manually
+                setTimeout(function() {
+                    if (element.src === imageUrl && element.naturalWidth > 0) {
+                        if (onSuccess) {
+                            onSuccess(element);
+                        } else {
+                            element.style.display = 'block';
+                            if (fallbackElement) {
+                                fallbackElement.style.display = 'none';
+                            }
+                        }
+                    }
+                }, 2000);
+            };
+            
+            testImg.onerror = function() {
+                if (onError) {
+                    onError(element);
+                } else {
+                    element.style.display = 'none';
+                    if (fallbackElement) {
+                        fallbackElement.style.display = 'flex';
+                    }
+                }
+            };
+            
+            // Start loading the test image
+            testImg.src = imageUrl;
+        }
+        
         function formatTime(timeStr) {
             if (!timeStr) return 'TBA';
             return timeStr;
@@ -1832,6 +1926,13 @@
         function hideLoading() {
             loadingOverlay.style.display = 'none';
             mainContainer.style.display = 'block';
+            
+            // Additional safety check - ensure studio image is loaded after UI is visible
+            if (studioData && studioImage.src === '') {
+                setTimeout(function() {
+                    loadStudioImageDirect();
+                }, 200);
+            }
         }
         
         function showError(message) {
@@ -1851,6 +1952,35 @@
             errorState.style.display = 'none';
         }
         
+        // Load studio image using centralized image loader
+        function loadStudioImageDirect() {
+            // Validate studio ID
+            if (!studioId || !studioId.trim()) {
+                showImageFallback();
+                return;
+            }
+            
+            // Ensure elements exist
+            if (!studioImage || !studioImageFallback) {
+                return;
+            }
+            
+            // Use centralized image loading function
+            loadImage({
+                element: studioImage,
+                type: 'studio',
+                entityId: studioId,
+                altText: studioData?.name || 'Studio Image',
+                onSuccess: function(img) {
+                    showStudioImage();
+                },
+                onError: function(img) {
+                    showImageFallback();
+                },
+                fallbackElement: studioImageFallback
+            });
+        }
+
         // Load studio data
         async function loadStudioData() {
             try {
@@ -1906,36 +2036,13 @@
         
         // Display studio information
         function displayStudioInfo() {
-            if (!studioData) return;
+            if (!studioData) {
+                return;
+            }
             
-            // Debug: log studio data to see what we have
-            console.log('Studio data:', studioData);
-            
-            // Update studio name
+            // Update studio name and page title
             studioName.textContent = toTitleCase(studioData.name);
             document.title = `${toTitleCase(studioData.name)} - Dance Workshops | Nachna`;
-            
-            // Handle studio image - Use EXACT same logic as artist images
-            if (studioId) {
-                // Add cache-busting timestamp to prevent HEAD requests from cache
-                const cacheBust = Date.now();
-                studioImage.src = `/api/image/studio/${studioId}?t=${cacheBust}`;
-                studioImage.alt = studioData?.name || 'Studio';
-                studioImage.onload = function() {
-                    console.log('✅ Studio image loaded successfully from centralized API');
-                    studioImage.style.display = 'block';
-                    studioImageFallback.style.display = 'none';
-                };
-                studioImage.onerror = function() {
-                    console.log('❌ Studio image failed, showing fallback');
-                    studioImage.style.display = 'none';
-                    studioImageFallback.style.display = 'flex';
-                };
-            } else {
-                console.log('❌ No studio ID found, showing fallback');
-                studioImage.style.display = 'none';
-                studioImageFallback.style.display = 'flex';
-            }
             
             // Handle Instagram icon
             if (studioData.instagram_link) {
@@ -1946,6 +2053,24 @@
             } else {
                 studioInstagramIcon.style.display = 'none';
             }
+            
+            // Load studio image with a small delay to ensure DOM is ready
+            setTimeout(function() {
+                loadStudioImageDirect();
+            }, 100);
+        }
+        
+        
+        // Show the studio image and hide fallback
+        function showStudioImage() {
+            studioImage.style.display = 'block';
+            studioImageFallback.style.display = 'none';
+        }
+        
+        // Show the fallback icon and hide image
+        function showImageFallback() {
+            studioImage.style.display = 'none';
+            studioImageFallback.style.display = 'flex';
         }
         
         // Create artist avatars using centralized image API
@@ -1961,15 +2086,22 @@
                 if (validArtistIds.length === 1) {
                     const img = document.createElement('img');
                     img.className = 'single-avatar';
-                    img.src = `/api/image/artist/${validArtistIds[0]}`;
-                    img.alt = workshop.by || 'Artist';
-                    img.onerror = function() {
-                        // No proxy fallback - just show initials
-                        const fallback = document.createElement('div');
-                        fallback.className = 'avatar-fallback';
-                        fallback.textContent = getInitials(workshop.by);
-                        container.replaceChild(fallback, img);
-                    };
+                    
+                    // Use centralized image loading function
+                    loadImage({
+                        element: img,
+                        type: 'artist',
+                        entityId: validArtistIds[0],
+                        altText: workshop.by || 'Artist',
+                        onError: function(imgElement) {
+                            // Show initials fallback on error
+                            const fallback = document.createElement('div');
+                            fallback.className = 'avatar-fallback';
+                            fallback.textContent = getInitials(workshop.by);
+                            container.replaceChild(fallback, imgElement);
+                        }
+                    });
+                    
                     container.appendChild(img);
                 } else {
                     const fallback = document.createElement('div');
@@ -1991,18 +2123,25 @@
                 for (let i = 0; i < maxAvatars; i++) {
                     const img = document.createElement('img');
                     img.className = 'avatar-stack';
-                    img.src = `/api/image/artist/${validArtistIds[i]}`;
-                    img.alt = `Artist ${i + 1}`;
-                    img.onerror = function() {
-                        // No proxy fallback - just show initials
-                        const fallback = document.createElement('div');
-                        fallback.className = 'avatar-stack avatar-fallback';
-                        fallback.style.width = '36px';
-                        fallback.style.height = '36px';
-                        fallback.style.fontSize = '0.8rem';
-                        fallback.textContent = getInitials(workshop.by);
-                        multipleContainer.replaceChild(fallback, img);
-                    };
+                    
+                    // Use centralized image loading function
+                    loadImage({
+                        element: img,
+                        type: 'artist',
+                        entityId: validArtistIds[i],
+                        altText: `Artist ${i + 1}`,
+                        onError: function(imgElement) {
+                            // Show initials fallback on error
+                            const fallback = document.createElement('div');
+                            fallback.className = 'avatar-stack avatar-fallback';
+                            fallback.style.width = '36px';
+                            fallback.style.height = '36px';
+                            fallback.style.fontSize = '0.8rem';
+                            fallback.textContent = getInitials(workshop.by);
+                            multipleContainer.replaceChild(fallback, imgElement);
+                        }
+                    });
+                    
                     multipleContainer.appendChild(img);
                 }
                 
@@ -2394,10 +2533,22 @@
             errorState.style.display = 'none';
             
             try {
-                await Promise.all([
+                // Load both in parallel
+                const results = await Promise.allSettled([
                     loadStudioData(),
                     loadWorkshopsData()
                 ]);
+                
+                // Check if studio data loaded successfully
+                if (results[0].status === 'rejected') {
+                    throw new Error('Failed to load studio data: ' + results[0].reason);
+                }
+                
+                // Workshop data failure is less critical
+                if (results[1].status === 'rejected') {
+                    console.error('Workshop load failed:', results[1].reason);
+                }
+                
             } catch (error) {
                 console.error('Error loading data:', error);
                 showError(error.message || 'Failed to load studio data. Please try again.');
@@ -2430,6 +2581,7 @@
         
         // Set initial load timestamp
         localStorage.setItem('lastStudioLoad', new Date().getTime().toString());
+        
         
         // Keyboard navigation
         document.addEventListener('keydown', function(event) {
