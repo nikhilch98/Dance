@@ -170,7 +170,6 @@
             height: 120px;
             border-radius: 20px;
             object-fit: cover;
-            border: 2px solid var(--glass-border);
             background: var(--artist-gradient);
         }
         
@@ -182,7 +181,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--glass-border);
         }
         
         .artist-info {
@@ -348,6 +346,61 @@
         .workshops-grid {
             display: grid;
             gap: 1rem;
+        }
+        
+        /* Studio Avatar Styles */
+        .workshop-studio-column {
+            flex-shrink: 0;
+            margin-right: 1rem;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .studio-avatar-container {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .studio-avatar-container:hover {
+            transform: scale(1.05);
+        }
+        
+        .studio-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: var(--primary-gradient);
+        }
+        
+        .studio-avatar-fallback {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        /* Enhanced Studio Info */
+        .studio-info-enhanced {
+            margin-bottom: 0.75rem;
+        }
+        
+        .workshop-studio-name {
+            cursor: pointer;
+            transition: color 0.2s ease;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .workshop-studio-name:hover {
+            color: var(--share-color);
         }
         
         /* Workshop Card Styles - Artist Detail Layout */
@@ -791,6 +844,18 @@
                 margin: 0;
             }
             
+            /* Studio avatars mobile */
+            .workshop-studio-column {
+                margin-right: 0.75rem;
+            }
+            
+            .studio-avatar, .studio-avatar-fallback {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+            }
+            
             /* Back button - positioned like app's SafeArea */
             .back-button {
                 position: fixed;
@@ -840,7 +905,6 @@
                 width: 112px;
                 height: 112px;
                 border-radius: 16px;
-                border: 1.5px solid rgba(255, 255, 255, 0.2);
                 flex-shrink: 0;
             }
             
@@ -868,6 +932,7 @@
                 text-overflow: ellipsis;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
+                line-clamp: 2;
                 -webkit-box-orient: vertical;
             }
             
@@ -1212,7 +1277,7 @@
                 <div class="artist-header-content">
                     <!-- Artist Image -->
                     <div class="artist-image-container">
-                        <img id="artist-image" class="artist-image" src="" alt="Artist" loading="lazy" style="display: none;">
+                        <img id="artist-image" class="artist-image" src="" alt="Artist" style="display: none;">
                         <div id="artist-image-fallback" class="artist-image-fallback">
                             <svg width="50" height="50" viewBox="0 0 24 24" fill="white">
                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -1391,6 +1456,13 @@
         function hideLoading() {
             loadingOverlay.style.display = 'none';
             mainContainer.style.display = 'block';
+            
+            // Additional safety check - ensure artist image is loaded after UI is visible
+            if (artistData && artistImage.src === '') {
+                setTimeout(function() {
+                    loadArtistImage();
+                }, 200);
+            }
         }
         
         function showError(message) {
@@ -1408,10 +1480,18 @@
             errorState.style.display = 'none';
         }
         
-        // Load artist data
+        // Load specific artist data
         async function loadArtistData() {
             try {
-                const response = await fetch(`/api/artists`);
+                // Try to get specific artist first
+                let response = await fetch(`/api/artist/${artistId}`);
+                if (response.ok) {
+                    artistData = await response.json();
+                    return;
+                }
+                
+                // Fallback to loading all artists and finding the one we need
+                response = await fetch(`/api/artists`);
                 if (!response.ok) {
                     throw new Error(`Failed to load artists (${response.status})`);
                 }
@@ -1423,7 +1503,7 @@
                     throw new Error(`Artist with ID ${artistId} not found`);
                 }
                 
-                displayArtistInfo();
+                // Don't call displayArtistInfo() here - let loadData() control the timing
             } catch (error) {
                 console.error('Error loading artist data:', error);
                 throw error;
@@ -1438,73 +1518,150 @@
                     throw new Error(`Failed to load workshops (${response.status})`);
                 }
                 workshopsData = await response.json();
-                displayWorkshops();
+                // Don't call displayWorkshops() here - let loadData() control the timing
             } catch (error) {
                 console.error('Error loading workshops data:', error);
                 throw error;
             }
         }
         
+        // Centralized image loading function for artist images
+        function loadImage(options) {
+            const {
+                element,           // Image element to load into
+                type,             // 'artist' or 'studio'
+                entityId,         // Artist ID or Studio ID
+                altText,          // Alt text for image
+                onSuccess,        // Callback when image loads successfully
+                onError,          // Callback when image fails to load
+                fallbackElement   // Optional fallback element to show on error
+            } = options;
+            
+            // Validate required parameters
+            if (!element || !type || !entityId) {
+                if (onError) onError();
+                return;
+            }
+            
+            // Validate image type
+            if (!['artist', 'studio'].includes(type)) {
+                if (onError) onError();
+                return;
+            }
+            
+            // Create test image first to verify URL works
+            const testImg = new Image();
+            
+            testImg.onload = function() {
+                // Test successful, now update the actual element
+                element.onload = function() {
+                    if (onSuccess) {
+                        onSuccess(this);
+                    } else {
+                        this.style.display = 'block';
+                        if (fallbackElement) {
+                            fallbackElement.style.display = 'none';
+                        }
+                    }
+                };
+                
+                element.onerror = function() {
+                    if (onError) {
+                        onError(this);
+                    } else {
+                        this.style.display = 'none';
+                        if (fallbackElement) {
+                            fallbackElement.style.display = 'flex';
+                        }
+                    }
+                };
+                
+                // Set properties and load
+                element.alt = altText || `${type} image`;
+                element.src = `/api/image/${type}/${entityId}`;
+                
+                // Fallback timeout in case onload doesn't fire
+                setTimeout(function() {
+                    if (element.complete && element.naturalHeight > 0) {
+                        if (onSuccess) {
+                            onSuccess(element);
+                        } else {
+                            element.style.display = 'block';
+                            if (fallbackElement) {
+                                fallbackElement.style.display = 'none';
+                            }
+                        }
+                    }
+                }, 2000);
+            };
+            
+            testImg.onerror = function() {
+                if (onError) {
+                    onError(element);
+                } else {
+                    element.style.display = 'none';
+                    if (fallbackElement) {
+                        fallbackElement.style.display = 'flex';
+                    }
+                }
+            };
+            
+            // Start the test load
+            testImg.src = `/api/image/${type}/${entityId}?t=${Date.now()}`;
+        }
+        
+        // Show artist image and hide fallback
+        function showArtistImage() {
+            artistImage.style.display = 'block';
+            artistImageFallback.style.display = 'none';
+        }
+        
+        // Show artist fallback and hide image
+        function showArtistFallback() {
+            artistImage.style.display = 'none';
+            artistImageFallback.style.display = 'flex';
+        }
+        
+        // Load artist image using centralized loader
+        function loadArtistImage() {
+            if (!artistData || !artistData.id) {
+                showArtistFallback();
+                return;
+            }
+            
+            // Ensure elements are available
+            if (!artistImage || !artistImageFallback) {
+                setTimeout(loadArtistImage, 100);
+                return;
+            }
+            
+            loadImage({
+                element: artistImage,
+                type: 'artist',
+                entityId: artistData.id,
+                altText: artistData.name || 'Artist Image',
+                onSuccess: function(img) {
+                    showArtistImage();
+                },
+                onError: function(img) {
+                    showArtistFallback();
+                },
+                fallbackElement: artistImageFallback
+            });
+        }
+        
         // Display artist information
         function displayArtistInfo() {
             if (!artistData) return;
-            
-            console.log('Artist data:', artistData);
             
             // Update artist name
             artistName.textContent = toTitleCase(artistData.name);
             document.title = `${toTitleCase(artistData.name)} - Dance Artist | Nachna`;
             
-            // Handle artist image - Try centralized API first, fallback to proxy
-            const artistId = artistData.id;
-            
-            if (artistId) {
-                console.log('Loading artist image from centralized API:', artistId);
-                
-                // Try the new centralized image API first
-                const centralizedImageUrl = `https://nachna.com/api/image/artist/${artistId}`;
-                console.log('Centralized image URL:', centralizedImageUrl);
-                
-                artistImage.src = centralizedImageUrl;
-                artistImage.onload = function() {
-                    console.log('Artist image loaded successfully from centralized API');
-                    artistImage.style.display = 'block';
-                    artistImageFallback.style.display = 'none';
-                };
-                
-                artistImage.onerror = function() {
-                    console.log('Centralized image failed, trying proxy fallback...');
-                    
-                    // Fallback to proxy approach (backward compatibility)
-                    const imageUrl = artistData.image_url || artistData.imageUrl || artistData.img_url;
-                    
-                    if (imageUrl && imageUrl.trim()) {
-                        const proxyImageUrl = `https://nachna.com/api/proxy-image/?url=${encodeURIComponent(imageUrl)}`;
-                        console.log('Trying proxy fallback:', proxyImageUrl);
-                        
-                        artistImage.src = proxyImageUrl;
-                        artistImage.onload = function() {
-                            console.log('Artist image loaded successfully via proxy fallback');
-                            artistImage.style.display = 'block';
-                            artistImageFallback.style.display = 'none';
-                        };
-                        
-                        artistImage.onerror = function() {
-                            console.log('Both centralized and proxy failed, showing fallback');
-                            artistImage.style.display = 'none';
-                            artistImageFallback.style.display = 'flex';
-                        };
-                    } else {
-                        console.log('No image URL for proxy fallback, showing fallback');
-                        artistImage.style.display = 'none';
-                        artistImageFallback.style.display = 'flex';
-                    }
-                };
-            } else {
-                console.log('No artist ID found, showing fallback');
-                artistImage.style.display = 'none';
-                artistImageFallback.style.display = 'flex';
-            }
+            // Load artist image with delay to ensure DOM is ready
+            setTimeout(function() {
+                loadArtistImage();
+            }, 100);
             
             // Handle Instagram icon
             if (artistData.instagram_link) {
@@ -1518,38 +1675,185 @@
         }
         
         // Load studio data for workshop details
-        let studiosData = null;
+        let studiosData = []; // Initialize as empty array to prevent null errors
         
-        async function loadStudiosData() {
+        // Load specific studio data by ID
+        async function loadStudioData(studioId) {
             try {
-                const response = await fetch(`/api/studios`);
-                if (!response.ok) {
-                    throw new Error(`Failed to load studios (${response.status})`);
+                if (!studioId) {
+                    console.warn('loadStudioData called with empty studioId');
+                    return null;
                 }
-                studiosData = await response.json();
+
+                // Check if we already have this studio data
+                const existingStudio = studiosData.find(s => s.id === studioId);
+                if (existingStudio) {
+                    console.log('Studio data already exists for:', studioId);
+                    return existingStudio;
+                }
+
+                // Fetch individual studio data
+                console.log('Fetching studio data for:', studioId);
+                const response = await fetch(`/api/studio/${studioId}`);
+                if (!response.ok) {
+                    console.warn(`Failed to load studio ${studioId} (${response.status})`);
+                    return null;
+                }
+                const studioData = await response.json();
+                console.log('Loaded studio data for:', studioId, '->', studioData.name);
+
+                // Add to our studios array
+                if (!studiosData) studiosData = [];
+                studiosData.push(studioData);
+
+                return studioData;
             } catch (error) {
-                console.error('Error loading studios data:', error);
-                studiosData = [];
+                console.error(`Error loading studio ${studioId}:`, error);
+                return null;
+            }
+        }
+        
+        // Load multiple studios data for workshops
+        async function loadStudiosDataForWorkshops() {
+            try {
+                if (!workshopsData || workshopsData.length === 0) {
+                    return;
+                }
+                
+                // Get unique studio IDs from workshops
+                const studioIds = [...new Set(workshopsData
+                    .map(workshop => workshop.studioId || workshop.studio_id)
+                    .filter(Boolean))];
+                
+                if (studioIds.length === 0) {
+                    console.warn('No studio IDs found in workshops data');
+                    return;
+                }
+                
+                // Load all required studios in parallel
+                console.log('Loading studios in parallel:', studioIds);
+                const studioPromises = studioIds.map(studioId => loadStudioData(studioId));
+                await Promise.all(studioPromises);
+                console.log('All studio data loaded, studiosData:', studiosData.length, 'items');
+                
+            } catch (error) {
+                console.error('Error loading studios data for workshops:', error);
+                if (!studiosData) studiosData = [];
             }
         }
         
         function getStudioName(studioId) {
-            if (!studiosData || !studioId) return 'Studio';
+            if (!studiosData || !studioId) {
+                return 'Loading...';
+            }
             const studio = studiosData.find(s => s.id === studioId);
-            return studio ? toTitleCase(studio.name) : 'Studio';
+            return studio ? toTitleCase(studio.name) : 'Unknown Studio';
+        }
+        
+        function getStudioData(studioId) {
+            if (!studiosData || !studioId) return null;
+            return studiosData.find(s => s.id === studioId);
+        }
+        
+        // Create studio avatar component
+        function createStudioAvatar(studioId, studioName) {
+            if (!studioId) return '';
+            
+            const studioData = getStudioData(studioId);
+            const displayName = studioName || getStudioName(studioId);
+            const initials = getInitials(displayName);
+            
+            return `
+                <div class="studio-avatar-container" onclick="navigateToStudio('${studioId}')">
+                    <img id="studio-avatar-${studioId}" class="studio-avatar" src="" alt="${displayName}" style="display: none;">
+                    <div id="studio-avatar-fallback-${studioId}" class="studio-avatar-fallback">
+                        ${initials}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Load studio avatar using centralized loader
+        function loadStudioAvatar(studioId) {
+            if (!studioId) {
+                console.warn('loadStudioAvatar called with empty studioId');
+                return;
+            }
+
+            console.log('Loading studio avatar for:', studioId);
+
+            // Wait for DOM elements to be available
+            let retryCount = 0;
+            const maxRetries = 10; // Give up after 10 retries (500ms)
+
+            const checkAndLoad = () => {
+                const avatarImg = document.getElementById(`studio-avatar-${studioId}`);
+                const avatarFallback = document.getElementById(`studio-avatar-fallback-${studioId}`);
+
+                if (!avatarImg || !avatarFallback) {
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        console.error(`Avatar elements not found for studio: ${studioId} after ${maxRetries} retries - giving up`);
+                        return;
+                    }
+                    console.warn(`Avatar elements not found for studio: ${studioId}, retrying (${retryCount}/${maxRetries})...`, {img: !!avatarImg, fallback: !!avatarFallback});
+                    // Try again in a bit if elements aren't ready
+                    setTimeout(checkAndLoad, 50);
+                    return;
+                }
+
+                console.log('Found avatar elements for studio:', studioId, 'proceeding with loadImage');
+                
+                console.log('Calling loadImage for studio:', studioId, 'with altText:', getStudioName(studioId));
+                loadImage({
+                    element: avatarImg,
+                    type: 'studio',
+                    entityId: studioId,
+                    altText: getStudioName(studioId),
+                    onSuccess: function(img) {
+                        console.log('Studio avatar loaded successfully for:', studioId);
+                        img.style.display = 'block';
+                        avatarFallback.style.display = 'none';
+                    },
+                    onError: function(img) {
+                        console.log('Studio avatar failed to load for:', studioId, '- showing fallback');
+                        img.style.display = 'none';
+                        avatarFallback.style.display = 'flex';
+                    },
+                    fallbackElement: avatarFallback
+                });
+            };
+            
+            checkAndLoad();
+        }
+        
+        // Navigate to studio page
+        function navigateToStudio(studioId) {
+            if (!studioId) return;
+            
+            // Track studio click
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'studio_avatar_click', {
+                    studio_id: studioId,
+                    source_page: 'artist_detail',
+                    artist_id: artistId,
+                    artist_name: artistData?.name
+                });
+            }
+            
+            window.location.href = `/web/${studioId}`;
         }
         
         // Create workshop card
         function createWorkshopCard(workshop) {
-            console.log('Creating workshop card for:', workshop);
-            console.log('All workshop keys:', Object.keys(workshop));
             
             const card = document.createElement('div');
             card.className = 'workshop-card';
             
             // Check multiple possible field name variations
             const songName = workshop.song || workshop.songName || workshop.song_name || 'Dance Workshop';
-            const studioName = getStudioName(workshop.studioId || workshop.studio_id);
+            const studioId = workshop.studioId || workshop.studio_id;
+            const studioName = getStudioName(studioId);
             const pricing = workshop.pricingInfo || workshop.pricing_info || workshop.price || workshop.pricing || 'Contact for pricing';
             const eventType = workshop.eventType || workshop.event_type || workshop.type || 'workshop';
             const paymentLink = workshop.paymentLink || workshop.payment_link || '';
@@ -1558,17 +1862,6 @@
             const date = workshop.date || workshop.workshop_date || '';
             const time = workshop.time || workshop.workshop_time || '';
             
-            console.log('Workshop details (mapped):', {
-                songName,
-                studioName,
-                pricing,
-                eventType,
-                date,
-                time,
-                paymentLink,
-                paymentLinkType,
-                choreoLink
-            });
             
             card.innerHTML = `
                 <!-- Header Row: Date + Choreo Button + Time Badge -->
@@ -1586,21 +1879,30 @@
                     </div>
                 </div>
                 
-                <!-- Main Content Row: Workshop Details + Register Button -->
+                <!-- Main Content Row: Studio Avatar + Workshop Details + Register Button -->
                 <div class="workshop-main-row">
+                    <!-- Studio Avatar Column -->
+                    ${studioId ? `
+                        <div class="workshop-studio-column">
+                            ${createStudioAvatar(studioId, studioName)}
+                        </div>
+                    ` : ''}
+                    
                     <div class="workshop-info-column">
                         <!-- Song Name -->
                         ${songName && songName !== 'Dance Workshop' ? `
                             <div class="workshop-song-title">${toTitleCase(songName)}</div>
                         ` : ''}
                         
-                        <!-- Studio Information -->
-                        <div class="workshop-detail-row">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
-                            </svg>
-                            <span class="workshop-detail-text">${studioName}</span>
-                        </div>
+                        <!-- Studio Information with Enhanced Visibility -->
+                        ${studioId ? `
+                            <div class="workshop-detail-row studio-info-enhanced">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+                                </svg>
+                                <span class="workshop-detail-text workshop-studio-name" onclick="navigateToStudio('${studioId}')">${studioName}</span>
+                            </div>
+                        ` : ''}
                         
                         <!-- Pricing Information -->
                         ${pricing && pricing !== 'Contact for pricing' ? `
@@ -1652,8 +1954,6 @@
         
         // Display workshops
         function displayWorkshops() {
-            console.log('Workshops data received:', workshopsData);
-            
             if (!workshopsData || workshopsData.length === 0) {
                 showEmpty();
                 return;
@@ -1666,11 +1966,42 @@
             
             workshopsContent.innerHTML = '';
             
+            const studioIds = new Set();
+            
             workshopsData.forEach((workshop, index) => {
-                console.log(`Workshop ${index + 1}:`, workshop);
                 const workshopCard = createWorkshopCard(workshop);
                 workshopsContent.appendChild(workshopCard);
+                
+                // Collect studio IDs for avatar loading
+                const studioId = workshop.studioId || workshop.studio_id;
+                if (studioId) {
+                    studioIds.add(studioId);
+                }
             });
+            
+            // Load studio avatars after cards are created and studios data is available
+            console.log('Setting up studio avatar loading for:', studioIds);
+            const loadAllStudioAvatars = () => {
+                console.log('Checking if studios data is ready, studiosData length:', studiosData?.length || 0);
+                if (!studiosData || studiosData.length === 0) {
+                    console.log('Studios data not ready yet, waiting...');
+                    // Wait for studios data to be loaded
+                    setTimeout(loadAllStudioAvatars, 100);
+                    return;
+                }
+
+                console.log('Studios data ready, loading avatars for:', studioIds.length, 'studios');
+                studioIds.forEach((studioId, index) => {
+                    // Stagger the loading to avoid overwhelming the DOM
+                    setTimeout(() => {
+                        console.log(`Loading avatar ${index + 1}/${studioIds.length} for studio:`, studioId);
+                        loadStudioAvatar(studioId);
+                    }, index * 100); // 100ms delay between each avatar
+                });
+            };
+
+            // Give the DOM a moment to settle before starting avatar loading
+            setTimeout(loadAllStudioAvatars, 300);
         }
         
         // Action button handlers
@@ -1712,12 +2043,6 @@
         
         // Analytics tracking
         function trackWorkshopClick(workshop) {
-            console.log('Workshop clicked:', {
-                workshop_id: workshop.uuid,
-                song_name: workshop.song,
-                artist_id: artistId,
-                artist_name: artistData?.name
-            });
             
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'workshop_book_click', {
@@ -1730,12 +2055,6 @@
         }
         
         function trackChoreoClick(choreoUrl, workshop) {
-            console.log('Choreography video clicked:', {
-                choreo_url: choreoUrl,
-                workshop_id: workshop.uuid,
-                artist_id: artistId,
-                artist_name: artistData?.name
-            });
             
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'choreo_video_click', {
@@ -1750,11 +2069,6 @@
         }
         
         function trackLikeClick() {
-            console.log('Artist like clicked:', {
-                artist_id: artistId,
-                artist_name: artistData?.name,
-                action: isLiked ? 'like' : 'unlike'
-            });
             
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'artist_like', {
@@ -1766,11 +2080,6 @@
         }
         
         function trackFollowClick() {
-            console.log('Artist follow clicked:', {
-                artist_id: artistId,
-                artist_name: artistData?.name,
-                action: isFollowing ? 'follow' : 'unfollow'
-            });
             
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'artist_follow', {
@@ -1840,17 +2149,26 @@
             });
         }
         
-        // Main load function
+        // Main load function - optimized to load only required data
         async function loadData() {
             showLoading();
             errorState.style.display = 'none';
             
             try {
+                // Step 1: Load artist and workshops data first
                 await Promise.all([
                     loadArtistData(),
-                    loadStudiosData(),
                     loadWorkshopsData()
                 ]);
+                
+                // Step 2: Load only the studios that appear in workshops
+                await loadStudiosDataForWorkshops();
+                
+                // Step 3: Display everything now that all required data is loaded
+                displayArtistInfo();
+                displayWorkshops();
+                hideLoading();
+                
             } catch (error) {
                 console.error('Error loading data:', error);
                 showError(error.message || 'Failed to load artist data. Please try again.');
