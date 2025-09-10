@@ -188,8 +188,8 @@
         
         .studio-name-row {
             display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
+            align-items: center;
+            gap: 0.5rem;
             margin-bottom: 0.75rem;
         }
         
@@ -199,14 +199,14 @@
             color: var(--text-primary);
             letter-spacing: 1.2px;
             line-height: 1.3;
-            flex: 1;
+            flex: 0 1 auto;
             min-width: 0;
             overflow-wrap: break-word;
         }
         
         .instagram-icon {
-            width: 28px;
-            height: 28px;
+            width: 40px;
+            height: 40px;
             border-radius: 0;
             background: none;
             display: flex;
@@ -222,9 +222,32 @@
         }
         
         .instagram-icon svg {
-            width: 24px;
-            height: 24px;
+            width: 36px;
+            height: 36px;
             fill: url(#instagram-gradient);
+        }
+        
+        .studio-instagram-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 0;
+            background: none;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .studio-instagram-icon:hover {
+            opacity: 0.7;
+        }
+        
+        .studio-instagram-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: url(#studio-instagram-gradient);
         }
         
         .studio-badges {
@@ -376,7 +399,7 @@
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1.3;
-            flex: 1;
+            flex: 0 1 auto;
             min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -385,15 +408,15 @@
         .artist-name-container {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.375rem;
             flex: 1;
             min-width: 0;
             overflow-wrap: break-word;
         }
 
         .artist-name-instagram-icon {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 0;
             background: none;
             display: flex;
@@ -409,8 +432,8 @@
         }
 
         .artist-name-instagram-icon svg {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             fill: url(#instagram-gradient);
         }
         
@@ -934,7 +957,7 @@
             .studio-name-row {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
+                gap: 0.375rem;
                 margin-bottom: 0.5rem;
             }
             
@@ -944,7 +967,7 @@
                 letter-spacing: 0.5px;
                 color: white;
                 line-height: 1.2;
-                flex: 1;
+                flex: 0 1 auto;
                 min-width: 0;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -954,10 +977,10 @@
                 -webkit-box-orient: vertical;
             }
             
-            /* Instagram icon - matches app's small icon size */
-            .instagram-icon {
-                width: 24px;
-                height: 24px;
+            /* Studio Instagram icon - matches app's small icon size */
+            .studio-instagram-icon {
+                width: 28px;
+                height: 28px;
                 border-radius: 0;
                 background: none;
                 display: flex;
@@ -967,10 +990,10 @@
                 cursor: pointer;
             }
 
-            .instagram-icon svg {
-                width: 20px;
-                height: 20px;
-                fill: url(#instagram-gradient);
+            .studio-instagram-icon svg {
+                width: 24px;
+                height: 24px;
+                fill: url(#studio-instagram-gradient);
             }
             
             /* Studio badges row - matches app's Row layout */
@@ -1086,7 +1109,7 @@
                 font-weight: 700;
                 line-height: 1.2;
                 color: white;
-                flex: 1;
+                flex: 0 1 auto;
                 min-width: 0;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1096,14 +1119,14 @@
             .artist-name-container {
                 display: flex;
                 align-items: center;
-                gap: 0.375rem;
+                gap: 0.25rem;
                 flex: 1;
                 min-width: 0;
             }
 
             .artist-name-instagram-icon {
-                width: 18px;
-                height: 18px;
+                width: 20px;
+                height: 20px;
                 border-radius: 0;
                 background: none;
                 display: flex;
@@ -1119,8 +1142,8 @@
             }
 
             .artist-name-instagram-icon svg {
-                width: 14px;
-                height: 14px;
+                width: 16px;
+                height: 16px;
                 fill: url(#instagram-gradient);
             }
             
@@ -1530,7 +1553,7 @@
             .artist-instagram-button,
             .share-button,
             .back-button,
-            .instagram-icon {
+            .studio-instagram-icon {
                 -webkit-touch-callout: none;
                 -webkit-user-select: none;
                 user-select: none;
@@ -1546,7 +1569,7 @@
             .choreo-button:active,
             .artist-instagram-button:active,
             .share-button:active,
-            .instagram-icon:active {
+            .studio-instagram-icon:active {
                 transform: scale(0.9);
                 transition: transform 0.1s ease;
             }
@@ -1588,7 +1611,7 @@
         .artist-instagram-button:focus,
         .back-button:focus,
         .share-button:focus,
-        .instagram-icon:focus {
+        .studio-instagram-icon:focus {
             outline: 2px solid #00D4FF;
             outline-offset: 2px;
         }
@@ -1597,7 +1620,8 @@
         @media (max-width: 768px) {
             .register-button:focus,
             .choreo-button:focus,
-            .artist-instagram-button:focus {
+            .artist-instagram-button:focus,
+            .studio-instagram-icon:focus {
                 outline: 3px solid #00D4FF;
                 outline-offset: 1px;
             }
@@ -1641,10 +1665,10 @@
                     <div class="studio-info">
                         <div class="studio-name-row">
                             <h1 id="studio-name" class="studio-name">Loading...</h1>
-                            <div id="instagram-icon" class="instagram-icon" style="display: none;">
+                            <div id="studio-instagram-icon" class="studio-instagram-icon" style="display: none;">
                                 <svg viewBox="0 0 24 24">
                                     <defs>
-                                        <linearGradient id="instagram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <linearGradient id="studio-instagram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                             <stop offset="0%" style="stop-color:#833AB4"/>
                                             <stop offset="50%" style="stop-color:#E4405F"/>
                                             <stop offset="100%" style="stop-color:#F77737"/>
@@ -1766,7 +1790,7 @@
         const studioImage = document.getElementById('studio-image');
         const studioImageFallback = document.getElementById('studio-image-fallback');
         const studioName = document.getElementById('studio-name');
-        const instagramIcon = document.getElementById('instagram-icon');
+        const studioInstagramIcon = document.getElementById('studio-instagram-icon');
         const thisWeekSection = document.getElementById('this-week-section');
         const upcomingSection = document.getElementById('upcoming-section');
         const thisWeekContent = document.getElementById('this-week-content');
@@ -1915,12 +1939,12 @@
             
             // Handle Instagram icon
             if (studioData.instagram_link) {
-                instagramIcon.style.display = 'flex';
-                instagramIcon.onclick = function() {
+                studioInstagramIcon.style.display = 'flex';
+                studioInstagramIcon.onclick = function() {
                     window.open(studioData.instagram_link, '_blank', 'noopener,noreferrer');
                 };
             } else {
-                instagramIcon.style.display = 'none';
+                studioInstagramIcon.style.display = 'none';
             }
         }
         
