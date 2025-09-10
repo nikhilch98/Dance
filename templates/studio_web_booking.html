@@ -5477,9 +5477,9 @@
                             </button>
                         `;
                     } else {
-                        // No QR code data available - show "Generate QR Code"
+                        // No QR code data available - show "QR code generation in progress"
                         qrButtonHtml = `
-                            <button class="qr-generate-btn" onclick="generateQRCode('${orderId}', '${order.workshop_details.title}', '${order.workshop_details.artist_names.join(', ')}')">
+                            <button class="qr-generate-btn qr-generating" disabled>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                     <rect x="7" y="7" width="10" height="10"/>
@@ -5488,7 +5488,7 @@
                                     <circle cx="15" cy="15" r="1"/>
                                     <path d="M9 15h6"/>
                                 </svg>
-                                <span>Generate QR Code</span>
+                                <span>QR code generation in progress</span>
                             </button>
                         `;
                     }
