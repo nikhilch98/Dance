@@ -89,14 +89,23 @@ def main():
     RTRIBE_NUMBER = "7338003939"
     GOOD_MOVE_STUDIOS_NUMBER = "9826000000"
 
-    # manual_populate_workshops("theroyaldancespace", [
-    #     ManualWorkshopEntry(by="Himanshu Dulani", song="jo tere sang", pricing_info="First 15: 1200/-\nLater: 1500/-",
-    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="02:00 PM",
-    #                         end_time="04:00 PM", choreo_insta_link=None, mobile_number=HIMANSHU_DULANI_NUMBER, artist_id_list=["himanshu_dulani"]),
-    #     ManualWorkshopEntry(by="Kiran J", song="shaky", pricing_info="First 15: 999/-\nNext 15: 1100/-\nOTS: 1300/-",
-    #                         event_type=EventType.WORKSHOP, day=13, month=7, year=2025, start_time="07:00 PM",
-    #                         end_time="09:00 PM", choreo_insta_link=None, mobile_number=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"]),
-    # ], remove_existing_workshops = True)
+    manual_populate_workshops("theroyaldancespace", [
+        ManualWorkshopEntry(by="Amisha Jayaram", song="o mama Tetema", pricing_info="Till 19th 800/-\nLater:950/-",
+                            event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="03:00 PM",
+                            end_time="05:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["amisha_jayaram"],registration_link_type="whatsapp"), 
+        ManualWorkshopEntry(by="Kiran J", song="azul", pricing_info="First 15: 999/-\nTill 20th: 1100/-\nOTS: 1300/-",
+                            event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="05:00 PM",
+                            end_time="07:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp"), 
+        ManualWorkshopEntry(by="Kiran J", song="bijuria", pricing_info="First 15: 999/-\nTill 20th: 1100/-\nOTS: 1300/-",
+                            event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="07:00 PM",
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp"), 
+        ManualWorkshopEntry(by="Viveka & Akanksha", song="mayya mayya", pricing_info="Single Class Fee\n799/- till 18th sept\n999/- later \n Both Class 1500/- till 18th Sept\nLater 1700/-",
+                            event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="04:00 PM",
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=[],registration_link_type="whatsapp"), 
+        ManualWorkshopEntry(by="Viveka & Akanksha", song="aavan jaavan", pricing_info="Single Class Fee\n799/- till 18th sept\n999/- later \n Both Class 1500/- till 18th Sept\nLater 1700/-",
+                            event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="06:00 PM",
+                            end_time="08:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=[],registration_link_type="whatsapp"), 
+    ], remove_existing_workshops = True)
 
     # manual_populate_workshops("beinrtribe", [
     #     ManualWorkshopEntry(by="Bindu Bolar", song="chuttamalle", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
@@ -111,17 +120,17 @@ def main():
     # ], remove_existing_workshops = True)
     
 
-    manual_populate_workshops("goodmove_studios", [
-        ManualWorkshopEntry(by="", song="Piya re", pricing_info="Early bird: 599/-\nLater: 699/-",
-                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="02:00 PM",
-                            end_time="04:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qd75qzAYhD7jvq/view", registration_link_type="url", artist_id_list=[]),
-        ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
-                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="03:00 PM",
-                            end_time="05:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
-        ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
-                            event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="06:00 PM",
-                            end_time="08:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
-    ], remove_existing_workshops = True)
+    # manual_populate_workshops("goodmove_studios", [
+    #     ManualWorkshopEntry(by="", song="Piya re", pricing_info="Early bird: 599/-\nLater: 699/-",
+    #                         event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="02:00 PM",
+    #                         end_time="04:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qd75qzAYhD7jvq/view", registration_link_type="url", artist_id_list=[]),
+    #     ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
+    #                         event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="03:00 PM",
+    #                         end_time="05:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
+    #     ManualWorkshopEntry(by="Rajiv Gupta", song=None, pricing_info="Early bird: 799/-\nLater: 899/-",
+    #                         event_type=EventType.WORKSHOP, day=6, month=7, year=2025, start_time="06:00 PM",
+    #                         end_time="08:00 PM", choreo_insta_link=None, registration_link="https://pages.razorpay.com/pl_Qkg2n9FEXYOdXR/view", registration_link_type="url", artist_id_list=["rajivkrishnagupta"]),
+    # ], remove_existing_workshops = True)
 
 
 
