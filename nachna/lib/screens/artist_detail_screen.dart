@@ -1091,16 +1091,37 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   ),
                                 ),
                               
-                              // Studio
+                              // Studio Avatar + Name
                               if (workshop.studioId?.isNotEmpty == true && workshop.studioId != 'TBA')
                                 Padding(
                                   padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingXSmall(context)),
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.business_rounded,
-                                        color: Colors.white.withOpacity(0.7),
-                                        size: ResponsiveUtils.iconXSmall(context),
+                                      // Studio Avatar
+                                      Container(
+                                        width: ResponsiveUtils.iconSmall(context),
+                                        height: ResponsiveUtils.iconSmall(context),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(6),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              const Color(0xFF3B82F6).withOpacity(0.3),
+                                              const Color(0xFF1D4ED8).withOpacity(0.3),
+                                            ],
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Icon(
+                                            Icons.business_rounded,
+                                            color: const Color(0xFF3B82F6),
+                                            size: ResponsiveUtils.iconXSmall(context),
+                                          ),
+                                        ),
                                       ),
                                       SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                                       Expanded(
@@ -1180,8 +1201,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           child: ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                               ? GestureDetector(
                                   onTap: () async {
-                                    // Ensure workshop UUID is available before proceeding
-                                    if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                                    // Ensure workshop UUID or timestamp is available before proceeding
+                                    final workshopIdentifier = workshop.uuid?.isNotEmpty == true
+                                        ? workshop.uuid!
+                                        : workshop.timestampEpoch?.toString();
+
+                                    if (workshopIdentifier == null || workshopIdentifier.isEmpty) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: const Text('Workshop information not available'),
@@ -1190,7 +1215,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       );
                                       return;
                                     }
-                                    
+
                                     await PaymentLinkUtils.launchPaymentLink(
                                       paymentLink: workshop.paymentLink,
                                       paymentLinkType: workshop.paymentLinkType,
@@ -1203,7 +1228,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         'time': workshop.time,
                                         'pricing': workshop.pricingInfo,
                                       },
-                                      workshopUuid: workshop.uuid!,
+                                      workshopUuid: workshopIdentifier,
                                       workshop: workshop,
                                     );
                                   },

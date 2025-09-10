@@ -71,6 +71,8 @@ class WorkshopSession {
   final List<String>? artistIdList;
   @JsonKey(name: 'artist_image_urls')
   final List<String?>? artistImageUrls;
+  @JsonKey(name: 'artist_instagram_links')
+  final List<String?>? artistInstagramLinks;
   @JsonKey(name: 'payment_link')
   final String? paymentLink;
   @JsonKey(name: 'payment_link_type')
@@ -96,6 +98,7 @@ class WorkshopSession {
     this.artist,
     this.artistIdList,
     this.artistImageUrls,
+    this.artistInstagramLinks,
     this.paymentLink,
     this.paymentLinkType,
     this.pricingInfo,

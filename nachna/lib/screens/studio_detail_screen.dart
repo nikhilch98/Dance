@@ -10,6 +10,7 @@ import '../models/workshop.dart';
 import '../services/deep_link_service.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import 'artist_detail_screen.dart';
 
 class StudioDetailScreen extends StatefulWidget {
   final Studio studio;
@@ -670,46 +671,283 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
     );
   }
 
+  Widget _buildArtistInstagramIcons(WorkshopSession workshop) {
+    final links = (workshop.artistInstagramLinks ?? [])
+        .where((e) => (e ?? '').isNotEmpty)
+        .cast<String>()
+        .toList();
+
+    if (links.isEmpty) return const SizedBox.shrink();
+
+    final maxIcons = 3;
+    final showCount = links.length > maxIcons ? maxIcons : links.length;
+
+    List<Widget> icons = List.generate(showCount, (i) {
+      return Padding(
+        padding: EdgeInsets.only(left: i == 0 ? 0 : ResponsiveUtils.spacingXSmall(context)),
+        child: GestureDetector(
+          onTap: () => _launchInstagramProfile(links[i]),
+          child: SizedBox(
+            width: ResponsiveUtils.iconSmall(context),
+            height: ResponsiveUtils.iconSmall(context),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.asset(
+                'instagram-icon.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: ResponsiveUtils.iconXSmall(context) * 0.9,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+
+    if (links.length > maxIcons) {
+      final remaining = links.length - maxIcons;
+      icons.add(
+        Padding(
+          padding: EdgeInsets.only(left: ResponsiveUtils.spacingXSmall(context)),
+          child: GestureDetector(
+            onTap: () => _showInstagramLinksSheet(links),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.spacingXSmall(context),
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFF006E).withOpacity(0.25),
+                    const Color(0xFF8338EC).withOpacity(0.25),
+                  ],
+                ),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              child: Text(
+                '+$remaining',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: ResponsiveUtils.micro(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+  }
+
+  Future<void> _launchInstagramProfile(String instagramUrl) async {
+    try {
+      String? username;
+      if (instagramUrl.contains('instagram.com/')) {
+        final parts = instagramUrl.split('instagram.com/');
+        if (parts.length > 1) {
+          username = parts[1].split('/')[0].split('?')[0];
+        }
+      }
+
+      if (username != null && username.isNotEmpty) {
+        final appUrl = 'instagram://user?username=$username';
+        final webUrl = 'https://instagram.com/$username';
+        if (await canLaunchUrl(Uri.parse(appUrl))) {
+          await launchUrl(Uri.parse(appUrl));
+        } else {
+          await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        }
+      } else {
+        final uri = Uri.parse(instagramUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not launch $instagramUrl'),
+                backgroundColor: Colors.red.withOpacity(0.8),
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not open Instagram link'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showInstagramLinksSheet(List<String> links) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (context) {
+        return Container(
+          margin: EdgeInsets.all(ResponsiveUtils.spacingLarge(context)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withOpacity(0.15),
+                Colors.white.withOpacity(0.05),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: ResponsiveUtils.borderWidthThin(context)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Padding(
+                padding: ResponsiveUtils.paddingLarge(context),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(ResponsiveUtils.spacingXSmall(context)),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
+                          ),
+                          child: Icon(Icons.camera_alt_rounded, color: Colors.white, size: ResponsiveUtils.iconXSmall(context)),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        Text(
+                          'Artists\' Instagram',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: ResponsiveUtils.body1(context),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(Icons.close_rounded, color: Colors.white70, size: ResponsiveUtils.iconSmall(context)),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: ResponsiveUtils.spacingMedium(context)),
+                    ...links.map((l) => Padding(
+                          padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+                          child: GestureDetector(
+                            onTap: () async {
+                              Navigator.of(context).pop();
+                              await _launchInstagramProfile(l);
+                            },
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: ResponsiveUtils.iconMedium(context),
+                                  height: ResponsiveUtils.iconMedium(context),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.asset('assets/icons/instagram.png', fit: BoxFit.cover),
+                                  ),
+                                ),
+                                SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                Expanded(
+                                  child: Text(
+                                    l,
+                                    style: TextStyle(color: Colors.white, fontSize: ResponsiveUtils.body2(context)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(Icons.open_in_new_rounded, color: Colors.white70, size: ResponsiveUtils.iconXSmall(context)),
+                              ],
+                            ),
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildArtistAvatars(WorkshopSession workshop) {
     final artistImageUrls = workshop.artistImageUrls ?? [];
+    final artistIdList = workshop.artistIdList ?? [];
     final validImageUrls = artistImageUrls.where((url) => url != null && url.isNotEmpty).toList();
-    
+
     // If no valid images or only one artist, show single avatar
     if (validImageUrls.length <= 1) {
-      return Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          gradient: validImageUrls.isEmpty
-              ? const LinearGradient(
-                  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+      return GestureDetector(
+        onTap: () {
+          if (artistIdList.isNotEmpty && artistIdList[0].isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ArtistDetailScreen(artistId: artistIdList[0])),
+            );
+          }
+        },
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: validImageUrls.isEmpty
+                ? const LinearGradient(
+                    colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                  )
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D4FF).withOpacity(0.2),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: validImageUrls.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildDefaultAvatar(workshop.artist);
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildDefaultAvatar(workshop.artist);
+                    },
+                  ),
                 )
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF00D4FF).withOpacity(0.2),
-              blurRadius: 6,
-              spreadRadius: 1,
-            ),
-          ],
+              : _buildDefaultAvatar(workshop.artist),
         ),
-        child: validImageUrls.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildDefaultAvatar(workshop.artist);
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return _buildDefaultAvatar(workshop.artist);
-                  },
-                ),
-              )
-            : _buildDefaultAvatar(workshop.artist),
       );
     }
     
@@ -726,35 +964,45 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
           for (int i = 0; i < maxAvatars; i++)
             Positioned(
               left: i * overlapOffset,
-              child: Container(
-                width: avatarSize,
-                height: avatarSize,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00D4FF).withOpacity(0.2),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+              child: GestureDetector(
+                onTap: () {
+                  if (artistIdList.length > i && artistIdList[i].isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ArtistDetailScreen(artistId: artistIdList[i])),
+                    );
+                  }
+                },
+                child: Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildSmallDefaultAvatar(workshop.artist, i);
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildSmallDefaultAvatar(workshop.artist, i);
-                    },
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00D4FF).withOpacity(0.2),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildSmallDefaultAvatar(workshop.artist, i);
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return _buildSmallDefaultAvatar(workshop.artist, i);
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -854,6 +1102,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
       artist: workshop.by,
       artistIdList: workshop.artistIdList,
       artistImageUrls: workshop.artistImageUrls,
+      artistInstagramLinks: workshop.artistInstagramLinks,
       paymentLink: workshop.paymentLink,
       paymentLinkType: workshop.paymentLinkType,
       pricingInfo: workshop.pricingInfo,
@@ -999,29 +1248,40 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header Row with Artist Name and Date Badge
+                // Header Row with Artist Name + Instagram icons and Date Badge
                 Row(
                   children: [
-                    // Artist Name (Main Title)
+                    // Name + Instagram icons tightly beside the name (no extra gap)
                     Expanded(
-                      child: Text(
-                        workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA' 
-                            ? toTitleCase(workshop.artist!) 
-                            : 'Dance Workshop',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: ResponsiveUtils.body2(context),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: Text(
+                              workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA'
+                                  ? toTitleCase(workshop.artist!)
+                                  : 'Dance Workshop',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: ResponsiveUtils.body2(context),
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                          _buildArtistInstagramIcons(workshop),
+                        ],
                       ),
                     ),
-                    
+
                     // Date Badge (aligned with artist name)
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.spacingSmall(context), 
+                        horizontal: ResponsiveUtils.spacingSmall(context),
                         vertical: ResponsiveUtils.spacingXSmall(context)
                       ),
                       decoration: BoxDecoration(
@@ -1188,8 +1448,12 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       child: ((workshop.paymentLink?.isNotEmpty ?? false) || workshop.paymentLinkType?.toLowerCase() == 'nachna')
                           ? GestureDetector(
                               onTap: () async {
-                                // Ensure workshop UUID is available before proceeding
-                                if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                                // Ensure workshop UUID or timestamp is available before proceeding
+                                final workshopIdentifier = workshop.uuid?.isNotEmpty == true
+                                    ? workshop.uuid!
+                                    : workshop.timestampEpoch?.toString();
+
+                                if (workshopIdentifier == null || workshopIdentifier.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: const Text('Workshop information not available'),
@@ -1211,7 +1475,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                     'time': workshop.time,
                                     'pricing': workshop.pricingInfo,
                                   },
-                                  workshopUuid: workshop.uuid!,
+                                  workshopUuid: workshopIdentifier,
                                   workshop: workshop,
                                 );
                               },

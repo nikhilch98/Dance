@@ -35,8 +35,12 @@ class WorkshopDetailModal extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Ensure workshop UUID is available before proceeding
-                    if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                    // Ensure workshop UUID or timestamp is available before proceeding
+                    final workshopIdentifier = workshop.uuid?.isNotEmpty == true
+                        ? workshop.uuid!
+                        : workshop.timestampEpoch?.toString();
+
+                    if (workshopIdentifier == null || workshopIdentifier.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text('Workshop information not available'),
@@ -58,7 +62,7 @@ class WorkshopDetailModal extends StatelessWidget {
                         'time': workshop.time,
                         'pricing': workshop.pricingInfo,
                       },
-                      workshopUuid: workshop.uuid!, // Use the uuid field from API response
+                      workshopUuid: workshopIdentifier, // Use either UUID or timestamp as identifier
                       workshop: workshop, // Pass workshop object for rewards integration
                     );
                   },

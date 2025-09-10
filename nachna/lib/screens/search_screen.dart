@@ -1030,8 +1030,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     // Register Button
                     GestureDetector(
                       onTap: () async {
-                        // Ensure workshop UUID is available before proceeding
-                        if (workshop.uuid == null || workshop.uuid!.isEmpty) {
+                        // Ensure workshop UUID or timestamp is available before proceeding
+                        final workshopIdentifier = workshop.uuid?.isNotEmpty == true
+                            ? workshop.uuid!
+                            : workshop.timestampEpoch?.toString();
+
+                        if (workshopIdentifier == null || workshopIdentifier.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('Workshop information not available'),
@@ -1053,9 +1057,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             'time': workshop.time,
                             'pricing': workshop.pricingInfo,
                           },
-                          workshopUuid: workshop.uuid!,
+                          workshopUuid: workshopIdentifier,
                           workshop: WorkshopSession(
-                            uuid: workshop.uuid!,
+                            uuid: workshop.uuid,
                             date: workshop.date,
                             time: workshop.time,
                             song: workshop.song,
@@ -1063,6 +1067,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             artist: workshop.by,
                             artistIdList: workshop.artistIdList,
                             artistImageUrls: workshop.artistImageUrls,
+                            artistInstagramLinks: workshop.artistInstagramLinks,
                             paymentLink: workshop.paymentLink,
                             paymentLinkType: workshop.paymentLinkType,
                             pricingInfo: workshop.pricingInfo,
