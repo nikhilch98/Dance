@@ -761,8 +761,12 @@ async def create_payment_link(
                 )
             
             # 3. Check for existing pending payment link
-            existing_order = OrderOperations.get_active_order_for_user_workshop(
-                user_id, request.workshop_uuid
+            # For bundle orders, we need to handle workshop_uuids differently
+            workshop_uuids = [request.workshop_uuid] if not hasattr(request, 'workshop_uuids') or not request.workshop_uuids else request.workshop_uuids
+            is_bundle_order = getattr(request, 'is_bundle_order', False)
+
+            existing_order = OrderOperations.get_active_order_for_user_workshops(
+                user_id, workshop_uuids, is_bundle_order
             )
             
             # Determine intended final amount (after discount if any)
@@ -794,13 +798,67 @@ async def create_payment_link(
             # If we have an existing pending order, decide whether to reuse or cancel
             if existing_order:
                 existing_pg = existing_order.get("payment_gateway_details") or {}
-                existing_amount_paise = (
-                    int(existing_order.get("final_amount_paid", 0) * 100)
-                    if existing_order.get("final_amount_paid") is not None
-                    else int(existing_pg.get("amount") or existing_order.get("amount", amount_paise))
-                )
+                # Use final_amount_paid if available, otherwise use payment gateway amount, otherwise use order amount
+                if existing_order.get("final_amount_paid") is not None:
+                    existing_amount_paise = int(existing_order.get("final_amount_paid", 0) * 100)
+                    logger.debug(f"Using final_amount_paid for existing order: ₹{existing_amount_paise/100}")
+                elif existing_pg.get("amount"):
+                    existing_amount_paise = int(existing_pg.get("amount"))
+                    logger.debug(f"Using payment gateway amount for existing order: ₹{existing_amount_paise/100}")
+                else:
+                    existing_amount_paise = existing_order.get("amount", amount_paise)
+                    logger.debug(f"Using order amount for existing order: ₹{existing_amount_paise/100}")
+
+                # Check for various reasons to cancel and create new order
+                should_cancel_order = False
+                cancellation_reason = ""
+
+                # Check amount difference (includes rewards redemption changes)
                 if intended_final_amount_paise != existing_amount_paise:
-                    # Different amount requested → cancel old link and proceed to new order
+                    should_cancel_order = True
+                    existing_rewards = existing_order.get("rewards_redeemed") or 0
+                    new_rewards = rewards_redeemed_rupees
+                    if existing_rewards != new_rewards:
+                        cancellation_reason = "rewards_redemption_changed"
+                        logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
+                    else:
+                        cancellation_reason = "amount_changed"
+                        logger.info(f"Amount changed: existing=₹{existing_amount_paise/100}, requested=₹{intended_final_amount_paise/100}")
+
+                # Check bundle vs individual order type difference
+                existing_is_bundle = existing_order.get("is_bundle_order", False)
+                if is_bundle_order != existing_is_bundle:
+                    should_cancel_order = True
+                    cancellation_reason = "order_type_changed"
+                    logger.info(f"Order type mismatch: existing={existing_is_bundle}, requested={is_bundle_order}")
+
+                # Check workshop UUID differences (for bundles)
+                if is_bundle_order and existing_is_bundle:
+                    existing_workshop_uuids = existing_order.get("workshop_uuids", [])
+                    if set(workshop_uuids) != set(existing_workshop_uuids):
+                        should_cancel_order = True
+                        cancellation_reason = "bundle_workshops_changed"
+                        logger.info(f"Bundle workshops changed: existing={existing_workshop_uuids}, requested={workshop_uuids}")
+
+                # Check tier pricing changes
+                existing_tier_info = existing_order.get("tier_info", "")
+                if tier_info and existing_tier_info != tier_info:
+                    should_cancel_order = True
+                    cancellation_reason = "tier_pricing_changed"
+                    logger.info(f"Tier pricing changed: existing='{existing_tier_info}', requested='{tier_info}'")
+
+                # Check rewards redemption changes (even if final amount is same)
+                # This ensures we always reflect the most current rewards usage
+                existing_rewards = existing_order.get("rewards_redeemed") or 0
+                new_rewards = rewards_redeemed_rupees
+                if not should_cancel_order and existing_rewards != new_rewards:
+                    should_cancel_order = True
+                    cancellation_reason = "rewards_redemption_changed"
+                    logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
+                    logger.info(f"Order will be cancelled to reflect updated rewards redemption")
+
+                if should_cancel_order:
+                    # Cancel old link and proceed to new order
                     try:
                         rp = get_razorpay_service()
                         pl_id = existing_order.get("payment_link_id")
@@ -808,7 +866,7 @@ async def create_payment_link(
                             rp.cancel_payment_link(pl_id)
                     except Exception as e:
                         logger.warning(f"Failed to cancel existing payment link: {e}")
-                    
+
                     # Rollback any pending redemptions from the existing order
                     existing_rewards_redeemed = existing_order.get("rewards_redeemed")
                     if existing_rewards_redeemed and existing_rewards_redeemed > 0:
@@ -817,9 +875,8 @@ async def create_payment_link(
                             RewardOperations.rollback_pending_redemption(existing_order["order_id"])
                         except Exception as e:
                             logger.error(f"Failed to rollback pending redemption for order {existing_order['order_id']}: {e}")
-                    
+
                     # Mark old order cancelled with appropriate reason
-                    cancellation_reason = "pricing_updated" if pricing_changed else "amount_changed"
                     OrderOperations.update_order_status(
                         existing_order["order_id"],
                         OrderStatusEnum.CANCELLED,
@@ -827,15 +884,27 @@ async def create_payment_link(
                             "cancellation_reason": cancellation_reason,
                             "old_amount": existing_amount_paise / 100,
                             "new_amount": amount_paise / 100,
-                            "tier_info": tier_info
+                            "old_final_amount": (existing_order.get("final_amount_paid") or existing_order.get("amount", 0)) / 100,
+                            "new_final_amount": final_amount_rupees,
+                            "tier_info": tier_info,
+                            "old_rewards_redeemed": existing_order.get("rewards_redeemed") or 0,
+                            "new_rewards_redeemed": rewards_redeemed_rupees,
+                            "old_workshop_uuids": existing_order.get("workshop_uuids", [existing_order.get("workshop_uuid")]),
+                            "new_workshop_uuids": workshop_uuids,
+                            "old_is_bundle": existing_is_bundle,
+                            "new_is_bundle": is_bundle_order
                         }
                     )
 
-                    logger.info(f"Cancelled order {existing_order['order_id']} due to {cancellation_reason}: ₹{existing_amount_paise / 100} → ₹{amount_paise / 100}")
+                    logger.info(f"Cancelled order {existing_order['order_id']} due to {cancellation_reason}")
                 else:
-                    # Same amount → reuse existing link
+                    # Same order details → reuse existing link
                     logger.info(
-                        f"Reusing pending payment link for user {user_id}, workshop {request.workshop_uuid} (same amount)"
+                        f"Reusing pending payment link for user {user_id}, workshops {workshop_uuids} (same order details)"
+                    )
+                    logger.info(
+                        f"Order details match: amount=₹{intended_final_amount_paise/100}, "
+                        f"rewards=₹{rewards_redeemed_rupees}, bundle={is_bundle_order}, tier='{tier_info}'"
                     )
                     workshop_details = create_workshop_details(workshop)
                     return UnifiedPaymentLinkResponse(
@@ -935,12 +1004,16 @@ async def create_payment_link(
             # 7. Create order in database with redemption info
             order_data = OrderCreate(
                 user_id=user_id,
-                workshop_uuids=[request.workshop_uuid],  # Wrap single workshop in list
+                workshop_uuids=workshop_uuids,  # Use the workshop_uuids list (supports bundles)
                 workshop_details=workshop_details,
                 amount=amount_paise,  # Original amount in paise
                 currency="INR",
                 rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
-                final_amount_paid=final_amount_rupees  # Always set the final amount paid
+                final_amount_paid=final_amount_rupees,  # Always set the final amount paid
+                is_bundle_order=is_bundle_order,  # Add bundle order flag
+                bundle_id=getattr(request, 'bundle_id', None),  # Add bundle ID if available
+                bundle_total_workshops=len(workshop_uuids) if is_bundle_order else None,
+                bundle_total_amount=amount_paise / 100 if is_bundle_order else None
             )
             
             order_id = OrderOperations.create_order(order_data)
@@ -952,15 +1025,28 @@ async def create_payment_link(
                 try:
                     # Create pending redemption record without deducting balance
                     # This prevents double-booking while keeping rewards available until payment
-                    redemption_id = RewardOperations.create_pending_redemption(
-                        user_id=user_id,
-                        order_id=order_id,
-                        workshop_uuid=request.workshop_uuid,
-                        points_redeemed=redemption_info['points_redeemed'],
-                        discount_amount=redemption_info['discount_amount'],
-                        original_amount=redemption_info['original_amount'],
-                        final_amount=redemption_info['final_amount']
-                    )
+                    # For bundles, we need to create pending redemptions for each workshop
+                    if is_bundle_order:
+                        for workshop_uuid in workshop_uuids:
+                            redemption_id = RewardOperations.create_pending_redemption(
+                                user_id=user_id,
+                                order_id=order_id,
+                                workshop_uuid=workshop_uuid,
+                                points_redeemed=redemption_info['points_redeemed'] / len(workshop_uuids),  # Split across workshops
+                                discount_amount=redemption_info['discount_amount'] / len(workshop_uuids),
+                                original_amount=redemption_info['original_amount'] / len(workshop_uuids),
+                                final_amount=redemption_info['final_amount'] / len(workshop_uuids)
+                            )
+                    else:
+                        redemption_id = RewardOperations.create_pending_redemption(
+                            user_id=user_id,
+                            order_id=order_id,
+                            workshop_uuid=workshop_uuids[0],
+                            points_redeemed=redemption_info['points_redeemed'],
+                            discount_amount=redemption_info['discount_amount'],
+                            original_amount=redemption_info['original_amount'],
+                            final_amount=redemption_info['final_amount']
+                        )
 
                     logger.info(f"Pending redemption created: {redemption_id} - ₹{redemption_info['points_redeemed']} reserved for user {user_id} (will be deducted after payment)")
                 except Exception as e:
@@ -1156,6 +1242,33 @@ async def get_order_status(
             except Exception as e:
                 logger.warning(f"Failed to get bundle details for order {order['order_id']}: {e}")
 
+        # Fetch workshop details for QR code titles (for both bundle and non-bundle orders)
+        workshop_details_map = {}
+        if workshop_uuids:
+            try:
+                from app.database.workshops import DatabaseOperations as WorkshopDB
+                for workshop_uuid in workshop_uuids:
+                    try:
+                        workshop = WorkshopDB.get_workshop_by_uuid(workshop_uuid)
+                        if workshop:
+                            workshop_details_map[workshop_uuid] = {
+                                'song': workshop.get('song'),
+                                'title': workshop.get('title') or workshop.get('song'),
+                                'artist_names': workshop.get('artist_names'),
+                                'by': workshop.get('by'),
+                                'studio_name': workshop.get('studio_name'),
+                                'date': workshop.get('date'),
+                                'time': workshop.get('time'),
+                                'event_type': workshop.get('event_type')
+                            }
+                            logger.info(f"Fetched workshop details for {workshop_uuid}: {workshop_details_map[workshop_uuid]['song']}")
+                        else:
+                            logger.warning(f"Workshop not found: {workshop_uuid}")
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch workshop {workshop_uuid}: {e}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch workshop details for order {order['order_id']}: {e}")
+
         # Return order details
         order_response = OrderResponse(
             order_id=order["order_id"],
@@ -1178,6 +1291,7 @@ async def get_order_status(
             bundle_total_workshops=order.get("bundle_total_workshops"),
             bundle_total_amount=order.get("bundle_total_amount"),
             bundle_info=bundle_info,
+            workshop_details_map=workshop_details_map,
             created_at=order["created_at"],
             updated_at=order["updated_at"]
         )
@@ -1302,6 +1416,30 @@ async def get_user_orders(
                 except Exception as e:
                     logger.warning(f"Failed to get bundle details for order {order['order_id']}: {e}")
 
+            # Fetch workshop details for QR code titles (for both bundle and non-bundle orders)
+            workshop_details_map = {}
+            if workshop_uuids:
+                try:
+                    from app.database.workshops import DatabaseOperations as WorkshopDB
+                    for workshop_uuid in workshop_uuids:
+                        try:
+                            workshop = WorkshopDB.get_workshop_by_uuid(workshop_uuid)
+                            if workshop:
+                                workshop_details_map[workshop_uuid] = {
+                                    'song': workshop.get('song'),
+                                    'title': workshop.get('title') or workshop.get('song'),
+                                    'artist_names': workshop.get('artist_names'),
+                                    'by': workshop.get('by'),
+                                    'studio_name': workshop.get('studio_name'),
+                                    'date': workshop.get('date'),
+                                    'time': workshop.get('time'),
+                                    'event_type': workshop.get('event_type')
+                                }
+                        except Exception as e:
+                            logger.warning(f"Failed to fetch workshop {workshop_uuid}: {e}")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch workshop details for order {order['order_id']}: {e}")
+
             order_response = OrderResponse(
                 order_id=order["order_id"],
                 workshop_uuids=workshop_uuids,
@@ -1323,6 +1461,7 @@ async def get_user_orders(
                 bundle_total_workshops=order.get("bundle_total_workshops"),
                 bundle_total_amount=order.get("bundle_total_amount"),
                 bundle_info=bundle_info,
+                workshop_details_map=workshop_details_map,
                 created_at=order["created_at"],
                 updated_at=order["updated_at"]
             )

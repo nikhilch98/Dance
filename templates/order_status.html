@@ -185,7 +185,8 @@
         }
 
         .qr-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             padding: 1rem;
             display: flex;
@@ -275,12 +276,6 @@
             margin-bottom: 2rem;
         }
 
-        .actions-section {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
 
         @media (max-width: 768px) {
             .container {
@@ -297,9 +292,6 @@
                 align-items: flex-start;
             }
 
-            .actions-section {
-                flex-direction: column;
-            }
 
             .btn {
                 width: 100%;
@@ -324,11 +316,6 @@
 
         <div id="order-content">
             <!-- Order content will be loaded here -->
-        </div>
-
-        <div class="actions-section">
-            <a href="/studio" class="btn secondary">← Back to Studio</a>
-            <button class="btn" onclick="window.print()">📄 Print Order</button>
         </div>
     </div>
 
@@ -394,9 +381,15 @@
                 console.log('QR codes found, resetting attempt counter');
             }
 
-            // Get workshop titles for bundle
+            // Get workshop titles for QR codes (use workshop_details_map if available, fallback to bundle_info)
             const workshopTitles = {};
-            if (isBundle && order.bundle_info && order.bundle_info.workshops) {
+            if (order.workshop_details_map) {
+                // Use workshop details from API response
+                Object.entries(order.workshop_details_map).forEach(([uuid, details]) => {
+                    workshopTitles[uuid] = details.song || details.title || 'Workshop';
+                });
+            } else if (isBundle && order.bundle_info && order.bundle_info.workshops) {
+                // Fallback to bundle info
                 order.bundle_info.workshops.forEach(workshop => {
                     workshopTitles[workshop.uuid] = workshop.song || workshop.title || 'Workshop';
                 });
@@ -452,22 +445,28 @@
                     <div class="qr-section">
                         <h3 style="text-align: center; margin-bottom: 1rem; color: var(--text-primary);">Registration QR Code${Object.keys(order.qr_codes_data).length > 1 ? 's' : ''}</h3>
                         <div class="qr-container">
-                            ${Object.entries(order.qr_codes_data).map(([workshopUuid, qrCodeData]) => {
-                                const workshopTitle = workshopTitles[workshopUuid] || `Workshop ${Object.keys(order.qr_codes_data).indexOf(workshopUuid) + 1}`;
-                                // Escape single quotes in the data for JavaScript
-                                const escapedQrData = qrCodeData.replace(/'/g, "\\'");
-                                const escapedTitle = workshopTitle.replace(/'/g, "\\'");
-                                return `
-                                    <div class="qr-card">
-                                        <div class="qr-title">${workshopTitle}</div>
-                                        <img class="qr-image" src="${qrCodeData}" alt="QR Code for ${workshopTitle}" />
-                                        <div class="qr-actions">
-                                            <button class="btn secondary" onclick="downloadQR('${escapedQrData}', '${escapedTitle}')">📥 Download</button>
-                                            <button class="btn secondary" onclick="shareQR('${escapedQrData}', '${escapedTitle}')">📤 Share</button>
+                            <div id="qr-codes-container">
+                                ${Object.entries(order.qr_codes_data).map(([workshopUuid, qrCodeData]) => {
+                                    const workshopTitle = workshopTitles[workshopUuid] || `Workshop ${Object.keys(order.qr_codes_data).indexOf(workshopUuid) + 1}`;
+                                    // Escape single quotes in the data for JavaScript
+                                    const escapedQrData = qrCodeData.replace(/'/g, "\\'");
+                                    const escapedTitle = workshopTitle.replace(/'/g, "\\'");
+                                    return `
+                                        <div class="qr-card">
+                                            <div class="qr-title">${workshopTitle}</div>
+                                            <div class="qr-image-container" data-workshop-uuid="${workshopUuid}" data-qr-data="${escapedQrData}" data-workshop-title="${escapedTitle}">
+                                                <div class="qr-loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 150px;">
+                                                    <div class="loading-spinner"></div>
+                                                </div>
+                                            </div>
+                                            <div class="qr-actions">
+                                                <button class="btn secondary" onclick="downloadQR('${escapedQrData}', '${escapedTitle}')">📥 Download</button>
+                                                <button class="btn secondary" onclick="shareQR('${escapedQrData}', '${escapedTitle}')">📤 Share</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     </div>
                     ` : order.status === 'paid' ? `
@@ -485,6 +484,14 @@
                     ` : ''}
                 </div>
             `;
+
+            // Render QR codes if they exist
+            if (hasQrCodes) {
+                // Small delay to ensure DOM is updated
+                setTimeout(() => {
+                    renderQRCodes();
+                }, 100);
+            }
         }
 
         // Display error message
@@ -546,18 +553,63 @@
 
         // Download QR code
         function downloadQR(qrCodeData, workshopTitle) {
+            // If qrCodeData is not provided, try to get it from the current context
+            if (!qrCodeData || qrCodeData === 'undefined') {
+                const qrContainers = document.querySelectorAll('.qr-image-container');
+                if (qrContainers.length > 0) {
+                    qrCodeData = qrContainers[0].getAttribute('data-qr-data');
+                    workshopTitle = qrContainers[0].getAttribute('data-workshop-title');
+                }
+            }
+
+            if (!qrCodeData) {
+                console.error('No QR code data available for download');
+                return;
+            }
+
             const link = document.createElement('a');
             link.download = `${workshopTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_qr_code.png`;
-            link.href = `data:image/png;base64,${qrCodeData}`;
+
+            // If it's already a data URL, use it directly
+            if (qrCodeData.startsWith('data:image/')) {
+                link.href = qrCodeData;
+            } else {
+                link.href = `data:image/png;base64,${qrCodeData}`;
+            }
+
             link.click();
         }
 
         // Share QR code
         async function shareQR(qrCodeData, workshopTitle) {
+            // If qrCodeData is not provided, try to get it from the current context
+            if (!qrCodeData || qrCodeData === 'undefined') {
+                const qrContainers = document.querySelectorAll('.qr-image-container');
+                if (qrContainers.length > 0) {
+                    qrCodeData = qrContainers[0].getAttribute('data-qr-data');
+                    workshopTitle = qrContainers[0].getAttribute('data-workshop-title');
+                }
+            }
+
+            if (!qrCodeData) {
+                console.error('No QR code data available for sharing');
+                return;
+            }
+
             try {
-                // Convert base64 to blob
-                const response = await fetch(`data:image/png;base64,${qrCodeData}`);
-                const blob = await response.blob();
+                let blob;
+
+                // Handle different QR data formats
+                if (qrCodeData.startsWith('data:image/')) {
+                    // It's already a data URL
+                    const response = await fetch(qrCodeData);
+                    blob = await response.blob();
+                } else {
+                    // Assume it's base64
+                    const response = await fetch(`data:image/png;base64,${qrCodeData}`);
+                    blob = await response.blob();
+                }
+
                 const file = new File([blob], `${workshopTitle}_qr_code.png`, { type: 'image/png' });
 
                 if (navigator.share) {
@@ -567,7 +619,7 @@
                         files: [file]
                     });
                 } else {
-                    // Fallback: copy to clipboard or download
+                    // Fallback: download
                     downloadQR(qrCodeData, workshopTitle);
                 }
             } catch (error) {
@@ -618,6 +670,103 @@
                 setTimeout(() => {
                     if (loadingText) loadingText.textContent = 'Generating QR code...';
                 }, 3000);
+            }
+        }
+
+        // Render QR codes properly (similar to studio web booking implementation)
+        async function renderQRCodes() {
+            const qrContainers = document.querySelectorAll('.qr-image-container');
+
+            for (const container of qrContainers) {
+                const qrData = container.getAttribute('data-qr-data');
+                const workshopTitle = container.getAttribute('data-workshop-title');
+
+                if (!qrData) continue;
+
+                try {
+                    console.log('Rendering QR code for:', workshopTitle);
+
+                    // Clear loading spinner
+                    container.innerHTML = '';
+
+                    // Extract base64 data from data URL
+                    let base64String;
+
+                    if (qrData.startsWith && qrData.startsWith('data:image/png;base64,')) {
+                        base64String = qrData.substring('data:image/png;base64,'.length);
+                        console.log('QR Code: PNG base64 format detected for', workshopTitle);
+                    } else if (qrData.startsWith && qrData.startsWith('data:image/')) {
+                        // Handle other image formats
+                        const commaIndex = qrData.indexOf(',');
+                        base64String = qrData.substring(commaIndex + 1);
+                        console.log('QR Code: Other image format detected for', workshopTitle);
+                    } else if (qrData.startsWith && (qrData.startsWith('http') || qrData.startsWith('/'))) {
+                        // Handle URL format - create image directly from URL
+                        console.log('QR Code: URL format detected for', workshopTitle);
+                        const img = document.createElement('img');
+                        img.src = qrData;
+                        img.className = 'qr-image';
+                        img.alt = `QR Code for ${workshopTitle}`;
+
+                        img.onerror = function() {
+                            console.error('Failed to load QR code image for', workshopTitle);
+                            this.style.display = 'none';
+                            const errorDiv = document.createElement('div');
+                            errorDiv.innerHTML = '<p style="color: #ef4444; text-align: center;">Failed to load QR code</p>';
+                            container.appendChild(errorDiv);
+                        };
+
+                        container.appendChild(img);
+                        continue; // Skip to next QR code
+                    } else {
+                        // Assume it's already base64
+                        base64String = qrData;
+                        console.log('QR Code: Assuming base64 format for', workshopTitle);
+                    }
+
+                    // Convert base64 to blob and create image
+                    let byteCharacters;
+                    try {
+                        byteCharacters = atob(base64String);
+                        console.log('QR Code: Successfully decoded base64 for', workshopTitle);
+                    } catch (decodeError) {
+                        console.error('QR Code: Failed to decode base64 for', workshopTitle, decodeError);
+                        const errorDiv = document.createElement('div');
+                        errorDiv.innerHTML = '<p style="color: #ef4444; text-align: center;">Invalid QR code data</p>';
+                        container.appendChild(errorDiv);
+                        continue;
+                    }
+
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'image/png' });
+
+                    // Create image element
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    img.className = 'qr-image';
+                    img.alt = `QR Code for ${workshopTitle}`;
+
+                    img.onerror = function() {
+                        console.error('Failed to create QR code image for', workshopTitle);
+                        this.style.display = 'none';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.innerHTML = '<p style="color: #ef4444; text-align: center;">Failed to render QR code</p>';
+                        container.appendChild(errorDiv);
+                    };
+
+                    container.appendChild(img);
+
+                } catch (error) {
+                    console.error('Error rendering QR code for', workshopTitle, error);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.innerHTML = '<p style="color: #ef4444; text-align: center;">Error rendering QR code</p>';
+                    container.appendChild(errorDiv);
+                }
             }
         }
 

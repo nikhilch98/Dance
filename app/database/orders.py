@@ -92,6 +92,43 @@ class OrderOperations:
     @staticmethod
     def get_active_order_for_user_workshop(user_id: str, workshop_uuid: str) -> Optional[Dict[str, Any]]:
         """Get active (pending payment) order for user and workshop combination.
+
+        Only CREATED orders are considered active. PAID orders are considered complete
+        and users should be allowed to make new bookings for the same workshop.
+
+        Args:
+            user_id: User identifier
+            workshop_uuid: Workshop UUID
+
+        Returns:
+            Active order document (status=CREATED only) or None
+        """
+        client = get_mongo_client()
+
+        # Look for orders that are pending payment only
+        # PAID orders should NOT be considered active - users should be able to book again
+        active_statuses = [
+            OrderStatusEnum.CREATED.value
+        ]
+
+        order = client["dance_app"]["orders"].find_one({
+            "user_id": user_id,
+            "workshop_uuid": workshop_uuid,
+            "status": {"$in": active_statuses}
+        }, sort=[("created_at", -1)])  # Get the most recent one
+
+        # Check if the order is expired
+        if order and order.get("expires_at"):
+            if datetime.utcnow() > order["expires_at"]:
+                logger.info(f"Order {order['order_id']} has expired, marking as expired")
+                OrderOperations.update_order_status(order["order_id"], OrderStatusEnum.EXPIRED)
+                return None
+
+        return order
+
+    @staticmethod
+    def get_active_order_for_user_workshops(user_id: str, workshop_uuids: List[str], is_bundle_order: bool = False) -> Optional[Dict[str, Any]]:
+        """Get active (pending payment) order for user and workshop combination.
         
         Only CREATED orders are considered active. PAID orders are considered complete
         and users should be allowed to make new bookings for the same workshop.

@@ -2571,7 +2571,8 @@
         }
 
         .qr-code-display {
-            background: white;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 1rem;
             border-radius: 12px;
             display: inline-block;
@@ -7058,7 +7059,7 @@
                     if (qrData.qr_codes_data) {
                         // Handle multiple QR codes (bundle)
                         const order = { qr_codes_data: qrData.qr_codes_data };
-                        await displayMultipleQRCodes(order);
+                        await displayMultipleQRCodes(order, {}); // Pass empty object as fallback
                     } else if (qrData.qr_codes_data && Object.keys(qrData.qr_codes_data).length === 1) {
                         // Handle single QR code
                         const qrCodeData = Object.values(qrData.qr_codes_data)[0];
@@ -7111,6 +7112,21 @@
                 return;
             }
 
+            // Get workshop titles from workshop_details_map if available
+            let workshopTitles = {};
+            if (order.workshop_details_map) {
+                Object.entries(order.workshop_details_map).forEach(([uuid, details]) => {
+                    workshopTitles[uuid] = details.song || details.title || 'Workshop';
+                });
+                console.log('Using workshop details map for titles:', workshopTitles);
+            } else if (hasMultipleQRCodes && order.bundle_info && order.bundle_info.workshops) {
+                // Fallback to bundle info
+                order.bundle_info.workshops.forEach(workshop => {
+                    workshopTitles[workshop.uuid] = workshop.song || workshop.title || 'Workshop';
+                });
+                console.log('Using bundle info for titles:', workshopTitles);
+            }
+
             const qrModal = document.getElementById('qr-modal');
             const qrLoading = document.getElementById('qr-loading');
             const qrError = document.getElementById('qr-error');
@@ -7127,12 +7143,15 @@
                 if (hasMultipleQRCodes) {
                     // Display multiple QR codes for bundle
                     console.log('QR Code: Displaying multiple QR codes for bundle');
-                    await displayMultipleQRCodes(order);
+                    await displayMultipleQRCodes(order, workshopTitles);
                 } else {
                     // Display single QR code
                     console.log('QR Code: Displaying single QR code');
                     const qrCodeData = Object.values(order.qr_codes_data)[0];
-                    await displayQRCode(qrCodeData, workshopTitle, workshopArtists);
+                    const workshopUuid = Object.keys(order.qr_codes_data)[0];
+                    const enhancedTitle = workshopTitles[workshopUuid] || workshopTitle;
+                    console.log('QR Code: Using enhanced title for single QR:', enhancedTitle);
+                    await displayQRCode(qrCodeData, enhancedTitle, workshopArtists);
                 }
 
             } catch (error) {
@@ -7319,7 +7338,7 @@
             }
         }
 
-        async function displayMultipleQRCodes(order) {
+        async function displayMultipleQRCodes(order, workshopTitles = {}) {
             const qrContainer = document.getElementById('qr-code-container');
             const qrLoading = document.getElementById('qr-loading');
             const qrError = document.getElementById('qr-error');
@@ -7346,13 +7365,8 @@
                     width: 100%;
                 `;
 
-                // Get workshop information for titles
-                const workshopTitles = {};
-                if (order.bundle_info && order.bundle_info.workshops) {
-                    order.bundle_info.workshops.forEach(workshop => {
-                        workshopTitles[workshop.uuid] = workshop.song || workshop.title || 'Workshop';
-                    });
-                }
+                // Use workshop titles from parent function (already computed)
+                // workshopTitles parameter should be passed from viewQRCode function
 
                 // Create QR cards for each workshop
                 for (const [workshopUuid, qrCodeData] of Object.entries(order.qr_codes_data)) {

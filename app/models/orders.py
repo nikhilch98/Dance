@@ -136,6 +136,8 @@ class OrderResponse(BaseModel):
     bundle_total_workshops: Optional[int] = None
     bundle_total_amount: Optional[int] = None
     bundle_info: Optional[BundleInfo] = None  # Additional bundle context
+    # Workshop details for QR code titles
+    workshop_details_map: Optional[Dict[str, Dict[str, Any]]] = None  # workshop_uuid -> workshop details
     created_at: datetime
     updated_at: datetime
 
