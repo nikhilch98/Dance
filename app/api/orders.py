@@ -812,6 +812,7 @@ async def create_payment_link(
             
             # 1. Get workshop details and validate
             workshop = get_workshop_by_uuid(request.workshop_uuid)
+            logger.info(f"Fetched workshop data for {request.workshop_uuid}: title='{workshop.get('song') or workshop.get('title')}', artist='{workshop.get('by')}'")
             
             # 2. Extract pricing information with tiered pricing support
             if not workshop.get("pricing_info"):
@@ -853,6 +854,8 @@ async def create_payment_link(
                     if workshop_uuids[0] in bundle_order.get("workshop_uuids", []):
                         existing_order = bundle_order
                         logger.info(f"Found conflicting bundle order {bundle_order['order_id']} containing workshop {workshop_uuids[0]}")
+                        logger.info(f"Bundle order details: workshops={bundle_order.get('workshop_uuids')}, is_bundle={bundle_order.get('is_bundle_order')}")
+                        logger.info(f"Will cancel bundle order and create individual order for workshop {workshop_uuids[0]}")
                         break
             
             # Determine intended final amount (after discount if any)
@@ -993,13 +996,15 @@ async def create_payment_link(
                         f"rewards=₹{rewards_redeemed_rupees}, bundle={is_bundle_order}, tier='{tier_info}'"
                     )
                     workshop_details = create_workshop_details(workshop)
+                    logger.info(f"Reusing order {existing_order['order_id']} with workshop details: {workshop_details.title}")
+
                     return UnifiedPaymentLinkResponse(
                         is_existing=True,
                         message="Pending payment link found for this workshop",
                         order_id=existing_order["order_id"],
                         payment_link_url=existing_order.get("payment_link_url", ""),
                         payment_link_id=existing_order.get("payment_link_id"),
-                        amount=existing_order.get("amount", amount_paise),
+                        amount=existing_order.get("final_amount_paid", existing_order.get("amount", amount_paise)),
                         currency=existing_order.get("currency", "INR"),
                         expires_at=existing_order.get("expires_at"),
                         workshop_details=workshop_details,
@@ -1086,6 +1091,17 @@ async def create_payment_link(
             
             # 6. Create workshop details object
             workshop_details = create_workshop_details(workshop)
+            logger.info(f"Created workshop details for workshop {request.workshop_uuid}: {workshop_details.title}")
+
+            # Validate that we're using the correct workshop details
+            if existing_order and existing_order.get("is_bundle_order"):
+                logger.info(f"Validating workshop details for transition from bundle to individual")
+                logger.info(f"Bundle workshops: {existing_order.get('workshop_uuids')}")
+                logger.info(f"Individual workshop: {request.workshop_uuid}")
+                if request.workshop_uuid not in existing_order.get("workshop_uuids", []):
+                    logger.warning(f"Workshop {request.workshop_uuid} not found in bundle {existing_order['order_id']}")
+                else:
+                    logger.info(f"Workshop {request.workshop_uuid} confirmed in bundle - proceeding with individual order creation")
             
             # 7. Create order in database with redemption info
             order_data = OrderCreate(
@@ -1104,6 +1120,14 @@ async def create_payment_link(
             
             order_id = OrderOperations.create_order(order_data)
             logger.info(f"Created order {order_id} for user {user_id}")
+            logger.info(f"New order details: workshop_uuids={workshop_uuids}, is_bundle={is_bundle_order}, amount=₹{amount_paise/100}, final_amount=₹{final_amount_rupees}")
+            logger.info(f"Order data saved: rewards_redeemed={order_data.rewards_redeemed}, final_amount_paid={order_data.final_amount_paid}")
+
+            # If this was created after cancelling a bundle order, log the transition
+            if existing_order and existing_order.get("is_bundle_order"):
+                logger.info(f"Transitioned from bundle order {existing_order['order_id']} to individual order {order_id}")
+                logger.info(f"Original bundle: workshops={existing_order.get('workshop_uuids')}, is_bundle={existing_order.get('is_bundle_order')}")
+                logger.info(f"New individual: workshop={workshop_uuids[0]}, workshop_details_title='{workshop_details.title}'")
 
             # Store redemption info in order for later processing (after payment success)
             # Do NOT deduct rewards immediately - this will be done after payment is confirmed
@@ -1202,13 +1226,14 @@ async def create_payment_link(
                 )
             
             # 9. Return success response
+            logger.info(f"Returning payment link response for order {order_id}: amount=₹{final_amount_paise/100}, workshop='{workshop_details.title}'")
             return UnifiedPaymentLinkResponse(
                 is_existing=False,
-                message="Payment link created successfully",
+                message="Payment link created successfully" + (f" with ₹{rewards_redeemed_rupees} reward discount" if rewards_redeemed_rupees > 0 else ""),
                 order_id=order_id,
                 payment_link_url=razorpay_response["short_url"],
                 payment_link_id=razorpay_response["id"],
-                amount=amount_paise,
+                amount=final_amount_paise,  # Use final amount after rewards redemption
                 currency="INR",
                 expires_at=expires_at,
                 workshop_details=workshop_details,
