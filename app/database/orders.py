@@ -245,6 +245,46 @@ class OrderOperations:
         return order
 
     @staticmethod
+    def get_active_individual_orders_for_user(user_id: str) -> List[Dict[str, Any]]:
+        """Get all active individual orders for a user (non-bundle orders).
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            List of active individual order documents
+        """
+        client = get_mongo_client()
+
+        # Look for active individual orders only (non-bundle)
+        active_statuses = [
+            OrderStatusEnum.CREATED.value
+        ]
+
+        orders = list(client["dance_app"]["orders"].find({
+            "user_id": user_id,
+            "$or": [
+                {"is_bundle_order": {"$exists": False}},  # Orders without bundle flag
+                {"is_bundle_order": False}  # Orders explicitly marked as non-bundle
+            ],
+            "status": {"$in": active_statuses}
+        }, sort=[("created_at", -1)]))
+
+        # Filter out expired orders
+        active_orders = []
+        for order in orders:
+            if order.get("expires_at"):
+                if datetime.utcnow() > order["expires_at"]:
+                    logger.info(f"Individual order {order['order_id']} has expired, marking as expired")
+                    OrderOperations.update_order_status(order["order_id"], OrderStatusEnum.EXPIRED)
+                else:
+                    active_orders.append(order)
+            else:
+                active_orders.append(order)
+
+        return active_orders
+
+    @staticmethod
     def update_order_payment_link(
         order_id: str,
         payment_link_id: str,
