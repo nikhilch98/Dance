@@ -904,6 +904,7 @@ async def create_payment_link(
 
                 # Debug: Log comparison details
                 logger.info(f"Comparing existing order {existing_order['order_id']} with new request:")
+                existing_is_bundle = existing_order.get("is_bundle_order", False)  # Define before using in logging
                 logger.info(f"Existing: amount=₹{existing_amount_paise/100}, rewards=₹{existing_order.get('rewards_redeemed', 0)}, bundle={existing_is_bundle}, tier='{existing_order.get('tier_info', '')}'")
                 logger.info(f"New: amount=₹{intended_final_amount_paise/100}, rewards=₹{rewards_redeemed_rupees}, bundle={is_bundle_order}, tier='{tier_info}'")
 
@@ -922,7 +923,6 @@ async def create_payment_link(
                         logger.info(f"Amount changed: existing=₹{existing_amount_paise/100}, requested=₹{intended_final_amount_paise/100}, difference=₹{amount_difference/100}")
 
                 # Check bundle vs individual order type difference
-                existing_is_bundle = existing_order.get("is_bundle_order", False)
                 if is_bundle_order != existing_is_bundle:
                     should_cancel_order = True
                     cancellation_reason = "order_type_changed"
