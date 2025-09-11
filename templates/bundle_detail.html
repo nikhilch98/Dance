@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>{{ bundle.name }} | Nachna Bundles</title>
+    <link rel="icon" type="image/png" href="/static/assets/logo.png">
+    <link rel="apple-touch-icon" href="/static/assets/logo.png">
+
+    <style>
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0A0A0F 0%, #1A1A2E 25%, #16213E 50%, #0F3460 100%);
+            color: white;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-logo svg {
+            width: 32px;
+            height: 32px;
+            fill: #00D4FF;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #00D4FF;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-top: 100px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Bundle Header */
+        .bundle-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .bundle-image {
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bundle-image::before {
+            content: '🎭';
+            font-size: 6rem;
+            opacity: 0.7;
+        }
+
+        .bundle-info h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #FF006E, #00D4FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .bundle-description {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .bundle-meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .meta-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .meta-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00D4FF;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Workshops Section */
+        .workshops-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #00D4FF;
+        }
+
+        .workshops-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .workshop-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .workshop-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.15);
+        }
+
+        .workshop-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .workshop-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .workshop-date, .workshop-time {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .workshop-instructor {
+            color: #00D4FF;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .workshop-price {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .workshop-price .price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #10B981;
+            display: block;
+        }
+
+        .workshop-price .label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.25rem;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 2px solid rgba(16, 185, 129, 0.2);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .pricing-comparison {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .original-price {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: line-through;
+        }
+
+        .bundle-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #10B981;
+        }
+
+        .savings-highlight {
+            background: linear-gradient(45deg, #10B981, #059669);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .pricing-note {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Purchase Section */
+        .purchase-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .purchase-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #00D4FF;
+        }
+
+        .purchase-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .purchase-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            min-width: 160px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00D4FF, #9C27B0);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 10% auto;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .modal h3 {
+            color: #00D4FF;
+            margin-bottom: 1rem;
+        }
+
+        .modal p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1.5rem;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: white;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .bundle-header {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                text-align: center;
+            }
+
+            .bundle-info h1 {
+                font-size: 2rem;
+            }
+
+            .bundle-meta {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .workshops-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-comparison {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .bundle-price {
+                font-size: 2rem;
+            }
+
+            .purchase-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem 0.5rem;
+            }
+
+            .bundle-header {
+                padding: 1.5rem;
+            }
+
+            .workshops-section, .pricing-section, .purchase-section {
+                padding: 1.5rem;
+            }
+
+            .bundle-info h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="/" class="nav-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span style="font-weight: 700; font-size: 1.2rem;">Nachna</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/studio" class="nav-link">Workshops</a>
+                <a href="/bundles" class="nav-link" style="color: #00D4FF;">Bundles</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Bundle Header -->
+            <section class="bundle-header">
+                <div class="bundle-image"></div>
+                <div class="bundle-info">
+                    <h1>{{ bundle.name }}</h1>
+                    <p class="bundle-description">{{ bundle.description }}</p>
+
+                    <div class="bundle-meta">
+                        <div class="meta-item">
+                            <span class="meta-value">{{ bundle.workshops|length }}</span>
+                            <span class="meta-label">Workshops</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-value">₹{{ bundle.savings }}</span>
+                            <span class="meta-label">You Save</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-value">{{ "%.0f"|format((bundle.savings / bundle.individual_prices|sum) * 100) }}%</span>
+                            <span class="meta-label">Discount</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Workshops Section -->
+            <section class="workshops-section">
+                <h2 class="section-title">Included Workshops</h2>
+                <div class="workshops-grid">
+                    {% for workshop in bundle.workshops %}
+                    <div class="workshop-card">
+                        <h3 class="workshop-title">{{ workshop.name }}</h3>
+                        <div class="workshop-meta">
+                            <div>
+                                <span class="workshop-date">{{ workshop.date }}</span>
+                                <span class="workshop-time">{{ workshop.time }}</span>
+                            </div>
+                            <span class="workshop-instructor">{{ workshop.instructor }}</span>
+                        </div>
+                        <div class="workshop-price">
+                            <span class="price">₹{{ bundle.individual_prices[loop.index0] }}</span>
+                            <span class="label">Individual Price</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Pricing Section -->
+            <section class="pricing-section">
+                <h2 class="section-title" style="text-align: center; margin-bottom: 2rem;">Bundle Pricing</h2>
+                <div class="pricing-comparison">
+                    <div class="original-price">₹{{ bundle.individual_prices|sum }}</div>
+                    <div class="bundle-price">₹{{ bundle.bundle_price }}</div>
+                </div>
+                <div class="savings-highlight">
+                    💰 Save ₹{{ bundle.savings }} with this bundle!
+                </div>
+                <p class="pricing-note">
+                    Get all {{ bundle.workshops|length }} workshops at a discounted price.
+                    That's only ₹{{ (bundle.bundle_price / bundle.workshops|length)|round|int }} per workshop!
+                </p>
+            </section>
+
+            <!-- Purchase Section -->
+            <section class="purchase-section">
+                <h2 class="purchase-title">Ready to Start Your Dance Journey?</h2>
+                <p class="purchase-description">
+                    Purchase this bundle now and get access to all {{ bundle.workshops|length }} workshops.
+                    You'll receive individual QR codes for each workshop after payment confirmation.
+                </p>
+                <div class="purchase-actions">
+                    <button class="btn btn-primary" onclick="purchaseBundle('{{ bundle.template_id }}')">
+                        <span>🎭</span>
+                        Purchase Bundle - ₹{{ bundle.bundle_price }}
+                    </button>
+                    <a href="/bundles" class="btn btn-secondary">
+                        <span>👀</span>
+                        View All Bundles
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Purchase Modal -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Processing Your Purchase</h3>
+            <p>Please wait while we prepare your bundle purchase...</p>
+            <div style="margin: 2rem 0;">
+                <div style="width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 4px solid #00D4FF; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        let currentBundleId = null;
+
+        function purchaseBundle(bundleId) {
+            currentBundleId = bundleId;
+
+            // Show loading modal
+            const modal = document.getElementById('purchaseModal');
+            modal.style.display = 'block';
+
+            // Check if user is authenticated
+            fetch('/api/auth/status', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    // User is authenticated, proceed with purchase
+                    proceedWithPurchase(data.user_id);
+                } else {
+                    // User not authenticated, redirect to login
+                    window.location.href = '/studio?login_required=true&redirect=' + encodeURIComponent(window.location.pathname);
+                }
+            })
+            .catch(error => {
+                console.error('Auth check failed:', error);
+                // Assume not authenticated and redirect
+                window.location.href = '/studio?login_required=true&redirect=' + encodeURIComponent(window.location.pathname);
+            });
+        }
+
+        function proceedWithPurchase(userId) {
+            // Make API call to purchase bundle
+            fetch('/api/orders/bundles/purchase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    template_id: currentBundleId,
+                    user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to payment link
+                    window.location.href = data.payment_link_url;
+                } else {
+                    alert('Purchase failed: ' + (data.message || 'Unknown error'));
+                    closeModal();
+                }
+            })
+            .catch(error => {
+                console.error('Purchase failed:', error);
+                alert('Purchase failed. Please try again.');
+                closeModal();
+            });
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('purchaseModal');
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('purchaseModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate workshop cards on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe workshop cards
+            document.querySelectorAll('.workshop-card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+
+            // Animate sections
+            document.querySelectorAll('.workshops-section, .pricing-section, .purchase-section').forEach(section => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(30px)';
+                section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>

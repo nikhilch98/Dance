@@ -10,6 +10,43 @@ from app.services.auth import verify_token
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+# Bundle template data (in production, this would come from database)
+BUNDLE_TEMPLATES = {
+    "WEEKEND_001": {
+        "template_id": "WEEKEND_001",
+        "name": "Weekend Dance Package",
+        "description": "3 workshops this weekend - Save ₹500!",
+        "workshops": [
+            {"name": "Bollywood Basics", "date": "Sep 21", "time": "3-5 PM", "instructor": "Amisha"},
+            {"name": "Hip Hop Moves", "date": "Sep 21", "time": "5-7 PM", "instructor": "Kiran"},
+            {"name": "Contemporary Dance", "date": "Sep 22", "time": "10 AM-12 PM", "instructor": "Priya"}
+        ],
+        "bundle_price": 2500,
+        "individual_prices": [999, 999, 999],
+        "savings": 500,
+        "currency": "INR",
+        "image": "/static/assets/bundles/weekend.jpg",
+        "valid_until": "2024-09-20"
+    },
+    "SERIES_001": {
+        "template_id": "SERIES_001",
+        "name": "Bollywood Dance Series",
+        "description": "4-week intensive Bollywood dance series",
+        "workshops": [
+            {"name": "Bollywood Week 1", "date": "Sep 23", "time": "6-8 PM", "instructor": "Amisha"},
+            {"name": "Bollywood Week 2", "date": "Sep 30", "time": "6-8 PM", "instructor": "Amisha"},
+            {"name": "Bollywood Week 3", "date": "Oct 7", "time": "6-8 PM", "instructor": "Amisha"},
+            {"name": "Bollywood Week 4", "date": "Oct 14", "time": "6-8 PM", "instructor": "Amisha"}
+        ],
+        "bundle_price": 4000,
+        "individual_prices": [1200, 1200, 1200, 1200],
+        "savings": 800,
+        "currency": "INR",
+        "image": "/static/assets/bundles/series.jpg",
+        "valid_until": "2024-09-20"
+    }
+}
+
 # Constants for Apple App Site Association (Universal Links)
 APPLE_TEAM_ID = "TJ9YTH589R"
 IOS_BUNDLE_ID = "com.nachna.nachna"
@@ -347,6 +384,39 @@ async def studio_web_booking(request: Request, studio_id: str):
         
     except Exception as e:
         print(f"Error in studio web booking route: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/bundles", response_class=HTMLResponse)
+async def bundles_page(request: Request):
+    """Serve the bundles listing page."""
+    try:
+        bundles_list = list(BUNDLE_TEMPLATES.values())
+        return templates.TemplateResponse("bundles.html", {
+            "request": request,
+            "bundles": bundles_list
+        })
+    except Exception as e:
+        print(f"Error in bundles page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/bundles/{template_id}", response_class=HTMLResponse)
+async def bundle_detail_page(request: Request, template_id: str):
+    """Serve the bundle detail page."""
+    try:
+        if template_id not in BUNDLE_TEMPLATES:
+            raise HTTPException(status_code=404, detail="Bundle not found")
+
+        bundle = BUNDLE_TEMPLATES[template_id]
+        return templates.TemplateResponse("bundle_detail.html", {
+            "request": request,
+            "bundle": bundle
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in bundle detail page: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

@@ -226,6 +226,9 @@ class PaymentLinkResponse {
   final DateTime? expiresAt;
   @JsonKey(name: 'workshop_details')
   final OrderWorkshopDetails workshopDetails;
+  // Bundle suggestion fields
+  @JsonKey(name: 'bundle_suggestion')
+  final Map<String, dynamic>? bundleSuggestion;
 
   PaymentLinkResponse({
     required this.success,
@@ -238,6 +241,7 @@ class PaymentLinkResponse {
     required this.currency,
     this.expiresAt,
     required this.workshopDetails,
+    this.bundleSuggestion,
   });
 
   factory PaymentLinkResponse.fromJson(Map<String, dynamic> json) => _$PaymentLinkResponseFromJson(json);
@@ -314,6 +318,52 @@ class ExistingPaymentResponse {
     final expiresAtStr = existingOrder['expires_at'] as String?;
     return expiresAtStr != null ? DateTime.parse(expiresAtStr) : null;
   }
+}
+
+/// Request model for bundle purchase
+@JsonSerializable()
+class BundlePurchaseRequest {
+  @JsonKey(name: 'template_id')
+  final String templateId;
+
+  BundlePurchaseRequest({
+    required this.templateId,
+  });
+
+  factory BundlePurchaseRequest.fromJson(Map<String, dynamic> json) => _$BundlePurchaseRequestFromJson(json);
+  Map<String, dynamic> toJson() => _$BundlePurchaseRequestToJson(this);
+}
+
+/// Response model for bundle purchase
+@JsonSerializable()
+class BundlePurchaseResponse {
+  final bool success;
+  @JsonKey(name: 'bundle_id')
+  final String bundleId;
+  @JsonKey(name: 'payment_link_url')
+  final String paymentLinkUrl;
+  @JsonKey(name: 'payment_link_id')
+  final String paymentLinkId;
+  @JsonKey(name: 'total_amount')
+  final int totalAmount;
+  final String currency;
+  @JsonKey(name: 'individual_orders')
+  final List<String> individualOrders;
+  final String message;
+
+  BundlePurchaseResponse({
+    required this.success,
+    required this.bundleId,
+    required this.paymentLinkUrl,
+    required this.paymentLinkId,
+    required this.totalAmount,
+    required this.currency,
+    required this.individualOrders,
+    required this.message,
+  });
+
+  factory BundlePurchaseResponse.fromJson(Map<String, dynamic> json) => _$BundlePurchaseResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$BundlePurchaseResponseToJson(this);
 }
 
 /// Response model for user orders list

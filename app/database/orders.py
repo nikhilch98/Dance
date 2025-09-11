@@ -453,3 +453,60 @@ class WebhookOperations:
             {"$set": update_data}
         )
         return result.modified_count > 0
+
+    @staticmethod
+    def get_orders_by_bundle_id(bundle_id: str) -> List[Dict[str, Any]]:
+        """Get all orders that belong to a specific bundle.
+
+        Args:
+            bundle_id: Bundle identifier
+
+        Returns:
+            List of order documents
+        """
+        client = get_mongo_client()
+
+        orders = list(client["dance_app"]["orders"]
+                     .find({"bundle_id": bundle_id})
+                     .sort("bundle_position", 1))
+
+        return orders
+
+    @staticmethod
+    def get_orders_by_bundle_payment_id(bundle_payment_id: str) -> List[Dict[str, Any]]:
+        """Get all orders that share the same bundle payment.
+
+        Args:
+            bundle_payment_id: Bundle payment identifier
+
+        Returns:
+            List of order documents
+        """
+        client = get_mongo_client()
+
+        orders = list(client["dance_app"]["orders"]
+                     .find({"bundle_payment_id": bundle_payment_id})
+                     .sort("bundle_position", 1))
+
+        return orders
+
+    @staticmethod
+    def get_bundle_orders_for_user(user_id: str) -> List[Dict[str, Any]]:
+        """Get all bundle orders for a user.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            List of bundle order documents
+        """
+        client = get_mongo_client()
+
+        orders = list(client["dance_app"]["orders"]
+                     .find({
+                         "user_id": user_id,
+                         "is_bundle_order": True
+                     })
+                     .sort("created_at", -1))
+
+        return orders

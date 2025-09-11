@@ -95,8 +95,60 @@ async def razorpay_webhook(
         try:
             # 3. Process the webhook if we have the necessary data
             if razorpay_payment_link_reference_id and razorpay_payment_link_status:
-                # Find the order by reference_id (our order_id)
-                order = OrderOperations.get_order_by_id(razorpay_payment_link_reference_id)
+                # Map Razorpay status to our order status
+                new_status = map_razorpay_status_to_order_status(razorpay_payment_link_status)
+
+                # Check if this is a bundle payment (starts with PAY_BUNDLE_)
+                if razorpay_payment_link_reference_id.startswith("PAY_BUNDLE_"):
+                    # This is a bundle payment - process all orders in the bundle
+                    logger.info(f"Processing bundle payment webhook for {razorpay_payment_link_reference_id}")
+
+                    bundle_orders = OrderOperations.get_orders_by_bundle_payment_id(razorpay_payment_link_reference_id)
+
+                    if bundle_orders:
+                        logger.info(f"Found {len(bundle_orders)} orders in bundle payment")
+
+                        updated_count = 0
+                        for bundle_order in bundle_orders:
+                            # Prepare additional data to store with the order
+                            additional_data = {}
+                            if razorpay_payment_id:
+                                payment_gateway_details = bundle_order.get("payment_gateway_details", {})
+                                payment_gateway_details["razorpay_payment_id"] = razorpay_payment_id
+                                payment_gateway_details["webhook_status"] = razorpay_payment_link_status
+                                payment_gateway_details["webhook_timestamp"] = raw_webhook_data["timestamp"]
+                                additional_data["payment_gateway_details"] = payment_gateway_details
+
+                            # Update order status
+                            success = OrderOperations.update_order_status(
+                                order_id=bundle_order["order_id"],
+                                status=new_status,
+                                additional_data=additional_data
+                            )
+
+                            if success:
+                                updated_count += 1
+                                logger.info(f"Updated bundle order {bundle_order['order_id']} status to {new_status.value}")
+
+                        # Update bundle status if payment was successful
+                        if new_status == OrderStatusEnum.PAID and updated_count > 0:
+                            from app.database.bundles import BundleOperations
+                            bundle_id = bundle_orders[0]["bundle_id"]
+                            await BundleOperations.update_bundle_status(bundle_id, "completed")
+
+                        order_updated = updated_count > 0
+                        if order_updated:
+                            logger.info(f"Successfully processed bundle payment with {updated_count} orders")
+                        else:
+                            processing_error = "Failed to update any bundle orders"
+                            logger.error(processing_error)
+                    else:
+                        processing_error = f"No orders found for bundle payment {razorpay_payment_link_reference_id}"
+                        logger.warning(processing_error)
+
+                else:
+                    # Find the order by reference_id (our order_id)
+                    order = OrderOperations.get_order_by_id(razorpay_payment_link_reference_id)
                 
                 if order:
                     logger.info(f"Found order {order['order_id']} for webhook processing")

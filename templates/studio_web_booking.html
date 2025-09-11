@@ -1732,6 +1732,177 @@
             margin-bottom: 0.75rem;
         }
 
+        .bundle-badge {
+            background: linear-gradient(45deg, #00D4FF, #9C27B0);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 0.5rem;
+        }
+
+        .bundle-info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .bundle-info-title {
+            color: #00D4FF;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .bundle-info-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Bundle Suggestion Modal Styles */
+        .bundle-savings-card {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .savings-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .savings-text {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.5rem;
+        }
+
+        .savings-percentage {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .bundle-details {
+            margin-bottom: 2rem;
+        }
+
+        .bundle-details h4 {
+            color: #00D4FF;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .bundle-details p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-comparison {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pricing-option.bundle-option {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .pricing-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .pricing-amount {
+            color: #10B981;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .pricing-option.bundle-option .pricing-amount {
+            color: #10B981;
+        }
+
+        .workshop-count {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .count-icon {
+            font-size: 1.2rem;
+        }
+
+        .bundle-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .bundle-action-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .bundle-action-btn.primary {
+            background: linear-gradient(45deg, #10B981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .bundle-action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .bundle-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bundle-action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .order-title {
             font-size: 1rem;
             font-weight: 600;
@@ -3632,6 +3803,17 @@
                 <p class="share-subtitle">Let others know about this amazing studio!</p>
             </div>
             <div class="share-options">
+                <a href="/bundles" class="share-option">
+                    <div class="share-option-icon" style="background: linear-gradient(45deg, #00D4FF, #9C27B0);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c0 4.97-4.03 9 0-9 9s-9-4.03-9-9 4.03-9 9-9"/>
+                            <path d="M12 3v6"/>
+                        </svg>
+                    </div>
+                    <span class="share-option-text">View Bundles</span>
+                </a>
+
                 <a href="#" id="whatsapp-share" class="share-option">
                     <div class="share-option-icon" style="background: #25D366;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -3663,6 +3845,58 @@
     </div>
 
     <!-- Login Modal -->
+    <!-- Bundle Suggestion Modal -->
+    <div id="bundle-suggestion-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-modal-close" onclick="closeBundleSuggestionModal()">×</div>
+            <div class="auth-modal-header">
+                <h3 class="auth-modal-title">💰 Great Choice!</h3>
+                <p class="auth-modal-subtitle" id="bundle-suggestion-subtitle">Save money by purchasing the complete bundle</p>
+            </div>
+            <div class="auth-modal-body">
+                <div id="bundle-suggestion-content">
+                    <div class="bundle-savings-card">
+                        <div class="savings-amount" id="savings-amount">₹0</div>
+                        <div class="savings-text">You Save</div>
+                        <div class="savings-percentage" id="savings-percentage">0%</div>
+                    </div>
+
+                    <div class="bundle-details">
+                        <h4 id="bundle-name">Workshop Bundle</h4>
+                        <p id="bundle-description">Complete workshop package</p>
+
+                        <div class="pricing-comparison">
+                            <div class="pricing-option">
+                                <span class="pricing-label">Individual Purchase:</span>
+                                <span class="pricing-amount" id="individual-price">₹0</span>
+                            </div>
+                            <div class="pricing-option bundle-option">
+                                <span class="pricing-label">Bundle Purchase:</span>
+                                <span class="pricing-amount" id="bundle-price">₹0</span>
+                            </div>
+                        </div>
+
+                        <div class="workshop-count">
+                            <span class="count-icon">🎭</span>
+                            <span id="workshop-count">0 workshops</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bundle-actions">
+                    <button class="bundle-action-btn primary" onclick="purchaseBundle()">
+                        <span>🎯</span>
+                        Get Bundle & Save
+                    </button>
+                    <button class="bundle-action-btn secondary" onclick="proceedIndividual()">
+                        <span>💳</span>
+                        Continue Individual Purchase
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="login-modal" class="auth-modal">
         <div class="auth-modal-content">
             <div class="auth-modal-close" onclick="closeLoginModal()">×</div>
@@ -4797,6 +5031,19 @@
                 const result = await response.json();
                 console.log('Payment link API response:', result);
 
+                // Check if there's a bundle suggestion
+                if (result.bundle_suggestion && result.bundle_suggestion.available) {
+                    console.log('Bundle suggestion detected:', result.bundle_suggestion);
+
+                    // Reset button state
+                    button.textContent = originalText;
+                    button.disabled = false;
+
+                    // Show bundle suggestion modal
+                    showBundleSuggestionModal(workshopIdentifier, result.bundle_suggestion);
+                    return;
+                }
+
                 if (result.payment_link_url) {
                     // Try to open payment link in new tab
                     const paymentWindow = window.open(result.payment_link_url, '_blank', 'noopener,noreferrer');
@@ -5157,6 +5404,130 @@
         
         function closeShareModal() {
             shareModal.classList.remove('show');
+        }
+
+        // Bundle Suggestion Modal Functions
+        let currentBundleSuggestion = null;
+        let currentWorkshopUuid = null;
+
+        function showBundleSuggestionModal(workshopUuid, bundleSuggestion) {
+            currentBundleSuggestion = bundleSuggestion;
+            currentWorkshopUuid = workshopUuid;
+
+            const modal = document.getElementById('bundle-suggestion-modal');
+            const savingsAmount = document.getElementById('savings-amount');
+            const savingsPercentage = document.getElementById('savings-percentage');
+            const bundleName = document.getElementById('bundle-name');
+            const bundleDescription = document.getElementById('bundle-description');
+            const individualPrice = document.getElementById('individual-price');
+            const bundlePrice = document.getElementById('bundle-price');
+            const workshopCount = document.getElementById('workshop-count');
+
+            // Populate modal with suggestion data
+            savingsAmount.textContent = `₹${bundleSuggestion.savings_rupees}`;
+            savingsPercentage.textContent = `${bundleSuggestion.savings_percentage}%`;
+            bundleName.textContent = bundleSuggestion.bundle_name;
+            bundleDescription.textContent = bundleSuggestion.description || "Complete workshop package with great savings!";
+            individualPrice.textContent = `₹${bundleSuggestion.individual_price}`;
+            bundlePrice.textContent = `₹${bundleSuggestion.bundle_price}`;
+            workshopCount.textContent = `${bundleSuggestion.workshop_count} workshops`;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeBundleSuggestionModal() {
+            const modal = document.getElementById('bundle-suggestion-modal');
+            modal.style.display = 'none';
+            currentBundleSuggestion = null;
+            currentWorkshopUuid = null;
+        }
+
+        function purchaseBundle() {
+            if (!currentBundleSuggestion) {
+                alert('No bundle suggestion available');
+                return;
+            }
+
+            // Check if user is authenticated
+            fetch('/api/auth/status', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    // Proceed with bundle purchase
+                    proceedWithBundlePurchase(data.user_id, currentBundleSuggestion.bundle_template_id);
+                } else {
+                    // Redirect to login with bundle intent
+                    window.location.href = `/studio?login_required=true&redirect=${encodeURIComponent(window.location.pathname)}&bundle_intent=${currentBundleSuggestion.bundle_template_id}`;
+                }
+            })
+            .catch(error => {
+                console.error('Auth check failed:', error);
+                alert('Unable to verify authentication. Please try again.');
+            });
+        }
+
+        function proceedIndividual() {
+            // Close bundle suggestion modal
+            closeBundleSuggestionModal();
+
+            // Proceed with normal individual purchase flow
+            if (currentWorkshopUuid) {
+                // Find the workshop and trigger purchase
+                const workshop = findWorkshopByUuid(currentWorkshopUuid);
+                if (workshop) {
+                    handleNachnaRegistration(workshop);
+                }
+            }
+        }
+
+        function proceedWithBundlePurchase(userId, bundleTemplateId) {
+            // Show loading state
+            const primaryBtn = document.querySelector('.bundle-action-btn.primary');
+            const originalText = primaryBtn.innerHTML;
+            primaryBtn.innerHTML = '<span>⏳</span> Processing...';
+            primaryBtn.disabled = true;
+
+            // Make bundle purchase API call
+            fetch('/api/orders/bundles/purchase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    template_id: bundleTemplateId,
+                    user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Success - redirect to payment
+                    window.location.href = data.payment_link_url;
+                } else {
+                    alert('Bundle purchase failed: ' + (data.message || 'Unknown error'));
+                    // Reset button
+                    primaryBtn.innerHTML = originalText;
+                    primaryBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Bundle purchase failed:', error);
+                alert('Bundle purchase failed. Please try again.');
+                // Reset button
+                primaryBtn.innerHTML = originalText;
+                primaryBtn.disabled = false;
+            });
+        }
+
+        function findWorkshopByUuid(uuid) {
+            // Helper function to find workshop by UUID
+            // This would need to be implemented based on how workshops are stored in the frontend
+            // For now, return a placeholder - you'll need to implement this based on your workshop storage
+            console.log('Finding workshop by UUID:', uuid);
+            return null; // TODO: Implement this based on your workshop storage mechanism
         }
         
         // Artist Instagram modal functionality
@@ -5566,11 +5937,20 @@
             card.innerHTML = `
                 <div class="order-header">
                     <div>
-                        <div class="order-title">${order.workshop_details.title}</div>
+                        <div class="order-title">${order.workshop_details.title} ${order.is_bundle_order ? '<span class="bundle-badge">Bundle</span>' : ''}</div>
                         <div class="order-artists">${order.workshop_details.artist_names.join(', ')}</div>
                     </div>
                     <div class="order-status ${statusClass}">${statusText}</div>
                 </div>
+
+                ${order.is_bundle_order ? `
+                <div class="bundle-info">
+                    <div class="bundle-info-title">Part of Bundle</div>
+                    <div class="bundle-info-text">Workshop ${order.bundle_position} of ${order.bundle_total_workshops}</div>
+                    <div class="bundle-info-text">Bundle: ${order.bundle_id || 'Loading...'}</div>
+                    ${order.bundle_total_amount ? `<div class="bundle-info-text">Bundle Total: ₹${order.bundle_total_amount}</div>` : ''}
+                </div>
+                ` : ''}
                 <div class="order-details">
                     <div class="order-detail">
                         <span class="order-label">Studio:</span>
@@ -6596,6 +6976,14 @@
                 }
             });
 
+            // Close bundle suggestion modal when clicking outside
+            document.addEventListener('click', function(e) {
+                const bundleModal = document.getElementById('bundle-suggestion-modal');
+                if (bundleModal && e.target === bundleModal) {
+                    closeBundleSuggestionModal();
+                }
+            });
+
             // Keyboard shortcuts
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape') {
@@ -6605,6 +6993,11 @@
                         closeOTPModal();
                     } else if (profileModal.classList.contains('show')) {
                         closeProfileModal();
+                    } else {
+                        const bundleModal = document.getElementById('bundle-suggestion-modal');
+                        if (bundleModal && bundleModal.style.display === 'flex') {
+                            closeBundleSuggestionModal();
+                        }
                     }
                 }
             });

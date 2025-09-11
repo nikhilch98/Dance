@@ -5,6 +5,7 @@ import '../models/order.dart';
 import '../models/workshop.dart';
 import '../services/order_service.dart';
 import '../screens/rewards_redemption_screen.dart';
+import '../widgets/bundle_suggestion_modal.dart';
 
 class PaymentLinkUtils {
   /// Handles launching payment links based on their type
@@ -121,7 +122,7 @@ class PaymentLinkUtils {
     }
 
     // Fallback: proceed without rewards redemption
-    await _createPaymentWithoutRewards(context, workshopUuid);
+    await _createPaymentWithoutRewards(context, workshopUuid, workshop: workshop);
   }
 
   /// Extract amount from pricing string (e.g., "₹799" -> 799.0)
@@ -164,19 +165,38 @@ class PaymentLinkUtils {
       }
 
       if (result.isSuccess && result.paymentUrl != null) {
-        final orderIdText = result.response?.formattedOrderId ?? 'N/A';
-        
-        if (pointsRedeemed > 0) {
-          _showSuccessSnackBar(
-            context, 
-            'Order created with ₹${discountAmount.toStringAsFixed(0)} reward discount! Order: $orderIdText'
-          );
+        final response = result.response;
+
+        // Check if bundle suggestion is available
+        if (response?.bundleSuggestion != null && response!.bundleSuggestion!.isNotEmpty) {
+          // Show bundle suggestion modal
+          if (context.mounted) {
+            await showDialog(
+              context: context,
+              barrierDismissible: true,
+              builder: (context) => BundleSuggestionModal(
+                bundleSuggestion: response.bundleSuggestion!,
+                workshopUuid: workshopUuid,
+                workshop: workshop,
+              ),
+            );
+          }
         } else {
-          _showSuccessSnackBar(context, 'Order created: $orderIdText');
+          // No bundle suggestion, proceed with normal payment flow
+          final orderIdText = response?.formattedOrderId ?? 'N/A';
+
+          if (pointsRedeemed > 0) {
+            _showSuccessSnackBar(
+              context,
+              'Order created with ₹${discountAmount.toStringAsFixed(0)} reward discount! Order: $orderIdText'
+            );
+          } else {
+            _showSuccessSnackBar(context, 'Order created: $orderIdText');
+          }
+
+          // Launch payment URL
+          await _launchUrl(context, result.paymentUrl!);
         }
-        
-        // Launch payment URL
-        await _launchUrl(context, result.paymentUrl!);
       } else {
         final errorMessage = result.errorMessage ?? 'Failed to create payment link';
         _showErrorSnackBar(context, errorMessage);
@@ -196,6 +216,7 @@ class PaymentLinkUtils {
   static Future<void> _createPaymentWithoutRewards(
     BuildContext context,
     String workshopUuid,
+    {WorkshopSession? workshop}
   ) async {
     // Show loading dialog
     final loadingDialog = _showLoadingDialog(context);
@@ -210,16 +231,35 @@ class PaymentLinkUtils {
       }
 
       if (result.isSuccess && result.paymentUrl != null) {
-        final orderIdText = result.response?.formattedOrderId ?? 'N/A';
-        
-        if (result.isExisting) {
-          _showSuccessSnackBar(context, 'Using existing order: $orderIdText');
+        final response = result.response;
+
+        // Check if bundle suggestion is available
+        if (response?.bundleSuggestion != null && response!.bundleSuggestion!.isNotEmpty) {
+          // Show bundle suggestion modal
+          if (context.mounted) {
+            await showDialog(
+              context: context,
+              barrierDismissible: true,
+              builder: (context) => BundleSuggestionModal(
+                bundleSuggestion: response.bundleSuggestion!,
+                workshopUuid: workshopUuid,
+                workshop: workshop,
+              ),
+            );
+          }
         } else {
-          _showSuccessSnackBar(context, 'Order created: $orderIdText');
+          // No bundle suggestion, proceed with normal payment flow
+          final orderIdText = response?.formattedOrderId ?? 'N/A';
+
+          if (result.isExisting) {
+            _showSuccessSnackBar(context, 'Using existing order: $orderIdText');
+          } else {
+            _showSuccessSnackBar(context, 'Order created: $orderIdText');
+          }
+
+          // Launch payment URL
+          await _launchUrl(context, result.paymentUrl!);
         }
-        
-        // Launch payment URL
-        await _launchUrl(context, result.paymentUrl!);
       } else {
         final errorMessage = result.errorMessage ?? 'Failed to create payment link';
         _showErrorSnackBar(context, errorMessage);
@@ -229,7 +269,7 @@ class PaymentLinkUtils {
       if (context.mounted) {
         Navigator.of(context).pop();
       }
-      
+
       print('❌ Error creating payment: $e');
       _showErrorSnackBar(context, e.toString().replaceAll('Exception: ', ''));
     }

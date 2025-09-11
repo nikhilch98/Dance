@@ -20,7 +20,11 @@ from app.models.orders import (
     UserOrdersResponse,
     WorkshopDetails,
     RazorpayWebhookRequest,
-    WebhookResponse
+    WebhookResponse,
+    BundleTemplate,
+    BundleOrder,
+    BundlePurchaseRequest,
+    BundlePurchaseResponse
 )
 from app.services.auth import verify_token
 from app.services.razorpay_service import get_razorpay_service
@@ -31,21 +35,320 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def parse_tiered_pricing(pricing_info: str, workshop_uuid: str, user_id: str = None) -> dict:
+    """Parse tiered pricing information and determine current price.
+
+    Args:
+        pricing_info: Tiered pricing string
+        workshop_uuid: Workshop UUID to check completed orders
+        user_id: User ID for checking existing orders
+
+    Returns:
+        dict: {
+            'amount_paise': int,
+            'tier_info': str,
+            'is_early_bird': bool,
+            'pricing_changed': bool (if existing order pricing is no longer valid)
+        }
+    """
+    if not pricing_info:
+        raise ValueError("Pricing information not available")
+
+    # Check if this contains bundle pricing (look for BUNDLE: in any line)
+    lines = pricing_info.split('\n')
+    bundle_line = None
+    regular_lines = []
+
+    for line in lines:
+        if line.strip().startswith('BUNDLE:'):
+            bundle_line = line.strip()
+        else:
+            regular_lines.append(line.strip())
+
+    # If we have bundle pricing, parse it
+    if bundle_line:
+        try:
+            bundle_info = parse_bundle_pricing(bundle_line)
+            # Use the bundle pricing as the main pricing
+            return {
+                'amount_paise': bundle_info['bundle_price'] * 100,  # Convert to paise
+                'tier_info': f"Bundle: {bundle_info['name']}",
+                'is_early_bird': True,  # Bundles are considered early bird
+                'pricing_changed': False,
+                'is_bundle': True,
+                'bundle_info': bundle_info
+            }
+        except ValueError as e:
+            logger.warning(f"Bundle pricing parse error: {e}")
+            # Continue with regular pricing
+
+    # Parse regular pricing lines (time-based or quantity-based)
+    current_time = datetime.now()
+    current_price = None
+    tier_info = "Standard pricing"
+    is_early_bird = False
+
+    # Store all valid pricing options
+    pricing_options = []
+
+    for line in regular_lines:
+        if not line or ':' not in line:
+            continue
+
+        try:
+            # Parse user-friendly format: "Early Bird (Till 18th Sept): ₹799/-"
+            if 'Early Bird' in line and '₹' in line:
+                # Extract price from ₹799/-
+                price_match = line.split('₹')[1].split('/')[0].strip()
+                price = int(price_match)
+
+                # Store pricing option
+                pricing_option = {
+                    'price_paise': price * 100,
+                    'is_early_bird': 'Early Bird' in line and '18th Sept' in line and current_time.day <= 18 and current_time.month == 9,
+                    'tier_info': "Early Bird Pricing" if ('Early Bird' in line and '18th Sept' in line and current_time.day <= 18 and current_time.month == 9) else "Standard Pricing",
+                    'line': line
+                }
+                pricing_options.append(pricing_option)
+
+            # Parse quantity-based format: "First 15 spots: ₹999/-"
+            elif 'spots:' in line and '₹' in line:
+                price_match = line.split('₹')[1].split('/')[0].strip()
+                price = int(price_match)
+
+                # Get completed orders count
+                completed_count = get_completed_orders_count(workshop_uuid)
+
+                # Store quantity-based pricing option
+                pricing_option = {
+                    'price_paise': price * 100,
+                    'is_early_bird': 'First 15' in line and completed_count < 15,
+                    'tier_info': "Early Bird (First 15 spots)" if ('First 15' in line and completed_count < 15) else
+                                "Standard (16-20 spots)" if ('16-20' in line and completed_count < 20) else
+                                "OTS Pricing",
+                    'line': line
+                }
+                pricing_options.append(pricing_option)
+
+        except (ValueError, IndexError) as e:
+            logger.warning(f"Error parsing pricing line '{line}': {e}")
+            continue
+
+    # Select the best pricing option
+    if pricing_options:
+        # Prioritize: Early Bird > Standard > Any available
+        early_bird_options = [opt for opt in pricing_options if opt['is_early_bird']]
+        if early_bird_options:
+            selected_option = early_bird_options[0]  # Take first early bird option
+        else:
+            # No early bird available, take the first standard option
+            standard_options = [opt for opt in pricing_options if not opt['is_early_bird']]
+            if standard_options:
+                selected_option = standard_options[0]
+            else:
+                # Fallback to any available option
+                selected_option = pricing_options[0]
+
+        return {
+            'amount_paise': selected_option['price_paise'],
+            'tier_info': selected_option['tier_info'],
+            'is_early_bird': selected_option['is_early_bird'],
+            'pricing_changed': False,
+            'is_bundle': False
+        }
+
+    # Fallback to old format extraction
+    try:
+        return {
+            'amount_paise': extract_pricing_amount(pricing_info),
+            'tier_info': 'Standard pricing',
+            'is_early_bird': False,
+            'pricing_changed': False,
+            'is_bundle': False
+        }
+    except ValueError:
+        raise ValueError(f"Unable to parse pricing information: {pricing_info}")
+
+
+def evaluate_tier_condition(tier_type: str, condition: str, completed_orders_count: int, workshop: dict = None) -> bool:
+    """Evaluate if a tier condition is met."""
+    try:
+        if tier_type == 'QUANTITY_FIRST':
+            limit = int(condition)
+            return completed_orders_count < limit
+
+        elif tier_type == 'QUANTITY_AFTER':
+            limit = int(condition)
+            return completed_orders_count >= limit
+
+        elif tier_type == 'QUANTITY_RANGE':
+            # Handle ranges like "16-20"
+            if '-' in condition:
+                start, end = map(int, condition.split('-'))
+                return start <= completed_orders_count + 1 <= end
+            return False
+
+        elif tier_type == 'DATE_TILL':
+            # Parse date and compare with current date
+            from datetime import datetime
+            try:
+                deadline = datetime.strptime(condition, '%Y-%m-%d').date()
+                today = datetime.now().date()
+                return today <= deadline
+            except ValueError:
+                return False
+
+        elif tier_type == 'DATE_AFTER':
+            # Parse date and compare with current date
+            from datetime import datetime
+            try:
+                deadline = datetime.strptime(condition, '%Y-%m-%d').date()
+                today = datetime.now().date()
+                return today > deadline
+            except ValueError:
+                return False
+
+        elif tier_type == 'FIRST':
+            # First N participants
+            limit = int(condition)
+            return completed_orders_count < limit
+
+        elif tier_type == 'TIME_SLOT':
+            # Handle time slot ranges like "09:00-12:00"
+            from datetime import datetime
+            try:
+                if '-' in condition:
+                    start_time_str, end_time_str = condition.split('-')
+                    start_time = datetime.strptime(start_time_str.strip(), '%H:%M').time()
+                    end_time = datetime.strptime(end_time_str.strip(), '%H:%M').time()
+                    current_time = datetime.now().time()
+                    return start_time <= current_time <= end_time
+                return False
+            except ValueError:
+                return False
+
+        elif tier_type == 'TIME_BEFORE':
+            # Handle "book X hours before workshop starts" conditions
+            try:
+                hours = int(condition)
+                if workshop and workshop.get('time'):
+                    from datetime import datetime, timedelta
+                    try:
+                        # Combine workshop date and time
+                        workshop_date = workshop.get('date')
+                        workshop_time = workshop.get('time')
+
+                        if workshop_date and workshop_time:
+                            # Parse workshop datetime
+                            workshop_datetime_str = f"{workshop_date} {workshop_time}"
+                            workshop_datetime = datetime.strptime(workshop_datetime_str, '%Y-%m-%d %H:%M')
+
+                            # Calculate deadline (X hours before workshop)
+                            deadline = workshop_datetime - timedelta(hours=hours)
+                            current_time = datetime.now()
+
+                            # Return true if current time is before the deadline
+                            return current_time <= deadline
+                    except ValueError as e:
+                        logger.warning(f"Error parsing workshop time for TIME_BEFORE: {e}")
+                        return False
+                return False
+            except ValueError:
+                return False
+
+        elif tier_type == 'TIME_AFTER':
+            # Handle "after X hours from now" conditions (for last-minute bookings)
+            try:
+                hours = int(condition)
+                from datetime import datetime, timedelta
+
+                # Calculate if it's within X hours from now
+                deadline = datetime.now() + timedelta(hours=hours)
+                current_time = datetime.now()
+
+                # Return true if we're past the deadline (for overtime pricing)
+                return current_time >= deadline
+            except ValueError:
+                return False
+
+        return False
+
+    except (ValueError, AttributeError):
+        return False
+
+
+def is_early_bird_tier(tier_type: str, condition: str) -> bool:
+    """Check if this is an early bird pricing tier."""
+    return tier_type in ['DATE_TILL', 'QUANTITY_FIRST', 'FIRST', 'TIME_BEFORE']
+
+
+def get_completed_orders_count(workshop_uuid: str) -> int:
+    """Get count of completed orders for a workshop."""
+    try:
+        from utils.utils import get_mongo_client
+
+        client = get_mongo_client()
+        db = client["orders"]["orders"]
+
+        # Count orders with status 'paid' for this workshop
+        count = db.count_documents({
+            "workshop_uuid": workshop_uuid,
+            "status": "paid"
+        })
+
+        return count
+
+    except Exception as e:
+        logger.error(f"Error counting completed orders for workshop {workshop_uuid}: {e}")
+        return 0
+
+
+def parse_bundle_pricing(pricing_info: str) -> dict:
+    """Parse bundle pricing information.
+
+    Args:
+        pricing_info: Bundle pricing string like "BUNDLE:Weekend Dance Package:WEEKEND_001:WSH_001,WSH_002,WSH_003:2500:INR:Save ₹500"
+
+    Returns:
+        dict: Bundle pricing details
+    """
+    if not pricing_info or not pricing_info.startswith('BUNDLE:'):
+        raise ValueError("Invalid bundle pricing format")
+
+    try:
+        parts = pricing_info.split(':')
+        if len(parts) < 6:
+            raise ValueError("Incomplete bundle pricing information")
+
+        return {
+            'type': 'bundle',
+            'name': parts[1],
+            'bundle_id': parts[2],
+            'workshop_ids': parts[3].split(','),
+            'bundle_price': int(parts[4]),
+            'currency': parts[5],
+            'description': parts[6] if len(parts) > 6 else "",
+            'individual_price': int(parts[4]) // len(parts[3].split(','))  # Divide equally
+        }
+    except (ValueError, IndexError) as e:
+        raise ValueError(f"Invalid bundle pricing format: {e}")
+
+
 def extract_pricing_amount(pricing_info: str) -> int:
     """Extract amount in paise from pricing_info string.
-    
+
     Args:
         pricing_info: String like "₹1,500" or "₹500" or "1500"
-        
+
     Returns:
         Amount in paise (e.g., 150000 for ₹1,500)
     """
     if not pricing_info:
         raise ValueError("Pricing information not available")
-    
+
     # Remove currency symbols and commas
     amount_str = pricing_info.replace("₹", "").replace(",", "").strip()
-    
+
     try:
         # Convert to float first (in case of decimal values), then to int
         amount_rupees = float(amount_str)
@@ -145,6 +448,197 @@ def create_workshop_details(workshop: dict) -> WorkshopDetails:
     )
 
 
+# Bundle Management Endpoints
+
+@router.post("/bundles/purchase", response_model=BundlePurchaseResponse)
+async def purchase_bundle(request: BundlePurchaseRequest, user_id: str = Depends(verify_token)):
+    """Purchase a bundle - creates multiple orders with shared payment."""
+    try:
+        logger.info(f"Processing bundle purchase for template {request.template_id}, user {user_id}")
+
+        # Get bundle template from database
+        from app.database.bundles import BundleOperations
+        template = await BundleOperations.get_bundle_template(request.template_id)
+
+        if not template:
+            raise HTTPException(status_code=404, detail="Bundle template not found")
+        bundle_id = f"BUNDLE_{request.template_id}_{user_id}_{int(datetime.now().timestamp())}"
+        bundle_payment_id = f"PAY_{bundle_id}"
+
+        # Create individual orders for each workshop
+        order_ids = []
+        for i, workshop_uuid in enumerate(template["workshop_ids"]):
+            # Get workshop details
+            workshop = get_workshop_by_uuid(workshop_uuid)
+
+            # Create workshop details
+            workshop_details = create_workshop_details(workshop)
+
+            # Calculate individual amount
+            individual_amount = template["bundle_price"] // len(template["workshop_ids"])
+
+            # Create order
+            order_create = OrderCreate(
+                user_id=user_id,
+                workshop_uuid=workshop_uuid,
+                workshop_details=workshop_details,
+                amount=individual_amount * 100,  # Convert to paise
+                currency=template["currency"],
+                bundle_id=bundle_id,
+                bundle_payment_id=bundle_payment_id,
+                is_bundle_order=True,
+                bundle_position=i + 1,
+                bundle_total_workshops=len(template["workshop_ids"]),
+                bundle_total_amount=template["bundle_price"]
+            )
+
+            # Save order without payment link (will be handled by bundle payment)
+            order_result = OrderOperations.create_order(order_create)
+            order_ids.append(order_result["order_id"])
+
+            logger.info(f"Created bundle order {order_result['order_id']} for workshop {workshop_uuid}")
+
+        # Create bundle record
+        bundle_record = {
+            "bundle_id": bundle_id,
+            "name": template["name"],
+            "bundle_payment_id": bundle_payment_id,
+            "member_orders": [
+                {
+                    "order_id": order_id,
+                    "position": i + 1,
+                    "status": "created"
+                }
+                for i, order_id in enumerate(order_ids)
+            ],
+            "total_amount": template["bundle_price"],
+            "individual_amount": template["bundle_price"] // len(template["workshop_ids"]),
+            "user_id": user_id,
+            "status": "active"
+        }
+
+        # Save bundle record to database
+        created_bundle = await BundleOperations.create_bundle(bundle_record)
+        logger.info(f"Created bundle record {bundle_id} with {len(order_ids)} orders")
+
+        # Create single payment link for entire bundle
+        rp = get_razorpay_service()
+        payment_link_data = await rp.create_payment_link(
+            amount=template["bundle_price"] * 100,  # Convert to paise
+            description=f"Bundle: {template['name']}",
+            reference_id=bundle_payment_id,
+            customer_details={"id": user_id}
+        )
+
+        logger.info(f"Created bundle payment link {payment_link_data['id']} for bundle {bundle_id}")
+
+        return BundlePurchaseResponse(
+            success=True,
+            bundle_id=bundle_id,
+            payment_link_url=payment_link_data["short_url"],
+            payment_link_id=payment_link_data["id"],
+            total_amount=template["bundle_price"],
+            currency=template["currency"],
+            individual_orders=order_ids,
+            message=f"Bundle '{template['name']}' created successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating bundle purchase: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create bundle purchase"
+        )
+
+
+@router.get("/bundles/templates")
+async def get_bundle_templates():
+    """Get available bundle templates."""
+    try:
+        from app.database.bundles import BundleOperations
+
+        bundle_templates = await BundleOperations.get_active_bundle_templates()
+
+        # If no templates in database, return empty list
+        if not bundle_templates:
+            return {"bundles": []}
+
+        # Format templates for API response
+        formatted_templates = []
+        for template in bundle_templates:
+            formatted_templates.append({
+                "template_id": template["template_id"],
+                "name": template["name"],
+                "description": template.get("description", ""),
+                "workshop_ids": template["workshop_ids"],
+                "bundle_price": template["bundle_price"],
+                "individual_prices": template["individual_prices"],
+                "currency": template.get("currency", "INR"),
+                "discount_percentage": template.get("discount_percentage"),
+                "valid_until": template.get("valid_until")
+            })
+
+        return {"bundles": formatted_templates}
+
+    except Exception as e:
+        logger.error(f"Error fetching bundle templates: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch bundle templates"
+        )
+
+
+@router.get("/bundles/{bundle_id}")
+async def get_bundle_details(bundle_id: str, user_id: str = Depends(verify_token)):
+    """Get details of a specific bundle."""
+    try:
+        from app.database.bundles import BundleOperations
+
+        # Get bundle from database
+        bundle = await BundleOperations.get_bundle_by_id(bundle_id)
+        if not bundle:
+            raise HTTPException(status_code=404, detail="Bundle not found")
+
+        # Verify user has access to this bundle
+        if bundle["user_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        # Get member orders with workshop details
+        member_orders = await BundleOperations.get_bundle_member_orders(bundle_id)
+
+        # Format response
+        bundle_info = {
+            "bundle_id": bundle["bundle_id"],
+            "name": bundle["name"],
+            "member_orders": [
+                {
+                    "order_id": order["order_id"],
+                    "workshop_name": order.get("workshop_details", {}).get("title", "Unknown Workshop"),
+                    "status": order.get("status", "unknown"),
+                    "position": order.get("bundle_position", 0)
+                }
+                for order in member_orders
+            ],
+            "total_amount": bundle["total_amount"],
+            "status": bundle["status"],
+            "created_at": bundle.get("created_at"),
+            "completed_at": bundle.get("completed_at")
+        }
+
+        return bundle_info
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching bundle details: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch bundle details"
+        )
+
+
 @router.post("/create-payment-link", response_model=UnifiedPaymentLinkResponse)
 async def create_payment_link(
     request: CreatePaymentLinkRequest,
@@ -162,22 +656,99 @@ async def create_payment_link(
     Note: Users who have successfully paid (status=PAID) can make new bookings.
     Only pending payments (status=CREATED) are considered duplicates.
     """
-    def internal_create_payment_link(request: CreatePaymentLinkRequest, user_id: str):
+    async def internal_create_payment_link(request: CreatePaymentLinkRequest, user_id: str):
         try:
             logger.info(f"Creating payment link for workshop {request.workshop_uuid}, user {user_id}")
             
             # 1. Get workshop details and validate
             workshop = get_workshop_by_uuid(request.workshop_uuid)
             
-            # 2. Extract pricing information
+            # 2. Extract pricing information with tiered pricing support
             if not workshop.get("pricing_info"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Workshop pricing information not available"
                 )
-            
+
             try:
-                amount_paise = extract_pricing_amount(workshop["pricing_info"])
+                pricing_result = parse_tiered_pricing(workshop["pricing_info"], request.workshop_uuid, user_id)
+                amount_paise = pricing_result['amount_paise']
+                tier_info = pricing_result['tier_info']
+                is_early_bird = pricing_result['is_early_bird']
+                pricing_changed = pricing_result['pricing_changed']
+                is_bundle = pricing_result.get('is_bundle', False)
+                bundle_info = pricing_result.get('bundle_info')
+
+                # If this workshop has bundle pricing, prepare bundle suggestion
+                bundle_suggestion = None
+                if is_bundle and bundle_info:
+                    logger.info(f"Workshop {request.workshop_uuid} has bundle pricing - preparing bundle suggestion")
+
+                    try:
+                        # Get bundle template from database to get accurate individual prices
+                        from app.database.bundles import BundleOperations
+                        template = await BundleOperations.get_bundle_template(bundle_info.get('bundle_id'))
+
+                        if template and template.get('individual_prices'):
+                            # Use individual prices from template
+                            individual_prices = template['individual_prices']
+                            bundle_price = template['bundle_price']
+                            workshop_count = len(individual_prices)
+
+                            # Calculate total individual price and savings
+                            total_individual = sum(individual_prices)
+                            savings = total_individual - bundle_price
+                            savings_percentage = (savings / total_individual) * 100 if total_individual > 0 else 0
+
+                            # Get the current workshop's price for display
+                            current_workshop_price = amount_paise / 100
+
+                            bundle_suggestion = {
+                                "available": True,
+                                "bundle_name": template.get('name', bundle_info.get('name', 'Workshop Bundle')),
+                                "bundle_template_id": template.get('template_id', bundle_info.get('bundle_id')),
+                                "savings_rupees": savings,
+                                "savings_percentage": round(savings_percentage, 1),
+                                "individual_total_price": total_individual,
+                                "individual_price": current_workshop_price,  # Current workshop price for reference
+                                "bundle_price": bundle_price,
+                                "workshop_count": workshop_count,
+                                "description": template.get('description', bundle_info.get('description', '')),
+                                "purchase_url": f"/api/orders/bundles/purchase",
+                                "message": f"Save ₹{savings:.0f} by purchasing the complete {template.get('name', 'bundle')}!"
+                            }
+
+                            logger.info(f"Bundle suggestion prepared: Save ₹{savings:.0f} ({savings_percentage:.1f}%) on {workshop_count} workshops")
+                        else:
+                            # Fallback to old logic if template not found
+                            logger.warning(f"Bundle template {bundle_info.get('bundle_id')} not found, using fallback calculation")
+                            individual_price = amount_paise / 100
+                            bundle_price = bundle_info.get('bundle_price', 0)
+                            workshop_count = len(bundle_info.get('workshop_ids', []))
+
+                            if workshop_count > 1 and bundle_price > 0:
+                                total_individual = individual_price * workshop_count
+                                savings = total_individual - bundle_price
+                                savings_percentage = (savings / total_individual) * 100
+
+                                bundle_suggestion = {
+                                    "available": True,
+                                    "bundle_name": bundle_info.get('name', 'Workshop Bundle'),
+                                    "bundle_template_id": bundle_info.get('bundle_id'),
+                                    "savings_rupees": savings,
+                                    "savings_percentage": round(savings_percentage, 1),
+                                    "individual_price": individual_price,
+                                    "bundle_price": bundle_price,
+                                    "workshop_count": workshop_count,
+                                    "description": bundle_info.get('description', ''),
+                                    "purchase_url": f"/api/orders/bundles/purchase",
+                                    "message": f"Save ₹{savings:.0f} by purchasing the complete {bundle_info.get('name', 'bundle')}!"
+                                }
+
+                    except Exception as e:
+                        logger.error(f"Error preparing bundle suggestion: {e}")
+                        # Don't fail the entire payment link creation if bundle suggestion fails
+
             except ValueError as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -242,12 +813,20 @@ async def create_payment_link(
                         except Exception as e:
                             logger.error(f"Failed to rollback pending redemption for order {existing_order['order_id']}: {e}")
                     
-                    # Mark old order cancelled and continue
+                    # Mark old order cancelled with appropriate reason
+                    cancellation_reason = "pricing_updated" if pricing_changed else "amount_changed"
                     OrderOperations.update_order_status(
                         existing_order["order_id"],
                         OrderStatusEnum.CANCELLED,
-                        additional_data={"cancellation_reason": "replaced_by_new_amount"}
+                        additional_data={
+                            "cancellation_reason": cancellation_reason,
+                            "old_amount": existing_amount_paise / 100,
+                            "new_amount": amount_paise / 100,
+                            "tier_info": tier_info
+                        }
                     )
+
+                    logger.info(f"Cancelled order {existing_order['order_id']} due to {cancellation_reason}: ₹{existing_amount_paise / 100} → ₹{amount_paise / 100}")
                 else:
                     # Same amount → reuse existing link
                     logger.info(
@@ -263,7 +842,15 @@ async def create_payment_link(
                         amount=existing_order.get("amount", amount_paise),
                         currency=existing_order.get("currency", "INR"),
                         expires_at=existing_order.get("expires_at"),
-                        workshop_details=workshop_details
+                        workshop_details=workshop_details,
+                        tier_info=tier_info,
+                        is_early_bird=is_early_bird,
+                        pricing_changed=pricing_changed,
+                        is_bundle=is_bundle,
+                        bundle_id=bundle_info.get('bundle_id') if bundle_info else None,
+                        bundle_name=bundle_info.get('name') if bundle_info else None,
+                        bundle_total_amount=bundle_info.get('bundle_price') if bundle_info else None,
+                        bundle_suggestion=bundle_suggestion
                     )
             
             # 4. Handle reward redemption if provided
@@ -452,7 +1039,15 @@ async def create_payment_link(
                 amount=amount_paise,
                 currency="INR",
                 expires_at=expires_at,
-                workshop_details=workshop_details
+                workshop_details=workshop_details,
+                tier_info=tier_info,
+                is_early_bird=is_early_bird,
+                pricing_changed=pricing_changed,
+                is_bundle=is_bundle,
+                bundle_id=bundle_info.get('bundle_id') if bundle_info else None,
+                bundle_name=bundle_info.get('name') if bundle_info else None,
+                bundle_total_amount=bundle_info.get('bundle_price') if bundle_info else None,
+                bundle_suggestion=bundle_suggestion
             )
             
         except HTTPException:
@@ -464,9 +1059,9 @@ async def create_payment_link(
                 detail="Internal server error"
             )
     try:
-        return internal_create_payment_link(request, user_id)
+        return await internal_create_payment_link(request, user_id)
     except:
-        return internal_create_payment_link(request, user_id)
+        return await internal_create_payment_link(request, user_id)
 
 @router.get("/{order_id}/status")
 async def get_order_status(

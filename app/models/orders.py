@@ -47,6 +47,13 @@ class OrderCreate(BaseModel):
     rewards_redeemed: Optional[float] = None  # Reward points redeemed (in rupees)
     final_amount_paid: Optional[float] = None  # Final amount after discount (in rupees)
     payment_gateway: PaymentGatewayEnum = PaymentGatewayEnum.RAZORPAY
+    # Bundle-related fields
+    bundle_id: Optional[str] = None
+    bundle_payment_id: Optional[str] = None
+    is_bundle_order: Optional[bool] = False
+    bundle_position: Optional[int] = None
+    bundle_total_workshops: Optional[int] = None
+    bundle_total_amount: Optional[int] = None
 
 
 class Order(BaseModel):
@@ -71,6 +78,13 @@ class Order(BaseModel):
     rewards_generated_at: Optional[datetime] = None
     rewards_redeemed: Optional[float] = None  # Rewards redeemed for this order in rupees
     final_amount_paid: Optional[float] = None  # Final amount after reward redemption in rupees
+    # Bundle-related fields
+    bundle_id: Optional[str] = None
+    bundle_payment_id: Optional[str] = None
+    is_bundle_order: Optional[bool] = False
+    bundle_position: Optional[int] = None
+    bundle_total_workshops: Optional[int] = None
+    bundle_total_amount: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -90,6 +104,14 @@ class OrderResponse(BaseModel):
     cashback_amount: Optional[float] = None  # Cashback earned in rupees
     rewards_redeemed: Optional[float] = None  # Rewards redeemed in rupees
     final_amount_paid: Optional[float] = None  # Final amount after redemption in rupees
+    # Bundle information
+    bundle_id: Optional[str] = None
+    bundle_payment_id: Optional[str] = None
+    is_bundle_order: Optional[bool] = False
+    bundle_position: Optional[int] = None
+    bundle_total_workshops: Optional[int] = None
+    bundle_total_amount: Optional[int] = None
+    bundle_info: Optional[Dict[str, Any]] = None  # Additional bundle context
     created_at: datetime
     updated_at: datetime
 
@@ -118,6 +140,17 @@ class UnifiedPaymentLinkResponse(BaseModel):
     currency: str
     expires_at: Optional[datetime] = None
     workshop_details: WorkshopDetails
+    # Tiered pricing fields
+    tier_info: Optional[str] = None
+    is_early_bird: Optional[bool] = False
+    pricing_changed: Optional[bool] = False
+    # Bundle fields
+    is_bundle: Optional[bool] = False
+    bundle_id: Optional[str] = None
+    bundle_name: Optional[str] = None
+    bundle_total_amount: Optional[int] = None
+    # Bundle suggestion fields
+    bundle_suggestion: Optional[Dict[str, Any]] = None
 
 
 class ExistingPaymentResponse(BaseModel):
@@ -132,6 +165,65 @@ class ExistingPaymentResponse(BaseModel):
     currency: str
     expires_at: Optional[datetime] = None
     workshop_details: WorkshopDetails
+
+
+class BundleTemplate(BaseModel):
+    """Bundle template definition."""
+    template_id: str
+    name: str
+    description: Optional[str] = None
+    workshop_ids: List[str]
+    bundle_price: int
+    individual_prices: List[int]
+    currency: str = "INR"
+    discount_percentage: Optional[float] = None
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    max_participants: Optional[int] = None
+    is_active: bool = True
+    created_at: datetime
+
+
+class BundleOrder(BaseModel):
+    """Bundle order tracking."""
+    bundle_id: str
+    name: str
+    bundle_payment_id: str
+    member_orders: List[Dict[str, Any]]
+    total_amount: int
+    individual_amount: int
+    currency: str = "INR"
+    user_id: str
+    status: str = "active"  # active, completed, cancelled, expired
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+
+class BundleMemberOrder(BaseModel):
+    """Individual order within a bundle."""
+    order_id: str
+    workshop_uuid: str
+    position: int
+    status: str
+    qr_generated: bool = False
+
+
+class BundlePurchaseRequest(BaseModel):
+    """Request to purchase a bundle."""
+    template_id: str
+    user_id: str
+
+
+class BundlePurchaseResponse(BaseModel):
+    """Response for bundle purchase."""
+    success: bool
+    bundle_id: str
+    payment_link_url: str
+    payment_link_id: str
+    total_amount: int
+    currency: str
+    individual_orders: List[str]  # List of order IDs
+    message: str
 
 
 class RazorpayWebhookRequest(BaseModel):

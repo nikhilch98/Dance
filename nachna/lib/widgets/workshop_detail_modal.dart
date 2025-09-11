@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/workshop.dart';
 import '../utils/payment_link_utils.dart';
+import 'bundle_suggestion_modal.dart';
 
 class WorkshopDetailModal extends StatelessWidget {
   final WorkshopSession workshop;

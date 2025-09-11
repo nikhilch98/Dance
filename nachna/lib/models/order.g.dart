@@ -106,6 +106,7 @@ PaymentLinkResponse _$PaymentLinkResponseFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['expires_at'] as String),
       workshopDetails: OrderWorkshopDetails.fromJson(
           json['workshop_details'] as Map<String, dynamic>),
+      bundleSuggestion: json['bundle_suggestion'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$PaymentLinkResponseToJson(
@@ -121,6 +122,7 @@ Map<String, dynamic> _$PaymentLinkResponseToJson(
       'currency': instance.currency,
       'expires_at': instance.expiresAt?.toIso8601String(),
       'workshop_details': instance.workshopDetails,
+      'bundle_suggestion': instance.bundleSuggestion,
     };
 
 CreatePaymentLinkResponse _$CreatePaymentLinkResponseFromJson(
@@ -166,6 +168,46 @@ Map<String, dynamic> _$ExistingPaymentResponseToJson(
       'error': instance.error,
       'message': instance.message,
       'existing_order': instance.existingOrder,
+    };
+
+BundlePurchaseRequest _$BundlePurchaseRequestFromJson(
+        Map<String, dynamic> json) =>
+    BundlePurchaseRequest(
+      templateId: json['template_id'] as String,
+    );
+
+Map<String, dynamic> _$BundlePurchaseRequestToJson(
+        BundlePurchaseRequest instance) =>
+    <String, dynamic>{
+      'template_id': instance.templateId,
+    };
+
+BundlePurchaseResponse _$BundlePurchaseResponseFromJson(
+        Map<String, dynamic> json) =>
+    BundlePurchaseResponse(
+      success: json['success'] as bool,
+      bundleId: json['bundle_id'] as String,
+      paymentLinkUrl: json['payment_link_url'] as String,
+      paymentLinkId: json['payment_link_id'] as String,
+      totalAmount: (json['total_amount'] as num).toInt(),
+      currency: json['currency'] as String,
+      individualOrders: (json['individual_orders'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      message: json['message'] as String,
+    );
+
+Map<String, dynamic> _$BundlePurchaseResponseToJson(
+        BundlePurchaseResponse instance) =>
+    <String, dynamic>{
+      'success': instance.success,
+      'bundle_id': instance.bundleId,
+      'payment_link_url': instance.paymentLinkUrl,
+      'payment_link_id': instance.paymentLinkId,
+      'total_amount': instance.totalAmount,
+      'currency': instance.currency,
+      'individual_orders': instance.individualOrders,
+      'message': instance.message,
     };
 
 UserOrdersResponse _$UserOrdersResponseFromJson(Map<String, dynamic> json) =>
