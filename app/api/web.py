@@ -351,8 +351,8 @@ async def studio_web_booking(request: Request, studio_id: str):
 
 
 @router.get("/order/status", response_class=HTMLResponse)
-async def order_status_redirect(request: Request, order_id: str = None, user_id: Optional[str] = Depends(verify_token)):
-    """Handle order status page with web-based order details."""
+async def order_status_redirect(request: Request, order_id: str = None):
+    """Handle order status page with simple payment confirmation."""
     try:
         # Get order_id from query parameters
         query_params = request.query_params
@@ -365,43 +365,7 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
         app_deep_link = f"nachna://order-status/{order_id}"
         universal_link = f"https://nachna.com/order/status?order_id={order_id}"
 
-        # Check if user is authenticated and get order details
-        order_details = None
-        user_authenticated = user_id is not None
-
-        if user_authenticated:
-            try:
-                from app.database.orders import OrderOperations
-                from app.database.workshops import DatabaseOperations as WorkshopOperations
-                from utils.utils import get_mongo_client
-
-                # Get order details
-                order = OrderOperations.get_order_by_id(order_id)
-                if order and order.get('user_id') == user_id:
-                    # Get workshop details
-                    client = get_mongo_client()
-                    workshop = client["discovery"]["workshops_v2"].find_one({"uuid": order.get("workshop_uuid")})
-
-                    # Get QR code status
-                    qr_code_data = order.get('qr_code_data')
-                    qr_status = 'available' if qr_code_data else ('generating' if order.get('status') == 'paid' else 'not_available')
-
-                    order_details = {
-                        'order_id': order_id,
-                        'status': order.get('status', 'unknown'),
-                        'amount': order.get('amount', 0) / 100,  # Convert from paise
-                        'workshop_name': workshop.get('song', 'Unknown Workshop') if workshop else 'Unknown Workshop',
-                        'artist_name': workshop.get('by', 'Unknown Artist') if workshop else 'Unknown Artist',
-                        'date': workshop.get('date', 'TBA') if workshop else 'TBA',
-                        'time': workshop.get('time', 'TBA') if workshop else 'TBA',
-                        'qr_code_data': qr_code_data,
-                        'qr_status': qr_status
-                    }
-            except Exception as e:
-                print(f"Error fetching order details: {e}")
-                user_authenticated = False
-
-        # Return enhanced HTML with order details
+        # Return simplified HTML with payment confirmation
         return HTMLResponse(content=f"""
         <!DOCTYPE html>
         <html>
@@ -527,29 +491,11 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                 }}
 
 
-                .loading {{
-                    display: inline-block;
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 50%;
-                    border-top-color: #00D4FF;
-                    animation: spin 1s ease-in-out infinite;
-                    margin-right: 10px;
-                }}
 
                 @keyframes spin {{
                     to {{ transform: rotate(360deg); }}
                 }}
 
-                .attempting {{
-                    font-size: 16px;
-                    color: #00D4FF;
-                    margin-bottom: 20px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }}
 
                 /* Order Details Styles */
                 .order-details-section {{
@@ -832,6 +778,49 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                     text-decoration: underline;
                 }}
 
+                /* Web Instructions */
+                .web-instructions {{
+                    margin-top: 24px;
+                    padding: 16px;
+                    background: rgba(0, 212, 255, 0.1);
+                    border-radius: 12px;
+                    border: 1px solid rgba(0, 212, 255, 0.2);
+                }}
+
+                .web-instructions h4 {{
+                    margin: 0 0 8px 0;
+                    color: #00D4FF;
+                    font-size: 16px;
+                    font-weight: 600;
+                }}
+
+                .web-instructions > p {{
+                    margin: 0 0 12px 0;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 14px;
+                }}
+
+                .instruction-steps {{
+                    margin: 0;
+                    padding-left: 20px;
+                    color: rgba(255, 255, 255, 0.9);
+                }}
+
+                .instruction-steps li {{
+                    margin-bottom: 6px;
+                    font-size: 13px;
+                    line-height: 1.4;
+                }}
+
+                .instruction-steps li a {{
+                    color: #00D4FF;
+                    text-decoration: none;
+                }}
+
+                .instruction-steps li a:hover {{
+                    text-decoration: underline;
+                }}
+
                 @media (max-width: 480px) {{
                     .container {{
                         padding: 30px 15px;
@@ -882,15 +871,7 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                 }}
             </style>
             <script>
-                console.log('Opening Nachna app...');
-
-                // Show attempting message immediately
-                setTimeout(function() {{
-                    const attemptingDiv = document.getElementById('attempting');
-                    if (attemptingDiv) {{
-                        attemptingDiv.style.display = 'flex';
-                    }}
-                }}, 100);
+                console.log('Order status page loaded.');
 
                 let appOpened = false;
                 let attemptsMade = 0;
@@ -940,7 +921,7 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                     }}
                 }}
 
-                // Start sequential attempts
+                // Only attempt to open when user clicks the button
                 function startAppOpenAttempts() {{
                     if (isAttempting) {{
                         return;
@@ -957,54 +938,21 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                     setTimeout(function() {{ performAttempt(3); }}, 2500);
                 }}
 
-                // Start the attempts
-                startAppOpenAttempts();
-
-                // Function to show fallback content
+                // Function to show content
                 function showFallbackContent() {{
                     if (fallbackShown) return; // Prevent multiple calls
                     fallbackShown = true;
-                    
-                    console.log('Showing fallback content');
+
+                    console.log('Showing order status content');
                     const contentDiv = document.getElementById('content');
-                    const attemptingDiv = document.getElementById('attempting');
-                    
+
                     if (contentDiv) {{
                         contentDiv.style.display = 'block';
                     }}
-                    if (attemptingDiv) {{
-                        attemptingDiv.style.display = 'none';
-                    }}
                 }}
 
-                // Fallback: show the page content if app doesn't open
-                setTimeout(showFallbackContent, 3000);
-                
-                // Additional safety - show content after 5 seconds no matter what
-                setTimeout(showFallbackContent, 5000);
-
-                // Detection methods
-                try {{
-                    // Check if page becomes hidden (app opened)
-                    document.addEventListener('visibilitychange', function() {{
-                        if (document.hidden) {{
-                            appOpened = true;
-                        }}
-                    }});
-
-                    // Check if we can detect app opening via page blur
-                    window.addEventListener('blur', function() {{
-                        appOpened = true;
-                    }});
-
-                    // Check if page becomes inactive
-                    window.addEventListener('pagehide', function() {{
-                        appOpened = true;
-                    }});
-
-                }} catch (e) {{
-                    // Silent error handling
-                }}
+                // Show content immediately - no automatic redirects
+                showFallbackContent();
 
                 // Handle button click
                 function handleButtonClick() {{
@@ -1015,25 +963,7 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
 
                     // Start fresh attempts
                     startAppOpenAttempts();
-
-                    // Show content after manual attempt
-                    setTimeout(showFallbackContent, 1000);
                 }}
-                
-                // Prevent page refreshing or navigation away
-                window.addEventListener('beforeunload', function(e) {{
-                    // Don't prevent if app was successfully opened
-                    if (appOpened) return;
-                    
-                    // Show fallback immediately if user tries to navigate away
-                    showFallbackContent();
-                }});
-                
-                // Handle page load to ensure content is shown
-                window.addEventListener('load', function() {{
-                    // Show fallback after 6 seconds as final safety net
-                    setTimeout(showFallbackContent, 6000);
-                }});
             </script>
         </head>
         <body>
@@ -1043,15 +973,6 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                 </svg>
             </div>
 
-            <div id="attempting" class="attempting" style="display: none;">
-                <span class="loading"></span>
-                Opening Nachna app...
-                <div style="margin-top: 15px;">
-                    <a href="javascript:void(0)" onclick="showFallbackContent()" style="color: rgba(255,255,255,0.7); font-size: 12px; text-decoration: underline;">
-                        Having trouble? Click here
-                    </a>
-                </div>
-            </div>
 
             <div id="content" style="display: none;">
                 <div class="container">
@@ -1060,137 +981,6 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                     <p>Your workshop registration is complete.</p>
                     <div class="order-id">Order: {order_id}</div>
 
-                    {f'''
-                    <div class="login-section">
-                        <h3>🔐 Login Required</h3>
-                        <p class="login-description">
-                            Please log in to view your complete order details, QR code, and workshop information.
-                        </p>
-                        <div class="login-actions">
-                            <a href="/studio" class="login-button primary">
-                                <span class="button-icon">🔑</span>
-                                Login to View Details
-                            </a>
-                            <p class="login-note">
-                                <small>Don't have an account? <a href="/studio" style="color: #00D4FF;">Sign up</a> to access all features.</small>
-                            </p>
-                        </div>
-                    </div>
-                    ''' if not user_authenticated else f'''
-                    <div class="order-details-section">
-                    <div class="order-details-card">
-                        <h3>🎵 Workshop Details</h3>
-                        <div class="detail-row">
-                            <span class="label">Workshop:</span>
-                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Artist:</span>
-                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Date & Time:</span>
-                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Amount Paid:</span>
-                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Status:</span>
-                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
-                                {order_details["status"].title() if order_details else "Processing"}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="qr-section">
-                        <h3>🎫 Your QR Code</h3>
-                    ''' if order_details and order_details["qr_status"] == "available" else f'''
-                    <div class="order-details-section">
-                    <div class="order-details-card">
-                        <h3>🎵 Workshop Details</h3>
-                        <div class="detail-row">
-                            <span class="label">Workshop:</span>
-                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Artist:</span>
-                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Date & Time:</span>
-                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Amount Paid:</span>
-                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Status:</span>
-                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
-                                {order_details["status"].title() if order_details else "Processing"}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="qr-section">
-                        <h3>🎫 QR Code Generation</h3>
-                    ''' if order_details and order_details["qr_status"] == "generating" else f'''
-                    <div class="order-details-section">
-                    <div class="order-details-card">
-                        <h3>🎵 Workshop Details</h3>
-                        <div class="detail-row">
-                            <span class="label">Workshop:</span>
-                            <span class="value">{order_details["workshop_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Artist:</span>
-                            <span class="value">{order_details["artist_name"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Date & Time:</span>
-                            <span class="value">{order_details["date"] if order_details else ""} at {order_details["time"] if order_details else ""}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Amount Paid:</span>
-                            <span class="value">₹{order_details["amount"] if order_details else 0:.2f}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="label">Status:</span>
-                            <span class="status-badge {"paid" if order_details and order_details["status"] == "paid" else "processing"}">
-                                {order_details["status"].title() if order_details else "Processing"}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="qr-section">
-                        <h3>🎫 QR Code</h3>
-                    '''}
-
-                    {f'''
-                        <div class="qr-code-container">
-                            <img src="data:image/png;base64,{order_details["qr_code_data"] if order_details else ""}" alt="QR Code" class="qr-code-image">
-                            <p class="qr-instruction">Show this QR code at the workshop venue</p>
-                        </div>
-                    </div>
-                    </div>
-                    ''' if order_details and order_details["qr_status"] == "available" else f'''
-                        <div class="qr-loading">
-                            <div class="loading-spinner"></div>
-                            <p>Generating your QR code...</p>
-                            <p class="loading-note">This usually takes 1-2 minutes</p>
-                        </div>
-                    </div>
-                    </div>
-                    ''' if order_details and order_details["qr_status"] == "generating" else f'''
-                        <div class="qr-placeholder">
-                            <div class="qr-placeholder-icon">🎫</div>
-                            <p>QR code will be available once payment is confirmed</p>
-                        </div>
-                    </div>
-                    </div>
-                    ''' if user_authenticated and order_details else ""}
 
                     <div class="app-section">
                         <h3>📱 Have Nachna Installed?</h3>
@@ -1213,6 +1003,17 @@ async def order_status_redirect(request: Request, order_id: str = None, user_id:
                                     Download on App Store
                                 </a>
                             </div>
+                        </div>
+
+                        <div class="web-instructions">
+                            <h4>📋 Don't have the app yet?</h4>
+                            <p>You can still view your QR code and order details:</p>
+                            <ol class="instruction-steps">
+                                <li>Visit <a href="/studio" target="_blank">nachna.com/studio</a></li>
+                                <li>Click on your profile</li>
+                                <li>Go to "My Orders"</li>
+                                <li>Find your order and view the QR code</li>
+                            </ol>
                         </div>
                     </div>
 

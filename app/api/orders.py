@@ -162,308 +162,311 @@ async def create_payment_link(
     Note: Users who have successfully paid (status=PAID) can make new bookings.
     Only pending payments (status=CREATED) are considered duplicates.
     """
-    try:
-        logger.info(f"Creating payment link for workshop {request.workshop_uuid}, user {user_id}")
-        
-        # 1. Get workshop details and validate
-        workshop = get_workshop_by_uuid(request.workshop_uuid)
-        
-        # 2. Extract pricing information
-        if not workshop.get("pricing_info"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Workshop pricing information not available"
-            )
-        
+    def internal_create_payment_link(request: CreatePaymentLinkRequest, user_id: str):
         try:
-            amount_paise = extract_pricing_amount(workshop["pricing_info"])
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
-        
-        # 3. Check for existing pending payment link
-        existing_order = OrderOperations.get_active_order_for_user_workshop(
-            user_id, request.workshop_uuid
-        )
-        
-        # Determine intended final amount (after discount if any)
-        intended_final_amount_paise = amount_paise
-        rewards_redeemed_rupees = 0.0
-        order_amount_rupees = amount_paise / 100.0
-        final_amount_rupees = order_amount_rupees  # Initialize with original amount
-        
-        if request.discount_amount and request.discount_amount > 0:
-            # Perform validation similar to below to compute final amount safely
-            from app.database.rewards import RewardOperations
-            from app.config.settings import get_settings as _get_settings
-            _settings = _get_settings()
-            discount_rupees = float(request.discount_amount)
-            reward_balance = RewardOperations.get_user_balance(user_id)
-            redemption_cap_percentage = getattr(_settings, 'reward_redemption_cap_percentage', 10.0)
-            max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
-            redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 500.0)
-            if discount_rupees > reward_balance:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient reward balance")
-            if discount_rupees > max_discount_allowed:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})")
-            if discount_rupees > redemption_cap_per_workshop:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop")
-            final_amount_rupees = order_amount_rupees - discount_rupees
-            intended_final_amount_paise = int(final_amount_rupees * 100)
-            rewards_redeemed_rupees = discount_rupees
-
-        # If we have an existing pending order, decide whether to reuse or cancel
-        if existing_order:
-            existing_pg = existing_order.get("payment_gateway_details") or {}
-            existing_amount_paise = (
-                int(existing_order.get("final_amount_paid", 0) * 100)
-                if existing_order.get("final_amount_paid") is not None
-                else int(existing_pg.get("amount") or existing_order.get("amount", amount_paise))
-            )
-            if intended_final_amount_paise != existing_amount_paise:
-                # Different amount requested → cancel old link and proceed to new order
-                try:
-                    rp = get_razorpay_service()
-                    pl_id = existing_order.get("payment_link_id")
-                    if pl_id:
-                        rp.cancel_payment_link(pl_id)
-                except Exception as e:
-                    logger.warning(f"Failed to cancel existing payment link: {e}")
-                
-                # Rollback any pending redemptions from the existing order
-                existing_rewards_redeemed = existing_order.get("rewards_redeemed")
-                if existing_rewards_redeemed and existing_rewards_redeemed > 0:
-                    try:
-                        logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for cancelled order {existing_order['order_id']}")
-                        RewardOperations.rollback_pending_redemption(existing_order["order_id"])
-                    except Exception as e:
-                        logger.error(f"Failed to rollback pending redemption for order {existing_order['order_id']}: {e}")
-                
-                # Mark old order cancelled and continue
-                OrderOperations.update_order_status(
-                    existing_order["order_id"],
-                    OrderStatusEnum.CANCELLED,
-                    additional_data={"cancellation_reason": "replaced_by_new_amount"}
+            logger.info(f"Creating payment link for workshop {request.workshop_uuid}, user {user_id}")
+            
+            # 1. Get workshop details and validate
+            workshop = get_workshop_by_uuid(request.workshop_uuid)
+            
+            # 2. Extract pricing information
+            if not workshop.get("pricing_info"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Workshop pricing information not available"
                 )
-            else:
-                # Same amount → reuse existing link
-                logger.info(
-                    f"Reusing pending payment link for user {user_id}, workshop {request.workshop_uuid} (same amount)"
-                )
-                workshop_details = create_workshop_details(workshop)
-                return UnifiedPaymentLinkResponse(
-                    is_existing=True,
-                    message="Pending payment link found for this workshop",
-                    order_id=existing_order["order_id"],
-                    payment_link_url=existing_order.get("payment_link_url", ""),
-                    payment_link_id=existing_order.get("payment_link_id"),
-                    amount=existing_order.get("amount", amount_paise),
-                    currency=existing_order.get("currency", "INR"),
-                    expires_at=existing_order.get("expires_at"),
-                    workshop_details=workshop_details
-                )
-        
-        # 4. Handle reward redemption if provided
-        final_amount_paise = intended_final_amount_paise
-
-        # Initialize redemption_info outside the conditional block
-        redemption_info = None
-
-        if rewards_redeemed_rupees > 0:
-            logger.info(f"Processing reward redemption: ₹{request.discount_amount} discount for user {user_id}")
-
-            # Validate and process redemption using rewards service
-            from app.database.rewards import RewardOperations
-            from app.config.settings import get_settings
-
-            settings = get_settings()
-
-            # Convert discount amount to rupees if needed (ensure it's in rupees)
-            discount_rupees = rewards_redeemed_rupees
-
-            # Validate user has sufficient balance (excluding pending redemptions)
+            
             try:
-                reward_balance = RewardOperations.get_available_balance_for_redemption(user_id)
-                if reward_balance < discount_rupees:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Insufficient reward balance. Available: ₹{reward_balance}, Requested: ₹{discount_rupees}"
-                    )
-                
-                # Validate against configurable redemption cap percentage
-                redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
+                amount_paise = extract_pricing_amount(workshop["pricing_info"])
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )
+            
+            # 3. Check for existing pending payment link
+            existing_order = OrderOperations.get_active_order_for_user_workshop(
+                user_id, request.workshop_uuid
+            )
+            
+            # Determine intended final amount (after discount if any)
+            intended_final_amount_paise = amount_paise
+            rewards_redeemed_rupees = 0.0
+            order_amount_rupees = amount_paise / 100.0
+            final_amount_rupees = order_amount_rupees  # Initialize with original amount
+            
+            if request.discount_amount and request.discount_amount > 0:
+                # Perform validation similar to below to compute final amount safely
+                from app.database.rewards import RewardOperations
+                from app.config.settings import get_settings as _get_settings
+                _settings = _get_settings()
+                discount_rupees = float(request.discount_amount)
+                reward_balance = RewardOperations.get_user_balance(user_id)
+                redemption_cap_percentage = getattr(_settings, 'reward_redemption_cap_percentage', 10.0)
                 max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
-                
+                redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 500.0)
+                if discount_rupees > reward_balance:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient reward balance")
                 if discount_rupees > max_discount_allowed:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})"
-                    )
-                
-                # Validate against absolute redemption cap
-                redemption_cap_per_workshop = getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})")
                 if discount_rupees > redemption_cap_per_workshop:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop")
+                final_amount_rupees = order_amount_rupees - discount_rupees
+                intended_final_amount_paise = int(final_amount_rupees * 100)
+                rewards_redeemed_rupees = discount_rupees
+
+            # If we have an existing pending order, decide whether to reuse or cancel
+            if existing_order:
+                existing_pg = existing_order.get("payment_gateway_details") or {}
+                existing_amount_paise = (
+                    int(existing_order.get("final_amount_paid", 0) * 100)
+                    if existing_order.get("final_amount_paid") is not None
+                    else int(existing_pg.get("amount") or existing_order.get("amount", amount_paise))
+                )
+                if intended_final_amount_paise != existing_amount_paise:
+                    # Different amount requested → cancel old link and proceed to new order
+                    try:
+                        rp = get_razorpay_service()
+                        pl_id = existing_order.get("payment_link_id")
+                        if pl_id:
+                            rp.cancel_payment_link(pl_id)
+                    except Exception as e:
+                        logger.warning(f"Failed to cancel existing payment link: {e}")
+                    
+                    # Rollback any pending redemptions from the existing order
+                    existing_rewards_redeemed = existing_order.get("rewards_redeemed")
+                    if existing_rewards_redeemed and existing_rewards_redeemed > 0:
+                        try:
+                            logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for cancelled order {existing_order['order_id']}")
+                            RewardOperations.rollback_pending_redemption(existing_order["order_id"])
+                        except Exception as e:
+                            logger.error(f"Failed to rollback pending redemption for order {existing_order['order_id']}: {e}")
+                    
+                    # Mark old order cancelled and continue
+                    OrderOperations.update_order_status(
+                        existing_order["order_id"],
+                        OrderStatusEnum.CANCELLED,
+                        additional_data={"cancellation_reason": "replaced_by_new_amount"}
+                    )
+                else:
+                    # Same amount → reuse existing link
+                    logger.info(
+                        f"Reusing pending payment link for user {user_id}, workshop {request.workshop_uuid} (same amount)"
+                    )
+                    workshop_details = create_workshop_details(workshop)
+                    return UnifiedPaymentLinkResponse(
+                        is_existing=True,
+                        message="Pending payment link found for this workshop",
+                        order_id=existing_order["order_id"],
+                        payment_link_url=existing_order.get("payment_link_url", ""),
+                        payment_link_id=existing_order.get("payment_link_id"),
+                        amount=existing_order.get("amount", amount_paise),
+                        currency=existing_order.get("currency", "INR"),
+                        expires_at=existing_order.get("expires_at"),
+                        workshop_details=workshop_details
+                    )
+            
+            # 4. Handle reward redemption if provided
+            final_amount_paise = intended_final_amount_paise
+
+            # Initialize redemption_info outside the conditional block
+            redemption_info = None
+
+            if rewards_redeemed_rupees > 0:
+                logger.info(f"Processing reward redemption: ₹{request.discount_amount} discount for user {user_id}")
+
+                # Validate and process redemption using rewards service
+                from app.database.rewards import RewardOperations
+                from app.config.settings import get_settings
+
+                settings = get_settings()
+
+                # Convert discount amount to rupees if needed (ensure it's in rupees)
+                discount_rupees = rewards_redeemed_rupees
+
+                # Validate user has sufficient balance (excluding pending redemptions)
+                try:
+                    reward_balance = RewardOperations.get_available_balance_for_redemption(user_id)
+                    if reward_balance < discount_rupees:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Insufficient reward balance. Available: ₹{reward_balance}, Requested: ₹{discount_rupees}"
+                        )
+                    
+                    # Validate against configurable redemption cap percentage
+                    redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
+                    max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
+                    
+                    if discount_rupees > max_discount_allowed:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of order amount (₹{order_amount_rupees:.0f})"
+                        )
+                    
+                    # Validate against absolute redemption cap
+                    redemption_cap_per_workshop = getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
+                    if discount_rupees > redemption_cap_per_workshop:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop"
+                        )
+                    
+                    # Apply discount
+                    final_amount_rupees = order_amount_rupees - discount_rupees
+                    final_amount_paise = int(final_amount_rupees * 100)
+
+                    logger.info(f"Applied reward discount: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
+
+                    # Store redemption info for later processing (after order creation)
+                    redemption_info = {
+                        'points_redeemed': discount_rupees,
+                        'discount_amount': discount_rupees,
+                        'original_amount': order_amount_rupees,
+                        'final_amount': final_amount_rupees
+                    }
+
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    logger.error(f"Error processing reward redemption: {e}")
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed ₹{redemption_cap_per_workshop} per workshop"
+                        detail="Failed to process reward redemption"
                     )
-                
-                # Apply discount
-                final_amount_rupees = order_amount_rupees - discount_rupees
-                final_amount_paise = int(final_amount_rupees * 100)
-
-                logger.info(f"Applied reward discount: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
-
-                # Store redemption info for later processing (after order creation)
-                redemption_info = {
-                    'points_redeemed': discount_rupees,
-                    'discount_amount': discount_rupees,
-                    'original_amount': order_amount_rupees,
-                    'final_amount': final_amount_rupees
-                }
-
-            except HTTPException:
-                raise
-            except Exception as e:
-                logger.error(f"Error processing reward redemption: {e}")
+            
+            # 5. Get user details for payment link
+            user = UserOperations.get_user_by_id(user_id)
+            if not user:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to process reward redemption"
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
                 )
-        
-        # 5. Get user details for payment link
-        user = UserOperations.get_user_by_id(user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+            
+            # 6. Create workshop details object
+            workshop_details = create_workshop_details(workshop)
+            
+            # 7. Create order in database with redemption info
+            order_data = OrderCreate(
+                user_id=user_id,
+                workshop_uuid=request.workshop_uuid,
+                workshop_details=workshop_details,
+                amount=amount_paise,  # Original amount in paise
+                currency="INR",
+                rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
+                final_amount_paid=final_amount_rupees  # Always set the final amount paid
             )
-        
-        # 6. Create workshop details object
-        workshop_details = create_workshop_details(workshop)
-        
-        # 7. Create order in database with redemption info
-        order_data = OrderCreate(
-            user_id=user_id,
-            workshop_uuid=request.workshop_uuid,
-            workshop_details=workshop_details,
-            amount=amount_paise,  # Original amount in paise
-            currency="INR",
-            rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
-            final_amount_paid=final_amount_rupees  # Always set the final amount paid
-        )
-        
-        order_id = OrderOperations.create_order(order_data)
-        logger.info(f"Created order {order_id} for user {user_id}")
+            
+            order_id = OrderOperations.create_order(order_data)
+            logger.info(f"Created order {order_id} for user {user_id}")
 
-        # Store redemption info in order for later processing (after payment success)
-        # Do NOT deduct rewards immediately - this will be done after payment is confirmed
-        if rewards_redeemed_rupees > 0 and redemption_info is not None:
-            try:
-                # Create pending redemption record without deducting balance
-                # This prevents double-booking while keeping rewards available until payment
-                redemption_id = RewardOperations.create_pending_redemption(
-                    user_id=user_id,
-                    order_id=order_id,
-                    workshop_uuid=request.workshop_uuid,
-                    points_redeemed=redemption_info['points_redeemed'],
-                    discount_amount=redemption_info['discount_amount'],
-                    original_amount=redemption_info['original_amount'],
-                    final_amount=redemption_info['final_amount']
-                )
-
-                logger.info(f"Pending redemption created: {redemption_id} - ₹{redemption_info['points_redeemed']} reserved for user {user_id} (will be deducted after payment)")
-            except Exception as e:
-                logger.error(f"Failed to create pending redemption for order {order_id}: {e}")
-                # If redemption setup fails, we should cancel the order
+            # Store redemption info in order for later processing (after payment success)
+            # Do NOT deduct rewards immediately - this will be done after payment is confirmed
+            if rewards_redeemed_rupees > 0 and redemption_info is not None:
                 try:
-                    OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
-                except Exception as cleanup_error:
-                    logger.error(f"Failed to cleanup failed order {order_id}: {cleanup_error}")
+                    # Create pending redemption record without deducting balance
+                    # This prevents double-booking while keeping rewards available until payment
+                    redemption_id = RewardOperations.create_pending_redemption(
+                        user_id=user_id,
+                        order_id=order_id,
+                        workshop_uuid=request.workshop_uuid,
+                        points_redeemed=redemption_info['points_redeemed'],
+                        discount_amount=redemption_info['discount_amount'],
+                        original_amount=redemption_info['original_amount'],
+                        final_amount=redemption_info['final_amount']
+                    )
 
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to setup reward redemption - order cancelled"
+                    logger.info(f"Pending redemption created: {redemption_id} - ₹{redemption_info['points_redeemed']} reserved for user {user_id} (will be deducted after payment)")
+                except Exception as e:
+                    logger.error(f"Failed to create pending redemption for order {order_id}: {e}")
+                    # If redemption setup fails, we should cancel the order
+                    try:
+                        OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
+                    except Exception as cleanup_error:
+                        logger.error(f"Failed to cleanup failed order {order_id}: {cleanup_error}")
+
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Failed to setup reward redemption - order cancelled"
+                    )
+
+            # 7. Create Razorpay payment link
+            razorpay_service = get_razorpay_service()
+            
+            # Prepare user details for Razorpay
+            user_name = user.get("name") or "Customer"
+            user_email = f"{user['mobile_number']}@nachna.com"  # Placeholder email
+            user_phone = f"+91{user['mobile_number']}"
+            
+            # Update workshop title to show discount if applied
+            payment_title = workshop_details.title
+            if rewards_redeemed_rupees > 0:
+                payment_title += f" (₹{rewards_redeemed_rupees} reward discount applied)"
+            
+            try:
+                razorpay_response = razorpay_service.create_order_payment_link(
+                    order_id=order_id,
+                    amount=final_amount_paise,  # Use final amount after discount
+                    user_name=user_name,
+                    user_email=user_email,
+                    user_phone=user_phone,
+                    workshop_title=payment_title,
+                    expire_by_mins=60  # 1 hour expiry
                 )
-
-        # 7. Create Razorpay payment link
-        razorpay_service = get_razorpay_service()
-        
-        # Prepare user details for Razorpay
-        user_name = user.get("name") or "Customer"
-        user_email = f"{user['mobile_number']}@nachna.com"  # Placeholder email
-        user_phone = f"+91{user['mobile_number']}"
-        
-        # Update workshop title to show discount if applied
-        payment_title = workshop_details.title
-        if rewards_redeemed_rupees > 0:
-            payment_title += f" (₹{rewards_redeemed_rupees} reward discount applied)"
-        
-        try:
-            razorpay_response = razorpay_service.create_order_payment_link(
+                
+                logger.info(f"Created Razorpay payment link {razorpay_response['id']} for order {order_id}")
+                
+            except Exception as e:
+                logger.error(f"Failed to create Razorpay payment link for order {order_id}: {str(e)}")
+                # Clean up the order if payment link creation fails
+                OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create payment link"
+                )
+            
+            # 8. Update order with payment link details
+            expires_at = datetime.fromtimestamp(razorpay_response["expire_by"])
+            
+            success = OrderOperations.update_order_payment_link(
                 order_id=order_id,
-                amount=final_amount_paise,  # Use final amount after discount
-                user_name=user_name,
-                user_email=user_email,
-                user_phone=user_phone,
-                workshop_title=payment_title,
-                expire_by_mins=60  # 1 hour expiry
+                payment_link_id=razorpay_response["id"],
+                payment_link_url=razorpay_response["short_url"],
+                expires_at=expires_at,
+                payment_gateway_details=razorpay_response
             )
             
-            logger.info(f"Created Razorpay payment link {razorpay_response['id']} for order {order_id}")
+            if not success:
+                logger.error(f"Failed to update order {order_id} with payment link details")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to save payment link details"
+                )
             
+            # 9. Return success response
+            return UnifiedPaymentLinkResponse(
+                is_existing=False,
+                message="Payment link created successfully",
+                order_id=order_id,
+                payment_link_url=razorpay_response["short_url"],
+                payment_link_id=razorpay_response["id"],
+                amount=amount_paise,
+                currency="INR",
+                expires_at=expires_at,
+                workshop_details=workshop_details
+            )
+            
+        except HTTPException:
+            raise
         except Exception as e:
-            logger.error(f"Failed to create Razorpay payment link for order {order_id}: {str(e)}")
-            # Clean up the order if payment link creation fails
-            OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
+            logger.error(f"Unexpected error creating payment link: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create payment link"
+                detail="Internal server error"
             )
-        
-        # 8. Update order with payment link details
-        expires_at = datetime.fromtimestamp(razorpay_response["expire_by"])
-        
-        success = OrderOperations.update_order_payment_link(
-            order_id=order_id,
-            payment_link_id=razorpay_response["id"],
-            payment_link_url=razorpay_response["short_url"],
-            expires_at=expires_at,
-            payment_gateway_details=razorpay_response
-        )
-        
-        if not success:
-            logger.error(f"Failed to update order {order_id} with payment link details")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to save payment link details"
-            )
-        
-        # 9. Return success response
-        print("payment_link_url", payment_link_url)
-        return UnifiedPaymentLinkResponse(
-            is_existing=False,
-            message="Payment link created successfully",
-            order_id=order_id,
-            payment_link_url=razorpay_response["short_url"],
-            payment_link_id=razorpay_response["id"],
-            amount=amount_paise,
-            currency="INR",
-            expires_at=expires_at,
-            workshop_details=workshop_details
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error creating payment link: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
+    try:
+        return internal_create_payment_link(request, user_id)
+    except:
+        return internal_create_payment_link(request, user_id)
 
 @router.get("/{order_id}/status")
 async def get_order_status(
