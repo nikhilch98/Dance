@@ -454,13 +454,16 @@
                         <div class="qr-container">
                             ${Object.entries(order.qr_codes_data).map(([workshopUuid, qrCodeData]) => {
                                 const workshopTitle = workshopTitles[workshopUuid] || `Workshop ${Object.keys(order.qr_codes_data).indexOf(workshopUuid) + 1}`;
+                                // Escape single quotes in the data for JavaScript
+                                const escapedQrData = qrCodeData.replace(/'/g, "\\'");
+                                const escapedTitle = workshopTitle.replace(/'/g, "\\'");
                                 return `
                                     <div class="qr-card">
                                         <div class="qr-title">${workshopTitle}</div>
-                                        <img class="qr-image" src="data:image/png;base64,${qrCodeData}" alt="QR Code for ${workshopTitle}" />
+                                        <img class="qr-image" src="${qrCodeData}" alt="QR Code for ${workshopTitle}" />
                                         <div class="qr-actions">
-                                            <button class="btn secondary" onclick="downloadQR('${qrCodeData}', '${workshopTitle}')">📥 Download</button>
-                                            <button class="btn secondary" onclick="shareQR('${qrCodeData}', '${workshopTitle}')">📤 Share</button>
+                                            <button class="btn secondary" onclick="downloadQR('${escapedQrData}', '${escapedTitle}')">📥 Download</button>
+                                            <button class="btn secondary" onclick="shareQR('${escapedQrData}', '${escapedTitle}')">📤 Share</button>
                                         </div>
                                     </div>
                                 `;
