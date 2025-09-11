@@ -902,8 +902,15 @@ async def create_payment_link(
                 should_cancel_order = False
                 cancellation_reason = ""
 
+                # Debug: Log comparison details
+                logger.info(f"Comparing existing order {existing_order['order_id']} with new request:")
+                logger.info(f"Existing: amount=₹{existing_amount_paise/100}, rewards=₹{existing_order.get('rewards_redeemed', 0)}, bundle={existing_is_bundle}, tier='{existing_order.get('tier_info', '')}'")
+                logger.info(f"New: amount=₹{intended_final_amount_paise/100}, rewards=₹{rewards_redeemed_rupees}, bundle={is_bundle_order}, tier='{tier_info}'")
+
                 # Check amount difference (includes rewards redemption changes)
-                if intended_final_amount_paise != existing_amount_paise:
+                # Allow small tolerance for rounding differences
+                amount_difference = abs(intended_final_amount_paise - existing_amount_paise)
+                if amount_difference > 1:  # More than 1 paisa difference
                     should_cancel_order = True
                     existing_rewards = existing_order.get("rewards_redeemed") or 0
                     new_rewards = rewards_redeemed_rupees
@@ -912,7 +919,7 @@ async def create_payment_link(
                         logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
                     else:
                         cancellation_reason = "amount_changed"
-                        logger.info(f"Amount changed: existing=₹{existing_amount_paise/100}, requested=₹{intended_final_amount_paise/100}")
+                        logger.info(f"Amount changed: existing=₹{existing_amount_paise/100}, requested=₹{intended_final_amount_paise/100}, difference=₹{amount_difference/100}")
 
                 # Check bundle vs individual order type difference
                 existing_is_bundle = existing_order.get("is_bundle_order", False)
@@ -929,12 +936,9 @@ async def create_payment_link(
                         cancellation_reason = "bundle_workshops_changed"
                         logger.info(f"Bundle workshops changed: existing={existing_workshop_uuids}, requested={workshop_uuids}")
 
-                # Check tier pricing changes
-                existing_tier_info = existing_order.get("tier_info", "")
-                if tier_info and existing_tier_info != tier_info:
-                    should_cancel_order = True
-                    cancellation_reason = "tier_pricing_changed"
-                    logger.info(f"Tier pricing changed: existing='{existing_tier_info}', requested='{tier_info}'")
+                # Skip tier pricing comparison to avoid false cancellations
+                # Tier info can change based on time/availability and shouldn't prevent reuse
+                # Only cancel if there are actual substantive changes (amount, bundle structure, rewards)
 
                 # Check rewards redemption changes (even if final amount is same)
                 # This ensures we always reflect the most current rewards usage
@@ -946,8 +950,12 @@ async def create_payment_link(
                     logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
                     logger.info(f"Order will be cancelled to reflect updated rewards redemption")
 
+                # Final decision summary
+                logger.info(f"Comparison complete - should_cancel_order: {should_cancel_order}, reason: '{cancellation_reason}'")
+
                 if should_cancel_order:
                     # Cancel old link and proceed to new order
+                    logger.info(f"Decision: CANCEL existing order due to {cancellation_reason}")
                     try:
                         rp = get_razorpay_service()
                         pl_id = existing_order.get("payment_link_id")
@@ -988,6 +996,7 @@ async def create_payment_link(
                     logger.info(f"Cancelled order {existing_order['order_id']} due to {cancellation_reason}")
                 else:
                     # Same order details → reuse existing link
+                    logger.info(f"Decision: REUSE existing order {existing_order['order_id']} - all details match")
                     logger.info(
                         f"Reusing pending payment link for user {user_id}, workshops {workshop_uuids} (same order details)"
                     )

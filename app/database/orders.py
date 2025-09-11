@@ -148,15 +148,19 @@ class OrderOperations:
             OrderStatusEnum.CREATED.value
         ]
 
-        # Temporary fix: define workshop_uuid to avoid undefined variable error
-        workshop_uuid = workshop_uuids[0] if workshop_uuids else None
-
-        if workshop_uuid:
+        # For individual orders, check both legacy and new formats
+        if len(workshop_uuids) == 1:
+            workshop_uuid = workshop_uuids[0]
+            # Check for existing individual orders (both legacy and new formats)
             order = client["dance_app"]["orders"].find_one({
                 "user_id": user_id,
-                "workshop_uuid": workshop_uuid,
-                "status": {"$in": active_statuses}
-            }, sort=[("created_at", -1)])  # Get the most recent one
+                "$or": [
+                    {"workshop_uuid": workshop_uuid},  # Legacy individual orders
+                    {"workshop_uuids": workshop_uuid}  # New individual orders stored as array
+                ],
+                "status": {"$in": active_statuses},
+                "is_bundle_order": {"$ne": True}  # Ensure it's not a bundle order
+            }, sort=[("created_at", -1)])
         else:
             order = None
         
