@@ -6618,7 +6618,7 @@
                 } else {
                     // For completed orders, check if QR code data is available in the order
                     const orderId = order.order_id;
-                    if (order.qr_codes_data || order.qr_code_data || order.qr_available || order.has_qr_code) {
+                    if (order.qr_codes_data || order.qr_available || order.has_qr_code) {
                         // QR code data is available - show "View QR Code"
                         const qrCount = order.qr_codes_data ? Object.keys(order.qr_codes_data).length : 1;
                         const qrText = qrCount > 1 ? `View ${qrCount} QR Codes` : 'View QR Code';
@@ -6995,12 +6995,12 @@
             if (!authToken) return;
 
             // First check if QR code already exists in the order data
-            let qrCodeData = null;
+            let qrCodesData = null;
             if (ordersData && ordersData.orders) {
                 const order = ordersData.orders.find(o => (o.id && o.id === orderId) || (o.order_id && o.order_id === orderId));
-                if (order && order.qr_code_data) {
+                if (order && order.qr_codes_data) {
                     console.log('QR Code: Already exists in order data, using existing');
-                    qrCodeData = order.qr_code_data;
+                    qrCodesData = order.qr_codes_data;
                 }
             }
 
@@ -7055,14 +7055,22 @@
                     const qrData = await response.json();
 
                     // Display the newly generated QR code
-                    await displayQRCode(qrData.qr_code_data, workshopTitle, workshopArtists);
+                    if (qrData.qr_codes_data) {
+                        // Handle multiple QR codes (bundle)
+                        const order = { qr_codes_data: qrData.qr_codes_data };
+                        await displayMultipleQRCodes(order);
+                    } else if (qrData.qr_codes_data && Object.keys(qrData.qr_codes_data).length === 1) {
+                        // Handle single QR code
+                        const qrCodeData = Object.values(qrData.qr_codes_data)[0];
+                        await displayQRCode(qrCodeData, workshopTitle, workshopArtists);
+                    }
 
-                    // Update the order data with the new QR code
+                    // Update the order data with the new QR codes
                     if (ordersData && ordersData.orders) {
                         const orderIndex = ordersData.orders.findIndex(o => (o.id && o.id === orderId) || (o.order_id && o.order_id === orderId));
                         if (orderIndex !== -1) {
-                            ordersData.orders[orderIndex].qr_code_data = qrData.qr_code_data;
-                            console.log('QR Code: Updated order data with new QR code');
+                            ordersData.orders[orderIndex].qr_codes_data = qrData.qr_codes_data;
+                            console.log('QR Code: Updated order data with new QR codes');
                         }
                     }
                 }
@@ -7095,7 +7103,7 @@
 
             // Check if we have multiple QR codes (bundle) or single QR code
             const hasMultipleQRCodes = order.qr_codes_data && Object.keys(order.qr_codes_data).length > 1;
-            const hasSingleQRCode = order.qr_code_data || (order.qr_codes_data && Object.keys(order.qr_codes_data).length === 1);
+            const hasSingleQRCode = order.qr_codes_data && Object.keys(order.qr_codes_data).length === 1;
 
             if (!hasMultipleQRCodes && !hasSingleQRCode) {
                 console.error('No QR code data available for order:', orderId);
@@ -7123,7 +7131,7 @@
                 } else {
                     // Display single QR code
                     console.log('QR Code: Displaying single QR code');
-                    const qrCodeData = order.qr_code_data || Object.values(order.qr_codes_data)[0];
+                    const qrCodeData = Object.values(order.qr_codes_data)[0];
                     await displayQRCode(qrCodeData, workshopTitle, workshopArtists);
                 }
 

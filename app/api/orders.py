@@ -1060,38 +1060,29 @@ async def create_payment_link(
 
 @router.get("/{order_id}/status")
 async def get_order_status(
-    order_id: str,
-    user_id: str = Depends(verify_token)
+    order_id: str
 ):
-    """Get status of a specific order for the authenticated user.
-    
-    This endpoint is optimized for order status polling from the frontend.
-    It only returns the order if it belongs to the authenticated user.
-    
+    """Get status of a specific order.
+
+    This endpoint returns order details with current status from internal database.
+    No authentication required - accessible by anyone with the order ID.
+
     Args:
         order_id: The order ID to check
-        user_id: User ID from authentication token
-        
+
     Returns:
         Order details with current status from internal database
     """
     try:
-        logger.info(f"Getting order status for order {order_id}, user {user_id}")
-        
+        logger.info(f"Getting order status for order {order_id}")
+
         # Get the specific order
         order = OrderOperations.get_order_by_id(order_id)
-        
+
         if not order:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
-            )
-        
-        # Verify the order belongs to the authenticated user
-        if order["user_id"] != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found"  # Don't reveal it exists for security
             )
         
         # Handle both single workshop and bundle orders
@@ -1155,7 +1146,6 @@ async def get_order_status(
             currency=order["currency"],
             status=OrderStatusEnum(order["status"]),
             payment_link_url=order.get("payment_link_url"),
-            qr_code_data=order.get("qr_code_data"),
             qr_code_generated_at=order.get("qr_code_generated_at"),
             # Reward-related fields
             cashback_amount=order.get("cashback_amount"),
@@ -1300,7 +1290,6 @@ async def get_user_orders(
                 currency=order["currency"],
                 status=OrderStatusEnum(order["status"]),
                 payment_link_url=order.get("payment_link_url"),
-                qr_code_data=order.get("qr_code_data"),
                 qr_codes_data=order.get("qr_codes_data"),
                 qr_code_generated_at=order.get("qr_code_generated_at"),
                 # Reward-related fields

@@ -258,8 +258,8 @@ class OrderOperations:
                 "$match": {
                     "status": OrderStatusEnum.PAID.value,
                     "$or": [
-                        {"qr_code_data": {"$exists": False}},
-                        {"qr_code_data": None}
+                        {"qr_codes_data": {"$exists": False}},
+                        {"qr_codes_data": None}
                     ]
                 }
             },
@@ -272,31 +272,6 @@ class OrderOperations:
         ]
         
         return list(client["dance_app"]["orders"].aggregate(pipeline))
-    
-    @staticmethod
-    def update_order_qr_code(order_id: str, qr_code_data: str) -> bool:
-        """Update an order with QR code data.
-        
-        Args:
-            order_id: Order identifier
-            qr_code_data: Base64 encoded QR code image
-            
-        Returns:
-            Success status
-        """
-        client = get_mongo_client()
-        
-        update_data = {
-            "qr_code_data": qr_code_data,
-            "qr_code_generated_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
-        
-        result = client["dance_app"]["orders"].update_one(
-            {"order_id": order_id},
-            {"$set": update_data}
-        )
-        return result.modified_count > 0
 
     @staticmethod
     def update_order_qr_codes(order_id: str, qr_codes_data: dict) -> bool:
@@ -401,7 +376,7 @@ class OrderOperations:
             {
                 "$match": {
                     "user_id": user_id,
-                    "qr_code_data": {"$exists": True, "$ne": None}
+                    "qr_codes_data": {"$exists": True, "$ne": None}
                 }
             },
             {

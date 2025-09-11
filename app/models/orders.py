@@ -96,7 +96,6 @@ class Order(BaseModel):
     payment_link_url: Optional[str] = None
     expires_at: Optional[datetime] = None
     payment_gateway_details: Optional[Dict[str, Any]] = None
-    qr_code_data: Optional[str] = None  # Base64 encoded QR code image (legacy single)
     qr_codes_data: Optional[Dict[str, str]] = None  # Multiple QR codes for bundles (workshop_uuid -> qr_data)
     qr_code_generated_at: Optional[datetime] = None
     # Reward-related fields
@@ -124,7 +123,6 @@ class OrderResponse(BaseModel):
     currency: str
     status: OrderStatusEnum
     payment_link_url: Optional[str] = None
-    qr_code_data: Optional[str] = None  # Base64 encoded QR code image (legacy single)
     qr_codes_data: Optional[Dict[str, str]] = None  # Multiple QR codes for bundles (workshop_uuid -> qr_data)
     qr_code_generated_at: Optional[datetime] = None
     # Reward information for order history

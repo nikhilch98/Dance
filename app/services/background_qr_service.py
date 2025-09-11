@@ -185,8 +185,8 @@ class BackgroundQRService:
                     bundle_info=bundle_info
                 )
 
-                # Update order with single QR code
-                success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
+                # Update order with single QR code (converted to qr_codes_data format)
+                success = OrderOperations.update_order_qr_codes(order_id, {"default": qr_code_data})
             
             if success:
                 logger.info(f"Successfully generated and saved QR code for order {order_id}")
@@ -349,7 +349,7 @@ class BackgroundQRService:
             )
 
             # Update order with QR code data
-            success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
+            success = OrderOperations.update_order_qr_codes(order_id, {"default": qr_code_data})
 
             if success:
                 logger.debug(f"Successfully generated and saved QR code for order {order_id}")

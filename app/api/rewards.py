@@ -441,7 +441,7 @@ async def regenerate_qr_codes(
             def get_orders_with_qr_codes(self, limit: Optional[int] = None):
                 query = {
                     "status": OrderStatusEnum.PAID.value,
-                    "qr_code_data": {"$exists": True, "$ne": None, "$ne": ""}
+                    "qr_codes_data": {"$exists": True, "$ne": None, "$ne": {}}
                 }
                 return list(self.orders_collection.find(query).limit(limit) if limit else self.orders_collection.find(query))
 
@@ -449,9 +449,9 @@ async def regenerate_qr_codes(
                 query = {
                     "status": OrderStatusEnum.PAID.value,
                     "$or": [
-                        {"qr_code_data": {"$exists": False}},
-                        {"qr_code_data": None},
-                        {"qr_code_data": ""}
+                        {"qr_codes_data": {"$exists": False}},
+                        {"qr_codes_data": None},
+                        {"qr_codes_data": {"$eq": {}}}
                     ]
                 }
                 return list(self.orders_collection.find(query).limit(limit) if limit else self.orders_collection.find(query))
@@ -478,7 +478,13 @@ async def regenerate_qr_codes(
                     studio_name = workshop_details.get('studio_name', 'Unknown Studio')
                     workshop_date = workshop_details.get('date', 'Unknown Date')
                     workshop_time = workshop_details.get('time', 'Unknown Time')
-                    workshop_uuid = order_doc['workshop_uuid']
+                    # Handle both single workshop and bundle orders
+                    workshop_uuids = order_doc.get('workshop_uuids', [])
+                    if not workshop_uuids and order_doc.get('workshop_uuid'):
+                        # Backward compatibility for old single workshop orders
+                        workshop_uuids = [order_doc['workshop_uuid']]
+
+                    workshop_uuid = workshop_uuids[0] if workshop_uuids else 'UNKNOWN'
 
                     # Generate new QR code with logo
                     qr_code_data = self.qr_service.generate_order_qr_code(
@@ -495,8 +501,8 @@ async def regenerate_qr_codes(
                         payment_gateway_details=payment_gateway_details
                     )
 
-                    # Update order with new QR code data
-                    success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
+                    # Update order with new QR code data (convert to qr_codes_data format)
+                    success = OrderOperations.update_order_qr_codes(order_id, {"default": qr_code_data})
 
                     return {
                         "order_id": order_id,
@@ -596,16 +602,16 @@ async def get_qr_statistics(user_id: str = Depends(verify_token)):
         # Orders with QR codes
         with_qr = orders_collection.count_documents({
             "status": OrderStatusEnum.PAID.value,
-            "qr_code_data": {"$exists": True, "$ne": None, "$ne": ""}
+            "qr_codes_data": {"$exists": True, "$ne": None, "$ne": {}}
         })
 
         # Orders without QR codes
         without_qr = orders_collection.count_documents({
             "status": OrderStatusEnum.PAID.value,
             "$or": [
-                {"qr_code_data": {"$exists": False}},
-                {"qr_code_data": None},
-                {"qr_code_data": ""}
+                {"qr_codes_data": {"$exists": False}},
+                {"qr_codes_data": None},
+                {"qr_codes_data": {"$eq": {}}}
             ]
         })
 
