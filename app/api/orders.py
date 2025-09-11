@@ -534,6 +534,7 @@ async def get_bundle_details(bundle_id: str):
 @router.post("/bundles/{bundle_id}/create-payment-link", response_model=UnifiedPaymentLinkResponse)
 async def create_bundle_payment_link(
     bundle_id: str,
+    discount_amount: Optional[float] = None,  # Add rewards redemption support
     user_id: str = Depends(verify_token)
 ):
     """Create payment link for a bundle purchase (single order with multiple workshops)."""
@@ -575,22 +576,96 @@ async def create_bundle_payment_link(
         if bundle_price <= 0:
             raise HTTPException(status_code=400, detail="Invalid bundle price")
 
+        # Handle rewards redemption for bundle
+        rewards_redeemed_rupees = 0.0
+        final_amount_rupees = bundle_price
+        redemption_info = None
+
+        if discount_amount and discount_amount > 0:
+            logger.info(f"Processing reward redemption for bundle {bundle_id}: ₹{discount_amount} discount")
+
+            # Validate user has sufficient balance
+            from app.database.rewards import RewardOperations
+            from app.config.settings import get_settings
+
+            settings = get_settings()
+            discount_rupees = float(discount_amount)
+            reward_balance = RewardOperations.get_user_balance(user_id)
+
+            redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
+            max_discount_allowed = bundle_price * (redemption_cap_percentage / 100.0)
+
+            if discount_rupees > reward_balance:
+                raise HTTPException(status_code=400, detail="Insufficient reward balance")
+
+            if discount_rupees > max_discount_allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of bundle amount (₹{bundle_price:.0f})"
+                )
+
+            # Apply discount
+            final_amount_rupees = bundle_price - discount_rupees
+            rewards_redeemed_rupees = discount_rupees
+
+            logger.info(f"Applied reward discount to bundle: ₹{discount_rupees} → Final amount: ₹{final_amount_rupees:.0f}")
+
+            # Store redemption info for later processing
+            redemption_info = {
+                'points_redeemed': discount_rupees,
+                'discount_amount': discount_rupees,
+                'original_amount': bundle_price,
+                'final_amount': final_amount_rupees
+            }
+
         order_create = OrderCreate(
             user_id=user_id,
             workshop_uuids=workshop_uuids,  # Multiple workshops
             workshop_details=primary_workshop_details,
-            amount=int(bundle_price * 100),  # Convert bundle price to paise
+            amount=int(bundle_price * 100),  # Convert original bundle price to paise
             currency="INR",
+            rewards_redeemed=rewards_redeemed_rupees if rewards_redeemed_rupees > 0 else None,
+            final_amount_paid=final_amount_rupees,  # Final amount after rewards redemption
             bundle_id=bundle_id,
             bundle_payment_id=bundle_payment_id,
             is_bundle_order=True,
             bundle_total_workshops=len(workshop_uuids),
-            bundle_total_amount=bundle_price  # Keep in rupees for display
+            bundle_total_amount=final_amount_rupees  # Use final amount for display
         )
 
         # Save single order
         order_id = OrderOperations.create_order(order_create)
         logger.info(f"Created single bundle order {order_id} for bundle {bundle_id}")
+
+        # Handle rewards redemption for bundle orders
+        if rewards_redeemed_rupees > 0 and redemption_info is not None:
+            try:
+                from app.database.rewards import RewardOperations
+
+                # For bundles, create a single pending redemption for the entire bundle
+                redemption_id = RewardOperations.create_pending_redemption(
+                    user_id=user_id,
+                    order_id=order_id,
+                    workshop_uuid=bundle_id,  # Use bundle_id as workshop_uuid for bundle orders
+                    points_redeemed=redemption_info['points_redeemed'],
+                    discount_amount=redemption_info['discount_amount'],
+                    original_amount=redemption_info['original_amount'],
+                    final_amount=redemption_info['final_amount']
+                )
+
+                logger.info(f"Created pending redemption for bundle {bundle_id}: {redemption_id} - ₹{redemption_info['points_redeemed']} reserved")
+            except Exception as e:
+                logger.error(f"Failed to create pending redemption for bundle order {order_id}: {e}")
+                # If redemption setup fails, we should cancel the order
+                try:
+                    OrderOperations.update_order_status(order_id, OrderStatusEnum.FAILED)
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to cleanup failed order {order_id}: {cleanup_error}")
+
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to setup reward redemption - order cancelled"
+                )
 
         # Get user details for payment link
         user = UserOperations.get_user_by_id(user_id)
@@ -611,11 +686,11 @@ async def create_bundle_payment_link(
         # Create payment link using the correct method
         payment_link_data = razorpay_service.create_order_payment_link(
             order_id=order_id,
-            amount=int(bundle_price * 100),  # Convert to paise and ensure integer
+            amount=int(final_amount_rupees * 100),  # Use final amount after rewards redemption
             user_name=user_name,
             user_email=user_email,
             user_phone=user_phone,
-            workshop_title=f"Bundle Payment - {bundle.get('name', 'Bundle')}",
+            workshop_title=f"Bundle Payment - {bundle.get('name', 'Bundle')}" + (f" (₹{rewards_redeemed_rupees} reward discount applied)" if rewards_redeemed_rupees > 0 else ""),
             expire_by_mins=60  # 1 hour expiry
         )
 
@@ -638,18 +713,18 @@ async def create_bundle_payment_link(
 
         return UnifiedPaymentLinkResponse(
             success=True,
-            message=f"Bundle payment link created for {bundle.get('name', 'Bundle')}",
+            message=f"Bundle payment link created for {bundle.get('name', 'Bundle')}" + (f" with ₹{rewards_redeemed_rupees} reward discount" if rewards_redeemed_rupees > 0 else ""),
             order_id=order_id,
             payment_link_url=payment_link_data["short_url"],
             payment_link_id=payment_link_data["id"],
-            amount=bundle_price * 100,  # Total bundle amount in paise
+            amount=int(final_amount_rupees * 100),  # Final amount after rewards redemption
             currency="INR",
             expires_at=expires_at,
             workshop_details=primary_workshop_details,
             is_bundle=True,
             bundle_id=bundle_id,
             bundle_name=bundle.get("name", "Bundle"),
-            bundle_total_amount=bundle_price
+            bundle_total_amount=final_amount_rupees  # Use final amount
         )
 
     except HTTPException:
@@ -765,9 +840,20 @@ async def create_payment_link(
             workshop_uuids = [request.workshop_uuid] if not hasattr(request, 'workshop_uuids') or not request.workshop_uuids else request.workshop_uuids
             is_bundle_order = getattr(request, 'is_bundle_order', False)
 
+            # Check for existing orders that might conflict
             existing_order = OrderOperations.get_active_order_for_user_workshops(
                 user_id, workshop_uuids, is_bundle_order
             )
+
+            # If no direct match found and this is an individual order, also check for bundle orders containing this workshop
+            if not existing_order and not is_bundle_order and len(workshop_uuids) == 1:
+                # Check if user has any active bundle orders that contain this workshop
+                bundle_orders = OrderOperations.get_active_bundle_orders_for_user(user_id)
+                for bundle_order in bundle_orders:
+                    if workshop_uuids[0] in bundle_order.get("workshop_uuids", []):
+                        existing_order = bundle_order
+                        logger.info(f"Found conflicting bundle order {bundle_order['order_id']} containing workshop {workshop_uuids[0]}")
+                        break
             
             # Determine intended final amount (after discount if any)
             intended_final_amount_paise = amount_paise
