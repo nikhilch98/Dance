@@ -147,12 +147,18 @@ class OrderOperations:
         active_statuses = [
             OrderStatusEnum.CREATED.value
         ]
-        
-        order = client["dance_app"]["orders"].find_one({
-            "user_id": user_id,
-            "workshop_uuid": workshop_uuid,
-            "status": {"$in": active_statuses}
-        }, sort=[("created_at", -1)])  # Get the most recent one
+
+        # Temporary fix: define workshop_uuid to avoid undefined variable error
+        workshop_uuid = workshop_uuids[0] if workshop_uuids else None
+
+        if workshop_uuid:
+            order = client["dance_app"]["orders"].find_one({
+                "user_id": user_id,
+                "workshop_uuid": workshop_uuid,
+                "status": {"$in": active_statuses}
+            }, sort=[("created_at", -1)])  # Get the most recent one
+        else:
+            order = None
         
         # Check if the order is expired
         if order and order.get("expires_at"):
