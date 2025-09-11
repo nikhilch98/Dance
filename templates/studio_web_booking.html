@@ -4530,8 +4530,11 @@
             let pricingText = 'Price TBA';
             if (workshop.pricing_info && workshop.pricing_info !== 'TBA') {
                 // Add rupee symbol if not already present
-                const price = workshop.pricing_info.trim();
-                pricingText = price.startsWith('₹') ? price : `₹${price}`;
+                let price = workshop.pricing_info.trim();
+                price = price.startsWith('₹') ? price : `₹${price}`;
+
+                // Replace \n and actual newlines with <br> tags for proper formatting
+                pricingText = price.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
             }
 
             pricingRow.innerHTML = `
@@ -4656,34 +4659,99 @@
         // Handle WhatsApp registration
         function handleWhatsAppRegistration(workshop) {
             try {
-                // Create WhatsApp message with workshop details
-                const workshopDetails = `💃 *${toTitleCase(workshop.by || 'Dance Workshop')}*\n\n` +
-                    `🎵 Song: ${toTitleCase(workshop.song || 'Special Dance')}\n` +
-                    `📅 Date: ${formatDate(workshop.date)}\n` +
-                    `⏰ Time: ${formatTime(workshop.time)}\n` +
-                    `🏢 Studio: ${studioData ? toTitleCase(studioData.name) : 'Dance Studio'}\n\n` +
-                    `Register for this workshop!`;
+                // Check if payment_link contains a phone number (WhatsApp link format)
+                let whatsappUrl = '';
+                let whatsappBizUrl = '';
+                let webFallback = '';
 
-                // Encode the message for WhatsApp
-                const encodedMessage = encodeURIComponent(workshopDetails);
+                if (workshop.payment_link && workshop.payment_link.includes('wa.me')) {
+                    // If it's already a wa.me link, extract phone number and add message
+                    const phoneMatch = workshop.payment_link.match(/wa\.me\/(\d+)/);
+                    if (phoneMatch) {
+                        const phoneNumber = phoneMatch[1];
+                        const workshopDetails = buildWhatsAppMessage(workshop);
+                        const encodedMessage = encodeURIComponent(workshopDetails);
 
-                // Try WhatsApp Business first, then regular WhatsApp
-                const whatsappBizUrl = `whatsapp://send?text=${encodedMessage}`;
-                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                        whatsappBizUrl = `whatsapp-business://send?text=${encodedMessage}`;
+                        whatsappUrl = `whatsapp://send?text=${encodedMessage}`;
+                        webFallback = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                    }
+                } else {
+                    // For phone number format, clean and format it
+                    const phoneNumber = workshop.payment_link ? workshop.payment_link.replace(/\D/g, '') : '';
+                    if (phoneNumber && phoneNumber.length >= 10) {
+                        // Add Indian country code if not present
+                        const fullPhoneNumber = phoneNumber.length === 10 ? `91${phoneNumber}` : phoneNumber;
+                        const workshopDetails = buildWhatsAppMessage(workshop);
+                        const encodedMessage = encodeURIComponent(workshopDetails);
 
-                // Try to open WhatsApp app
-                window.open(whatsappBizUrl, '_blank');
+                        whatsappBizUrl = `whatsapp-business://send?text=${encodedMessage}`;
+                        whatsappUrl = `whatsapp://send?text=${encodedMessage}`;
+                        webFallback = `https://wa.me/${fullPhoneNumber}?text=${encodedMessage}`;
+                    }
+                }
 
-                // Fallback to WhatsApp Web if app doesn't open
-                setTimeout(() => {
-                    window.open(whatsappUrl, '_blank');
-                }, 1000);
+                if (webFallback) {
+                    // If we have a specific phone number, use wa.me with phone number
+                    console.log('Using WhatsApp Web with phone number:', webFallback);
+                    window.open(webFallback, '_blank', 'noopener,noreferrer');
+                } else if (whatsappBizUrl) {
+                    // Try WhatsApp Business first (general message, user chooses recipient)
+                    console.log('Trying WhatsApp Business:', whatsappBizUrl);
+                    const whatsappWindow = window.open(whatsappBizUrl, '_blank', 'noopener,noreferrer');
+
+                    // Check if WhatsApp Business opened, fallback to regular WhatsApp
+                    setTimeout(() => {
+                        if (!whatsappWindow || whatsappWindow.closed) {
+                            console.log('WhatsApp Business not available, trying regular WhatsApp');
+                            window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                        }
+                    }, 1000);
+                } else {
+                    // Fallback to original payment link
+                    console.log('Using original payment link:', workshop.payment_link);
+                    window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+                }
 
             } catch (error) {
                 console.error('Error opening WhatsApp:', error);
                 // Fallback to regular link
                 window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
             }
+        }
+
+        // Build WhatsApp message with workshop details
+        function buildWhatsAppMessage(workshop) {
+            if (!workshop) {
+                return "Hi! I'm interested in registering for your dance workshop. Could you please share the registration details?";
+            }
+
+            let message = "Hi! I'm interested in registering for the following dance workshop:\n\n";
+
+            // Add workshop details with proper formatting
+            if (workshop.song && workshop.song.trim() && workshop.song !== 'TBA') {
+                message += `🎵 Song: ${toTitleCase(workshop.song)}\n`;
+            }
+
+            if (workshop.by && workshop.by.trim() && workshop.by !== 'TBA') {
+                message += `💃 Artist: ${toTitleCase(workshop.by)}\n`;
+            }
+
+            if (studioData && studioData.name) {
+                message += `🏢 Studio: ${toTitleCase(studioData.name)}\n`;
+            }
+
+            if (workshop.date) {
+                message += `📅 Date: ${formatDate(workshop.date)}\n`;
+            }
+
+            if (workshop.time) {
+                message += `⏰ Time: ${formatTime(workshop.time)}\n`;
+            }
+
+            message += "\nCould you please help me with the registration process? Thank you! 🙏";
+
+            return message;
         }
 
         // Handle Nachna payment link creation
