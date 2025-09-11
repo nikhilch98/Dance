@@ -315,41 +315,111 @@ class BackgroundQRService:
                 # Backward compatibility for old single workshop orders
                 workshop_uuids = [order_doc['workshop_uuid']]
 
-            # Use the first workshop UUID for QR generation
-            # For bundles, we'll generate QR for the primary workshop
-            workshop_uuid = workshop_uuids[0] if workshop_uuids else 'UNKNOWN'
+            # Debug: Print workshop UUIDs
+            logger.info(f"Order {order_id}: Found workshop UUIDs: {workshop_uuids}")
+            if not workshop_uuids:
+                logger.error(f"Order {order_id}: No workshop UUIDs found!")
+                return False
 
-            # Extract bundle information if this is a bundle order
-            bundle_info = None
+            # Get bundle information for bundle orders
+            bundle_details = None
             if order_doc.get('is_bundle_order'):
-                # For bundles, include all workshop UUIDs and bundle details
-                bundle_info = {
-                    'is_bundle': True,
-                    'bundle_id': order_doc.get('bundle_id'),
-                    'bundle_name': order_doc.get('bundle_name') or 'Bundle',
-                    'workshop_uuids': workshop_uuids,
-                    'total_workshops': len(workshop_uuids),
-                    'bundle_total_amount': order_doc.get('bundle_total_amount')
-                }
+                from app.database.bundles import BundleOperations
+                bundle_id = order_doc.get('bundle_id')
+                if bundle_id:
+                    bundle_details = BundleOperations.get_bundle_with_workshop_details(bundle_id)
+                    if bundle_details:
+                        logger.info(f"Order {order_id}: Found bundle with {len(bundle_details.get('workshops', []))} workshops")
+                    else:
+                        logger.warning(f"Order {order_id}: Bundle {bundle_id} not found!")
+                else:
+                    logger.warning(f"Order {order_id}: Bundle order but no bundle_id found!")
 
-            # Generate QR code
-            qr_code_data = self.qr_service.generate_order_qr_code(
-                order_id=order_id,
-                workshop_title=workshop_title,
-                amount=amount,
-                user_name=user_name,
-                user_phone=user_phone,
-                workshop_uuid=workshop_uuid,
-                artist_names=artist_names,
-                studio_name=studio_name,
-                workshop_date=workshop_date,
-                workshop_time=workshop_time,
-                payment_gateway_details=payment_gateway_details,
-                bundle_info=bundle_info
-            )
+            # Generate QR codes for each workshop UUID
+            qr_codes_data = {}
 
-            # Update order with QR code data
-            success = OrderOperations.update_order_qr_codes(order_id, {"default": qr_code_data})
+            for workshop_uuid in workshop_uuids:
+                logger.info(f"Order {order_id}: Generating QR code for workshop {workshop_uuid}")
+
+                # Get workshop-specific information
+                if bundle_details and 'workshops' in bundle_details:
+                    # Find workshop details in bundle
+                    workshop_info = None
+                    for workshop in bundle_details['workshops']:
+                        if workshop.get('uuid') == workshop_uuid:
+                            workshop_info = workshop
+                            break
+
+                    if workshop_info:
+                        # Use workshop-specific details from bundle
+                        workshop_title_specific = workshop_info.get('song') or workshop_info.get('title') or workshop_title
+                        artist_names_specific = workshop_info.get('artist_names') or workshop_info.get('by', '').split(', ') if workshop_info.get('by') else artist_names
+                        studio_name_specific = workshop_info.get('studio_name') or studio_name
+                        workshop_date_specific = workshop_info.get('date') or workshop_date
+                        workshop_time_specific = workshop_info.get('time') or workshop_time
+
+                        logger.info(f"Order {order_id}: Using bundle workshop details for {workshop_uuid}: {workshop_title_specific}")
+                    else:
+                        logger.warning(f"Order {order_id}: Workshop {workshop_uuid} not found in bundle details!")
+                        workshop_title_specific = workshop_title
+                        artist_names_specific = artist_names
+                        studio_name_specific = studio_name
+                        workshop_date_specific = workshop_date
+                        workshop_time_specific = workshop_time
+                else:
+                    # Use main workshop details for single workshop orders
+                    workshop_title_specific = workshop_title
+                    artist_names_specific = artist_names
+                    studio_name_specific = studio_name
+                    workshop_date_specific = workshop_date
+                    workshop_time_specific = workshop_time
+
+                # Prepare bundle info for QR generation
+                bundle_info = None
+                if order_doc.get('is_bundle_order'):
+                    bundle_info = {
+                        'is_bundle': True,
+                        'bundle_id': order_doc.get('bundle_id'),
+                        'bundle_name': order_doc.get('bundle_name') or bundle_details.get('name') if bundle_details else 'Bundle',
+                        'workshop_uuids': workshop_uuids,
+                        'total_workshops': len(workshop_uuids),
+                        'bundle_total_amount': order_doc.get('bundle_total_amount'),
+                        'current_workshop_uuid': workshop_uuid
+                    }
+
+                # Generate QR code for this specific workshop
+                try:
+                    qr_code_data = self.qr_service.generate_order_qr_code(
+                        order_id=order_id,
+                        workshop_title=workshop_title_specific,
+                        amount=amount,
+                        user_name=user_name,
+                        user_phone=user_phone,
+                        workshop_uuid=workshop_uuid,
+                        artist_names=artist_names_specific,
+                        studio_name=studio_name_specific,
+                        workshop_date=workshop_date_specific,
+                        workshop_time=workshop_time_specific,
+                        payment_gateway_details=payment_gateway_details,
+                        bundle_info=bundle_info
+                    )
+
+                    qr_codes_data[workshop_uuid] = qr_code_data
+                    logger.info(f"Order {order_id}: Successfully generated QR code for workshop {workshop_uuid}")
+
+                except Exception as qr_error:
+                    logger.error(f"Order {order_id}: Failed to generate QR code for workshop {workshop_uuid}: {str(qr_error)}")
+                    continue
+
+            # Check if we generated any QR codes
+            if not qr_codes_data:
+                logger.error(f"Order {order_id}: No QR codes were generated!")
+                return False
+
+            logger.info(f"Order {order_id}: Generated QR codes for {len(qr_codes_data)} out of {len(workshop_uuids)} workshops")
+
+            # Update order with QR codes data
+            success = OrderOperations.update_order_qr_codes(order_id, qr_codes_data)
 
             if success:
                 logger.debug(f"Successfully generated and saved QR code for order {order_id}")

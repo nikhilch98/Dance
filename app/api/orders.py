@@ -1091,6 +1091,25 @@ async def get_order_status(
             # For backward compatibility with old single workshop orders
             workshop_uuids = [order["workshop_uuid"]]
 
+        # Debug: Log workshop UUIDs and QR codes data
+        qr_codes_data = order.get("qr_codes_data", {})
+        logger.info(f"Order {order_id}: workshop_uuids = {workshop_uuids}")
+        logger.info(f"Order {order_id}: qr_codes_data keys = {list(qr_codes_data.keys()) if qr_codes_data else 'None'}")
+        logger.info(f"Order {order_id}: is_bundle_order = {order.get('is_bundle_order', False)}")
+
+        # Check for missing data
+        if not workshop_uuids:
+            logger.warning(f"Order {order_id}: No workshop UUIDs found!")
+        if not qr_codes_data:
+            logger.warning(f"Order {order_id}: No QR codes data found!")
+        else:
+            # Check if we have QR codes for all workshop UUIDs
+            missing_qr_uuids = [uuid for uuid in workshop_uuids if uuid not in qr_codes_data]
+            if missing_qr_uuids:
+                logger.warning(f"Order {order_id}: Missing QR codes for workshop UUIDs: {missing_qr_uuids}")
+            else:
+                logger.info(f"Order {order_id}: All workshop UUIDs have QR codes")
+
         # Get bundle information if this is a bundle order
         bundle_info = None
         if order.get("is_bundle_order"):
