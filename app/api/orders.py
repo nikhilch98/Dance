@@ -541,6 +541,7 @@ async def create_bundle_payment_link(
     try:
         from app.database.bundles import BundleOperations
         from app.database.workshops import DatabaseOperations
+        from app.database.rewards import RewardOperations
 
         # Get bundle details
         bundle = BundleOperations.get_bundle_with_workshop_details(bundle_id)
@@ -566,15 +567,167 @@ async def create_bundle_payment_link(
 
         logger.info(f"Creating single bundle order for {len(workshop_uuids)} workshops in bundle {bundle_id}")
 
+        # Check for existing bundle orders that might conflict
+        existing_bundle_order = OrderOperations.get_active_bundle_order_for_user_and_bundle(user_id, bundle_id)
+
+        bundle_price = bundle.get("bundle_price", 0)
+        if bundle_price <= 0:
+            raise HTTPException(status_code=400, detail="Invalid bundle price")
+
+        # If we have an existing bundle order, decide whether to reuse or cancel
+        if existing_bundle_order:
+            existing_pg = existing_bundle_order.get("payment_gateway_details") or {}
+            # Use final_amount_paid if available, otherwise use payment gateway amount, otherwise use order amount
+            if existing_bundle_order.get("final_amount_paid") is not None:
+                existing_amount_paise = int(existing_bundle_order.get("final_amount_paid", 0) * 100)
+                logger.debug(f"Using final_amount_paid for existing bundle order: ₹{existing_amount_paise/100}")
+            elif existing_pg.get("amount"):
+                existing_amount_paise = int(existing_pg.get("amount"))
+                logger.debug(f"Using payment gateway amount for existing bundle order: ₹{existing_amount_paise/100}")
+            else:
+                existing_amount_paise = existing_bundle_order.get("amount", bundle_price * 100)
+                logger.debug(f"Using order amount for existing bundle order: ₹{existing_amount_paise/100}")
+
+            # Calculate intended final amount after rewards redemption
+            intended_final_amount_paise = bundle_price * 100
+            rewards_redeemed_rupees = 0.0
+
+            if discount_amount and discount_amount > 0:
+                discount_rupees = float(discount_amount)
+                reward_balance = RewardOperations.get_user_balance(user_id)
+                settings = get_settings()
+                redemption_cap_percentage = getattr(settings, 'reward_redemption_cap_percentage', 10.0)
+                max_discount_allowed = bundle_price * (redemption_cap_percentage / 100.0)
+
+                if discount_rupees > reward_balance:
+                    raise HTTPException(status_code=400, detail="Insufficient reward balance")
+
+                if discount_rupees > max_discount_allowed:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Discount amount (₹{discount_rupees}) cannot exceed {redemption_cap_percentage}% of bundle amount (₹{bundle_price:.0f})"
+                    )
+
+                intended_final_amount_paise = int((bundle_price - discount_rupees) * 100)
+                rewards_redeemed_rupees = discount_rupees
+
+            # Check for various reasons to cancel and create new bundle order
+            should_cancel_order = False
+            cancellation_reason = ""
+
+            # Debug: Log comparison details
+            logger.info(f"Comparing existing bundle order {existing_bundle_order['order_id']} with new bundle request:")
+            logger.info(f"Existing bundle: amount=₹{existing_amount_paise/100}, rewards=₹{existing_bundle_order.get('rewards_redeemed', 0)}, bundle_id={existing_bundle_order.get('bundle_id')}")
+            logger.info(f"New bundle: amount=₹{intended_final_amount_paise/100}, rewards=₹{rewards_redeemed_rupees}, bundle_id={bundle_id}")
+
+            # Check amount difference (includes rewards redemption changes)
+            amount_difference = abs(intended_final_amount_paise - existing_amount_paise)
+            if amount_difference > 1:  # More than 1 paisa difference
+                should_cancel_order = True
+                existing_rewards = existing_bundle_order.get("rewards_redeemed") or 0
+                new_rewards = rewards_redeemed_rupees
+                if existing_rewards != new_rewards:
+                    cancellation_reason = "rewards_redemption_changed"
+                    logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
+                else:
+                    cancellation_reason = "amount_changed"
+                    logger.info(f"Amount changed: existing=₹{existing_amount_paise/100}, requested=₹{intended_final_amount_paise/100}, difference=₹{amount_difference/100}")
+
+            # Check if bundle ID has changed (shouldn't happen but safety check)
+            existing_bundle_id = existing_bundle_order.get("bundle_id")
+            if existing_bundle_id and existing_bundle_id != bundle_id:
+                should_cancel_order = True
+                cancellation_reason = "bundle_changed"
+                logger.info(f"Bundle changed: existing={existing_bundle_id}, requested={bundle_id}")
+
+            # Check rewards redemption changes (even if final amount is same)
+            existing_rewards = existing_bundle_order.get("rewards_redeemed") or 0
+            new_rewards = rewards_redeemed_rupees
+            if not should_cancel_order and existing_rewards != new_rewards:
+                should_cancel_order = True
+                cancellation_reason = "rewards_redemption_changed"
+                logger.info(f"Rewards redemption changed: existing=₹{existing_rewards}, requested=₹{new_rewards}")
+                logger.info(f"Bundle order will be cancelled to reflect updated rewards redemption")
+
+            # Final decision summary
+            logger.info(f"Bundle comparison complete - should_cancel_order: {should_cancel_order}, reason: '{cancellation_reason}'")
+
+            if should_cancel_order:
+                # Cancel old bundle link and proceed to new order
+                logger.info(f"Decision: CANCEL existing bundle order due to {cancellation_reason}")
+                try:
+                    rp = get_razorpay_service()
+                    pl_id = existing_bundle_order.get("payment_link_id")
+                    if pl_id:
+                        rp.cancel_payment_link(pl_id)
+                except Exception as e:
+                    logger.warning(f"Failed to cancel existing bundle payment link: {e}")
+
+                # Rollback any pending redemptions from the existing bundle order
+                existing_rewards_redeemed = existing_bundle_order.get("rewards_redeemed")
+                if existing_rewards_redeemed and existing_rewards_redeemed > 0:
+                    try:
+                        logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for cancelled bundle order {existing_bundle_order['order_id']}")
+                        RewardOperations.rollback_pending_redemption(existing_bundle_order["order_id"])
+                    except Exception as e:
+                        logger.error(f"Failed to rollback pending redemption for bundle order {existing_bundle_order['order_id']}: {e}")
+
+                # Mark old bundle order cancelled with appropriate reason
+                OrderOperations.update_order_status(
+                    existing_bundle_order["order_id"],
+                    OrderStatusEnum.CANCELLED,
+                    additional_data={
+                        "cancellation_reason": cancellation_reason,
+                        "old_amount": existing_amount_paise / 100,
+                        "new_amount": bundle_price,
+                        "tier_info": "bundle_pricing",
+                        "old_rewards_redeemed": existing_bundle_order.get("rewards_redeemed") or 0,
+                        "new_rewards_redeemed": rewards_redeemed_rupees,
+                        "old_bundle_id": existing_bundle_id,
+                        "new_bundle_id": bundle_id
+                    }
+                )
+
+                logger.info(f"Cancelled bundle order {existing_bundle_order['order_id']} due to {cancellation_reason}")
+            else:
+                # Same bundle order details → reuse existing link
+                logger.info(f"Decision: REUSE existing bundle order {existing_bundle_order['order_id']} - all details match")
+                logger.info(
+                    f"Reusing pending bundle payment link for user {user_id}, bundle {bundle_id} (same order details)"
+                )
+                logger.info(
+                    f"Bundle order details match: amount=₹{intended_final_amount_paise/100}, "
+                    f"rewards=₹{rewards_redeemed_rupees}, bundle_id={bundle_id}"
+                )
+
+                # Create workshop details for the first workshop (for display purposes)
+                primary_workshop_details = create_workshop_details(workshop_details_list[0])
+
+                return UnifiedPaymentLinkResponse(
+                    success=True,
+                    is_existing=True,
+                    message="Pending bundle payment link found for this bundle",
+                    order_id=existing_bundle_order["order_id"],
+                    payment_link_url=existing_bundle_order.get("payment_link_url", ""),
+                    payment_link_id=existing_bundle_order.get("payment_link_id"),
+                    amount=existing_bundle_order.get("final_amount_paid", existing_bundle_order.get("amount", bundle_price * 100)),
+                    currency=existing_bundle_order.get("currency", "INR"),
+                    expires_at=existing_bundle_order.get("expires_at"),
+                    workshop_details=primary_workshop_details,
+                    is_bundle=True,
+                    bundle_id=bundle_id,
+                    bundle_name=bundle.get("name", "Bundle"),
+                    bundle_total_amount=bundle_price
+                )
+
+        # If no existing bundle order or existing order was cancelled, proceed to create new bundle order
+        logger.info(f"Proceeding to create new bundle order for bundle {bundle_id}")
+
         # Create workshop details for the first workshop (for display purposes)
         primary_workshop_details = create_workshop_details(workshop_details_list[0])
 
         # Create single order for the entire bundle
         bundle_payment_id = f"BUNDLE_PAY_{bundle_id}_{user_id}_{int(datetime.now().timestamp())}"
-
-        bundle_price = bundle.get("bundle_price", 0)
-        if bundle_price <= 0:
-            raise HTTPException(status_code=400, detail="Invalid bundle price")
 
         # Handle rewards redemption for bundle
         rewards_redeemed_rupees = 0.0
@@ -585,7 +738,6 @@ async def create_bundle_payment_link(
             logger.info(f"Processing reward redemption for bundle {bundle_id}: ₹{discount_amount} discount")
 
             # Validate user has sufficient balance
-            from app.database.rewards import RewardOperations
             from app.config.settings import get_settings
 
             settings = get_settings()
