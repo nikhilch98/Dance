@@ -30,6 +30,25 @@ class WorkshopDetails(BaseModel):
     uuid: str
 
 
+class BundleWorkshopInfo(BaseModel):
+    """Workshop information within a bundle."""
+    song: Optional[str] = None
+    title: Optional[str] = None
+    artist_names: Optional[List[str]] = None
+    by: Optional[str] = None  # Alternative artist field
+    studio_name: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+
+
+class BundleInfo(BaseModel):
+    """Bundle information for bundle orders."""
+    name: str
+    description: str = ""
+    workshops: List[BundleWorkshopInfo] = []
+    savings_amount: float = 0.0
+
+
 class CreatePaymentLinkRequest(BaseModel):
     """Request model for creating payment link."""
     workshop_uuid: str = Field(..., description="Workshop UUID to create payment for")
@@ -37,10 +56,18 @@ class CreatePaymentLinkRequest(BaseModel):
     discount_amount: Optional[float] = Field(0.0, description="Discount amount from redeemed points")
 
 
+class CreateBundlePaymentLinkRequest(BaseModel):
+    """Request model for creating bundle payment link."""
+    bundle_id: str = Field(..., description="Bundle ID to create payment for")
+    workshop_uuids: List[str] = Field(..., description="List of workshop UUIDs in the bundle")
+    points_redeemed: Optional[float] = Field(0.0, description="Reward points redeemed for discount")
+    discount_amount: Optional[float] = Field(0.0, description="Discount amount from redeemed points")
+
+
 class OrderCreate(BaseModel):
     """Model for creating a new order."""
     user_id: str
-    workshop_uuid: str
+    workshop_uuids: List[str]  # Support multiple workshops for bundles
     workshop_details: WorkshopDetails
     amount: int  # Amount in paise
     currency: str = "INR"
@@ -51,7 +78,6 @@ class OrderCreate(BaseModel):
     bundle_id: Optional[str] = None
     bundle_payment_id: Optional[str] = None
     is_bundle_order: Optional[bool] = False
-    bundle_position: Optional[int] = None
     bundle_total_workshops: Optional[int] = None
     bundle_total_amount: Optional[int] = None
 
@@ -60,7 +86,7 @@ class Order(BaseModel):
     """Complete order model."""
     order_id: str
     user_id: str
-    workshop_uuid: str
+    workshop_uuids: List[str]  # Support multiple workshops for bundles
     workshop_details: WorkshopDetails
     amount: int  # Amount in paise
     currency: str
@@ -70,7 +96,8 @@ class Order(BaseModel):
     payment_link_url: Optional[str] = None
     expires_at: Optional[datetime] = None
     payment_gateway_details: Optional[Dict[str, Any]] = None
-    qr_code_data: Optional[str] = None  # Base64 encoded QR code image
+    qr_code_data: Optional[str] = None  # Base64 encoded QR code image (legacy single)
+    qr_codes_data: Optional[Dict[str, str]] = None  # Multiple QR codes for bundles (workshop_uuid -> qr_data)
     qr_code_generated_at: Optional[datetime] = None
     # Reward-related fields
     rewards_generated: Optional[bool] = False
@@ -82,7 +109,6 @@ class Order(BaseModel):
     bundle_id: Optional[str] = None
     bundle_payment_id: Optional[str] = None
     is_bundle_order: Optional[bool] = False
-    bundle_position: Optional[int] = None
     bundle_total_workshops: Optional[int] = None
     bundle_total_amount: Optional[int] = None
     created_at: datetime
@@ -92,13 +118,14 @@ class Order(BaseModel):
 class OrderResponse(BaseModel):
     """Order response model for API."""
     order_id: str
-    workshop_uuid: str
+    workshop_uuids: List[str]  # Support multiple workshops for bundles
     workshop_details: WorkshopDetails
     amount: int
     currency: str
     status: OrderStatusEnum
     payment_link_url: Optional[str] = None
-    qr_code_data: Optional[str] = None  # Base64 encoded QR code image
+    qr_code_data: Optional[str] = None  # Base64 encoded QR code image (legacy single)
+    qr_codes_data: Optional[Dict[str, str]] = None  # Multiple QR codes for bundles (workshop_uuid -> qr_data)
     qr_code_generated_at: Optional[datetime] = None
     # Reward information for order history
     cashback_amount: Optional[float] = None  # Cashback earned in rupees
@@ -108,10 +135,9 @@ class OrderResponse(BaseModel):
     bundle_id: Optional[str] = None
     bundle_payment_id: Optional[str] = None
     is_bundle_order: Optional[bool] = False
-    bundle_position: Optional[int] = None
     bundle_total_workshops: Optional[int] = None
     bundle_total_amount: Optional[int] = None
-    bundle_info: Optional[Dict[str, Any]] = None  # Additional bundle context
+    bundle_info: Optional[BundleInfo] = None  # Additional bundle context
     created_at: datetime
     updated_at: datetime
 
@@ -144,13 +170,7 @@ class UnifiedPaymentLinkResponse(BaseModel):
     tier_info: Optional[str] = None
     is_early_bird: Optional[bool] = False
     pricing_changed: Optional[bool] = False
-    # Bundle fields
-    is_bundle: Optional[bool] = False
-    bundle_id: Optional[str] = None
-    bundle_name: Optional[str] = None
-    bundle_total_amount: Optional[int] = None
-    # Bundle suggestion fields
-    bundle_suggestion: Optional[Dict[str, Any]] = None
+    # Note: Bundle-related fields removed - bundles are handled through separate APIs
 
 
 class ExistingPaymentResponse(BaseModel):

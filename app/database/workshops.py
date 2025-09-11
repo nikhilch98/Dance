@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 import re
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from collections import defaultdict
 
 from utils.utils import (
@@ -400,8 +400,27 @@ class DatabaseOperations:
         return list(workshops)
 
     @staticmethod
+    def get_workshop_by_uuid(uuid: str) -> Optional[Dict[str, Any]]:
+        """Get a single workshop by its UUID.
+
+        Args:
+            uuid: The unique identifier of the workshop
+
+        Returns:
+            Raw workshop document from database or None if not found
+        """
+        client = get_mongo_client()
+
+        # Find the workshop document
+        workshop_doc = client["discovery"]["workshops_v2"].find_one({"uuid": uuid})
+        if not workshop_doc:
+            return None
+
+        return workshop_doc
+
+    @staticmethod
     def get_total_workshop_count() -> int:
         """Get the total count of workshops in the database."""
         client = get_mongo_client()
-        
+
         return client["discovery"]["workshops_v2"].count_documents({})

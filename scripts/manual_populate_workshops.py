@@ -28,6 +28,7 @@ class ManualWorkshopEntry(BaseModel):
     artist_id_list: List[str]
     registration_link: Optional[str]
     registration_link_type: Optional[str]
+    workshop_uuid: str
 
 def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorkshopEntry], remove_existing_workshops: bool):
     if studio_id not in ["theroyaldancespace", "manifestbytmn", "beinrtribe","goodmove_studios"]:
@@ -46,7 +47,7 @@ def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorks
             "payment_link": workshop.registration_link,
             "payment_link_type": workshop.registration_link_type,
             "studio_id": studio_id,
-            "uuid": f"{studio_id}/{workshop.by.lower()}-{workshop.event_type.value.lower()}_{workshop.day}_{workshop.month}_{workshop.year}",
+            "uuid": workshop.workshop_uuid,
             "event_type": workshop.event_type.value.lower(),
             "time_details": [
                 {
@@ -94,29 +95,29 @@ def main():
         ManualWorkshopEntry(by="Amisha Jayaram", song="o mama Tetema",
                             pricing_info="Early Bird (Till 19th Sept): ₹800/-\nStandard (20th-21st Sept): ₹950/-",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="03:00 PM",
-                            end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna"),
+                            end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna", workshop_uuid="theroyaldancespace/amisha_jayaram-workshop_21_9_2025_o_mama_tetema"),
 
         # Kiran J's workshops with tiered pricing
         ManualWorkshopEntry(by="Kiran J", song="azul",
                             pricing_info="First 15 spots: ₹999/-\n16-20 spots (till 20th): ₹1100/-\nOTS (after 20th): ₹1300/-\nBUNDLE:Evening Double:KIRAN_DOUBLE:theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul,theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria:1799:INR:Save ₹400 on both classes",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="05:00 PM",
-                            end_time="07:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp"),
+                            end_time="07:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul"),
 
         ManualWorkshopEntry(by="Kiran J", song="bijuria",
                             pricing_info="First 15 spots: ₹999/-\n16-20 spots (till 20th): ₹1100/-\nOTS (after 20th): ₹1300/-\nBUNDLE:Evening Double:KIRAN_DOUBLE:theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul,theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria:1799:INR:Save ₹400 on both classes",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp"),
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria"),
 
         # Vivek & Aakanksha's workshops with time-based tiered pricing and bundle option
         ManualWorkshopEntry(by="Vivek & Aakanksha", song="mayya mayya",
-                            pricing_info="Early Bird (Till 18th Sept): ₹799/-\nStandard (19th-20th Sept): ₹999/-\nBUNDLE: Two Workshops Bundle Package: TWO_WORKSHOPS_BUNDLE: theroyaldancespace/vicky__pedia-aakanksha5678-workshop_20_9_2025_mayya,theroyaldancespace/vicky__pedia-aakanksha5678-workshop_20_9_2025_aavan: 1500: INR: Save ₹98 on both workshops (₹799 each = ₹1598 total)",
+                            pricing_info="Early Bird (Till 18th Sept): ₹799/-\nStandard (19th-20th Sept): ₹999/-\nBUNDLE: Two Workshops Bundle Package: TWO_WORKSHOPS_BUNDLE: theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya,theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan: 1500: INR: Save ₹98 on both workshops (₹799 each = ₹1598 total)",
                             event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"),
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya"),
 
         ManualWorkshopEntry(by="Vivek & Aakanksha", song="aavan jaavan",
-                            pricing_info="Early Bird (Till 18th Sept): ₹799/-\nStandard (19th-20th Sept): ₹999/-\nBUNDLE: Two Workshops Bundle Package: TWO_WORKSHOPS_BUNDLE: theroyaldancespace/vicky__pedia-aakanksha5678-workshop_20_9_2025_mayya,theroyaldancespace/vicky__pedia-aakanksha5678-workshop_20_9_2025_aavan: 1500: INR: Save ₹98 on both workshops (₹799 each = ₹1598 total)",
+                            pricing_info="Early Bird (Till 18th Sept): ₹799/-\nStandard (19th-20th Sept): ₹999/-\nBUNDLE: Two Workshops Bundle Package: TWO_WORKSHOPS_BUNDLE: theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya,theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan: 1500: INR: Save ₹98 on both workshops (₹799 each = ₹1598 total)",
                             event_type=EventType.WORKSHOP, day=20, month=9, year=2025, start_time="06:00 PM",
-                            end_time="08:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna"),
+                            end_time="08:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan"),
     ], remove_existing_workshops = True)
 
     # manual_populate_workshops("beinrtribe", [

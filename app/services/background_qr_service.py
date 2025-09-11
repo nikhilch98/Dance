@@ -120,25 +120,73 @@ class BackgroundQRService:
             studio_name = workshop_details.get('studio_name', 'Unknown Studio')
             workshop_date = workshop_details.get('date', 'Unknown Date')
             workshop_time = workshop_details.get('time', 'Unknown Time')
-            workshop_uuid = order_doc['workshop_uuid']
-            
-            # Generate QR code
-            qr_code_data = self.qr_service.generate_order_qr_code(
-                order_id=order_id,
-                workshop_title=workshop_title,
-                amount=amount,
-                user_name=user_name,
-                user_phone=user_phone,
-                workshop_uuid=workshop_uuid,
-                artist_names=artist_names,
-                studio_name=studio_name,
-                workshop_date=workshop_date,
-                workshop_time=workshop_time,
-                payment_gateway_details=payment_gateway_details
-            )
-            
-            # Update order with QR code data
-            success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
+
+            # Handle both single workshop and bundle orders
+            workshop_uuids = order_doc.get('workshop_uuids', [])
+            if not workshop_uuids and order_doc.get('workshop_uuid'):
+                # Backward compatibility for old single workshop orders
+                workshop_uuids = [order_doc['workshop_uuid']]
+
+            # Extract bundle information if this is a bundle order
+            bundle_info = None
+            if order_doc.get('is_bundle_order'):
+                # For bundles, include all workshop UUIDs and bundle details
+                bundle_info = {
+                    'is_bundle': True,
+                    'bundle_id': order_doc.get('bundle_id'),
+                    'bundle_name': order_doc.get('bundle_name') or 'Bundle',
+                    'workshop_uuids': workshop_uuids,
+                    'total_workshops': len(workshop_uuids),
+                    'bundle_total_amount': order_doc.get('bundle_total_amount')
+                }
+
+            # Generate QR codes based on order type
+            if order_doc.get('is_bundle_order') and workshop_uuids:
+                # Generate multiple QR codes for bundle orders
+                qr_codes_data = {}
+                for i, workshop_uuid in enumerate(workshop_uuids):
+                    # Get workshop-specific details if available
+                    workshop_specific_info = self._get_workshop_specific_info(workshop_uuid, bundle_info)
+
+                    qr_code_data = self.qr_service.generate_order_qr_code(
+                        order_id=f"{order_id}_ws_{i+1}",  # Unique ID for each workshop
+                        workshop_title=workshop_specific_info.get('title', workshop_title),
+                        amount=amount,  # Keep total amount for all QR codes
+                        user_name=user_name,
+                        user_phone=user_phone,
+                        workshop_uuid=workshop_uuid,
+                        artist_names=workshop_specific_info.get('artists', artist_names),
+                        studio_name=workshop_specific_info.get('studio', studio_name),
+                        workshop_date=workshop_specific_info.get('date', workshop_date),
+                        workshop_time=workshop_specific_info.get('time', workshop_time),
+                        payment_gateway_details=payment_gateway_details,
+                        bundle_info=bundle_info
+                    )
+                    qr_codes_data[workshop_uuid] = qr_code_data
+
+                # Update order with multiple QR codes
+                success = OrderOperations.update_order_qr_codes(order_id, qr_codes_data)
+            else:
+                # Generate single QR code for individual workshop orders
+                workshop_uuid = workshop_uuids[0] if workshop_uuids else 'UNKNOWN'
+
+                qr_code_data = self.qr_service.generate_order_qr_code(
+                    order_id=order_id,
+                    workshop_title=workshop_title,
+                    amount=amount,
+                    user_name=user_name,
+                    user_phone=user_phone,
+                    workshop_uuid=workshop_uuid,
+                    artist_names=artist_names,
+                    studio_name=studio_name,
+                    workshop_date=workshop_date,
+                    workshop_time=workshop_time,
+                    payment_gateway_details=payment_gateway_details,
+                    bundle_info=bundle_info
+                )
+
+                # Update order with single QR code
+                success = OrderOperations.update_order_qr_code(order_id, qr_code_data)
             
             if success:
                 logger.info(f"Successfully generated and saved QR code for order {order_id}")
@@ -260,7 +308,29 @@ class BackgroundQRService:
             studio_name = workshop_details.get('studio_name', 'Unknown Studio')
             workshop_date = workshop_details.get('date', 'Unknown Date')
             workshop_time = workshop_details.get('time', 'Unknown Time')
-            workshop_uuid = order_doc['workshop_uuid']
+
+            # Handle both single workshop and bundle orders
+            workshop_uuids = order_doc.get('workshop_uuids', [])
+            if not workshop_uuids and order_doc.get('workshop_uuid'):
+                # Backward compatibility for old single workshop orders
+                workshop_uuids = [order_doc['workshop_uuid']]
+
+            # Use the first workshop UUID for QR generation
+            # For bundles, we'll generate QR for the primary workshop
+            workshop_uuid = workshop_uuids[0] if workshop_uuids else 'UNKNOWN'
+
+            # Extract bundle information if this is a bundle order
+            bundle_info = None
+            if order_doc.get('is_bundle_order'):
+                # For bundles, include all workshop UUIDs and bundle details
+                bundle_info = {
+                    'is_bundle': True,
+                    'bundle_id': order_doc.get('bundle_id'),
+                    'bundle_name': order_doc.get('bundle_name') or 'Bundle',
+                    'workshop_uuids': workshop_uuids,
+                    'total_workshops': len(workshop_uuids),
+                    'bundle_total_amount': order_doc.get('bundle_total_amount')
+                }
 
             # Generate QR code
             qr_code_data = self.qr_service.generate_order_qr_code(
@@ -274,7 +344,8 @@ class BackgroundQRService:
                 studio_name=studio_name,
                 workshop_date=workshop_date,
                 workshop_time=workshop_time,
-                payment_gateway_details=payment_gateway_details
+                payment_gateway_details=payment_gateway_details,
+                bundle_info=bundle_info
             )
 
             # Update order with QR code data
@@ -303,6 +374,49 @@ class BackgroundQRService:
             "service_active": True
         }
 
+    def _get_workshop_specific_info(self, workshop_uuid: str, bundle_info: dict) -> dict:
+        """Get workshop-specific information from bundle data.
+
+        Args:
+            workshop_uuid: The workshop UUID to get info for
+            bundle_info: Bundle information containing workshop details
+
+        Returns:
+            Dictionary with workshop-specific information
+        """
+        try:
+            # If we have workshop details in bundle_info, find the specific workshop
+            if bundle_info and 'workshops' in bundle_info:
+                workshops = bundle_info['workshops']
+                for workshop in workshops:
+                    if isinstance(workshop, dict) and workshop.get('uuid') == workshop_uuid:
+                        return {
+                            'title': workshop.get('song') or workshop.get('title') or 'Workshop',
+                            'artists': workshop.get('artist_names') or workshop.get('by', '').split(', ') if workshop.get('by') else [],
+                            'studio': workshop.get('studio_name', 'Unknown Studio'),
+                            'date': workshop.get('date', 'Unknown Date'),
+                            'time': workshop.get('time', 'Unknown Time')
+                        }
+
+            # Fallback: return default information
+            return {
+                'title': 'Workshop',
+                'artists': [],
+                'studio': 'Unknown Studio',
+                'date': 'Unknown Date',
+                'time': 'Unknown Time'
+            }
+
+        except Exception as e:
+            logger.warning(f"Error getting workshop specific info for {workshop_uuid}: {e}")
+            return {
+                'title': 'Workshop',
+                'artists': [],
+                'studio': 'Unknown Studio',
+                'date': 'Unknown Date',
+                'time': 'Unknown Time'
+            }
+
 
 # Global service instance
 background_qr_service = BackgroundQRService()
@@ -327,7 +441,7 @@ async def start_background_qr_worker():
     """Start the background QR generation worker.
     
     This function runs continuously and processes QR generation
-    every 5 minutes for new paid orders.
+    every 5 seconds for new paid orders.
     """
     logger.info("Starting background QR generation worker")
     
@@ -339,8 +453,8 @@ async def start_background_qr_worker():
             if result.get("processed", 0) > 0:
                 logger.info(f"Background QR batch: {result}")
             
-            # Wait 5 minutes before next batch
-            await asyncio.sleep(300)  # 5 minutes
+            # Wait 5 seconds before next batch
+            await asyncio.sleep(5)  # 5 seconds
             
         except Exception as e:
             logger.error(f"Error in background QR worker: {str(e)}")

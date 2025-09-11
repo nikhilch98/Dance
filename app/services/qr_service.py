@@ -51,7 +51,8 @@ class QRCodeService:
         studio_name: str,
         workshop_date: str,
         workshop_time: str,
-        payment_gateway_details: Optional[Dict[str, Any]] = None
+        payment_gateway_details: Optional[Dict[str, Any]] = None,
+        bundle_info: Optional[Dict[str, Any]] = None
     ) -> str:
         """Generate secure QR code for an order with embedded nachna logo.
 
@@ -76,7 +77,7 @@ class QRCodeService:
             cache_key = self._create_cache_key(
                 order_id, workshop_title, amount, user_name, user_phone,
                 workshop_uuid, artist_names, studio_name, workshop_date, workshop_time,
-                payment_gateway_details
+                payment_gateway_details, bundle_info
             )
 
             # Check cache first
@@ -88,7 +89,7 @@ class QRCodeService:
             qr_data = self._create_secure_qr_data(
                 order_id, workshop_title, amount, user_name, user_phone,
                 workshop_uuid, artist_names, studio_name, workshop_date, workshop_time,
-                payment_gateway_details
+                payment_gateway_details, bundle_info
             )
 
             # Generate QR code with custom styling
@@ -145,7 +146,8 @@ class QRCodeService:
         studio_name: str,
         workshop_date: str,
         workshop_time: str,
-        payment_gateway_details: Optional[Dict[str, Any]] = None
+        payment_gateway_details: Optional[Dict[str, Any]] = None,
+        bundle_info: Optional[Dict[str, Any]] = None
     ) -> str:
         """Create a cache key from order data."""
         # Create a deterministic string from all parameters
@@ -160,7 +162,8 @@ class QRCodeService:
             "studio_name": studio_name,
             "workshop_date": workshop_date,
             "workshop_time": workshop_time,
-            "payment_details": payment_gateway_details or {}
+            "payment_details": payment_gateway_details or {},
+            "bundle_info": bundle_info or {}
         }
 
         # Create hash for cache key
@@ -180,7 +183,8 @@ class QRCodeService:
         studio_name: str,
         workshop_date: str,
         workshop_time: str,
-        payment_gateway_details: Optional[Dict[str, Any]] = None
+        payment_gateway_details: Optional[Dict[str, Any]] = None,
+        bundle_info: Optional[Dict[str, Any]] = None
     ) -> str:
         """Create secure QR code data with cryptographic verification."""
         # Generate timestamp and expiry
@@ -198,6 +202,7 @@ class QRCodeService:
                 "date": workshop_date,
                 "time": workshop_time
             },
+            "bundle": bundle_info if bundle_info else None,  # Include bundle information if available
             "registration": {
                 "user_name": user_name,
                 "user_phone": user_phone,

@@ -2,6 +2,7 @@
 
 import asyncio
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -32,13 +33,63 @@ from utils.utils import DatabaseManager, start_cache_invalidation_watcher
 settings = get_settings()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown events."""
+    # Startup
+    try:
+        # Initialize database connection pool with a test query
+        client = DatabaseManager.get_mongo_client()
+        client.admin.command("ping")
+        print("✅ MongoDB connection pool initialized")
+
+        # # Start the cache invalidation watcher
+        # start_cache_invalidation_watcher()
+        # print("✅ Cache invalidation watcher started")
+
+        # Start the workshop notification watcher
+        notification_service.start_workshop_notification_watcher()
+        print("✅ Workshop notification watcher started")
+
+        # Start the background QR code generation service
+        qr_task = schedule_qr_generation_task()
+        if qr_task:
+            print("✅ Background QR code generation service started")
+        else:
+            print("⚠️ Warning: Failed to start background QR code generation service")
+
+        # Start the background rewards generation service
+        try:
+            rewards_service = BackgroundRewardsService()
+            asyncio.create_task(rewards_service.start_rewards_generation_service())
+            print("✅ Background rewards generation service started")
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to start background rewards service: {e}")
+
+        print("🎉 Application startup complete.")
+
+    except Exception as e:
+        print(f"❌ Error during startup: {e}")
+        raise
+
+    yield
+
+    # Shutdown
+    try:
+        DatabaseManager.close_connections()
+        print("Application shutdown: Database connections closed.")
+    except Exception as e:
+        print(f"❌ Error during shutdown: {e}")
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    
+
     app = FastAPI(
         title="Dance Workshop API",
         description="API for managing dance workshops, artists, and studios",
         version="2.0.0",
+        lifespan=lifespan  # Use the new lifespan event handler
     )
 
     # Mount static files and templates
@@ -81,45 +132,6 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connection pool and start services on startup."""
-    # Initialize database connection pool with a test query
-    client = DatabaseManager.get_mongo_client()
-    client.admin.command("ping")
-    print("MongoDB connection pool initialized")
-
-    # Start the cache invalidation watcher
-    start_cache_invalidation_watcher()
-    print("Cache invalidation watcher started")
-
-    # Start the workshop notification watcher
-    notification_service.start_workshop_notification_watcher()
-    print("Workshop notification watcher started")
-
-    # Start the background QR code generation service
-    qr_task = schedule_qr_generation_task()
-    if qr_task:
-        print("Background QR code generation service started")
-    else:
-        print("Warning: Failed to start background QR code generation service")
-
-    # Start the background rewards generation service
-    try:
-        rewards_service = BackgroundRewardsService()
-        asyncio.create_task(rewards_service.start_rewards_generation_service())
-        print("Background rewards generation service started")
-    except Exception as e:
-        print(f"Warning: Failed to start background rewards service: {e}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connections when the application shuts down."""
-    DatabaseManager.close_connections()
-    print("Application shutdown: Database connections closed.")
 
 
 if __name__ == "__main__":

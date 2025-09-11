@@ -1763,6 +1763,94 @@
             margin-bottom: 0.25rem;
         }
 
+        .bundle-savings {
+            color: #10B981;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .bundle-workshops {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bundle-workshops-title {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .bundle-workshop-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bundle-workshop-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .bundle-workshop-name {
+            color: #00D4FF;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .bundle-workshop-artists {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .bundle-workshop-details {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+        }
+
+        /* Pay Button Styles */
+        .pay-btn {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .pay-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .pay-btn:active {
+            transform: translateY(0);
+        }
+
+        .pay-btn svg {
+            stroke-width: 2.5;
+        }
+
+        /* Order Action Top Styles */
+        .order-action-top {
+            margin: 1rem 0;
+            display: flex;
+            justify-content: flex-start;
+        }
+
         /* Bundle Suggestion Modal Styles */
         .bundle-savings-card {
             background: linear-gradient(135deg, #10B981 0%, #059669 100%);
@@ -3671,6 +3759,315 @@
                 outline-offset: 1px;
             }
         }
+
+        /* Bundle Selection Modal Styles */
+        .bundle-modal {
+            max-width: 600px;
+            width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .bundle-modal .modal-header h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-bottom: 0;
+        }
+
+        .current-workshop-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .current-workshop-info h3 {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .workshop-summary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .workshop-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .workshop-details {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .bundle-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .bundle-card {
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(156, 39, 176, 0.1));
+        }
+
+        .bundle-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .option-header h4 {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .bundle-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bundle-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .pricing-comparison {
+            margin-bottom: 1rem;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .price-value {
+            font-weight: 600;
+        }
+
+        .price-value.strikethrough {
+            text-decoration: line-through;
+            color: var(--text-tertiary);
+        }
+
+        .price-value.highlight {
+            color: #00D4FF;
+            font-size: 1.1rem;
+        }
+
+        .bundle-price .price-value.highlight {
+            color: #10B981;
+        }
+
+        .savings-badge {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .workshop-count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .individual-option {
+            border-top: 1px solid var(--glass-border);
+            padding-top: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .individual-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .price-tag {
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .option-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .option-button {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .option-button.primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--card-shadow);
+        }
+
+        .option-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .option-button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .option-button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .option-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--card-shadow);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .bundle-modal {
+                width: 95vw;
+                max-height: 85vh;
+            }
+
+            .modal-header,
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .option-card {
+                padding: 1rem;
+            }
+
+            .option-button {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -3807,8 +4204,7 @@
                     <div class="share-option-icon" style="background: linear-gradient(45deg, #00D4FF, #9C27B0);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                             <path d="M9 12l2 2 4-4"/>
-                            <path d="M21 12c0 4.97-4.03 9 0-9 9s-9-4.03-9-9 4.03-9 9-9"/>
-                            <path d="M12 3v6"/>
+                            <circle cx="12" cy="12" r="9"/>
                         </svg>
                     </div>
                     <span class="share-option-text">View Bundles</span>
@@ -4829,16 +5225,49 @@
             }
             
             content.appendChild(registerBtn);
-            
+
             card.appendChild(content);
-            
+
+            // Add data attributes for bundle suggestion modal to find this workshop
+            card.dataset.uuid = workshop.uuid;
+            card.dataset.song = workshop.song || '';
+            card.dataset.artist = workshop.by || '';
+            card.dataset.date = workshop.date || '';
+            card.dataset.time = workshop.time || '';
+            card.dataset.pricing = workshop.pricing_info || '';
+            card.dataset.paymentLink = workshop.payment_link || '';
+            card.dataset.paymentLinkType = workshop.payment_link_type || '';
+            card.dataset.studioId = workshop.studio_id || '';
             return card;
         }
         
         // Display workshops
         function displayWorkshops() {
             if (!workshopsData) return;
-            
+
+            // Store workshops data globally for bundle suggestion modal
+            window.currentWorkshops = [];
+            window.futureWorkshops = [];
+
+            // Flatten current workshops (this week)
+            if (workshopsData.this_week) {
+                workshopsData.this_week.forEach(daySchedule => {
+                    if (daySchedule.workshops) {
+                        window.currentWorkshops.push(...daySchedule.workshops);
+                    }
+                });
+            }
+
+            // Store future workshops
+            if (workshopsData.post_this_week) {
+                window.futureWorkshops = workshopsData.post_this_week;
+            }
+
+            console.log('Stored workshops globally:', {
+                current: window.currentWorkshops.length,
+                future: window.futureWorkshops.length
+            });
+
             const hasThisWeek = workshopsData.this_week && workshopsData.this_week.length > 0;
             const hasUpcoming = workshopsData.post_this_week && workshopsData.post_this_week.length > 0;
             
@@ -5000,8 +5429,82 @@
 
                 // Show loading state
                 const originalText = button.textContent;
-                button.textContent = 'Creating payment link...';
+                button.textContent = 'Checking bundles...';
                 button.disabled = true;
+                button.setAttribute('data-original-text', originalText);
+
+                // Store current workshop for later use
+                currentWorkshopUuid = workshop.uuid;
+                currentWorkshop = workshop;
+
+                // Create workshop identifier (must be UUID format)
+                const workshopIdentifier = workshop.uuid;
+
+                if (!workshopIdentifier) {
+                    throw new Error('Workshop UUID is required for bundle checking');
+                }
+
+                // First, check if there are available bundles for this workshop
+                console.log(`Checking bundles for workshop ${workshopIdentifier}`);
+
+                const bundleResponse = await fetch(`/api/orders/bundles/check/${workshopIdentifier}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!bundleResponse.ok) {
+                    // If bundle check fails, proceed with individual purchase
+                    console.warn('Bundle check failed, proceeding with individual purchase');
+                    await proceedIndividualPurchase(workshop, button);
+                    return;
+                }
+
+                const bundleData = await bundleResponse.json();
+
+                if (bundleData.bundles_available && bundleData.bundles && bundleData.bundles.length > 0) {
+                    // Show bundle selection modal
+                    console.log(`Found ${bundleData.bundles.length} bundle(s) containing workshop ${workshopIdentifier}:`, bundleData.bundles);
+                    showBundleSelectionModal(workshop, bundleData.bundles, button);
+                } else {
+                    // No bundles available for this workshop, proceed with individual purchase
+                    console.log(`No bundles found containing workshop ${workshopIdentifier}, proceeding with individual purchase`);
+                    await proceedIndividualPurchase(workshop, button);
+                }
+
+            } catch (error) {
+                console.error('Error in Nachna registration flow:', error);
+
+                // Show error message
+                const errorMessage = error.message || 'Failed to process registration. Please try again.';
+                showError(errorMessage);
+
+                // Fallback to direct link if available
+                if (workshop.payment_link) {
+                    console.log('Using fallback payment link:', workshop.payment_link);
+                    setTimeout(() => {
+                        try {
+                            window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
+                        } catch (fallbackError) {
+                            console.error('Fallback link also failed:', fallbackError);
+                        }
+                    }, 2000);
+                }
+            } finally {
+                // Reset button state if not already reset
+                if (button.disabled) {
+                    button.textContent = button.getAttribute('data-original-text') || 'Register with nachna';
+                    button.disabled = false;
+                }
+            }
+        }
+
+        async function proceedIndividualPurchase(workshop, button) {
+            try {
+                // Update button text
+                button.textContent = 'Creating payment link...';
 
                 // Create workshop identifier (must be UUID format)
                 const workshopIdentifier = workshop.uuid;
@@ -5010,7 +5513,7 @@
                     throw new Error('Workshop UUID is required for payment link creation');
                 }
 
-                // Create payment link via API (matching Flutter app implementation exactly)
+                // Create individual payment link via API
                 const response = await fetch('/api/orders/create-payment-link', {
                     method: 'POST',
                     headers: {
@@ -5019,8 +5522,8 @@
                     },
                     body: JSON.stringify({
                         workshop_uuid: workshopIdentifier,
-                        points_redeemed: 0.0, // Use float to match Flutter app
-                        discount_amount: 0.0   // Use float to match Flutter app
+                        points_redeemed: 0.0,
+                        discount_amount: 0.0
                     })
                 });
 
@@ -5029,20 +5532,7 @@
                 }
 
                 const result = await response.json();
-                console.log('Payment link API response:', result);
-
-                // Check if there's a bundle suggestion
-                if (result.bundle_suggestion && result.bundle_suggestion.available) {
-                    console.log('Bundle suggestion detected:', result.bundle_suggestion);
-
-                    // Reset button state
-                    button.textContent = originalText;
-                    button.disabled = false;
-
-                    // Show bundle suggestion modal
-                    showBundleSuggestionModal(workshopIdentifier, result.bundle_suggestion);
-                    return;
-                }
+                console.log('Individual payment link API response:', result);
 
                 if (result.payment_link_url) {
                     // Try to open payment link in new tab
@@ -5062,7 +5552,8 @@
                                     song_name: workshop.song,
                                     artist_name: workshop.by,
                                     studio_id: studioId,
-                                    studio_name: studioData?.name
+                                    studio_name: studioData?.name,
+                                    purchase_type: 'individual'
                                 });
                             }
                         }
@@ -5074,29 +5565,8 @@
                 }
 
             } catch (error) {
-                console.error('Error creating Nachna payment:', error);
-
-                // Show error message
-                const errorMessage = error.message || 'Failed to create payment link. Please try again.';
-                showError(errorMessage);
-
-                // Fallback to direct link if available
-                if (workshop.payment_link) {
-                    console.log('Using fallback payment link:', workshop.payment_link);
-                    setTimeout(() => {
-                        try {
-                            window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
-                        } catch (fallbackError) {
-                            console.error('Fallback link also failed:', fallbackError);
-                        }
-                    }, 2000);
-                }
-            } finally {
-                // Restore button state
-                if (button) {
-                    button.textContent = 'Register with nachna';
-                    button.disabled = false;
-                }
+                console.error('Error creating individual payment link:', error);
+                throw error; // Re-throw to be handled by caller
             }
         }
 
@@ -5268,6 +5738,30 @@
             window.open(url, '_blank', 'noopener,noreferrer');
         }
 
+        // Function to handle payment for existing orders
+        function payOrder(orderId, paymentLinkUrl) {
+            try {
+                console.log('Opening payment link for order:', orderId, paymentLinkUrl);
+
+                // Try to open payment link in new window
+                const paymentWindow = window.open(paymentLinkUrl, '_blank', 'noopener,noreferrer');
+
+                // Check if popup was blocked
+                setTimeout(() => {
+                    if (!paymentWindow || paymentWindow.closed) {
+                        // Popup was blocked, show modal instead
+                        console.log('Payment popup blocked, showing modal');
+                        showPaymentLinkModal(paymentLinkUrl, orderId);
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error opening payment link:', error);
+                // Fallback to modal
+                showPaymentLinkModal(paymentLinkUrl, orderId);
+            }
+        }
+
         // Helper function to copy payment link
         async function copyPaymentLink(url) {
             try {
@@ -5410,29 +5904,195 @@
         let currentBundleSuggestion = null;
         let currentWorkshopUuid = null;
 
-        function showBundleSuggestionModal(workshopUuid, bundleSuggestion) {
-            currentBundleSuggestion = bundleSuggestion;
-            currentWorkshopUuid = workshopUuid;
+        function showBundleSelectionModal(workshop, bundles, button) {
+            // Reset button state
+            button.textContent = button.getAttribute('data-original-text') || 'Register with nachna';
+            button.disabled = false;
 
-            const modal = document.getElementById('bundle-suggestion-modal');
-            const savingsAmount = document.getElementById('savings-amount');
-            const savingsPercentage = document.getElementById('savings-percentage');
-            const bundleName = document.getElementById('bundle-name');
-            const bundleDescription = document.getElementById('bundle-description');
-            const individualPrice = document.getElementById('individual-price');
-            const bundlePrice = document.getElementById('bundle-price');
-            const workshopCount = document.getElementById('workshop-count');
+            // Create or update bundle selection modal
+            let modal = document.getElementById('bundle-selection-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'bundle-selection-modal';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content bundle-modal">
+                        <div class="modal-header">
+                            <h2>🎯 Choose Your Option</h2>
+                            <button class="modal-close" onclick="closeBundleSelectionModal()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="current-workshop-info">
+                                <h3>Selected Workshop</h3>
+                                <div class="workshop-summary">
+                                    <div class="workshop-title" id="current-workshop-title"></div>
+                                    <div class="workshop-details" id="current-workshop-details"></div>
+                                </div>
+                            </div>
 
-            // Populate modal with suggestion data
-            savingsAmount.textContent = `₹${bundleSuggestion.savings_rupees}`;
-            savingsPercentage.textContent = `${bundleSuggestion.savings_percentage}%`;
-            bundleName.textContent = bundleSuggestion.bundle_name;
-            bundleDescription.textContent = bundleSuggestion.description || "Complete workshop package with great savings!";
-            individualPrice.textContent = `₹${bundleSuggestion.individual_price}`;
-            bundlePrice.textContent = `₹${bundleSuggestion.bundle_price}`;
-            workshopCount.textContent = `${bundleSuggestion.workshop_count} workshops`;
+                            <div class="bundle-options" id="bundle-options"></div>
+
+                            <div class="individual-option">
+                                <div class="option-card individual-card">
+                                    <div class="option-header">
+                                        <h4>Individual Workshop</h4>
+                                        <div class="price-tag" id="individual-price">₹799</div>
+                                    </div>
+                                    <div class="option-description">
+                                        Purchase only the selected workshop above
+                                    </div>
+                                    <button class="option-button secondary" onclick="selectIndividualPurchase()">
+                                        Continue Individual Purchase
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Populate current workshop info
+            document.getElementById('current-workshop-title').textContent =
+                workshop.song || workshop.title || 'Workshop';
+            document.getElementById('current-workshop-details').textContent =
+                `${workshop.by || workshop.instructor || 'Instructor'} • ${workshop.date || ''} ${workshop.time || ''}`;
+
+            // Populate bundle options
+            const bundleOptions = document.getElementById('bundle-options');
+            bundleOptions.innerHTML = '';
+
+            bundles.forEach((bundle, index) => {
+                const bundleCard = document.createElement('div');
+                bundleCard.className = 'option-card bundle-card';
+                bundleCard.innerHTML = `
+                    <div class="option-header">
+                        <h4>${bundle.name}</h4>
+                        <div class="bundle-badge">Bundle Deal</div>
+                    </div>
+                    <div class="bundle-description">${bundle.description}</div>
+                    <div class="pricing-comparison">
+                        <div class="price-row">
+                            <span class="price-label">Individual Total:</span>
+                            <span class="price-value strikethrough">₹${bundle.individual_total_price}</span>
+                        </div>
+                        <div class="price-row bundle-price">
+                            <span class="price-label">Bundle Price:</span>
+                            <span class="price-value highlight">₹${bundle.bundle_price}</span>
+                        </div>
+                        <div class="savings-badge">
+                            Save ₹${bundle.savings_amount} (${bundle.savings_percentage}%)
+                        </div>
+                    </div>
+                    <div class="workshop-count">${bundle.workshop_count} workshops included</div>
+                    <button class="option-button primary" onclick="selectBundlePurchase('${bundle.bundle_id}')">
+                        Get Bundle & Save ₹${bundle.savings_amount}
+                    </button>
+                `;
+                bundleOptions.appendChild(bundleCard);
+            });
+
+            // Set individual price
+            const individualPrice = bundles[0]?.individual_total_price / bundles[0]?.workshop_count || 799;
+            document.getElementById('individual-price').textContent = `₹${individualPrice}`;
 
             modal.style.display = 'flex';
+        }
+
+        function closeBundleSelectionModal() {
+            const modal = document.getElementById('bundle-selection-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function selectBundlePurchase(bundleId) {
+            if (!bundleId) {
+                alert('Bundle ID is required');
+                return;
+            }
+
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span>⏳</span> Processing...';
+            button.disabled = true;
+
+            // Close modal
+            closeBundleSelectionModal();
+
+            // Create bundle payment link (now creates single order with multiple workshops)
+            fetch(`/api/orders/bundles/${bundleId}/create-payment-link`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})  // Empty body for now
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.payment_link_url) {
+                    // Success - redirect to payment
+                    console.log('Single bundle order payment link created:', data.payment_link_url);
+
+                    // Try to open payment link in new tab
+                    const paymentWindow = window.open(data.payment_link_url, '_blank', 'noopener,noreferrer');
+
+                    // Check if popup was blocked
+                    setTimeout(() => {
+                        if (!paymentWindow || paymentWindow.closed || typeof paymentWindow.closed === 'undefined') {
+                            // Popup was blocked - show helpful message
+                            showPaymentLinkModal(data.payment_link_url, data.order_id);
+                        } else {
+                            // Send analytics
+                            if (typeof gtag !== 'undefined') {
+                                gtag('event', 'bundle_purchase_started', {
+                                    bundle_id: bundleId,
+                                    purchase_type: 'single_bundle_order',
+                                    studio_id: studioId,
+                                    studio_name: studioData?.name,
+                                    order_id: data.order_id
+                                });
+                            }
+                        }
+                    }, 100);
+                } else {
+                    alert('Failed to create bundle payment link: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Bundle purchase failed:', error);
+                alert('Bundle purchase failed. Please try again.');
+            });
+        }
+
+        async function selectIndividualPurchase() {
+            // Close modal
+            closeBundleSelectionModal();
+
+            // Find the original button that triggered the flow
+            const workshopCards = document.querySelectorAll('.workshop-card, .event-item');
+            let originalButton = null;
+
+            for (const card of workshopCards) {
+                const workshopData = card.dataset;
+                if (workshopData.uuid === currentWorkshopUuid) {
+                    originalButton = card.querySelector('.register-button.nachna');
+                    break;
+                }
+            }
+
+            if (originalButton) {
+                // Use the original button for the individual purchase flow
+                await proceedIndividualPurchase(currentWorkshop, originalButton);
+            } else {
+                // Fallback - create a temporary button for the flow
+                const tempButton = document.createElement('button');
+                tempButton.textContent = 'Creating payment link...';
+                tempButton.disabled = true;
+                await proceedIndividualPurchase(currentWorkshop, tempButton);
+            }
         }
 
         function closeBundleSuggestionModal() {
@@ -5527,7 +6187,49 @@
             // This would need to be implemented based on how workshops are stored in the frontend
             // For now, return a placeholder - you'll need to implement this based on your workshop storage
             console.log('Finding workshop by UUID:', uuid);
-            return null; // TODO: Implement this based on your workshop storage mechanism
+
+            // Search through current workshops
+            if (window.currentWorkshops && Array.isArray(window.currentWorkshops)) {
+                const workshop = window.currentWorkshops.find(w => w.uuid === uuid);
+                if (workshop) {
+                    console.log('Found workshop:', workshop.song || workshop.title);
+                    return workshop;
+                }
+            }
+
+            // Search through future workshops
+            if (window.futureWorkshops && Array.isArray(window.futureWorkshops)) {
+                const workshop = window.futureWorkshops.find(w => w.uuid === uuid);
+                if (workshop) {
+                    console.log('Found workshop:', workshop.song || workshop.title);
+                    return workshop;
+                }
+            }
+
+            // If not found in memory, try to search in the DOM (last resort)
+            const workshopElements = document.querySelectorAll('.workshop-card, .event-item');
+            for (const element of workshopElements) {
+                const workshopData = element.dataset;
+                if (workshopData.uuid === uuid) {
+                    // Create workshop object from DOM data
+                    const workshop = {
+                        uuid: workshopData.uuid,
+                        song: workshopData.song || workshopData.title,
+                        by: workshopData.artist || workshopData.instructor,
+                        date: workshopData.date,
+                        time: workshopData.time,
+                        pricing_info: workshopData.pricing,
+                        payment_link: workshopData.paymentLink,
+                        payment_link_type: workshopData.paymentLinkType,
+                        studio_id: workshopData.studioId
+                    };
+                    console.log('Found workshop in DOM:', workshop.song);
+                    return workshop;
+                }
+            }
+
+            console.error('Workshop not found with UUID:', uuid);
+            return null;
         }
         
         // Artist Instagram modal functionality
@@ -5873,18 +6575,34 @@
             const statusClass = order.status.toLowerCase();
             const statusText = getOrderStatusText(order.status);
 
-            // Calculate amounts
-            const originalAmount = order.amount / 100;
-            const rewardsUsed = order.rewards_used || 0;
-            const cashbackEarned = order.cashback_earned || 0;
+            // Calculate amounts - handle both paise (new) and rupees (old) formats
+            // If amount is small (≤ 10000), treat as rupees; otherwise treat as paise
+            const isAmountInRupees = order.amount <= 10000;
+            const originalAmount = isAmountInRupees ? order.amount : (order.amount / 100);
+            const rewardsUsed = order.rewards_redeemed || 0;
+            const cashbackEarned = order.cashback_amount || 0;
             const finalAmount = originalAmount - rewardsUsed;
 
-            // Determine QR button state with improved logic
-            let qrButtonHtml = '';
-            if (order.status === 'paid') {
+            // Determine action button state with improved logic
+            let actionButtonHtml = '';
+
+            // For pending orders (created status), show Pay button if payment link exists
+            if (order.status === 'created' && order.payment_link_url) {
+                actionButtonHtml = `
+                    <button class="pay-btn" onclick="payOrder('${order.order_id}', '${order.payment_link_url}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <circle cx="8" cy="10" r="2"/>
+                            <path d="M8 12v4"/>
+                            <path d="M16 12v4"/>
+                        </svg>
+                        <span>Pay Now</span>
+                    </button>
+                `;
+            } else if (order.status === 'paid') {
                 // First check for generating status
                 if (order.qr_status === 'generating') {
-                    qrButtonHtml = `
+                    actionButtonHtml = `
                         <button class="qr-generate-btn qr-generating" disabled>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -5899,11 +6617,13 @@
                     `;
                 } else {
                     // For completed orders, check if QR code data is available in the order
-                    const orderId = order.id || order.order_id;
-                    if (order.qr_code_data || order.qr_available || order.has_qr_code) {
+                    const orderId = order.order_id;
+                    if (order.qr_codes_data || order.qr_code_data || order.qr_available || order.has_qr_code) {
                         // QR code data is available - show "View QR Code"
-                        qrButtonHtml = `
-                            <button class="qr-view-btn" onclick="viewQRCode('${orderId}', '${order.workshop_details.title}', '${order.workshop_details.artist_names.join(', ')}')">
+                        const qrCount = order.qr_codes_data ? Object.keys(order.qr_codes_data).length : 1;
+                        const qrText = qrCount > 1 ? `View ${qrCount} QR Codes` : 'View QR Code';
+                        actionButtonHtml = `
+                            <button class="qr-view-btn" onclick="viewQRCode('${orderId}', '${order.workshop_details.title}', '${order.workshop_details.artist_names.join(', ')}', ${JSON.stringify(order).replace(/"/g, '&quot;')})">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                     <rect x="7" y="7" width="10" height="10"/>
@@ -5912,12 +6632,12 @@
                                     <circle cx="15" cy="15" r="1"/>
                                     <path d="M9 15h6"/>
                                 </svg>
-                                <span>View QR Code</span>
+                                <span>${qrText}</span>
                             </button>
                         `;
                     } else {
                         // No QR code data available - show "QR code generation in progress"
-                        qrButtonHtml = `
+                        actionButtonHtml = `
                             <button class="qr-generate-btn qr-generating" disabled>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -5943,12 +6663,36 @@
                     <div class="order-status ${statusClass}">${statusText}</div>
                 </div>
 
-                ${order.is_bundle_order ? `
+                ${actionButtonHtml ? `
+                    <div class="order-action-top">
+                        ${actionButtonHtml}
+                    </div>
+                ` : ''}
+
+                ${order.is_bundle_order && order.bundle_info ? `
+                <div class="bundle-info">
+                    <div class="bundle-info-title">Bundle: ${order.bundle_info.name}</div>
+                    <div class="bundle-info-text">${order.bundle_info.description}</div>
+                    <div class="bundle-info-text">${order.bundle_total_workshops} workshops included</div>
+                    ${order.bundle_info.savings_amount > 0 ? `<div class="bundle-savings">You saved ₹${order.bundle_info.savings_amount.toFixed(2)}!</div>` : ''}
+                    ${order.bundle_info.workshops && order.bundle_info.workshops.length > 0 ? `
+                    <div class="bundle-workshops">
+                        <div class="bundle-workshops-title">Workshops in this bundle:</div>
+                        ${order.bundle_info.workshops.map(workshop => `
+                            <div class="bundle-workshop-item">
+                                <div class="bundle-workshop-name">${workshop.song || workshop.title || 'Workshop'}</div>
+                                <div class="bundle-workshop-artists">${workshop.artist_names ? workshop.artist_names.join(', ') : (workshop.by || 'TBD')}</div>
+                                <div class="bundle-workshop-details">${workshop.studio_name || 'TBD'} • ${workshop.date || 'TBD'} • ${workshop.time || 'TBD'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+                ` : order.is_bundle_order ? `
                 <div class="bundle-info">
                     <div class="bundle-info-title">Part of Bundle</div>
-                    <div class="bundle-info-text">Workshop ${order.bundle_position} of ${order.bundle_total_workshops}</div>
+                    <div class="bundle-info-text">${order.bundle_total_workshops} workshops included</div>
                     <div class="bundle-info-text">Bundle: ${order.bundle_id || 'Loading...'}</div>
-                    ${order.bundle_total_amount ? `<div class="bundle-info-text">Bundle Total: ₹${order.bundle_total_amount}</div>` : ''}
                 </div>
                 ` : ''}
                 <div class="order-details">
@@ -5966,7 +6710,7 @@
                     </div>
                     <div class="order-detail">
                         <span class="order-label">Amount:</span>
-                        <span class="order-value order-amount">₹${(order.amount / 100).toFixed(2)}</span>
+                        <span class="order-value order-amount">₹${originalAmount.toFixed(2)}</span>
                     </div>
                     ${rewardsUsed > 0 ? `
                         <div class="order-detail">
@@ -5989,11 +6733,6 @@
                                 <span class="order-reward-value cashback-earned">₹${cashbackEarned.toFixed(2)}</span>
                             </div>
                         ` : ''}
-                    </div>
-                ` : ''}
-                ${qrButtonHtml ? `
-                    <div class="order-qr-action">
-                        ${qrButtonHtml}
                     </div>
                 ` : ''}
             `;
@@ -6337,27 +7076,29 @@
             }
         }
 
-        async function viewQRCode(orderId, workshopTitle, workshopArtists) {
+        async function viewQRCode(orderId, workshopTitle, workshopArtists, orderData = null) {
             if (!authToken) return;
 
             console.log('ViewQRCode called with orderId:', orderId);
-            console.log('Available orders count:', ordersData && ordersData.orders ? ordersData.orders.length : 0);
 
-            // Find the QR code data from the existing orders data
-            let qrCodeData = null;
-            if (ordersData && ordersData.orders) {
-                const order = ordersData.orders.find(o => (o.id && o.id === orderId) || (o.order_id && o.order_id === orderId));
-                console.log('Found order:', order);
-                if (order && order.qr_code_data) {
-                    qrCodeData = order.qr_code_data;
-                    console.log('QR Code: Found in existing order data');
-                } else if (order) {
-                    console.log('Order found but no QR code data. Order fields:', Object.keys(order));
-                }
+            // Find the order data
+            let order = orderData;
+            if (!order && ordersData && ordersData.orders) {
+                order = ordersData.orders.find(o => (o.id && o.id === orderId) || (o.order_id && o.order_id === orderId));
             }
 
-            if (!qrCodeData) {
-                console.error('QR Code: Not found in order data for order:', orderId);
+            if (!order) {
+                console.error('Order not found:', orderId);
+                alert('Order data not available. Please refresh the page and try again.');
+                return;
+            }
+
+            // Check if we have multiple QR codes (bundle) or single QR code
+            const hasMultipleQRCodes = order.qr_codes_data && Object.keys(order.qr_codes_data).length > 1;
+            const hasSingleQRCode = order.qr_code_data || (order.qr_codes_data && Object.keys(order.qr_codes_data).length === 1);
+
+            if (!hasMultipleQRCodes && !hasSingleQRCode) {
+                console.error('No QR code data available for order:', orderId);
                 alert('QR code data not available. Please refresh the page and try again.');
                 return;
             }
@@ -6374,26 +7115,17 @@
             qrError.style.display = 'none';
             qrContainer.style.display = 'none';
 
-            // Set workshop info
-            const titleElement = document.getElementById('qr-workshop-title');
-            const detailsElement = document.getElementById('qr-workshop-details');
-
-            if (titleElement) {
-                titleElement.textContent = workshopTitle;
-            } else {
-                console.error('QR Workshop title element not found');
-            }
-
-            if (detailsElement) {
-                detailsElement.textContent = workshopArtists;
-            } else {
-                console.error('QR Workshop details element not found');
-            }
-
             try {
-                // Use QR code data directly from order (no additional API call needed)
-                console.log('QR Code: Using data from order object');
-                await displayQRCode(qrCodeData, workshopTitle, workshopArtists);
+                if (hasMultipleQRCodes) {
+                    // Display multiple QR codes for bundle
+                    console.log('QR Code: Displaying multiple QR codes for bundle');
+                    await displayMultipleQRCodes(order);
+                } else {
+                    // Display single QR code
+                    console.log('QR Code: Displaying single QR code');
+                    const qrCodeData = order.qr_code_data || Object.values(order.qr_codes_data)[0];
+                    await displayQRCode(qrCodeData, workshopTitle, workshopArtists);
+                }
 
             } catch (error) {
                 console.error('Error displaying QR code:', error);
@@ -6576,6 +7308,154 @@
                 } else {
                     alert('Share feature not supported on this device');
                 }
+            }
+        }
+
+        async function displayMultipleQRCodes(order) {
+            const qrContainer = document.getElementById('qr-code-container');
+            const qrLoading = document.getElementById('qr-loading');
+            const qrError = document.getElementById('qr-error');
+
+            // Hide loading, show container
+            qrLoading.style.display = 'none';
+            qrError.style.display = 'none';
+            qrContainer.style.display = 'flex';
+
+            try {
+                const qrDisplay = document.getElementById('qr-code-display');
+                qrDisplay.innerHTML = '';
+
+                // Create scrollable container for multiple QR codes
+                const qrScrollContainer = document.createElement('div');
+                qrScrollContainer.className = 'qr-scroll-container';
+                qrScrollContainer.style.cssText = `
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    max-height: 70vh;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    width: 100%;
+                `;
+
+                // Get workshop information for titles
+                const workshopTitles = {};
+                if (order.bundle_info && order.bundle_info.workshops) {
+                    order.bundle_info.workshops.forEach(workshop => {
+                        workshopTitles[workshop.uuid] = workshop.song || workshop.title || 'Workshop';
+                    });
+                }
+
+                // Create QR cards for each workshop
+                for (const [workshopUuid, qrCodeData] of Object.entries(order.qr_codes_data)) {
+                    const workshopTitle = workshopTitles[workshopUuid] || `Workshop ${Object.keys(order.qr_codes_data).indexOf(workshopUuid) + 1}`;
+
+                    const qrCard = document.createElement('div');
+                    qrCard.className = 'qr-card';
+                    qrCard.style.cssText = `
+                        background: rgba(255, 255, 255, 0.95);
+                        border-radius: 12px;
+                        padding: 1rem;
+                        border: 1px solid rgba(0, 212, 255, 0.2);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 0.75rem;
+                    `;
+
+                    // Workshop title
+                    const titleElement = document.createElement('h4');
+                    titleElement.textContent = workshopTitle;
+                    titleElement.style.cssText = `
+                        margin: 0;
+                        color: #00D4FF;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        text-align: center;
+                    `;
+
+                    // QR code image
+                    const qrImage = document.createElement('img');
+                    qrImage.style.cssText = `
+                        width: 150px;
+                        height: 150px;
+                        object-fit: contain;
+                        border-radius: 8px;
+                        background: white;
+                        padding: 8px;
+                        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+                    `;
+
+                    // Extract base64 data from QR code
+                    let base64String;
+                    if (qrCodeData.startsWith && qrCodeData.startsWith('data:image/png;base64,')) {
+                        base64String = qrCodeData.substring('data:image/png;base64,'.length);
+                    } else if (qrCodeData.startsWith && qrCodeData.startsWith('data:image/')) {
+                        const commaIndex = qrCodeData.indexOf(',');
+                        base64String = qrCodeData.substring(commaIndex + 1);
+                    } else if (qrCodeData.startsWith && (qrCodeData.startsWith('http') || qrCodeData.startsWith('/'))) {
+                        // Handle URL format
+                        qrImage.src = qrCodeData;
+                    }
+
+                    if (base64String) {
+                        try {
+                            qrImage.src = `data:image/png;base64,${base64String}`;
+                            console.log('QR Code: Successfully decoded base64 for workshop:', workshopTitle);
+                        } catch (decodeError) {
+                            console.error('QR Code: Failed to decode base64 for workshop:', workshopTitle, decodeError);
+                            qrImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNlNzQ5MzkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz4KPHBhdGggZD0iTTE1IDl2NmgtNnY2Ii8+Cjwvc3ZnPgo=';
+                        }
+                    }
+
+                    qrImage.onerror = function() {
+                        console.error('QR Code: Failed to load image for workshop:', workshopTitle);
+                        this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNlNzQ5MzkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz4KPHBhdGggZD0iTTE1IDl2NmgtNnY2Ii8+Cjwvc3ZnPgo=';
+                    };
+
+                    // Download button for this QR code
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = 'Download QR';
+                    downloadBtn.className = 'qr-download-btn';
+                    downloadBtn.style.cssText = `
+                        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        font-size: 0.875rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    `;
+                    downloadBtn.onclick = function() {
+                        const link = document.createElement('a');
+                        link.download = `${workshopTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_qr_code.png`;
+                        link.href = qrImage.src;
+                        link.click();
+                    };
+
+                    // Assemble the card
+                    qrCard.appendChild(titleElement);
+                    qrCard.appendChild(qrImage);
+                    qrCard.appendChild(downloadBtn);
+                    qrScrollContainer.appendChild(qrCard);
+                }
+
+                qrDisplay.appendChild(qrScrollContainer);
+
+                // Update modal title to reflect multiple QR codes
+                const titleElement = document.getElementById('qr-workshop-title');
+                if (titleElement) {
+                    titleElement.textContent = order.bundle_info ? order.bundle_info.name : 'Workshop Bundle';
+                }
+
+                console.log('QR Code: Successfully displayed multiple QR codes');
+
+            } catch (error) {
+                console.error('Error displaying multiple QR codes:', error);
+                qrContainer.style.display = 'none';
+                qrError.style.display = 'block';
+                qrError.querySelector('p').textContent = 'Failed to load QR codes. Please try again.';
             }
         }
 

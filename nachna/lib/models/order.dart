@@ -226,9 +226,7 @@ class PaymentLinkResponse {
   final DateTime? expiresAt;
   @JsonKey(name: 'workshop_details')
   final OrderWorkshopDetails workshopDetails;
-  // Bundle suggestion fields
-  @JsonKey(name: 'bundle_suggestion')
-  final Map<String, dynamic>? bundleSuggestion;
+  // Note: Bundle suggestion fields removed - bundles handled through separate APIs
 
   PaymentLinkResponse({
     required this.success,

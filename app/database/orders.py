@@ -46,7 +46,7 @@ class OrderOperations:
         order_doc = {
             "order_id": order_id,
             "user_id": order_data.user_id,
-            "workshop_uuid": order_data.workshop_uuid,
+            "workshop_uuids": order_data.workshop_uuids,
             "workshop_details": order_data.workshop_details.dict(),
             "amount": order_data.amount,
             "currency": order_data.currency,
@@ -62,6 +62,16 @@ class OrderOperations:
             "created_at": now,
             "updated_at": now
         }
+
+        # Add bundle-related fields if present
+        if hasattr(order_data, 'bundle_id') and order_data.bundle_id:
+            order_doc.update({
+                "bundle_id": order_data.bundle_id,
+                "bundle_payment_id": getattr(order_data, 'bundle_payment_id', None),
+                "is_bundle_order": True,
+                "bundle_total_workshops": len(order_data.workshop_uuids),
+                "bundle_total_amount": getattr(order_data, 'bundle_total_amount', order_data.amount)
+            })
         
         result = client["dance_app"]["orders"].insert_one(order_doc)
         return order_id
@@ -287,7 +297,33 @@ class OrderOperations:
             {"$set": update_data}
         )
         return result.modified_count > 0
-    
+
+    @staticmethod
+    def update_order_qr_codes(order_id: str, qr_codes_data: dict) -> bool:
+        """Update an order with multiple QR codes for bundle orders.
+
+        Args:
+            order_id: Order identifier
+            qr_codes_data: Dictionary with workshop UUIDs as keys and QR code data as values
+
+        Returns:
+            Success status
+        """
+        client = get_mongo_client()
+
+        update_data = {
+            "qr_codes_data": qr_codes_data,  # Multiple QR codes
+            "qr_code_generated_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        result = client["dance_app"]["orders"].update_one(
+            {"order_id": order_id},
+            {"$set": update_data}
+        )
+
+        return result.modified_count > 0
+
     @staticmethod
     def update_order_reward_info(
         order_id: str, 

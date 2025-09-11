@@ -134,7 +134,7 @@ async def razorpay_webhook(
                         if new_status == OrderStatusEnum.PAID and updated_count > 0:
                             from app.database.bundles import BundleOperations
                             bundle_id = bundle_orders[0]["bundle_id"]
-                            await BundleOperations.update_bundle_status(bundle_id, "completed")
+                            BundleOperations.update_bundle_status(bundle_id, "completed")
 
                         order_updated = updated_count > 0
                         if order_updated:
