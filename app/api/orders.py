@@ -571,55 +571,62 @@ async def create_bundle_payment_link(
         if bundle_price <= 0:
             raise HTTPException(status_code=400, detail="Invalid bundle price")
 
-        # Check for ANY existing orders (bundle or individual) and cancel them all
-        # This ensures a clean slate for the new bundle order
-        existing_bundle_orders = OrderOperations.get_active_bundle_orders_for_user(user_id)
-        existing_individual_orders = OrderOperations.get_active_individual_orders_for_user(user_id)
+        # Check for orders containing any of the workshops in this bundle and cancel them
+        # This ensures we only cancel orders that conflict with the workshops being booked
+        conflicting_orders = OrderOperations.get_active_orders_containing_workshops(user_id, workshop_uuids)
 
-        all_existing_orders = existing_bundle_orders + existing_individual_orders
+        if conflicting_orders:
+            logger.info(f"Found {len(conflicting_orders)} order(s) containing workshops {workshop_uuids} - will cancel them")
 
-        if all_existing_orders:
-            logger.info(f"Found {len(all_existing_orders)} existing order(s) for user {user_id} - will cancel them all to create bundle order")
+            for conflicting_order in conflicting_orders:
+                order_type = "bundle" if conflicting_order.get("is_bundle_order") else "individual"
+                logger.info(f"Cancelling conflicting {order_type} order {conflicting_order['order_id']}")
 
-            for existing_order in all_existing_orders:
-                order_type = "bundle" if existing_order.get("is_bundle_order") else "individual"
-                logger.info(f"Cancelling existing {order_type} order {existing_order['order_id']}")
+                # Get the conflicting workshops for logging
+                conflicting_workshops = []
+                if conflicting_order.get("workshop_uuids"):
+                    conflicting_workshops = [w for w in conflicting_order.get("workshop_uuids", []) if w in workshop_uuids]
+                elif conflicting_order.get("workshop_uuid") and conflicting_order.get("workshop_uuid") in workshop_uuids:
+                    conflicting_workshops = [conflicting_order.get("workshop_uuid")]
+
+                logger.info(f"Order contains conflicting workshops {conflicting_workshops}: workshops={conflicting_order.get('workshop_uuids', [conflicting_order.get('workshop_uuid')])}")
 
                 # Cancel the order's payment link
                 try:
                     rp = get_razorpay_service()
-                    pl_id = existing_order.get("payment_link_id")
+                    pl_id = conflicting_order.get("payment_link_id")
                     if pl_id:
                         rp.cancel_payment_link(pl_id)
-                        logger.info(f"Cancelled payment link {pl_id} for {order_type} order {existing_order['order_id']}")
+                        logger.info(f"Cancelled payment link {pl_id} for {order_type} order {conflicting_order['order_id']}")
                 except Exception as e:
-                    logger.warning(f"Failed to cancel payment link for {order_type} order {existing_order['order_id']}: {e}")
+                    logger.warning(f"Failed to cancel payment link for {order_type} order {conflicting_order['order_id']}: {e}")
 
                 # Rollback any pending redemptions from the order
-                existing_rewards_redeemed = existing_order.get("rewards_redeemed")
+                existing_rewards_redeemed = conflicting_order.get("rewards_redeemed")
                 if existing_rewards_redeemed and existing_rewards_redeemed > 0:
                     try:
-                        logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for {order_type} order {existing_order['order_id']}")
-                        RewardOperations.rollback_pending_redemption(existing_order["order_id"])
+                        logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for {order_type} order {conflicting_order['order_id']}")
+                        RewardOperations.rollback_pending_redemption(conflicting_order["order_id"])
                     except Exception as e:
-                        logger.error(f"Failed to rollback pending redemption for {order_type} order {existing_order['order_id']}: {e}")
+                        logger.error(f"Failed to rollback pending redemption for {order_type} order {conflicting_order['order_id']}: {e}")
 
                 # Mark the order as cancelled
                 OrderOperations.update_order_status(
-                    existing_order["order_id"],
+                    conflicting_order["order_id"],
                     OrderStatusEnum.CANCELLED,
                     additional_data={
                         "cancellation_reason": "replaced_by_bundle_order",
-                        "old_amount": existing_order.get("amount", 0) / 100,
+                        "old_amount": conflicting_order.get("amount", 0) / 100,
                         "new_bundle_id": bundle_id,
                         "new_bundle_name": bundle.get("name", "Bundle"),
                         "old_order_type": order_type,
-                        "old_workshop_uuids": existing_order.get("workshop_uuids", [existing_order.get("workshop_uuid")])
+                        "old_workshop_uuids": conflicting_order.get("workshop_uuids", [conflicting_order.get("workshop_uuid")]),
+                        "conflicting_workshops": conflicting_workshops
                     }
                 )
-                logger.info(f"Cancelled {order_type} order {existing_order['order_id']} due to bundle order creation")
+                logger.info(f"Cancelled {order_type} order {conflicting_order['order_id']} due to bundle order creation for workshops {workshop_uuids}")
 
-            logger.info(f"Cancelled {len(all_existing_orders)} existing order(s) to create new bundle order for {bundle_id}")
+            logger.info(f"Cancelled {len(conflicting_orders)} conflicting order(s) to create new bundle order for {bundle_id}")
 
         # Check if there's a specific bundle order for this bundle (after cancelling others)
         existing_bundle_order = OrderOperations.get_active_bundle_order_for_user_and_bundle(user_id, bundle_id)
@@ -1048,50 +1055,52 @@ async def create_payment_link(
                 user_id, workshop_uuids, is_bundle_order
             )
 
-            # If no direct match found and this is an individual order, cancel ANY existing bundle order
+            # If no direct match found and this is an individual order, cancel orders containing this workshop
             if not existing_order and not is_bundle_order and len(workshop_uuids) == 1:
-                # Check if user has ANY active bundle orders and cancel them all
-                bundle_orders = OrderOperations.get_active_bundle_orders_for_user(user_id)
-                if bundle_orders:
-                    # Cancel ALL existing bundle orders for this user
-                    for bundle_order in bundle_orders:
-                        logger.info(f"Found existing bundle order {bundle_order['order_id']} - will cancel it")
-                        logger.info(f"Bundle order details: workshops={bundle_order.get('workshop_uuids')}, is_bundle={bundle_order.get('is_bundle_order')}")
+                # Check for orders containing this specific workshop UUID and cancel them
+                conflicting_orders = OrderOperations.get_active_orders_containing_workshop(user_id, workshop_uuids[0])
+                if conflicting_orders:
+                    logger.info(f"Found {len(conflicting_orders)} order(s) containing workshop {workshop_uuids[0]} - will cancel them")
 
-                        # Cancel the bundle order's payment link
+                    for conflicting_order in conflicting_orders:
+                        order_type = "bundle" if conflicting_order.get("is_bundle_order") else "individual"
+                        logger.info(f"Cancelling conflicting {order_type} order {conflicting_order['order_id']}")
+                        logger.info(f"Order contains workshop {workshop_uuids[0]}: workshops={conflicting_order.get('workshop_uuids', [conflicting_order.get('workshop_uuid')])}")
+
+                        # Cancel the order's payment link
                         try:
                             rp = get_razorpay_service()
-                            pl_id = bundle_order.get("payment_link_id")
+                            pl_id = conflicting_order.get("payment_link_id")
                             if pl_id:
                                 rp.cancel_payment_link(pl_id)
-                                logger.info(f"Cancelled payment link {pl_id} for bundle order {bundle_order['order_id']}")
+                                logger.info(f"Cancelled payment link {pl_id} for {order_type} order {conflicting_order['order_id']}")
                         except Exception as e:
-                            logger.warning(f"Failed to cancel payment link for bundle order {bundle_order['order_id']}: {e}")
+                            logger.warning(f"Failed to cancel payment link for {order_type} order {conflicting_order['order_id']}: {e}")
 
-                        # Rollback any pending redemptions from the bundle order
-                        existing_rewards_redeemed = bundle_order.get("rewards_redeemed")
+                        # Rollback any pending redemptions from the order
+                        existing_rewards_redeemed = conflicting_order.get("rewards_redeemed")
                         if existing_rewards_redeemed and existing_rewards_redeemed > 0:
                             try:
-                                logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for bundle order {bundle_order['order_id']}")
-                                RewardOperations.rollback_pending_redemption(bundle_order["order_id"])
+                                logger.info(f"Rolling back pending redemption of ₹{existing_rewards_redeemed} for {order_type} order {conflicting_order['order_id']}")
+                                RewardOperations.rollback_pending_redemption(conflicting_order["order_id"])
                             except Exception as e:
-                                logger.error(f"Failed to rollback pending redemption for bundle order {bundle_order['order_id']}: {e}")
+                                logger.error(f"Failed to rollback pending redemption for {order_type} order {conflicting_order['order_id']}: {e}")
 
-                        # Mark the bundle order as cancelled
+                        # Mark the order as cancelled
                         OrderOperations.update_order_status(
-                            bundle_order["order_id"],
+                            conflicting_order["order_id"],
                             OrderStatusEnum.CANCELLED,
                             additional_data={
                                 "cancellation_reason": "replaced_by_individual_order",
-                                "old_amount": bundle_order.get("amount", 0) / 100,
+                                "old_amount": conflicting_order.get("amount", 0) / 100,
                                 "new_workshop_uuid": workshop_uuids[0],
-                                "old_bundle_id": bundle_order.get("bundle_id"),
-                                "old_workshop_uuids": bundle_order.get("workshop_uuids", [])
+                                "old_order_type": order_type,
+                                "old_workshop_uuids": conflicting_order.get("workshop_uuids", [conflicting_order.get("workshop_uuid")])
                             }
                         )
-                        logger.info(f"Cancelled bundle order {bundle_order['order_id']} due to individual order creation")
+                        logger.info(f"Cancelled {order_type} order {conflicting_order['order_id']} due to individual order creation for workshop {workshop_uuids[0]}")
 
-                    logger.info(f"Cancelled {len(bundle_orders)} bundle order(s) to create individual order for workshop {workshop_uuids[0]}")
+                    logger.info(f"Cancelled {len(conflicting_orders)} conflicting order(s) to create individual order for workshop {workshop_uuids[0]}")
             
             # Determine intended final amount (after discount if any)
             intended_final_amount_paise = amount_paise

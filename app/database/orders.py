@@ -285,6 +285,88 @@ class OrderOperations:
         return active_orders
 
     @staticmethod
+    def get_active_orders_containing_workshop(user_id: str, workshop_uuid: str) -> List[Dict[str, Any]]:
+        """Get all active orders for a user that contain a specific workshop UUID.
+
+        Args:
+            user_id: User identifier
+            workshop_uuid: Workshop UUID to search for
+
+        Returns:
+            List of active order documents containing the workshop
+        """
+        client = get_mongo_client()
+
+        # Look for active orders only
+        active_statuses = [
+            OrderStatusEnum.CREATED.value
+        ]
+
+        orders = list(client["dance_app"]["orders"].find({
+            "user_id": user_id,
+            "status": {"$in": active_statuses},
+            "$or": [
+                {"workshop_uuid": workshop_uuid},  # Legacy individual orders
+                {"workshop_uuids": workshop_uuid}  # Bundle orders containing the workshop
+            ]
+        }, sort=[("created_at", -1)]))
+
+        # Filter out expired orders
+        active_orders = []
+        for order in orders:
+            if order.get("expires_at"):
+                if datetime.utcnow() > order["expires_at"]:
+                    logger.info(f"Order {order['order_id']} has expired, marking as expired")
+                    OrderOperations.update_order_status(order["order_id"], OrderStatusEnum.EXPIRED)
+                else:
+                    active_orders.append(order)
+            else:
+                active_orders.append(order)
+
+        return active_orders
+
+    @staticmethod
+    def get_active_orders_containing_workshops(user_id: str, workshop_uuids: List[str]) -> List[Dict[str, Any]]:
+        """Get all active orders for a user that contain any of the specified workshop UUIDs.
+
+        Args:
+            user_id: User identifier
+            workshop_uuids: List of workshop UUIDs to search for
+
+        Returns:
+            List of active order documents containing any of the workshops
+        """
+        client = get_mongo_client()
+
+        # Look for active orders only
+        active_statuses = [
+            OrderStatusEnum.CREATED.value
+        ]
+
+        orders = list(client["dance_app"]["orders"].find({
+            "user_id": user_id,
+            "status": {"$in": active_statuses},
+            "$or": [
+                {"workshop_uuid": {"$in": workshop_uuids}},  # Legacy individual orders
+                {"workshop_uuids": {"$in": workshop_uuids}}  # Bundle orders containing any workshop
+            ]
+        }, sort=[("created_at", -1)]))
+
+        # Filter out expired orders
+        active_orders = []
+        for order in orders:
+            if order.get("expires_at"):
+                if datetime.utcnow() > order["expires_at"]:
+                    logger.info(f"Order {order['order_id']} has expired, marking as expired")
+                    OrderOperations.update_order_status(order["order_id"], OrderStatusEnum.EXPIRED)
+                else:
+                    active_orders.append(order)
+            else:
+                active_orders.append(order)
+
+        return active_orders
+
+    @staticmethod
     def update_order_payment_link(
         order_id: str,
         payment_link_id: str,
