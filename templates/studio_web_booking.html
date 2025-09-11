@@ -6484,6 +6484,11 @@
             // Show orders modal
             const ordersModal = document.getElementById('orders-modal');
             ordersModal.classList.add('show');
+
+            // Set default filter to 'all' when modal opens
+            setTimeout(() => {
+                filterOrders('all');
+            }, 100);
         }
 
         function openRewardsModal() {
@@ -6555,13 +6560,15 @@
             const ordersList = document.getElementById('orders-list');
             const ordersEmpty = document.getElementById('orders-empty');
 
+            // Always clear the orders list first
+            ordersList.innerHTML = '';
+
             if (!orders || orders.length === 0) {
                 ordersEmpty.style.display = 'block';
                 return;
             }
 
             ordersEmpty.style.display = 'none';
-            ordersList.innerHTML = '';
 
             orders.forEach(order => {
                 const orderCard = createOrderCard(order);
@@ -6792,9 +6799,17 @@
                     case 'failed':
                         filteredOrders = ordersData.orders.filter(order => ['failed', 'expired'].includes(order.status));
                         break;
+                    case 'all':
+                    default:
+                        filteredOrders = ordersData.orders;
+                        break;
                 }
 
+                console.log(`Filter: ${filter}, Total orders: ${ordersData.orders.length}, Filtered orders: ${filteredOrders.length}`);
                 displayOrders(filteredOrders);
+            } else {
+                console.log('No orders data available for filtering');
+                displayOrders([]);
             }
         }
 
