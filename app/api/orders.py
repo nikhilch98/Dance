@@ -1165,6 +1165,7 @@ async def get_order_status(
             currency=order["currency"],
             status=OrderStatusEnum(order["status"]),
             payment_link_url=order.get("payment_link_url"),
+            qr_codes_data=qr_codes_data,  # Include QR codes data
             qr_code_generated_at=order.get("qr_code_generated_at"),
             # Reward-related fields
             cashback_amount=order.get("cashback_amount"),
