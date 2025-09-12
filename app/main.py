@@ -28,6 +28,7 @@ from app.api import (
 from app.services.notifications import notification_service
 from app.services.background_qr_service import schedule_qr_generation_task
 from app.services.background_rewards_service import BackgroundRewardsService
+from app.services.background_order_expiry_service import schedule_order_expiry_task
 from utils.utils import DatabaseManager, start_cache_invalidation_watcher
 
 settings = get_settings()
@@ -65,6 +66,13 @@ async def lifespan(app: FastAPI):
             print("✅ Background rewards generation service started")
         except Exception as e:
             print(f"⚠️ Warning: Failed to start background rewards service: {e}")
+
+        # Start the background order expiry service
+        expiry_task = schedule_order_expiry_task()
+        if expiry_task:
+            print("✅ Background order expiry service started")
+        else:
+            print("⚠️ Warning: Failed to start background order expiry service")
 
         print("🎉 Application startup complete.")
 

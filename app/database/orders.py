@@ -302,9 +302,12 @@ class OrderOperations:
             OrderStatusEnum.CREATED.value
         ]
 
+        # Exclude expired and cancelled orders from being considered as conflicting
+        excluded_statuses = [OrderStatusEnum.EXPIRED.value, OrderStatusEnum.CANCELLED.value]
+
         orders = list(client["dance_app"]["orders"].find({
             "user_id": user_id,
-            "status": {"$in": active_statuses},
+            "status": {"$in": active_statuses, "$nin": excluded_statuses},
             "$or": [
                 {"workshop_uuid": workshop_uuid},  # Legacy individual orders
                 {"workshop_uuids": workshop_uuid}  # Bundle orders containing the workshop
@@ -343,9 +346,12 @@ class OrderOperations:
             OrderStatusEnum.CREATED.value
         ]
 
+        # Exclude expired and cancelled orders from being considered as conflicting
+        excluded_statuses = [OrderStatusEnum.EXPIRED.value, OrderStatusEnum.CANCELLED.value]
+
         orders = list(client["dance_app"]["orders"].find({
             "user_id": user_id,
-            "status": {"$in": active_statuses},
+            "status": {"$in": active_statuses, "$nin": excluded_statuses},
             "$or": [
                 {"workshop_uuid": {"$in": workshop_uuids}},  # Legacy individual orders
                 {"workshop_uuids": {"$in": workshop_uuids}}  # Bundle orders containing any workshop

@@ -1,4 +1,4 @@
-"""Background QR code generation service."""
+"""Background QR code generation service and order expiry service."""
 
 import asyncio
 import logging
