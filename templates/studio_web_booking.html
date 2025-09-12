@@ -5213,7 +5213,7 @@
             if (workshop.payment_link && workshop.payment_link.trim()) {
                 const linkType = workshop.payment_link_type?.toLowerCase() || 'external';
                 registerBtn.className = `register-button ${linkType}`;
-                registerBtn.textContent = linkType === 'nachna' ? 'Register with nachna' : linkType === 'whatsapp' ? 'Register via WhatsApp' : 'Register';
+                registerBtn.textContent = linkType === 'nachna' ? 'Register with nachna' : linkType === 'whatsapp' ? 'Register via WhatsApp' : linkType === 'url' ? 'Register' : 'Register';
 
                 registerBtn.onclick = function() {
                     trackWorkshopClick(workshop);
@@ -5224,6 +5224,14 @@
                     } else if (linkType === 'nachna') {
                         // Handle Nachna payment link creation
                         handleNachnaRegistration(workshop, registerBtn);
+                    } else if (linkType === 'url') {
+                        // Handle direct URL links - ensure proper URL format
+                        let url = workshop.payment_link;
+                        // If URL doesn't start with http:// or https://, add https://
+                        if (!url.match(/^https?:\/\//)) {
+                            url = 'https://' + url;
+                        }
+                        window.open(url, '_blank', 'noopener,noreferrer');
                     } else {
                         // Handle external registration links
                         window.open(workshop.payment_link, '_blank', 'noopener,noreferrer');
