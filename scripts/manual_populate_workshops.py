@@ -146,7 +146,7 @@ def main():
         ManualWorkshopEntry(by="Sanket Panchal", song="Shaky Shaky",
                             pricing_info="950/-",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, registration_link=AMULYA_NUMBER, artist_id_list=["sanket_panchal25"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_sanket_panchal25_workshop_21_9_2025_shaky_shaky"),
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["sanket_panchal25"],registration_link_type="nachna", workshop_uuid="beinrtribe_sanket_panchal25_workshop_21_9_2025_shaky_shaky"),
     ], remove_existing_workshops = True)
     
 
