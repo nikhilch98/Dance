@@ -45,8 +45,8 @@ async def lifespan(app: FastAPI):
         print("✅ MongoDB connection pool initialized")
 
         # # Start the cache invalidation watcher
-        # start_cache_invalidation_watcher()
-        # print("✅ Cache invalidation watcher started")
+        start_cache_invalidation_watcher()
+        print("✅ Cache invalidation watcher started")
 
         # Start the workshop notification watcher
         notification_service.start_workshop_notification_watcher()

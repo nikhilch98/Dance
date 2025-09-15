@@ -89,6 +89,7 @@ def main():
     HIMANSHU_DULANI_NUMBER = "8296193112"
     RTRIBE_NUMBER = "7338003939"
     GOOD_MOVE_STUDIOS_NUMBER = "9826000000"
+    AMULYA_NUMBER = "8197127284"
 
     manual_populate_workshops("theroyaldancespace", [
         # Amisha's workshop with time-based tiered pricing
@@ -134,19 +135,19 @@ def main():
                             pricing_info="1499/-",
                             event_type=EventType.WORKSHOP, day=14, month=9, year=2025, start_time="06:30 PM",
                             end_time="08:30 PM", choreo_insta_link=None, registration_link="sanskrutigarba.in", artist_id_list=["sanskrutigarba"],registration_link_type="url", workshop_uuid="theroyaldancespace_sanksruti_garba_workshop_13_9_2025_garba"),
+        ManualWorkshopEntry(by="Gaurav & Yana", song="Hai Rama",
+                            pricing_info="Early Bird : 799/-\nCouple: 1799/-",
+                            event_type=EventType.WORKSHOP, day=3, month=10, year=2025, start_time="07:00 PM",
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link="https://www.gauravandyana.com/event-details/4th-october-bangalore-hai-rama-choreography-workshop-by-g-y", artist_id_list=["gauravandyana"],registration_link_type="url", workshop_uuid="theroyaldancespace_gaurav_yana_workshop_3_10_2025_hai_rama"),
+      
     ], remove_existing_workshops = True)
 
-    # manual_populate_workshops("beinrtribe", [
-    #     ManualWorkshopEntry(by="Bindu Bolar", song="chuttamalle", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
-    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="04:00 PM",
-    #                         end_time="06:00 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
-    #     ManualWorkshopEntry(by="Bindu Bolar", song="kehna hi kya", pricing_info="Early bird(Till 6th): 750/-\nLater: 950/-",
-    #                         event_type=EventType.WORKSHOP, day=12, month=7, year=2025, start_time="06:30 PM",
-    #                         end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["bindu.bolar22"]),
-    #     ManualWorkshopEntry(by="Shreejee Rawat", song="shake it to the max", pricing_info=None,
-    #                         event_type=EventType.WORKSHOP, day=27, month=7, year=2025, start_time="06:30 PM",
-    #                         end_time="08:30 PM", choreo_insta_link=None, mobile_number=RTRIBE_NUMBER, artist_id_list=["shreejee._"]),
-    # ], remove_existing_workshops = True)
+    manual_populate_workshops("beinrtribe", [
+        ManualWorkshopEntry(by="Sanket Panchal", song="Shaky Shaky",
+                            pricing_info="950/-",
+                            event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="04:00 PM",
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link=AMULYA_NUMBER, artist_id_list=["sanket_panchal25"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_sanket_panchal25_workshop_21_9_2025_shaky_shaky"),
+    ], remove_existing_workshops = True)
     
 
     # manual_populate_workshops("goodmove_studios", [
