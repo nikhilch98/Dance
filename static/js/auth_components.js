@@ -60,55 +60,42 @@ function migrateOldTokens() {
     }
 }
 
-// Auth DOM Elements
-const authContainer = document.getElementById('auth-container');
-const authButton = document.getElementById('auth-button');
-const profileModal = document.getElementById('profile-modal');
-const loginModal = document.getElementById('login-modal');
-const otpModal = document.getElementById('otp-modal');
-const bundleSuggestionModal = document.getElementById('bundle-suggestion-modal');
-const ordersModal = document.getElementById('orders-modal');
-const rewardsModal = document.getElementById('rewards-modal');
-const qrModal = document.getElementById('qr-modal');
-const shareModal = document.getElementById('share-modal');
-const mobileInput = document.getElementById('mobile-number');
-const otpMobileNumber = document.getElementById('otp-mobile-number');
-const otpInputs = document.querySelectorAll('.otp-input');
-const sendOtpBtn = document.getElementById('send-otp-btn');
-const verifyOtpBtn = document.getElementById('verify-otp-btn');
-const resendOtpBtn = document.getElementById('resend-otp-btn');
-const loginError = document.getElementById('login-error');
-const otpError = document.getElementById('otp-error');
-const profileName = document.getElementById('profile-name');
-const profileMobile = document.getElementById('profile-mobile');
-const profileStatus = document.getElementById('profile-status');
-const profileAvatarContainer = document.getElementById('profile-avatar-container');
-const ordersRefreshBtn = document.getElementById('orders-refresh-btn');
-const rewardsRefreshBtn = document.getElementById('rewards-refresh-btn');
+// Auth DOM Elements - will be initialized after DOM loads
+let authContainer, authButton, profileModal, loginModal, otpModal, bundleSuggestionModal;
+let ordersModal, rewardsModal, qrModal, shareModal;
+let mobileInput, otpMobileNumber, otpInputs, sendOtpBtn, verifyOtpBtn, resendOtpBtn;
+let loginError, otpError, profileName, profileMobile, profileStatus, profileAvatarContainer;
+let ordersRefreshBtn, rewardsRefreshBtn;
 
 // Modal management functions
 function showLoginModal() {
     closeAllModals();
-    loginModal.style.display = 'flex';
-    mobileInput.focus();
+    if (loginModal) {
+        loginModal.style.display = 'flex';
+        if (mobileInput) mobileInput.focus();
+    }
 }
 
 function closeLoginModal() {
-    loginModal.style.display = 'none';
-    mobileInput.value = '';
-    loginError.style.display = 'none';
+    if (loginModal) loginModal.style.display = 'none';
+    if (mobileInput) mobileInput.value = '';
+    if (loginError) loginError.style.display = 'none';
 }
 
 function showOTPModal() {
     closeAllModals();
-    otpModal.style.display = 'flex';
-    document.getElementById('otp-input').focus();
+    if (otpModal) {
+        otpModal.style.display = 'flex';
+        const otpInput = document.getElementById('otp-input');
+        if (otpInput) otpInput.focus();
+    }
 }
 
 function closeOTPModal() {
-    otpModal.style.display = 'none';
-    document.getElementById('otp-input').value = '';
-    otpError.style.display = 'none';
+    if (otpModal) otpModal.style.display = 'none';
+    const otpInput = document.getElementById('otp-input');
+    if (otpInput) otpInput.value = '';
+    if (otpError) otpError.style.display = 'none';
     clearInterval(otpTimer);
     resendCountdown = 30;
 }
@@ -152,12 +139,14 @@ function closeRewardsModal() {
 
 function openShareModal() {
     closeAllModals();
-    shareModal.style.display = 'flex';
-    populateShareUrl();
+    if (shareModal) {
+        shareModal.style.display = 'flex';
+        populateShareUrl();
+    }
 }
 
 function closeShareModal() {
-    shareModal.style.display = 'none';
+    if (shareModal) shareModal.style.display = 'none';
 }
 
 function closeBundleSuggestionModal() {
@@ -166,22 +155,22 @@ function closeBundleSuggestionModal() {
 
 function openQRModal() {
     closeAllModals();
-    qrModal.style.display = 'flex';
+    if (qrModal) qrModal.style.display = 'flex';
 }
 
 function closeQRModal() {
-    qrModal.style.display = 'none';
+    if (qrModal) qrModal.style.display = 'none';
 }
 
 function closeAllModals() {
-    loginModal.style.display = 'none';
-    otpModal.style.display = 'none';
-    profileModal.style.display = 'none';
-    ordersModal.style.display = 'none';
-    rewardsModal.style.display = 'none';
-    qrModal.style.display = 'none';
-    shareModal.style.display = 'none';
-    bundleSuggestionModal.style.display = 'none';
+    if (loginModal) loginModal.style.display = 'none';
+    if (otpModal) otpModal.style.display = 'none';
+    if (profileModal) profileModal.style.display = 'none';
+    if (ordersModal) ordersModal.style.display = 'none';
+    if (rewardsModal) rewardsModal.style.display = 'none';
+    if (qrModal) qrModal.style.display = 'none';
+    if (shareModal) shareModal.style.display = 'none';
+    if (bundleSuggestionModal) bundleSuggestionModal.style.display = 'none';
 }
 
 // Authentication UI functions
@@ -261,6 +250,8 @@ function initializeAuth() {
         try {
             authToken = savedToken;
             currentUser = JSON.parse(savedUser);
+            window.authToken = authToken;
+            window.currentUser = currentUser;
             console.log('Restored session for user:', currentUser.name || currentUser.mobile_number);
 
             // Validate token before showing as logged in
@@ -319,6 +310,7 @@ async function validateTokenAndUpdateUI() {
             // Update currentUser with fresh profile data
             const profileData = await response.json();
             currentUser = profileData;
+            window.currentUser = currentUser;
             localStorage.setItem(currentUserKey, JSON.stringify(currentUser));
             updateAuthUI();
         } else if (response.status === 401) {
@@ -628,6 +620,8 @@ async function handleVerifyOTP(event) {
             // Success - store auth data and update UI
             authToken = data.access_token;
             currentUser = data.user;
+            window.authToken = authToken;
+            window.currentUser = currentUser;
 
             localStorage.setItem(authTokenKey, authToken);
             localStorage.setItem(currentUserKey, JSON.stringify(currentUser));
@@ -690,6 +684,8 @@ function startResendTimer() {
 function logout() {
     currentUser = null;
     authToken = null;
+    window.currentUser = null;
+    window.authToken = null;
     localStorage.removeItem(authTokenKey);
     localStorage.removeItem(currentUserKey);
     updateAuthUI();
@@ -828,6 +824,7 @@ function debugAuthStatus() {
 
 // Make functions globally available for onclick handlers
 window.handleAuth = handleAuth;
+window.showLoginModal = showLoginModal;
 window.closeLoginModal = closeLoginModal;
 window.closeOTPModal = closeOTPModal;
 window.closeProfileModal = closeProfileModal;
@@ -840,6 +837,16 @@ window.handleSendOTP = handleSendOTP;
 window.handleVerifyOTP = handleVerifyOTP;
 window.resendOTP = resendOTP;
 window.logout = logout;
+
+// Make modal variables globally available
+window.shareModal = shareModal;
+window.ordersModal = ordersModal;
+window.rewardsModal = rewardsModal;
+window.qrModal = qrModal;
+
+// Make authentication state globally available
+window.authToken = authToken;
+window.currentUser = currentUser;
 
 // Make debug function globally available for console testing
 window.debugAuthStatus = debugAuthStatus;
@@ -1319,7 +1326,39 @@ function payOrder(orderId, paymentLinkUrl) {
     window.open(paymentLinkUrl, '_blank');
 }
 
+// Initialize DOM elements
+function initializeDOMElements() {
+    authContainer = document.getElementById('auth-container');
+    authButton = document.getElementById('auth-button');
+    profileModal = document.getElementById('profile-modal');
+    loginModal = document.getElementById('login-modal');
+    otpModal = document.getElementById('otp-modal');
+    bundleSuggestionModal = document.getElementById('bundle-suggestion-modal');
+    ordersModal = document.getElementById('orders-modal');
+    rewardsModal = document.getElementById('rewards-modal');
+    qrModal = document.getElementById('qr-modal');
+    shareModal = document.getElementById('share-modal');
+
+    mobileInput = document.getElementById('mobile-number');
+    otpMobileNumber = document.getElementById('otp-mobile-number');
+    otpInputs = document.querySelectorAll('.otp-input');
+    sendOtpBtn = document.getElementById('send-otp-btn');
+    verifyOtpBtn = document.getElementById('verify-otp-btn');
+    resendOtpBtn = document.getElementById('resend-otp-btn');
+    loginError = document.getElementById('login-error');
+    otpError = document.getElementById('otp-error');
+    profileName = document.getElementById('profile-name');
+    profileMobile = document.getElementById('profile-mobile');
+    profileStatus = document.getElementById('profile-status');
+    profileAvatarContainer = document.getElementById('profile-avatar-container');
+    ordersRefreshBtn = document.getElementById('orders-refresh-btn');
+    rewardsRefreshBtn = document.getElementById('rewards-refresh-btn');
+
+    console.log('DOM elements initialized');
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    initializeDOMElements();
     initializeAuth();
 });

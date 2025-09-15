@@ -568,7 +568,6 @@
             gap: 0.5rem;
             font-size: 0.9rem;
             min-width: 100px;
-            white-space: nowrap;
             flex-shrink: 0;
         }
 
@@ -1579,6 +1578,288 @@
             outline: 2px solid #FF006E;
             outline-offset: 2px;
         }
+
+        /* Auth Modal Styles */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .auth-modal.show {
+            display: flex;
+        }
+
+        .auth-modal-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            max-width: 400px;
+            width: calc(100% - 2rem);
+            position: relative;
+        }
+
+        .auth-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .auth-modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .auth-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .phone-input-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .country-code {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* OTP Input Styles */
+        .otp-input-container {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .otp-input {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #00D4FF;
+        }
+
+        .otp-actions {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Button Styles */
+        .auth-primary-btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .auth-primary-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .auth-primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-secondary-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .auth-secondary-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .auth-secondary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .resend-text {
+            display: none;
+        }
+
+        .countdown-text {
+            display: block;
+        }
+
+        .auth-secondary-btn:not([disabled]) .resend-text {
+            display: block;
+        }
+
+        .auth-secondary-btn:not([disabled]) .countdown-text {
+            display: none;
+        }
+
+        .btn-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .auth-error {
+            color: #FF006E;
+            font-size: 0.875rem;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Auth Container */
+        .auth-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+
+        .auth-button {
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-button:hover {
+            background: var(--glass-bg);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .auth-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .auth-text {
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
@@ -1740,10 +2021,17 @@
         // Global variables
         let artistData = null;
         let workshopsData = null;
-        const artistId = "{{ artist_id }}";
+        // Extract artist ID from URL
+        function getArtistIdFromUrl() {
+            const path = window.location.pathname;
+            const match = path.match(/\/artist\/([^\/]+)/);
+            return match ? match[1] : null;
+        }
+
+        const artistId = "{{ artist_id }}" || getArtistIdFromUrl();
         let isLiked = false;
         let isFollowing = false;
-        
+
         // DOM Elements
         const loadingOverlay = document.getElementById('loading-overlay');
         const mainContainer = document.getElementById('main-container');
@@ -1756,7 +2044,7 @@
         const emptyState = document.getElementById('empty-state');
         const errorState = document.getElementById('error-state');
         const errorMessage = document.getElementById('error-message');
-        const shareModal = document.getElementById('share-modal');
+        // shareModal is defined in auth_components.js
         const likeButton = document.getElementById('like-button');
         const followButton = document.getElementById('follow-button');
         const likeIcon = document.getElementById('like-icon');
@@ -1823,28 +2111,38 @@
         async function loadArtistData() {
             try {
                 // Try to get specific artist first
-                let response = await fetch(`/api/artist/${artistId}`);
+                const response = await fetch(`/api/artist/${artistId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     artistData = await response.json();
+                    displayArtistInfo(); // Display immediately like studio page
                     return;
                 }
-                
+
                 // Fallback to loading all artists and finding the one we need
-                response = await fetch(`/api/artists`);
-                if (!response.ok) {
-                    throw new Error(`Failed to load artists (${response.status})`);
+                const fallbackResponse = await fetch(`/api/artists`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                if (!fallbackResponse.ok) {
+                    throw new Error(`Failed to load artists (${fallbackResponse.status})`);
                 }
-                
-                const allArtists = await response.json();
+
+                const allArtists = await fallbackResponse.json();
                 artistData = allArtists.find(artist => artist.id === artistId);
-                
+
                 if (!artistData) {
                     throw new Error(`Artist with ID ${artistId} not found`);
                 }
-                
-                // Don't call displayArtistInfo() here - let loadData() control the timing
+
+                displayArtistInfo(); // Display immediately like studio page
             } catch (error) {
-                console.error('Error loading artist data:', error);
                 throw error;
             }
         }
@@ -1852,14 +2150,18 @@
         // Load workshops data
         async function loadWorkshopsData() {
             try {
-                const response = await fetch(`/api/workshops_by_artist/${artistId}`);
+                const response = await fetch(`/api/workshops_by_artist/${artistId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error(`Failed to load workshops (${response.status})`);
                 }
                 workshopsData = await response.json();
-                // Don't call displayWorkshops() here - let loadData() control the timing
+                displayWorkshops(); // Display immediately like studio page
             } catch (error) {
-                console.error('Error loading workshops data:', error);
                 throw error;
             }
         }
@@ -2031,21 +2333,55 @@
                     return existingStudio;
                 }
 
-                // Fetch individual studio data
-                console.log('Fetching studio data for:', studioId);
-                const response = await fetch(`/api/studio/${studioId}`);
+                // First try to get individual studio data
+                console.log('Fetching individual studio data for:', studioId);
+                let response = await fetch(`/api/studio/${studioId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (response.ok) {
+                    const studioData = await response.json();
+                    console.log('Loaded studio data for:', studioId, '->', studioData.name);
+
+                    // Add to our studios array
+                    if (!studiosData) studiosData = [];
+                    studiosData.push(studioData);
+
+                    return studioData;
+                }
+
+                // Fallback: Get all studios and find the specific one (like studio page)
+                console.log('Individual studio endpoint failed, trying fallback...');
+                response = await fetch('/api/studios', {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
                 if (!response.ok) {
-                    console.warn(`Failed to load studio ${studioId} (${response.status})`);
+                    console.warn(`Failed to load studios (${response.status})`);
                     return null;
                 }
-                const studioData = await response.json();
-                console.log('Loaded studio data for:', studioId, '->', studioData.name);
 
-                // Add to our studios array
-                if (!studiosData) studiosData = [];
-                studiosData.push(studioData);
+                const allStudios = await response.json();
+                const studioData = allStudios.find(studio => studio.id === studioId);
 
-                return studioData;
+                if (studioData) {
+                    console.log('Found studio data via fallback for:', studioId, '->', studioData.name);
+
+                    // Add to our studios array
+                    if (!studiosData) studiosData = [];
+                    studiosData.push(studioData);
+
+                    return studioData;
+                }
+
+                console.warn(`Studio with ID ${studioId} not found in fallback`);
+                return null;
             } catch (error) {
                 console.error(`Error loading studio ${studioId}:`, error);
                 return null;
@@ -2514,21 +2850,34 @@
             return message;
         }
 
-        // Global variables for authentication and current workshop
-        let currentUser = null;
-        let authToken = null;
+        // Global variables for current workshop
         let currentWorkshopUuid = null;
         let currentWorkshop = null;
 
         // Handle Nachna payment link creation
         async function handleNachnaRegistration(workshop, button) {
             try {
-                // Check if user is logged in
-                if (!authToken || !currentUser) {
+                // Check if user is logged in using auth_components.js
+                // Add a small delay to ensure auth state is loaded
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                console.log('Checking auth state:', {
+                    authToken: window.authToken ? 'present' : 'null',
+                    currentUser: window.currentUser ? window.currentUser.name || window.currentUser.mobile_number : 'null'
+                });
+
+                if (!window.authToken || !window.currentUser) {
+                    console.log('User not logged in, showing login modal');
                     alert('Please login to register with nachna.');
-                    openLoginModal();
+                    if (window.showLoginModal) {
+                        window.showLoginModal();
+                    } else {
+                        console.error('showLoginModal function not available');
+                    }
                     return;
                 }
+
+                console.log('User is logged in, proceeding with registration');
 
                 // Show loading state
                 const originalText = button.textContent;
@@ -2553,7 +2902,7 @@
                 const bundleResponse = await fetch(`/api/orders/bundles/check/${workshopIdentifier}`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
+                        'Authorization': `Bearer ${window.authToken}`,
                         'Content-Type': 'application/json',
                     }
                 });
@@ -2620,7 +2969,7 @@
                 const response = await fetch('/api/orders/create-payment-link', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
+                        'Authorization': `Bearer ${window.authToken}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
@@ -2655,7 +3004,9 @@
                                     song_name: workshop.song,
                                     artist_id: artistId,
                                     artist_name: artistData?.name,
-                                    purchase_type: 'individual'
+                                    purchase_type: 'individual',
+                                    user_id: window.currentUser?.user_id,
+                                    user_name: window.currentUser?.name
                                 });
                             }
                         }
@@ -2794,7 +3145,7 @@
             fetch(`/api/orders/bundles/${bundleId}/create-payment-link`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${authToken}`,
+                    'Authorization': `Bearer ${window.authToken}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({})  // Empty body for now
@@ -2822,7 +3173,9 @@
                                     artist_id: artistId,
                                     artist_name: artistData?.name,
                                     order_id: data.order_id,
-                                    workshop_uuid: workshopIdentifier
+                                    workshop_uuid: workshopIdentifier,
+                                    user_id: window.currentUser?.user_id,
+                                    user_name: window.currentUser?.name
                                 });
                             }
                         }
@@ -3027,6 +3380,176 @@
                 .payment-link-modal .modal-note small {
                     color: rgba(255, 255, 255, 0.6);
                 }
+
+                /* QR Modal Styles */
+                .qr-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 11000;
+                    backdrop-filter: blur(15px);
+                }
+
+                .qr-modal.show {
+                    display: flex;
+                }
+
+                /* Prevent body scroll when QR modal is open */
+                body.modal-open {
+                    overflow: hidden;
+                    position: fixed;
+                    width: 100%;
+                }
+
+                .qr-modal-content {
+                    background: rgba(10, 10, 15, 0.95);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 20px;
+                    width: 90%;
+                    max-width: 400px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    position: relative;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                }
+
+                .qr-modal-close {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: none;
+                    color: white;
+                    font-size: 1.5rem;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 11001;
+                    transition: all 0.3s ease;
+                }
+
+                .qr-modal-close:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    transform: scale(1.1);
+                }
+
+                .qr-modal-header {
+                    padding: 2rem 1.5rem 1rem;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    text-align: center;
+                }
+
+                .qr-modal-title {
+                    color: white;
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    margin: 0 0 1rem 0;
+                    letter-spacing: 1.2;
+                }
+
+                .qr-workshop-info {
+                    background: rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
+                    padding: 1rem;
+                }
+
+                .qr-workshop-title {
+                    color: white;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                }
+
+                .qr-workshop-details {
+                    color: rgba(255, 255, 255, 0.7);
+                    font-size: 0.875rem;
+                }
+
+                .qr-modal-body {
+                    padding: 1.5rem;
+                }
+
+                .qr-loading, .qr-error {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 3rem 1rem;
+                    color: rgba(255, 255, 255, 0.7);
+                }
+
+                .qr-loading .loading-spinner {
+                    width: 32px;
+                    height: 32px;
+                    border: 3px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 50%;
+                    border-top-color: #00D4FF;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 1rem;
+                }
+
+                .qr-code-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1.5rem;
+                }
+
+                .qr-code-display {
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    padding: 1rem;
+                    border-radius: 12px;
+                    display: inline-block;
+                }
+
+                .qr-code-display canvas {
+                    display: block;
+                    border-radius: 8px;
+                }
+
+                .qr-actions {
+                    display: flex;
+                    gap: 1rem;
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .qr-action-btn {
+                    background: var(--primary-gradient);
+                    border: none;
+                    color: white;
+                    padding: 0.75rem 1.25rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    transition: all 0.3s ease;
+                }
+
+                .qr-action-btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+                }
+
+                .qr-action-btn svg {
+                    width: 16px;
+                    height: 16px;
+                    stroke: white;
+                }
             `;
             document.head.appendChild(style);
             document.body.appendChild(modal);
@@ -3057,62 +3580,11 @@
             alert(message || 'An error occurred. Please try again.');
         }
 
-        // Login modal functions
-        function openLoginModal() {
-            let modal = document.getElementById('login-modal');
-            if (!modal) {
-                // Create login modal if it doesn't exist
-                modal = document.createElement('div');
-                modal.id = 'login-modal';
-                modal.className = 'modal-overlay';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2>Welcome to Nachna</h2>
-                            <button class="modal-close" onclick="closeLoginModal()">×</button>
-                        </div>
-                        <div class="modal-body">
-                            <p>Please login to register for workshops.</p>
-                            <button class="primary-btn" onclick="window.location.href='/login'">
-                                Go to Login
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-            modal.style.display = 'flex';
-        }
 
-        function closeLoginModal() {
-            const modal = document.getElementById('login-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // Initialize authentication state
-        function initializeAuth() {
-            // Check if there's a stored auth token
-            const storedToken = localStorage.getItem('authToken');
-            const storedUser = localStorage.getItem('currentUser');
-
-            if (storedToken && storedUser) {
-                try {
-                    authToken = storedToken;
-                    currentUser = JSON.parse(storedUser);
-                    console.log('Restored authentication state:', currentUser.name);
-                } catch (error) {
-                    console.error('Error restoring auth state:', error);
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                }
-            }
-        }
 
         // Analytics tracking
         function trackWorkshopClick(workshop) {
-            const workshopIdentifier = workshop.uuid;
+            const workshopIdentifier = workshop.uuid || workshop._id || workshop.id;
 
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'workshop_book_click', {
@@ -3125,7 +3597,7 @@
         }
         
         function trackChoreoClick(choreoUrl, workshop) {
-            const workshopIdentifier = workshop.uuid;
+            const workshopIdentifier = workshop.uuid || workshop._id || workshop.id;
 
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'choreo_video_click', {
@@ -3164,46 +3636,18 @@
         // Share functionality
         function openShareModal() {
             if (!artistData) return;
-            
-            const shareUrl = window.location.href;
-            const shareText = `Check out ${toTitleCase(artistData.name)} on Nachna! 💃🕺\n\nAmazing dance instructor with incredible workshops.\n\nView workshops: ${shareUrl}\n\nDon't have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742`;
-            
-            // Update share links
-            const whatsappShare = document.getElementById('whatsapp-share');
-            const instagramShare = document.getElementById('instagram-share');
-            const genericShare = document.getElementById('generic-share');
-            
-            whatsappShare.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-            instagramShare.onclick = function(e) {
-                e.preventDefault();
-                if (navigator.share) {
-                    navigator.share({
-                        title: `${toTitleCase(artistData.name)} - Nachna`,
-                        text: shareText,
-                        url: shareUrl
-                    });
-                } else {
-                    copyToClipboard(shareText);
-                }
-            };
-            genericShare.onclick = function(e) {
-                e.preventDefault();
-                if (navigator.share) {
-                    navigator.share({
-                        title: `${toTitleCase(artistData.name)} - Nachna`,
-                        text: shareText,
-                        url: shareUrl
-                    });
-                } else {
-                    copyToClipboard(shareText);
-                }
-            };
-            
-            shareModal.classList.add('show');
+
+            // Use the auth_components.js function to open share modal
+            if (window.openShareModal) {
+                window.openShareModal();
+            }
         }
-        
+
         function closeShareModal() {
-            shareModal.classList.remove('show');
+            // Use the auth_components.js function to close share modal
+            if (window.closeShareModal) {
+                window.closeShareModal();
+            }
         }
         
         function copyToClipboard(text) {
@@ -3224,22 +3668,40 @@
         async function loadData() {
             showLoading();
             errorState.style.display = 'none';
-            
+
+            // Validate artistId
+            if (!artistId) {
+                console.error('No artistId found in template or URL');
+                showError('Artist ID not found. Please check the URL and try again.');
+                return;
+            }
+
+
             try {
-                // Step 1: Load artist and workshops data first
-                await Promise.all([
+                // Load artist and workshop data first in parallel
+                const results = await Promise.allSettled([
                     loadArtistData(),
                     loadWorkshopsData()
                 ]);
-                
-                // Step 2: Load only the studios that appear in workshops
-                await loadStudiosDataForWorkshops();
-                
-                // Step 3: Display everything now that all required data is loaded
-                displayArtistInfo();
-                displayWorkshops();
+
+                // Check if artist data loaded successfully
+                if (results[0].status === 'rejected') {
+                    throw new Error('Failed to load artist data: ' + results[0].reason);
+                }
+
+                // Workshop data failure is less critical
+                if (results[1].status === 'rejected') {
+                    console.warn('Workshop load failed - continuing with artist info only:', results[1].reason);
+                }
+
+                // Load studios data for the workshops (only if workshops loaded successfully)
+                if (results[1].status === 'fulfilled') {
+                    await loadStudiosDataForWorkshops();
+                }
+
+                console.log('All data loaded successfully');
                 hideLoading();
-                
+
             } catch (error) {
                 console.error('Error loading data:', error);
                 showError(error.message || 'Failed to load artist data. Please try again.');
@@ -3248,21 +3710,43 @@
         
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            initializeAuth();
             loadData();
+            // Setup modal event listeners after auth components are loaded
+            setTimeout(setupModalEventListeners, 100);
+            // Ensure auth state is synchronized
+            setTimeout(syncAuthState, 200);
+        });
 
-            // Setup action buttons
-            likeButton.onclick = handleLike;
-            followButton.onclick = handleFollow;
-        });
-        
-        // Close modal when clicking outside
-        shareModal.addEventListener('click', function(e) {
-            if (e.target === shareModal) {
-                closeShareModal();
+        // Function to synchronize authentication state
+        function syncAuthState() {
+            if (window.debugAuthStatus) {
+                console.log('Syncing auth state from artist page');
+                window.debugAuthStatus();
             }
-        });
-        
+
+            // Force update of window auth state from auth_components
+            if (typeof window.authToken === 'undefined' || window.authToken === null) {
+                // Try to get auth state from localStorage directly as fallback
+                const baseUrl = window.location.origin;
+                const cleanBaseUrl = baseUrl.replace(/https?:\/\//, '').replace(/[^a-zA-Z0-9]/g, '_');
+                const authTokenKey = `authToken_${cleanBaseUrl}`;
+                const currentUserKey = `currentUser_${cleanBaseUrl}`;
+
+                const savedToken = localStorage.getItem(authTokenKey);
+                const savedUser = localStorage.getItem(currentUserKey);
+
+                if (savedToken && savedUser) {
+                    try {
+                        window.authToken = savedToken;
+                        window.currentUser = JSON.parse(savedUser);
+                        console.log('Auth state synchronized from localStorage');
+                    } catch (error) {
+                        console.error('Error syncing auth state:', error);
+                    }
+                }
+            }
+        }
+
         // Handle page visibility changes
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
@@ -3277,19 +3761,51 @@
         
         // Set initial load timestamp
         localStorage.setItem('lastArtistLoad', new Date().getTime().toString());
-        
-        // Keyboard navigation
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && shareModal.classList.contains('show')) {
-                closeShareModal();
+
+        // Setup modal event listeners after auth components are loaded
+        function setupModalEventListeners() {
+            // Close modal when clicking outside
+            if (window.shareModal) {
+                window.shareModal.addEventListener('click', function(e) {
+                    if (e.target === window.shareModal) {
+                        window.closeShareModal();
+                    }
+                });
             }
-        });
+
+            // Close orders, rewards, and QR modals when clicking outside
+            if (window.ordersModal) {
+                window.ordersModal.addEventListener('click', function(e) {
+                    if (e.target === window.ordersModal) {
+                        window.closeOrdersModal();
+                    }
+                });
+            }
+
+            if (window.rewardsModal) {
+                window.rewardsModal.addEventListener('click', function(e) {
+                    if (e.target === window.rewardsModal) {
+                        window.closeRewardsModal();
+                    }
+                });
+            }
+
+            if (window.qrModal) {
+                window.qrModal.addEventListener('click', function(e) {
+                    if (e.target === window.qrModal) {
+                        window.closeQRModal();
+                    }
+                });
+            }
+        }
+
+        // Keyboard navigation - Escape key handling is done by auth_components.js
     </script>
 
     <!-- Login Modal -->
     <div id="login-modal" class="auth-modal">
         <div class="auth-modal-content">
-            <div class="auth-modal-close">×</div>
+            <div class="auth-modal-close" onclick="closeLoginModal()">×</div>
             <div class="auth-modal-header">
                 <h3 class="auth-modal-title">Welcome to Nachna</h3>
                 <p class="auth-modal-subtitle">Enter your mobile number to continue</p>
@@ -3324,7 +3840,7 @@
     <!-- OTP Modal -->
     <div id="otp-modal" class="auth-modal">
         <div class="auth-modal-content">
-            <div class="auth-modal-close">×</div>
+            <div class="auth-modal-close" onclick="closeOTPModal()">×</div>
             <div class="auth-modal-header">
                 <h3 class="auth-modal-title">Verify Your Number</h3>
                 <p class="auth-modal-subtitle">Enter the 6-digit code sent to <span id="otp-mobile-number"></span></p>
@@ -3340,7 +3856,7 @@
                         <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
                     </div>
                     <div class="otp-actions">
-                        <button type="button" id="resend-otp-btn" class="auth-secondary-btn" disabled>
+                        <button type="button" id="resend-otp-btn" class="auth-secondary-btn" onclick="resendOTP()" disabled>
                             <span class="resend-text">Resend OTP</span>
                             <span class="countdown-text">Resend in 30s</span>
                         </button>
@@ -3358,7 +3874,7 @@
     <!-- Profile Modal -->
     <div id="profile-modal" class="profile-modal">
         <div class="profile-modal-content">
-            <div class="profile-modal-close">×</div>
+            <div class="profile-modal-close" onclick="closeProfileModal()">×</div>
             <div class="profile-modal-header">
                 <h3 class="profile-modal-title">Profile</h3>
             </div>
@@ -3454,7 +3970,7 @@
     <!-- Orders Modal -->
     <div id="orders-modal" class="profile-modal">
         <div class="profile-modal-content">
-            <div class="profile-modal-close">×</div>
+            <div class="profile-modal-close" onclick="closeOrdersModal()">×</div>
             <div class="profile-modal-header">
                 <div class="orders-header">
                     <h3 class="profile-modal-title">My Orders</h3>
@@ -3495,7 +4011,7 @@
     <!-- Rewards Modal -->
     <div id="rewards-modal" class="profile-modal">
         <div class="profile-modal-content">
-            <div class="profile-modal-close">×</div>
+            <div class="profile-modal-close" onclick="closeRewardsModal()">×</div>
             <div class="profile-modal-header">
                 <div class="rewards-header">
                     <h3 class="profile-modal-title">Rewards Center</h3>
@@ -3576,6 +4092,52 @@
                     <div id="transactions-list" class="transactions-list"></div>
                     <div class="load-more-btn" id="load-more-btn" style="display: none;">
                         <button>Load More</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="qr-modal" class="qr-modal">
+        <div class="qr-modal-content">
+            <div class="qr-modal-close" onclick="closeQRModal()">×</div>
+            <div class="qr-modal-header">
+                <h3 class="qr-modal-title">Workshop QR Code</h3>
+                <div class="qr-workshop-info" id="qr-workshop-info">
+                    <div class="qr-workshop-title" id="qr-workshop-title">Loading...</div>
+                    <div class="qr-workshop-details" id="qr-workshop-details">Loading...</div>
+                </div>
+            </div>
+            <div class="qr-modal-body">
+                <div id="qr-loading" class="qr-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Generating QR Code...</p>
+                </div>
+                <div id="qr-error" class="qr-error" style="display: none;">
+                    <p>Failed to generate QR code</p>
+                </div>
+                <div id="qr-code-container" class="qr-code-container" style="display: none;">
+                    <div id="qr-code-display" class="qr-code-display"></div>
+                    <div class="qr-actions">
+                        <button class="qr-action-btn download-btn" onclick="downloadQRCode()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button class="qr-action-btn share-btn" onclick="shareQRCode()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <path d="m8.59 13.51 6.83 3.98"/>
+                                <path d="m15.41 6.51-6.82 3.98"/>
+                            </svg>
+                            <span>Share</span>
+                        </button>
                     </div>
                 </div>
             </div>
