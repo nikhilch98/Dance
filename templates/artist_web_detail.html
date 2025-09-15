@@ -2185,10 +2185,18 @@
         
         // Create workshop card
         function createWorkshopCard(workshop) {
-            
+
             const card = document.createElement('div');
             card.className = 'workshop-card';
-            
+
+            // Store workshop data in card dataset for later use
+            const workshopUuid = workshop.uuid;
+            card.dataset.uuid = workshopUuid || '';
+            card.dataset.song = workshop.song || workshop.songName || workshop.song_name || '';
+            card.dataset.artist = workshop.by || workshop.artist || '';
+            card.dataset.date = workshop.date || workshop.workshop_date || '';
+            card.dataset.studioId = workshop.studioId || workshop.studio_id || '';
+
             // Check multiple possible field name variations
             const songName = workshop.song || workshop.songName || workshop.song_name || 'Dance Workshop';
             const studioId = workshop.studioId || workshop.studio_id;
@@ -2200,8 +2208,8 @@
             const choreoLink = workshop.choreoInstaLink || workshop.choreo_insta_link || '';
             const date = workshop.date || workshop.workshop_date || '';
             const time = workshop.time || workshop.workshop_time || '';
-            
-            
+
+
             card.innerHTML = `
                 <!-- Header Row: Date + Choreo Button + Time Badge -->
                 <div class="workshop-header-row">
@@ -2642,7 +2650,7 @@
                             // Popup opened successfully - send analytics
                             if (typeof gtag !== 'undefined') {
                                 gtag('event', 'nachna_payment_created', {
-                                    workshop_id: workshop.uuid,
+                                    workshop_id: workshopIdentifier,
                                     workshop_identifier: workshopIdentifier,
                                     song_name: workshop.song,
                                     artist_id: artistId,
@@ -2813,7 +2821,8 @@
                                     purchase_type: 'single_bundle_order',
                                     artist_id: artistId,
                                     artist_name: artistData?.name,
-                                    order_id: data.order_id
+                                    order_id: data.order_id,
+                                    workshop_uuid: workshopIdentifier
                                 });
                             }
                         }
@@ -2838,7 +2847,8 @@
 
             for (const card of workshopCards) {
                 const workshopData = card.dataset;
-                if (workshopData.uuid === currentWorkshopUuid) {
+                const cardUuid = workshopData.uuid;
+                if (cardUuid === currentWorkshopUuid) {
                     originalButton = card.querySelector('.register-button-main.nachna');
                     break;
                 }
@@ -3102,10 +3112,11 @@
 
         // Analytics tracking
         function trackWorkshopClick(workshop) {
+            const workshopIdentifier = workshop.uuid;
 
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'workshop_book_click', {
-                    workshop_id: workshop.uuid,
+                    workshop_id: workshopIdentifier,
                     song_name: workshop.song,
                     artist_id: artistId,
                     artist_name: artistData?.name
@@ -3114,16 +3125,17 @@
         }
         
         function trackChoreoClick(choreoUrl, workshop) {
-            
+            const workshopIdentifier = workshop.uuid;
+
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'choreo_video_click', {
                     choreo_url: choreoUrl,
-                    workshop_id: workshop.uuid,
+                    workshop_id: workshopIdentifier,
                     artist_id: artistId,
                     artist_name: artistData?.name
                 });
             }
-            
+
             window.open(choreoUrl, '_blank', 'noopener,noreferrer');
         }
         

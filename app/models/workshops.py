@@ -52,6 +52,7 @@ class Studio(BaseModel):
 
 class WorkshopSession(BaseModel):
     """Individual workshop session information."""
+    uuid: str
     date: str
     time: str
     song: Optional[str]

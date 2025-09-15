@@ -223,6 +223,7 @@ class DatabaseOperations:
                     
                 workshops.append(
                     WorkshopSession(
+                        uuid=workshop.get("uuid"),
                         date=get_formatted_date_with_day(time_detail)[0],
                         time=get_formatted_time(time_detail),
                         song=workshop.get("song"),
