@@ -552,10 +552,10 @@
             display: flex;
             align-items: center;
         }
-        
+
         .register-button-main {
             padding: 0.75rem 1.25rem;
-            border-radius: 10px;
+            border-radius: 12px;
             border: none;
             color: white;
             font-weight: 600;
@@ -566,28 +566,63 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             min-width: 100px;
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        
+
         .register-button-main.nachna {
-            background: var(--primary-gradient);
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+            background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.4);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .register-button-main.nachna::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .register-button-main.nachna:hover::before {
+            left: 100%;
+        }
+
+        .register-button-main.nachna:hover {
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .register-button-main.whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+
         .register-button-main.external {
-            background: var(--accent-blue);
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
-        
+
+        .register-button-main.url {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
         .register-button-main.disabled {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--text-tertiary);
+            color: rgba(255, 255, 255, 0.5);
             cursor: not-allowed;
             box-shadow: none;
         }
-        
+
         .register-button-main:not(.disabled):hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
@@ -1125,7 +1160,35 @@
                 min-width: 80px;
                 min-height: 36px;
             }
-            
+
+            .register-button-main.nachna {
+                background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+                box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+            }
+
+            .register-button-main.whatsapp {
+                background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+            }
+
+            .register-button-main.external,
+            .register-button-main.url {
+                background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .register-button-main.disabled {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+            .register-button-main:hover:not(.disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+
             .register-button-main svg {
                 width: 14px;
                 height: 14px;
@@ -2206,7 +2269,7 @@
                             <a href="#"
                                target="_blank"
                                rel="noopener noreferrer"
-                               class="register-button-main ${paymentLinkType?.toLowerCase() === 'nachna' ? 'nachna' : 'external'}"
+                               class="register-button-main ${paymentLinkType?.toLowerCase() === 'nachna' ? 'nachna' : paymentLinkType?.toLowerCase() === 'whatsapp' ? 'whatsapp' : paymentLinkType?.toLowerCase() === 'url' ? 'url' : 'external'}"
                                onclick="handleRegistrationClick('${paymentLink.replace(/'/g, "\\'")}', '${paymentLinkType?.toLowerCase() || 'external'}', ${JSON.stringify(workshop).replace(/"/g, '&quot;')})">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2-7h-3V2h-2v2H8V2H6v2H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H3V8h14v12z"/>
