@@ -4080,6 +4080,161 @@
                 font-size: 0.9rem;
             }
         }
+
+        /* Edit Profile Modal Styles */
+        .edit-profile-picture-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .edit-profile-avatar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .edit-avatar-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .avatar-edit-btn,
+        .avatar-remove-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .avatar-edit-btn {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            color: white;
+        }
+
+        .avatar-edit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .avatar-remove-btn {
+            background: linear-gradient(135deg, #FF006E 0%, #DC2626 100%);
+            color: white;
+        }
+
+        .avatar-remove-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 0, 110, 0.3);
+        }
+
+        .edit-profile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .gender-options {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .gender-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .gender-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .gender-option input[type="radio"] {
+            margin: 0;
+            width: 16px;
+            height: 16px;
+        }
+
+        .gender-option input[type="radio"]:checked {
+            accent-color: #00D4FF;
+        }
+
+        .gender-label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .edit-profile-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .edit-cancel-btn,
+        .edit-save-btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        .edit-cancel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .edit-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .edit-save-btn {
+            background: linear-gradient(135deg, #00D4FF 0%, #9C27B0 100%);
+            color: white;
+        }
+
+        .edit-save-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .edit-save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .save-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -4468,6 +4623,97 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="profile-modal">
+        <div class="profile-modal-content">
+            <div class="profile-modal-close" onclick="closeEditProfileModal()">×</div>
+            <div class="profile-modal-header">
+                <h3 class="profile-modal-title">Edit Profile</h3>
+            </div>
+            <div class="profile-modal-body">
+                <!-- Profile Picture Section -->
+                <div class="edit-profile-picture-section">
+                    <div class="edit-profile-avatar-container">
+                        <div id="edit-profile-avatar" class="profile-avatar-large">
+                            <div class="profile-fallback-large">?</div>
+                        </div>
+                        <div class="edit-avatar-buttons">
+                            <button type="button" class="avatar-edit-btn" onclick="editProfilePicture()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 1 2 2h14a2 2 0 0 1 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Change
+                            </button>
+                            <button type="button" class="avatar-remove-btn" onclick="removeProfilePicture()" id="remove-avatar-btn" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Form -->
+                <div class="edit-profile-form">
+                    <div class="form-group">
+                        <label for="edit-profile-name" class="form-label">Full Name</label>
+                        <input
+                            type="text"
+                            id="edit-profile-name"
+                            class="form-input"
+                            placeholder="Enter your full name"
+                            maxlength="50"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-profile-dob" class="form-label">Date of Birth</label>
+                        <input
+                            type="date"
+                            id="edit-profile-dob"
+                            class="form-input"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <div class="gender-options">
+                            <label class="gender-option">
+                                <input type="radio" name="edit-gender" value="male">
+                                <span class="gender-label">Male</span>
+                            </label>
+                            <label class="gender-option">
+                                <input type="radio" name="edit-gender" value="female">
+                                <span class="gender-label">Female</span>
+                            </label>
+                            <label class="gender-option">
+                                <input type="radio" name="edit-gender" value="other">
+                                <span class="gender-label">Other</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="edit-profile-actions">
+                    <button type="button" class="edit-cancel-btn" onclick="closeEditProfileModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="edit-save-btn" onclick="saveProfileChanges()">
+                        <span class="save-text">Save Changes</span>
+                        <div class="save-loader" style="display: none;"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for profile picture -->
+    <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
 
     <!-- Orders Modal -->
     <div id="orders-modal" class="profile-modal">
@@ -5603,9 +5849,7 @@
                     </div>
                     <div class="modal-body">
                         <p>Your payment link has been created successfully!</p>
-                        <div class="order-info">
-                            <strong>Order ID:</strong> ${orderId || 'N/A'}
-                        </div>
+
                         <div class="payment-actions">
                             <button class="action-btn primary" onclick="openPaymentLink('${paymentUrl}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -6486,8 +6730,15 @@
 
         function navigateToEditProfile() {
             closeProfileModal();
-            // For web, redirect to profile setup page
-            window.location.href = '/profile-setup';
+
+            // Check if edit profile modal exists, if not redirect to profile setup page
+            const editModal = document.getElementById('edit-profile-modal');
+            if (editModal) {
+                openEditProfileModal();
+            } else {
+                // Fallback to redirect for backward compatibility
+                window.location.href = '/profile-setup';
+            }
         }
 
         function openOrdersModal() {
@@ -8024,8 +8275,342 @@
         
         // Set initial load timestamp
         localStorage.setItem('lastStudioLoad', new Date().getTime().toString());
-        
-        
+
+        // Edit Profile Modal Functions
+        function openEditProfileModal() {
+            if (!currentUser) {
+                alert('Please login to edit your profile.');
+                if (window.showLoginModal) {
+                    window.showLoginModal();
+                }
+                return;
+            }
+
+            closeProfileModal();
+
+            // Populate form with current user data
+            populateEditProfileForm();
+
+            // Show modal
+            const modal = document.getElementById('edit-profile-modal');
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeEditProfileModal() {
+            const modal = document.getElementById('edit-profile-modal');
+            if (modal) modal.classList.remove('show');
+
+            // Reset form
+            const saveBtn = document.querySelector('.edit-save-btn');
+            if (saveBtn) {
+                const saveText = saveBtn.querySelector('.save-text');
+                const saveLoader = saveBtn.querySelector('.save-loader');
+
+                if (saveText) saveText.style.display = 'inline';
+                if (saveLoader) saveLoader.style.display = 'none';
+                saveBtn.disabled = false;
+            }
+        }
+
+        function populateEditProfileForm() {
+            const user = currentUser;
+            if (!user) return;
+
+            // Set name
+            const nameInput = document.getElementById('edit-profile-name');
+            if (nameInput) nameInput.value = user.name || '';
+
+            // Set date of birth
+            const dobInput = document.getElementById('edit-profile-dob');
+            if (dobInput && user.dateOfBirth) {
+                // Convert date format if needed
+                let dateStr = user.dateOfBirth;
+                if (dateStr.includes('T')) {
+                    dateStr = dateStr.split('T')[0];
+                }
+                dobInput.value = dateStr;
+            } else if (dobInput) {
+                dobInput.value = '';
+            }
+
+            // Set gender
+            const genderInputs = document.querySelectorAll('input[name="edit-gender"]');
+            genderInputs.forEach(input => {
+                input.checked = input.value === user.gender;
+            });
+
+            // Load profile picture
+            loadEditProfilePicture();
+        }
+
+        function loadEditProfilePicture() {
+            const avatarContainer = document.getElementById('edit-profile-avatar');
+
+            if (avatarContainer && currentUser?.user_id) {
+                // Try to load profile picture using the API
+                loadImage({
+                    element: avatarContainer,
+                    type: 'user',
+                    entityId: currentUser.user_id,
+                    altText: currentUser.name || 'Profile',
+                    containerClass: 'profile-avatar-large',
+                    fallbackClass: 'profile-fallback-large',
+                    onSuccess: function(container) {
+                        container.className = 'profile-avatar-large';
+                        const img = container.querySelector('img');
+                        if (img) img.className = 'profile-avatar-large';
+
+                        // Show remove button if there's an image
+                        const removeBtn = document.getElementById('remove-avatar-btn');
+                        if (removeBtn) removeBtn.style.display = 'inline-flex';
+                    },
+                    onError: function(container) {
+                        // Show fallback avatar
+                        avatarContainer.innerHTML = '';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'profile-fallback-large';
+                        fallback.textContent = getInitials(currentUser.name || currentUser.mobile_number);
+                        avatarContainer.appendChild(fallback);
+
+                        // Hide remove button
+                        const removeBtn = document.getElementById('remove-avatar-btn');
+                        if (removeBtn) removeBtn.style.display = 'none';
+                    }
+                });
+            } else if (avatarContainer) {
+                // Show fallback avatar
+                avatarContainer.innerHTML = '';
+                const fallback = document.createElement('div');
+                fallback.className = 'profile-fallback-large';
+                fallback.textContent = getInitials(currentUser?.name || currentUser?.mobile_number || '?');
+                avatarContainer.appendChild(fallback);
+
+                // Hide remove button
+                const removeBtn = document.getElementById('remove-avatar-btn');
+                if (removeBtn) removeBtn.style.display = 'none';
+            }
+        }
+
+        function editProfilePicture() {
+            const fileInput = document.getElementById('profile-picture-input');
+            if (fileInput) fileInput.click();
+        }
+
+        function removeProfilePicture() {
+            if (confirm('Are you sure you want to remove your profile picture?')) {
+                // Show loading
+                const removeBtn = document.getElementById('remove-avatar-btn');
+                if (removeBtn) {
+                    const originalText = removeBtn.innerHTML;
+                    removeBtn.innerHTML = '<div class="save-loader"></div>';
+                    removeBtn.disabled = true;
+
+                    // Call remove API
+                    fetch('/api/auth/profile-picture', {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update local user data
+                            if (currentUser) {
+                                currentUser.profile_picture_url = null;
+                            }
+
+                            // Reload profile picture
+                            loadEditProfilePicture();
+
+                            // Refresh profile modal
+                            if (loadProfileData) {
+                                loadProfileData();
+                            }
+
+                            alert('Profile picture removed successfully!');
+                        } else {
+                            throw new Error(data.message || 'Failed to remove profile picture');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error removing profile picture:', error);
+                        alert('Failed to remove profile picture: ' + error.message);
+                    })
+                    .finally(() => {
+                        // Reset button
+                        if (removeBtn) {
+                            removeBtn.innerHTML = originalText;
+                            removeBtn.disabled = false;
+                        }
+                    });
+                }
+            }
+        }
+
+        async function saveProfileChanges() {
+            const saveBtn = document.querySelector('.edit-save-btn');
+            if (!saveBtn) return;
+
+            const saveText = saveBtn.querySelector('.save-text');
+            const saveLoader = saveBtn.querySelector('.save-loader');
+
+            // Show loading state
+            saveBtn.disabled = true;
+            if (saveText) saveText.style.display = 'none';
+            if (saveLoader) saveLoader.style.display = 'inline-block';
+
+            try {
+                // Get form data
+                const nameInput = document.getElementById('edit-profile-name');
+                const name = nameInput ? nameInput.value.trim() : '';
+
+                const dobInput = document.getElementById('edit-profile-dob');
+                const dateOfBirth = dobInput ? dobInput.value : '';
+
+                const genderInput = document.querySelector('input[name="edit-gender"]:checked');
+                const gender = genderInput ? genderInput.value : null;
+
+                // Validate required fields
+                if (!name) {
+                    throw new Error('Please enter your name');
+                }
+
+                // Prepare update data
+                const updateData = {
+                    name: name,
+                    ...(dateOfBirth && { dateOfBirth }),
+                    ...(gender && { gender })
+                };
+
+                // Call update API
+                const response = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to update profile');
+                }
+
+                // Update local user data
+                if (currentUser) {
+                    currentUser.name = name;
+                    if (dateOfBirth) currentUser.dateOfBirth = dateOfBirth;
+                    if (gender) currentUser.gender = gender;
+                }
+
+                // Refresh profile modal
+                if (loadProfileData) {
+                    loadProfileData();
+                }
+
+                // Close edit modal
+                closeEditProfileModal();
+
+                alert('Profile updated successfully!');
+
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Failed to update profile: ' + error.message);
+            } finally {
+                // Reset loading state
+                saveBtn.disabled = false;
+                if (saveText) saveText.style.display = 'inline';
+                if (saveLoader) saveLoader.style.display = 'none';
+            }
+        }
+
+        // Handle file input change for profile picture
+        const profilePictureInput = document.getElementById('profile-picture-input');
+        if (profilePictureInput) {
+            profilePictureInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file');
+                    return;
+                }
+
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image file size must be less than 5MB');
+                    return;
+                }
+
+                // Show loading on edit button
+                const editBtn = document.querySelector('.avatar-edit-btn');
+                if (editBtn) {
+                    const originalText = editBtn.innerHTML;
+                    editBtn.innerHTML = '<div class="save-loader"></div>';
+                    editBtn.disabled = true;
+
+                    try {
+                        // Create FormData for file upload
+                        const formData = new FormData();
+                        formData.append('profile_picture', file);
+
+                        // Upload image
+                        const response = await fetch('/api/auth/profile-picture', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                            },
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Failed to upload profile picture');
+                        }
+
+                        // Update local user data
+                        if (currentUser && result.profile_picture_url) {
+                            currentUser.profile_picture_url = result.profile_picture_url;
+                        }
+
+                        // Reload profile picture
+                        loadEditProfilePicture();
+
+                        // Refresh profile modal
+                        if (loadProfileData) {
+                            loadProfileData();
+                        }
+
+                        alert('Profile picture uploaded successfully!');
+
+                    } catch (error) {
+                        console.error('Error uploading profile picture:', error);
+                        alert('Failed to upload profile picture: ' + error.message);
+                    } finally {
+                        // Reset button
+                        if (editBtn) {
+                            editBtn.innerHTML = originalText;
+                            editBtn.disabled = false;
+                            // Clear file input
+                            e.target.value = '';
+                        }
+                    }
+                }
+            });
+        }
+
+        // Utility function to get initials
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+        }
+
         // Keyboard navigation
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
@@ -8052,6 +8637,6 @@
             }
         });
     </script>
-    <script src="/static/js/auth_components.js"></script>
+    <script src="/static/js/auth_components.js?v=20240916"></script>
 </body>
 </html>

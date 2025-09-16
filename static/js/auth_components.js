@@ -112,6 +112,7 @@ function closeProfileModal() {
 }
 
 const openOrdersModal = requireAuth(function() {
+    console.log('openOrdersModal: Opening orders modal');
     closeProfileModal();
     ordersModal.style.display = 'flex';
     loadOrders();
@@ -713,27 +714,23 @@ function loadProfileData() {
     profileName.textContent = currentUser.name || 'Loading...';
     profileMobile.textContent = currentUser.mobile_number || 'Loading...';
 
-    // Load profile picture
-    if (currentUser.profile_picture_url) {
-        loadImage({
-            element: profileAvatarContainer,
-            type: 'user',
-            entityId: currentUser.user_id,
-            altText: currentUser.name || 'Profile',
-            containerClass: 'profile-avatar-large',
-            fallbackClass: 'profile-fallback-large',
-            onSuccess: function(container) {
-                container.className = 'profile-avatar-large';
-                const img = container.querySelector('img');
-                if (img) img.className = 'profile-avatar-large';
-            },
-            onError: function(container) {
-                showProfileModalFallback();
-            }
-        });
-    } else {
-        showProfileModalFallback();
-    }
+    // Load profile picture using /api/image/user/{user_id}
+    loadImage({
+        element: profileAvatarContainer,
+        type: 'user',
+        entityId: currentUser.user_id,
+        altText: currentUser.name || 'Profile',
+        containerClass: 'profile-avatar-large',
+        fallbackClass: 'profile-fallback-large',
+        onSuccess: function(container) {
+            container.className = 'profile-avatar-large';
+            const img = container.querySelector('img');
+            if (img) img.className = 'profile-avatar-large';
+        },
+        onError: function(container) {
+            showProfileModalFallback();
+        }
+    });
 
     // Set profile status
     const statusBadge = profileStatus.querySelector('.status-badge');
@@ -848,6 +845,18 @@ window.qrModal = qrModal;
 window.authToken = authToken;
 window.currentUser = currentUser;
 
+// Make profile and order functions globally available
+window.openOrdersModal = openOrdersModal;
+window.openRewardsModal = openRewardsModal;
+window.refreshOrders = refreshOrders;
+window.refreshRewards = refreshRewards;
+window.loadOrders = loadOrders;
+window.loadRewards = loadRewards;
+window.navigateToEditProfile = navigateToEditProfile;
+window.applyOrderFilter = applyOrderFilter;
+window.switchTransactionTab = switchTransactionTab;
+window.loadMoreTransactions = loadMoreTransactions;
+
 // Make debug function globally available for console testing
 window.debugAuthStatus = debugAuthStatus;
 
@@ -880,13 +889,15 @@ async function loadOrders() {
     ordersList.innerHTML = '';
 
     try {
-        const response = await fetch('/api/orders', {
+        console.log('loadOrders: Fetching orders from /api/orders/user');
+        const response = await fetch('/api/orders/user', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'Content-Type': 'application/json',
             },
         });
+        console.log('loadOrders: API response status:', response.status);
 
         if (response.ok) {
             const data = await response.json();
@@ -1001,11 +1012,13 @@ function applyOrderFilter(filter) {
 }
 
 function refreshOrders() {
+    console.log('refreshOrders: Starting refresh');
     ordersRefreshBtn.disabled = true;
     ordersRefreshBtn.querySelector('svg').style.transform = 'rotate(360deg)';
     ordersRefreshBtn.querySelector('svg').style.transition = 'transform 0.5s';
 
     loadOrders().finally(() => {
+        console.log('refreshOrders: Load completed');
         setTimeout(() => {
             ordersRefreshBtn.disabled = false;
             ordersRefreshBtn.querySelector('svg').style.transform = 'rotate(0deg)';
