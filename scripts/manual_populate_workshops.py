@@ -96,18 +96,18 @@ def main():
         ManualWorkshopEntry(by="Amisha Jayaram", song="o mama Tetema",
                             pricing_info="Early Bird (Till 19th Sept): ₹800/-\nStandard (20th-21st Sept): ₹950/-",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="03:00 PM",
-                            end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna", workshop_uuid="theroyaldancespace/amisha_jayaram-workshop_21_9_2025_o_mama_tetema"),
+                            end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_amisha_jayaram-workshop_21_9_2025_o_mama_tetema"),
 
         # Kiran J's workshops with tiered pricing
         ManualWorkshopEntry(by="Kiran J", song="aavan jaavan",
                             pricing_info="First 15 spots: ₹999/-\n16-20 spots (till 20th): ₹1100/-\nOTS (after 20th): ₹1300/-\nBUNDLE:Evening Double:KIRAN_DOUBLE:theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul,theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria:1799:INR:Save ₹400 on both classes",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="05:00 PM",
-                            end_time="07:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul"),
+                            end_time="07:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace_mr.kiranj-workshop_21_9_2025_azul"),
 
         ManualWorkshopEntry(by="Kiran J", song="bijuria",
                             pricing_info="First 15 spots: ₹999/-\n16-20 spots (till 20th): ₹1100/-\nOTS (after 20th): ₹1300/-\nBUNDLE:Evening Double:KIRAN_DOUBLE:theroyaldancespace/mr.kiranj-workshop_21_9_2025_azul,theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria:1799:INR:Save ₹400 on both classes",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace/mr.kiranj-workshop_21_9_2025_bijuria"),
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["mr.kiranj"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace_mr.kiranj-workshop_21_9_2025_bijuria"),
 
         # Vivek & Aakanksha's workshops with time-based tiered pricing and bundle option
         ManualWorkshopEntry(by="Vivek & Aakanksha", song="mayya mayya",
@@ -139,7 +139,11 @@ def main():
                             pricing_info="Early Bird : 799/-\nCouple: 1799/-",
                             event_type=EventType.WORKSHOP, day=3, month=10, year=2025, start_time="07:00 PM",
                             end_time="09:00 PM", choreo_insta_link=None, registration_link="https://www.gauravandyana.com/event-details/4th-october-bangalore-hai-rama-choreography-workshop-by-g-y", artist_id_list=["gauravandyana"],registration_link_type="url", workshop_uuid="theroyaldancespace_gaurav_yana_workshop_3_10_2025_hai_rama"),
-      
+        ManualWorkshopEntry(by="Aashish Dubey", song="Ucha Lamba Kad",
+                            pricing_info="Early Bird (Till 26th Sept): ₹799/-\nStandard (27th-27th Sept): ₹999/-",
+                            event_type=EventType.WORKSHOP, day=27, month=9, year=2025, start_time="06:00 PM",
+                            end_time="08:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["aashish.dubeyy"],registration_link_type="whatsapp", workshop_uuid="theroyaldancespace_aashish_dubeyy_workshop_27_9_2025_ucha_lamba_kad"),
+        
     ], remove_existing_workshops = True)
 
     manual_populate_workshops("beinrtribe", [

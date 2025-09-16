@@ -3003,7 +3003,47 @@
             workshopsSection.style.display = 'none';
             errorState.style.display = 'none';
         }
-        
+
+        // Function to get user profile from API
+        async function getUserProfile(token) {
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Get profile error:', error);
+                throw error;
+            }
+        }
+
+        // Function to refresh user profile data
+        async function loadProfileData() {
+            if (!window.authToken) return;
+
+            try {
+                const userProfile = await getUserProfile(window.authToken);
+                // Update current user data with fresh profile information
+                if (window.currentUser) {
+                    Object.assign(window.currentUser, userProfile);
+                }
+                console.log('Profile data refreshed:', userProfile);
+            } catch (error) {
+                console.error('Failed to refresh profile data:', error);
+            }
+        }
+
         // Load specific artist data
         async function loadArtistData() {
             try {
@@ -3792,27 +3832,68 @@
                     return;
                 }
 
-                // Check if profile is complete for nachna registration
-                console.log('Checking profile completeness:', {
-                    profile_complete: window.currentUser.profile_complete,
-                    name: window.currentUser.name,
-                    dateOfBirth: window.currentUser.dateOfBirth,
-                    gender: window.currentUser.gender
-                });
+                // Show loading state first
+                const originalText = button.textContent;
+                button.textContent = 'Checking profile...';
+                button.disabled = true;
+                button.setAttribute('data-original-text', originalText);
 
-                if (!window.currentUser.profile_complete) {
-                    console.log('Profile incomplete, showing profile completion modal');
-                    showProfileCompletionModal();
+                try {
+                    // Always fetch fresh profile data before checking completion
+                    console.log('Fetching fresh profile data for nachna registration...');
+                    const freshProfile = await getUserProfile(window.authToken);
+
+                    // Update current user with fresh data
+                    if (window.currentUser) {
+                        Object.assign(window.currentUser, freshProfile);
+                    }
+
+                    console.log('Fresh profile data:', {
+                        profile_complete: freshProfile.profile_complete,
+                        name: freshProfile.name,
+                        date_of_birth: freshProfile.date_of_birth,
+                        gender: freshProfile.gender
+                    });
+
+                    // Primary check: Use the profile_complete flag from the fresh API response
+                    console.log('Profile complete flag from fresh API:', freshProfile.profile_complete, typeof freshProfile.profile_complete);
+                    console.log('Full fresh profile object:', freshProfile);
+
+                    // Handle different types of profile_complete values
+                    const profileCompleteValue = freshProfile.profile_complete;
+                    const isProfileComplete = profileCompleteValue === true ||
+                                             profileCompleteValue === 'true' ||
+                                             profileCompleteValue === 1 ||
+                                             (typeof profileCompleteValue === 'string' && profileCompleteValue.toLowerCase() === 'true');
+
+                    console.log('Profile complete raw value:', profileCompleteValue);
+                    console.log('Profile complete type:', typeof profileCompleteValue);
+                    console.log('Is profile complete (after type checking):', isProfileComplete);
+
+                    if (!isProfileComplete) {
+                        console.log('Profile incomplete according to fresh API data, showing profile completion modal');
+                        showProfileCompletionModal();
+                        return;
+                    }
+
+                    console.log('Profile is complete, proceeding with registration...');
+
+                } catch (profileError) {
+                    console.error('Error fetching profile data:', profileError);
+                    alert('Failed to verify profile. Please try again.');
                     return;
+                } finally {
+                    // Reset button state
+                    button.textContent = originalText;
+                    button.disabled = false;
                 }
 
-                console.log('User is logged in and profile is complete, proceeding with registration');
-
-                // Show loading state
-                const originalText = button.textContent;
+                // Continue with registration - show bundles loading state
                 button.textContent = 'Checking bundles...';
                 button.disabled = true;
                 button.setAttribute('data-original-text', originalText);
+
+                console.log('User is logged in and profile is complete, proceeding with registration');
 
                 // Store current workshop for later use
                 currentWorkshopUuid = workshop.uuid;
@@ -4876,11 +4957,11 @@
                     throw new Error('Please enter your name');
                 }
 
-                // Prepare update data
+                // Prepare update data - include existing profile details
                 const updateData = {
-                    name: name,
-                    ...(dateOfBirth && { dateOfBirth }),
-                    ...(gender && { gender })
+                    name: name || window.currentUser.name,
+                    date_of_birth: dateOfBirth || window.currentUser.dateOfBirth,
+                    gender: gender || window.currentUser.gender
                 };
 
                 // Call update API

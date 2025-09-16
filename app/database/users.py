@@ -63,25 +63,40 @@ class UserOperations:
     def update_user_profile(user_id: str, profile_data: dict) -> bool:
         """Update user profile."""
         client = get_mongo_client()
-        
-        # Check if profile is complete
-        profile_complete = all([
-            profile_data.get("name"),
-            profile_data.get("date_of_birth"),
-            profile_data.get("gender")
-        ])
-        
+
+        # First update the profile with new data
         update_data = {
             **profile_data,
-            "profile_complete": profile_complete,
             "updated_at": datetime.utcnow()
         }
-        
+
         result = client["dance_app"]["users"].update_one(
             {"_id": ObjectId(user_id)},
             {"$set": update_data}
         )
-        return result.modified_count > 0
+
+        if result.modified_count == 0:
+            return False
+
+        # Now check profile completeness based on the updated user data
+        updated_user = client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
+        if not updated_user:
+            return False
+
+        # Check if profile is complete (has all required fields with actual values)
+        profile_complete = all([
+            updated_user.get("name") and updated_user.get("name").strip(),
+            updated_user.get("date_of_birth") and updated_user.get("date_of_birth").strip(),
+            updated_user.get("gender") and updated_user.get("gender").strip()
+        ])
+
+        # Update the profile_complete status
+        client["dance_app"]["users"].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"profile_complete": profile_complete}}
+        )
+
+        return True
     
 
 

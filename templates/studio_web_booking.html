@@ -5413,7 +5413,7 @@
                     img.onclick = function(e) {
                         e.stopPropagation(); // Prevent workshop card click
                         trackArtistClick(validArtistIds[0], workshop);
-                        window.open(`/web/artist/${validArtistIds[0]}`, '_blank');
+                        window.location.href = `/web/artist/${validArtistIds[0]}`;
                     };
                     
                     // Use centralized image loading function
@@ -5434,7 +5434,7 @@
                             fallback.onclick = function(e) {
                                 e.stopPropagation(); // Prevent workshop card click
                                 trackArtistClick(validArtistIds[0], workshop);
-                                window.open(`/web/artist/${validArtistIds[0]}`, '_blank');
+                                window.location.href = `/web/artist/${validArtistIds[0]}`;
                             };
                             
                             container.replaceChild(fallback, imgElement);
@@ -5866,25 +5866,65 @@
                     return;
                 }
 
-                // Check if profile is complete for nachna registration
-                console.log('Checking profile completeness:', {
-                    profile_complete: currentUser.profile_complete,
-                    name: currentUser.name,
-                    dateOfBirth: currentUser.dateOfBirth,
-                    gender: currentUser.gender
-                });
-
-                if (!currentUser.profile_complete) {
-                    console.log('Profile incomplete, showing profile completion modal');
-                    showProfileCompletionModal();
-                    return;
-                }
-
-                // Show loading state
+                // Show loading state first
                 const originalText = button.textContent;
-                button.textContent = 'Checking bundles...';
+                button.textContent = 'Checking profile...';
                 button.disabled = true;
                 button.setAttribute('data-original-text', originalText);
+
+                try {
+                    // Always fetch fresh profile data before checking completion
+                    console.log('Fetching fresh profile data for nachna registration...');
+                    const freshProfile = await getUserProfile(authToken);
+
+                    // Update current user with fresh data
+                    if (currentUser) {
+                        Object.assign(currentUser, freshProfile);
+                    }
+
+                    console.log('Fresh profile data:', {
+                        profile_complete: freshProfile.profile_complete,
+                        name: freshProfile.name,
+                        date_of_birth: freshProfile.date_of_birth,
+                        gender: freshProfile.gender
+                    });
+
+                    // Primary check: Use the profile_complete flag from the fresh API response
+                    console.log('Profile complete flag from fresh API:', freshProfile.profile_complete, typeof freshProfile.profile_complete);
+                    console.log('Full fresh profile object:', freshProfile);
+
+                    // Handle different types of profile_complete values
+                    const profileCompleteValue = freshProfile.profile_complete;
+                    const isProfileComplete = profileCompleteValue === true ||
+                                             profileCompleteValue === 'true' ||
+                                             profileCompleteValue === 1 ||
+                                             (typeof profileCompleteValue === 'string' && profileCompleteValue.toLowerCase() === 'true');
+
+                    console.log('Profile complete raw value:', profileCompleteValue);
+                    console.log('Profile complete type:', typeof profileCompleteValue);
+                    console.log('Is profile complete (after type checking):', isProfileComplete);
+
+                    if (!isProfileComplete) {
+                        console.log('Profile incomplete according to fresh API data, showing profile completion modal');
+                        showProfileCompletionModal();
+                        return;
+                    }
+
+                    console.log('Profile is complete, proceeding with registration...');
+
+                } catch (profileError) {
+                    console.error('Error fetching profile data:', profileError);
+                    alert('Failed to verify profile. Please try again.');
+                    return;
+                } finally {
+                    // Reset button state
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+
+                // Continue with registration - show bundles loading state
+                button.textContent = 'Checking bundles...';
+                button.disabled = true;
 
                 // Store current workshop for later use
                 currentWorkshopUuid = workshop.uuid;
@@ -6752,7 +6792,7 @@
                     </div>
                     <div class="share-options" id="artist-selection-options">
                         ${artistIds.map((artistId, index) => `
-                            <a href="/web/artist/${artistId}" target="_blank" rel="noopener,noreferrer" class="share-option" 
+                            <a href="/web/artist/${artistId}" class="share-option" 
                                onclick="trackArtistClick('${artistId}', ${JSON.stringify(workshop).replace(/"/g, '&quot;')}); closeArtistSelectionModal();">
                                 <div class="share-option-icon" style="background: var(--primary-gradient);">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -8155,6 +8195,22 @@
             }
         }
 
+        // Function to refresh user profile data
+        async function loadProfileData() {
+            if (!authToken) return;
+
+            try {
+                const userProfile = await getUserProfile(authToken);
+                // Update current user data with fresh profile information
+                if (currentUser) {
+                    Object.assign(currentUser, userProfile);
+                }
+                console.log('Profile data refreshed:', userProfile);
+            } catch (error) {
+                console.error('Failed to refresh profile data:', error);
+            }
+        }
+
         // Form Handlers
         async function handleSendOTP(event) {
             event.preventDefault();
@@ -8664,11 +8720,11 @@
                     throw new Error('Please enter your name');
                 }
 
-                // Prepare update data
+                // Prepare update data - include existing profile details
                 const updateData = {
-                    name: name,
-                    ...(dateOfBirth && { dateOfBirth }),
-                    ...(gender && { gender })
+                    name: name || currentUser.name,
+                    date_of_birth: dateOfBirth || currentUser.dateOfBirth,
+                    gender: gender || currentUser.gender
                 };
 
                 // Call update API

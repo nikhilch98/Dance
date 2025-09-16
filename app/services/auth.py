@@ -70,7 +70,12 @@ def format_user_profile(user_data: dict) -> UserProfile:
         gender=user_data.get("gender"),
         profile_picture_url=user_data.get("profile_picture_url"),
         profile_picture_id=user_data.get("profile_picture_id"),
-        profile_complete=user_data.get("profile_complete", False),
+        # profile_complete=user_data.get("profile_complete", False),
+        profile_complete=all([
+            user_data.get("name"),
+            user_data.get("date_of_birth"),
+            user_data.get("gender")
+        ]),
         is_admin=user_data.get("is_admin", False),
         created_at=user_data["created_at"],
         updated_at=user_data["updated_at"],
