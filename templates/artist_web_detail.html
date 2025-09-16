@@ -2967,50 +2967,9 @@
         }
         
         function formatDate(dateStr) {
-            if (!dateStr) return 'TBA';
-
-            try {
-                // Handle different date formats
-                let date;
-                if (typeof dateStr === 'string') {
-                    // Try different date formats
-                    if (dateStr.includes('T')) {
-                        // ISO format with time
-                        date = new Date(dateStr);
-                    } else if (dateStr.includes('-')) {
-                        // Date format like YYYY-MM-DD
-                        date = new Date(dateStr + 'T00:00:00');
-                    } else if (dateStr.includes('/')) {
-                        // Date format like DD/MM/YYYY
-                        date = new Date(dateStr);
-                    } else {
-                        // Try to parse as is
-                        date = new Date(dateStr);
-                    }
-                } else {
-                    // Already a Date object or timestamp
-                    date = new Date(dateStr);
-                }
-
-                // Check if date is valid
-                if (isNaN(date.getTime())) {
-                    console.warn('Invalid date format:', dateStr);
-                    return 'TBA';
-                }
-
-                // Format the date
-                const options = {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                };
-
-                return date.toLocaleDateString('en-US', options);
-            } catch (error) {
-                console.error('Error formatting date:', dateStr, error);
-                return 'TBA';
-            }
+            // The date is already properly formatted by the backend
+            // Just return it as-is, or 'TBA' if empty
+            return dateStr || 'TBA';
         }
         
         function showLoading() {
@@ -3286,8 +3245,6 @@
 
                 if (response.ok) {
                 const studioData = await response.json();
-                console.log('Loaded studio data for:', studioId, '->', studioData.name);
-                console.log('Studio data fields:', { id: studioData.id, _id: studioData._id, studio_id: studioData.studio_id, name: studioData.name });
 
                 // Add to our studios array
                 if (!studiosData) studiosData = [];
@@ -3318,14 +3275,11 @@
                 );
 
                 if (studioData) {
-                    console.log('Found studio data via fallback for:', studioId, '->', studioData.name);
-                    console.log('Fallback studio data fields:', { id: studioData.id, _id: studioData._id, studio_id: studioData.studio_id, name: studioData.name });
+                // Add to our studios array
+                if (!studiosData) studiosData = [];
+                studiosData.push(studioData);
 
-                    // Add to our studios array
-                    if (!studiosData) studiosData = [];
-                    studiosData.push(studioData);
-
-                    return studioData;
+                return studioData;
                 }
 
                 console.warn(`Studio with ID ${studioId} not found in fallback`);
@@ -3490,7 +3444,7 @@
             card.dataset.uuid = workshopUuid || '';
             card.dataset.song = workshop.song || workshop.songName || workshop.song_name || '';
             card.dataset.artist = workshop.by || workshop.artist || '';
-            card.dataset.date = workshop.date || workshop.workshop_date || '';
+            card.dataset.date = workshop.date;
             card.dataset.studioId = workshop.studioId || workshop.studio_id || '';
             
             // Check multiple possible field name variations
@@ -3502,14 +3456,15 @@
             const paymentLink = workshop.paymentLink || workshop.payment_link || '';
             const paymentLinkType = workshop.paymentLinkType || workshop.payment_link_type || '';
             const choreoLink = workshop.choreoInstaLink || workshop.choreo_insta_link || '';
-            const date = workshop.date || workshop.workshop_date || '';
+            const date = workshop.date;
             const time = workshop.time || workshop.workshop_time || '';
-            
-            
+            // Format the date before using it in template
+            const formattedDate = workshop.date;
+            console.log('Formatted date result:', workshop.date);
             card.innerHTML = `
                 <!-- Header Row: Date + Choreo Button + Time Badge -->
                 <div class="workshop-header-row">
-                    <div class="workshop-date-main">${formatDate(date)}</div>
+                    <div class="workshop-date-main">${formattedDate}</div>
                     <div class="header-actions">
                         ${choreoLink && choreoLink.trim() ? `
                             <button class="choreo-button-header" onclick="trackChoreoClick('${choreoLink}', ${JSON.stringify(workshop).replace(/"/g, '&quot;')})">
@@ -4669,7 +4624,7 @@
                 if (results[1].status === 'fulfilled') {
                     await loadStudiosDataForWorkshops();
                     // Now that studio data is loaded, display workshops
-                    displayWorkshops();
+                displayWorkshops();
                 }
 
                 console.log('All data loaded successfully');
