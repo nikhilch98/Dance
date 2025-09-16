@@ -927,7 +927,7 @@ async def create_bundle_payment_link(
             user_email=user_email,
             user_phone=user_phone,
             workshop_title=f"Bundle Payment - {bundle.get('name', 'Bundle')}" + (f" (₹{rewards_redeemed_rupees} reward discount applied)" if rewards_redeemed_rupees > 0 else ""),
-            expire_by_mins=20  # 20 minute expiry
+            expire_by_mins=30  # 30 minute expiry
         )
 
         # Update order with payment link details
@@ -1473,7 +1473,7 @@ async def create_payment_link(
                     user_email=user_email,
                     user_phone=user_phone,
                     workshop_title=payment_title,
-                    expire_by_mins=20  # 20 minute expiry
+                    expire_by_mins=30  # 30 minute expiry
                 )
                 
                 logger.info(f"Created Razorpay payment link {razorpay_response['id']} for order {order_id}")

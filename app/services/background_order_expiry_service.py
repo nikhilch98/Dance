@@ -4,6 +4,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
+import threading
 
 from app.database.orders import OrderOperations
 from app.models.orders import OrderStatusEnum
@@ -19,6 +20,8 @@ class BackgroundOrderExpiryService:
         self.processing = False
         self.last_run = None
         self.check_interval_minutes = 1  # Check every 1 minute
+        self._lock = threading.Lock()  # Thread lock for race condition prevention
+        self.min_run_interval_seconds = 30  # Minimum 30 seconds between runs
 
     async def process_expired_orders(self, batch_size: int = 50) -> Dict[str, Any]:
         """Process expired orders and mark them as expired.
@@ -29,14 +32,22 @@ class BackgroundOrderExpiryService:
         Returns:
             Processing results summary
         """
-        if self.processing:
+        # Check if enough time has passed since last run
+        if self.last_run:
+            time_since_last_run = (datetime.now() - self.last_run).total_seconds()
+            if time_since_last_run < self.min_run_interval_seconds:
+                logger.debug(f"Skipping order expiry check - only {time_since_last_run:.1f}s since last run")
+                return {"status": "skipped", "reason": "too_soon", "seconds_since_last_run": time_since_last_run}
+
+        # Use thread lock to prevent race conditions
+        if not self._lock.acquire(blocking=False):
             logger.warning("Order expiry processing already in progress, skipping")
             return {"status": "skipped", "reason": "already_processing"}
 
-        self.processing = True
-        start_time = datetime.now()
-
         try:
+            self.processing = True
+            start_time = datetime.now()
+
             # Get orders that have expired payment links
             expired_orders = self._get_expired_orders(limit=batch_size)
 
@@ -71,6 +82,21 @@ class BackgroundOrderExpiryService:
                     # Skip if order is already paid
                     if current_status == OrderStatusEnum.PAID.value:
                         logger.debug(f"Order {order_id} is already paid, skipping expiry")
+                        skipped_count += 1
+                        skipped_orders.append(order_id)
+                        continue
+
+                    # Double-check order status before updating to prevent race conditions
+                    current_order = OrderOperations.get_order_by_id(order_id)
+                    if not current_order:
+                        logger.warning(f"Order {order_id} not found during expiry processing")
+                        skipped_count += 1
+                        skipped_orders.append(order_id)
+                        continue
+                    
+                    current_status = current_order.get('status', 'unknown')
+                    if current_status in [OrderStatusEnum.EXPIRED.value, OrderStatusEnum.CANCELLED.value, OrderStatusEnum.PAID.value]:
+                        logger.debug(f"Order {order_id} status changed to {current_status} during processing, skipping")
                         skipped_count += 1
                         skipped_orders.append(order_id)
                         continue
@@ -129,6 +155,7 @@ class BackgroundOrderExpiryService:
             }
         finally:
             self.processing = False
+            self._lock.release()
 
     def _get_expired_orders(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Get orders with expired payment links.
@@ -176,6 +203,7 @@ class BackgroundOrderExpiryService:
 
         except Exception as e:
             logger.error(f"Error fetching expired orders: {str(e)}")
+            # Return empty list to prevent service from crashing
             return []
 
     def get_processing_status(self) -> Dict[str, Any]:
