@@ -306,7 +306,7 @@ class ImageMigration:
         return migrated_count, failed_count
     
     @staticmethod
-    def migrate_artist_images():
+    def migrate_artist_images(artist_id_list: Optional[str] = None):
         """Migrate artist images from URLs to new collection."""
         from app.database.workshops import DatabaseOperations
         
@@ -319,6 +319,8 @@ class ImageMigration:
         
         for artist in artists:
             try:
+                if artist_id_list and artist["id"] not in artist_id_list:
+                    continue
                 artist_id = artist["id"]
                 image_url = artist.get("image_url")
                 

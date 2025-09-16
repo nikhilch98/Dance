@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.utils import DatabaseManager, is_image_downloadable
-
+from app.database.images import ImageMigration, ImageDatabase
 
 @dataclass
 class Artist:
@@ -326,6 +326,7 @@ def main():
             # Rate limiting
             time.sleep(1)
 
+    ImageMigration.migrate_artist_images(artist_id_list=[artist.instagram_id for artist in artists])
 
 if __name__ == "__main__":
     main()
