@@ -4235,6 +4235,123 @@
             border-top-color: white;
             animation: spin 1s linear infinite;
         }
+
+        /* Profile Completion Modal Styles */
+        .profile-completion-message {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .completion-icon {
+            color: var(--primary-gradient);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .completion-icon svg {
+            stroke: #00D4FF;
+        }
+
+        .profile-completion-message h4 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .profile-completion-message p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-requirements {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .requirement-item svg {
+            color: var(--primary-gradient);
+            stroke: #00D4FF;
+            flex-shrink: 0;
+        }
+
+        .requirement-item span {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .profile-completion-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .completion-cancel-btn,
+        .completion-update-btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        .completion-cancel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .completion-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .completion-update-btn {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .completion-update-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .completion-update-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .update-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
@@ -4714,6 +4831,62 @@
 
     <!-- Hidden file input for profile picture -->
     <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+
+    <!-- Profile Completion Modal -->
+    <div id="profile-completion-modal" class="profile-modal">
+        <div class="profile-modal-content">
+            <div class="profile-modal-close" onclick="closeProfileCompletionModal()">×</div>
+            <div class="profile-modal-header">
+                <h3 class="profile-modal-title">Complete Your Profile</h3>
+            </div>
+            <div class="profile-modal-body">
+                <div class="profile-completion-message">
+                    <div class="completion-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <h4>Profile Required for Registration</h4>
+                    <p>To register for workshops, please complete your profile information. This helps us provide you with the best experience and ensures smooth registration process.</p>
+
+                    <div class="profile-requirements">
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Full Name</span>
+                        </div>
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Date of Birth</span>
+                        </div>
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Gender</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-completion-actions">
+                    <button type="button" class="completion-cancel-btn" onclick="closeProfileCompletionModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="completion-update-btn" onclick="openEditProfileModal()">
+                        <span class="update-text">Update Profile</span>
+                        <div class="update-loader" style="display: none;"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Orders Modal -->
     <div id="orders-modal" class="profile-modal">
@@ -5690,6 +5863,20 @@
                 if (!authToken || !currentUser) {
                     alert('Please login to register with nachna.');
                     openLoginModal();
+                    return;
+                }
+
+                // Check if profile is complete for nachna registration
+                console.log('Checking profile completeness:', {
+                    profile_complete: currentUser.profile_complete,
+                    name: currentUser.name,
+                    dateOfBirth: currentUser.dateOfBirth,
+                    gender: currentUser.gender
+                });
+
+                if (!currentUser.profile_complete) {
+                    console.log('Profile incomplete, showing profile completion modal');
+                    showProfileCompletionModal();
                     return;
                 }
 
@@ -8605,6 +8792,21 @@
             });
         }
 
+        // Profile Completion Modal Functions
+        function showProfileCompletionModal() {
+            const modal = document.getElementById('profile-completion-modal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeProfileCompletionModal() {
+            const modal = document.getElementById('profile-completion-modal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
         // Utility function to get initials
         function getInitials(name) {
             if (!name) return '?';
@@ -8636,6 +8838,16 @@
                 }
             }
         });
+
+        // Profile completion modal click outside to close
+        const profileCompletionModal = document.getElementById('profile-completion-modal');
+        if (profileCompletionModal) {
+            profileCompletionModal.addEventListener('click', function(e) {
+                if (e.target === profileCompletionModal) {
+                    closeProfileCompletionModal();
+                }
+            });
+        }
     </script>
     <script src="/static/js/auth_components.js?v=20240916"></script>
 </body>

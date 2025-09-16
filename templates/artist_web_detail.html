@@ -2392,6 +2392,123 @@
             box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
         }
 
+        /* Profile Completion Modal Styles */
+        .profile-completion-message {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .completion-icon {
+            color: var(--primary-gradient);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .completion-icon svg {
+            stroke: #00D4FF;
+        }
+
+        .profile-completion-message h4 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .profile-completion-message p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-requirements {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .requirement-item svg {
+            color: var(--primary-gradient);
+            stroke: #00D4FF;
+            flex-shrink: 0;
+        }
+
+        .requirement-item span {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .profile-completion-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .completion-cancel-btn,
+        .completion-update-btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        .completion-cancel-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .completion-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .completion-update-btn {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .completion-update-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .completion-update-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .update-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
         /* Edit Profile Modal Styles */
         .edit-profile-picture-section {
             display: flex;
@@ -2605,6 +2722,24 @@
                 width: 100%;
             }
 
+            /* Profile completion modal mobile */
+            .profile-requirements {
+                gap: 0.5rem;
+            }
+
+            .requirement-item {
+                padding: 0.5rem 0.75rem;
+            }
+
+            .profile-completion-actions {
+                flex-direction: column-reverse;
+            }
+
+            .completion-cancel-btn,
+            .completion-update-btn {
+                width: 100%;
+            }
+
             /* Transaction tabs mobile */
             .transactions-header {
                 flex-direction: column;
@@ -2717,7 +2852,7 @@
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                     </div>
-                    <h2 class="section-title">Workshops by {{ artist_name }}</h2>
+                    <h2 class="section-title">Workshops</h2>
                 </div>
                 <div id="workshops-content" class="workshops-grid"></div>
             </div>
@@ -2833,7 +2968,49 @@
         
         function formatDate(dateStr) {
             if (!dateStr) return 'TBA';
-            return dateStr;
+
+            try {
+                // Handle different date formats
+                let date;
+                if (typeof dateStr === 'string') {
+                    // Try different date formats
+                    if (dateStr.includes('T')) {
+                        // ISO format with time
+                        date = new Date(dateStr);
+                    } else if (dateStr.includes('-')) {
+                        // Date format like YYYY-MM-DD
+                        date = new Date(dateStr + 'T00:00:00');
+                    } else if (dateStr.includes('/')) {
+                        // Date format like DD/MM/YYYY
+                        date = new Date(dateStr);
+                    } else {
+                        // Try to parse as is
+                        date = new Date(dateStr);
+                    }
+                } else {
+                    // Already a Date object or timestamp
+                    date = new Date(dateStr);
+                }
+
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    console.warn('Invalid date format:', dateStr);
+                    return 'TBA';
+                }
+
+                // Format the date
+                const options = {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                };
+
+                return date.toLocaleDateString('en-US', options);
+            } catch (error) {
+                console.error('Error formatting date:', dateStr, error);
+                return 'TBA';
+            }
         }
         
         function showLoading() {
@@ -2921,7 +3098,7 @@
                     throw new Error(`Failed to load workshops (${response.status})`);
                 }
                 workshopsData = await response.json();
-                displayWorkshops(); // Display immediately like studio page
+                // displayWorkshops() will be called from loadData() after studio data is loaded
             } catch (error) {
                 throw error;
             }
@@ -3088,7 +3265,11 @@
                 }
 
                 // Check if we already have this studio data
-                const existingStudio = studiosData.find(s => s.id === studioId);
+                const existingStudio = studiosData.find(s =>
+                    s.id === studioId ||
+                    s._id === studioId ||
+                    s.studio_id === studioId
+                );
                 if (existingStudio) {
                     console.log('Studio data already exists for:', studioId);
                     return existingStudio;
@@ -3106,6 +3287,7 @@
                 if (response.ok) {
                 const studioData = await response.json();
                 console.log('Loaded studio data for:', studioId, '->', studioData.name);
+                console.log('Studio data fields:', { id: studioData.id, _id: studioData._id, studio_id: studioData.studio_id, name: studioData.name });
 
                 // Add to our studios array
                 if (!studiosData) studiosData = [];
@@ -3129,10 +3311,15 @@
                 }
 
                 const allStudios = await response.json();
-                const studioData = allStudios.find(studio => studio.id === studioId);
+                const studioData = allStudios.find(studio =>
+                    studio.id === studioId ||
+                    studio._id === studioId ||
+                    studio.studio_id === studioId
+                );
 
                 if (studioData) {
                     console.log('Found studio data via fallback for:', studioId, '->', studioData.name);
+                    console.log('Fallback studio data fields:', { id: studioData.id, _id: studioData._id, studio_id: studioData.studio_id, name: studioData.name });
 
                     // Add to our studios array
                     if (!studiosData) studiosData = [];
@@ -3182,13 +3369,25 @@
             if (!studiosData || !studioId) {
                 return 'Loading...';
             }
-            const studio = studiosData.find(s => s.id === studioId);
+
+            // Try multiple possible ID field names
+            const studio = studiosData.find(s =>
+                s.id === studioId ||
+                s._id === studioId ||
+                s.studio_id === studioId
+            );
+
             return studio ? toTitleCase(studio.name) : 'Unknown Studio';
         }
         
         function getStudioData(studioId) {
             if (!studiosData || !studioId) return null;
-            return studiosData.find(s => s.id === studioId);
+            // Try multiple possible ID field names
+            return studiosData.find(s =>
+                s.id === studioId ||
+                s._id === studioId ||
+                s.studio_id === studioId
+            );
         }
         
         // Create studio avatar component
@@ -3638,7 +3837,21 @@
                     return;
                 }
 
-                console.log('User is logged in, proceeding with registration');
+                // Check if profile is complete for nachna registration
+                console.log('Checking profile completeness:', {
+                    profile_complete: window.currentUser.profile_complete,
+                    name: window.currentUser.name,
+                    dateOfBirth: window.currentUser.dateOfBirth,
+                    gender: window.currentUser.gender
+                });
+
+                if (!window.currentUser.profile_complete) {
+                    console.log('Profile incomplete, showing profile completion modal');
+                    showProfileCompletionModal();
+                    return;
+                }
+
+                console.log('User is logged in and profile is complete, proceeding with registration');
 
                 // Show loading state
                 const originalText = button.textContent;
@@ -4454,9 +4667,11 @@
 
                 // Load studios data for the workshops (only if workshops loaded successfully)
                 if (results[1].status === 'fulfilled') {
-                await loadStudiosDataForWorkshops();
+                    await loadStudiosDataForWorkshops();
+                    // Now that studio data is loaded, display workshops
+                    displayWorkshops();
                 }
-                
+
                 console.log('All data loaded successfully');
                 hideLoading();
                 
@@ -4827,6 +5042,21 @@
             }
         });
 
+        // Profile Completion Modal Functions
+        function showProfileCompletionModal() {
+            const modal = document.getElementById('profile-completion-modal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeProfileCompletionModal() {
+            const modal = document.getElementById('profile-completion-modal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
         // Utility function to get initials
         function getInitials(name) {
             if (!name) return '?';
@@ -4865,6 +5095,16 @@
                 window.qrModal.addEventListener('click', function(e) {
                     if (e.target === window.qrModal) {
                         window.closeQRModal();
+                    }
+                });
+            }
+
+            // Profile completion modal click outside to close
+            const profileCompletionModal = document.getElementById('profile-completion-modal');
+            if (profileCompletionModal) {
+                profileCompletionModal.addEventListener('click', function(e) {
+                    if (e.target === profileCompletionModal) {
+                        closeProfileCompletionModal();
                     }
                 });
             }
@@ -5169,6 +5409,62 @@
 
     <!-- Hidden file input for profile picture -->
     <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+
+    <!-- Profile Completion Modal -->
+    <div id="profile-completion-modal" class="profile-modal">
+        <div class="profile-modal-content">
+            <div class="profile-modal-close" onclick="closeProfileCompletionModal()">×</div>
+            <div class="profile-modal-header">
+                <h3 class="profile-modal-title">Complete Your Profile</h3>
+            </div>
+            <div class="profile-modal-body">
+                <div class="profile-completion-message">
+                    <div class="completion-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <h4>Profile Required for Registration</h4>
+                    <p>To register for workshops, please complete your profile information. This helps us provide you with the best experience and ensures smooth registration process.</p>
+
+                    <div class="profile-requirements">
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Full Name</span>
+                        </div>
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Date of Birth</span>
+                        </div>
+                        <div class="requirement-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Gender</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-completion-actions">
+                    <button type="button" class="completion-cancel-btn" onclick="closeProfileCompletionModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="completion-update-btn" onclick="openEditProfileModal()">
+                        <span class="update-text">Update Profile</span>
+                        <div class="update-loader" style="display: none;"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Rewards Modal -->
     <div id="rewards-modal" class="profile-modal">
