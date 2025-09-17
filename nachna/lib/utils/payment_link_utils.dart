@@ -104,6 +104,7 @@ class PaymentLinkUtils {
               builder: (context) => RewardsRedemptionScreen(
                 workshop: workshop,
                 originalAmount: originalAmount,
+                pricingInfo: workshopDetails!['pricing'],
                 workshopDetails: workshopDetails,
               ),
             ),
@@ -169,17 +170,9 @@ class PaymentLinkUtils {
 
         // Check if bundle suggestion is available
         if (response?.bundleSuggestion != null && response!.bundleSuggestion!.isNotEmpty) {
-          // Show bundle suggestion modal
+          // Navigate to bundle screen instead of showing modal
           if (context.mounted) {
-            await showDialog(
-              context: context,
-              barrierDismissible: true,
-              builder: (context) => BundleSuggestionModal(
-                bundleSuggestion: response.bundleSuggestion!,
-                workshopUuid: workshopUuid,
-                workshop: workshop,
-              ),
-            );
+            Navigator.of(context).pushNamed('/bundles');
           }
         } else {
           // No bundle suggestion, proceed with normal payment flow
@@ -235,17 +228,9 @@ class PaymentLinkUtils {
 
         // Check if bundle suggestion is available
         if (response?.bundleSuggestion != null && response!.bundleSuggestion!.isNotEmpty) {
-          // Show bundle suggestion modal
+          // Navigate to bundle screen instead of showing modal
           if (context.mounted) {
-            await showDialog(
-              context: context,
-              barrierDismissible: true,
-              builder: (context) => BundleSuggestionModal(
-                bundleSuggestion: response.bundleSuggestion!,
-                workshopUuid: workshopUuid,
-                workshop: workshop,
-              ),
-            );
+            Navigator.of(context).pushNamed('/bundles');
           }
         } else {
           // No bundle suggestion, proceed with normal payment flow

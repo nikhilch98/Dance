@@ -351,6 +351,31 @@ def extract_pricing_amount(pricing_info: str) -> int:
         raise ValueError(f"Invalid pricing format: {pricing_info}")
 
 
+def calculate_current_price(pricing_info: str, workshop_uuid: str) -> float:
+    """Calculate current price in rupees from pricing_info using tiered pricing logic.
+
+    Args:
+        pricing_info: Pricing information string
+        workshop_uuid: Workshop UUID for tiered pricing calculation
+
+    Returns:
+        Current price in rupees (not paise)
+    """
+    if not pricing_info:
+        return 0.0
+
+    try:
+        pricing_result = parse_tiered_pricing(pricing_info, workshop_uuid)
+        amount_paise = pricing_result['amount_paise']
+        return amount_paise / 100.0  # Convert from paise to rupees
+    except (ValueError, KeyError):
+        # Fallback to simple extraction if tiered parsing fails
+        try:
+            return extract_pricing_amount(pricing_info) / 100.0
+        except ValueError:
+            return 0.0
+
+
 def get_workshop_by_uuid(workshop_uuid: str) -> dict:
     """Get workshop details by UUID.
     
@@ -470,6 +495,7 @@ async def check_available_bundles(workshop_uuid: str):
                 "workshop_count": len(bundle.get("workshop_ids", [])),
                 "individual_total_price": total_individual,
                 "bundle_price": bundle_price,
+                "current_price": bundle_price / 100.0,  # Convert from paise to rupees
                 "savings_amount": savings,
                 "savings_percentage": round((savings / total_individual * 100), 1) if total_individual > 0 else 0,
                 "pricing_info": bundle.get("pricing_info", "")
@@ -515,6 +541,7 @@ async def get_bundle_details(bundle_id: str):
                 "workshops": bundle.get("workshops", []),
                 "individual_total_price": total_individual,
                 "bundle_price": bundle_price,
+                "current_price": bundle_price / 100.0,  # Convert from paise to rupees
                 "savings_amount": savings,
                 "savings_percentage": round((savings / total_individual * 100), 1) if total_individual > 0 else 0,
                 "pricing_info": bundle.get("pricing_info", ""),

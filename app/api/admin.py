@@ -91,6 +91,7 @@ def admin_get_missing_artist_sessions(user_id: str = Depends(verify_admin_user))
     # Find workshops that have missing or empty artist_id_list
     workshops_cursor = client["discovery"]["workshops_v2"].find({
         "event_type": {"$nin": ["regulars"]},
+        "is_archived": {"$ne": True},
         "$or": [
             {"artist_id_list": {"$exists": False}},
             {"artist_id_list": None},
@@ -144,6 +145,7 @@ def admin_get_missing_song_sessions(user_id: str = Depends(verify_admin_user)):
     # Find workshops that have missing or empty song field
     workshops_cursor = client["discovery"]["workshops_v2"].find({
         "event_type": {"$nin": ["regulars"]},
+        "is_archived": {"$ne": True},
         "$or": [
             {"song": {"$exists": False}},
             {"song": None},
@@ -455,6 +457,7 @@ async def get_workshops_missing_instagram_links(user_id: str = Depends(verify_ad
         
         # Find workshops where choreo_insta_link is None or empty
         workshops = list(client["discovery"]["workshops_v2"].find({
+            "is_archived": {"$ne": True},
             "$or": [
                 {"choreo_insta_link": None},
                 {"choreo_insta_link": ""},
@@ -525,7 +528,7 @@ async def update_workshop_instagram_link(
                 detail=f"Invalid workshop ID format: {workshop_id}"
             )
             
-        workshop = client["discovery"]["workshops_v2"].find_one({"_id": object_id})
+        workshop = client["discovery"]["workshops_v2"].find_one({"_id": object_id, "is_archived": {"$ne": True}})
         if not workshop:
             raise HTTPException(
                 status_code=404,

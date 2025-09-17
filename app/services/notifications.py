@@ -240,7 +240,8 @@ class NotificationService:
                     
                     # Find workshops in the reminder window
                     workshops = client["discovery"]["workshops_v2"].find({
-                        "event_type": {"$nin": ["regulars"]}
+                        "event_type": {"$nin": ["regulars"]},
+                        "is_archived": {"$ne": True}
                     })
                     
                     for workshop in workshops:

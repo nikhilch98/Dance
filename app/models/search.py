@@ -36,5 +36,6 @@ class SearchWorkshopResult(BaseModel):
     payment_link: str
     payment_link_type: str
     pricing_info: Optional[str] = None
+    current_price: Optional[float] = None  # Current price in rupees based on tiered pricing
     event_type: Optional[str] = None
     choreo_insta_link: Optional[str] = None 

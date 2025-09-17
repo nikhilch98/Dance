@@ -24,6 +24,7 @@ class WorkshopListItem(BaseModel):
     by: Optional[str]
     song: Optional[str]
     pricing_info: Optional[str]
+    current_price: Optional[float] = None  # Current price in rupees based on tiered pricing
     timestamp_epoch: int
     artist_id_list: Optional[List[str]] = []
     artist_image_urls: Optional[List[Optional[HttpUrl]]] = []
@@ -62,6 +63,7 @@ class WorkshopSession(BaseModel):
     payment_link: str
     payment_link_type: str
     pricing_info: Optional[str]
+    current_price: Optional[float] = None  # Current price in rupees based on tiered pricing
     timestamp_epoch: int
     event_type: Optional[str]
     choreo_insta_link: Optional[HttpUrl]
@@ -91,6 +93,7 @@ class EventDetails(BaseModel):
     artist_id_list: Optional[List[str]] = []
     song: Optional[str]
     pricing_info: Optional[str]
+    current_price: Optional[float] = None  # Current price in rupees based on tiered pricing
     updated_at: float
     date_without_day: str
     date_with_day: str
@@ -99,6 +102,6 @@ class EventDetails(BaseModel):
     time_year: Optional[int]
     time_month: Optional[int]
     time_day: Optional[int]
-    time_day_full_string: Optional[str] 
+    time_day_full_string: Optional[str]
     choreo_insta_link: Optional[HttpUrl]
 

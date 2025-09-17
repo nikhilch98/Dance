@@ -8,12 +8,14 @@ import '../utils/responsive_utils.dart';
 class RewardsRedemptionScreen extends StatefulWidget {
   final WorkshopSession workshop;
   final double originalAmount;
+  final String? pricingInfo;
   final Map<String, String?> workshopDetails;
 
   const RewardsRedemptionScreen({
     Key? key,
     required this.workshop,
     required this.originalAmount,
+    this.pricingInfo,
     required this.workshopDetails,
   }) : super(key: key);
 
@@ -103,6 +105,12 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
 
   void _proceedWithRedemption() async {
     if (_redemptionCalculation == null) return;
+
+    // If no rewards are selected (0), proceed without redemption
+    if (_selectedRedemption <= 0) {
+      _proceedWithoutRedemption();
+      return;
+    }
 
     try {
       showDialog(
@@ -393,21 +401,30 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Workshop Amount',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: ResponsiveUtils.body1(context),
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    'Workshop Amount',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.body1(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
-                Text(
-                  '₹${widget.originalAmount.toStringAsFixed(0)}',
+                Flexible(
+                  child:                 Text(
+                  widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}',
                   style: TextStyle(
                     color: const Color(0xFF00D4FF),
                     fontSize: ResponsiveUtils.h3(context),
                     fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 ),
               ],
             ),
@@ -423,17 +440,21 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: ResponsiveUtils.screenWidth(context) * 0.25,
+          Flexible(
+            flex: 1,
             child: Text(
               label,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: ResponsiveUtils.body2(context),
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
+          const SizedBox(width: 16),
           Expanded(
+            flex: 2,
             child: Text(
               value,
               style: TextStyle(
@@ -441,6 +462,8 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
                 fontSize: ResponsiveUtils.body2(context),
                 fontWeight: FontWeight.w500,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],
@@ -491,19 +514,28 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Available Balance',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: ResponsiveUtils.body1(context),
+              Flexible(
+                child: Text(
+                  'Available Balance',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: ResponsiveUtils.body1(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              Text(
-                workshopInfo.formattedAvailableBalance,
-                style: TextStyle(
-                  color: const Color(0xFF10B981),
-                  fontSize: ResponsiveUtils.h3(context),
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  workshopInfo.formattedAvailableBalance,
+                  style: TextStyle(
+                    color: const Color(0xFF10B981),
+                    fontSize: ResponsiveUtils.h3(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -512,19 +544,28 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Max Redeemable',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: ResponsiveUtils.body2(context),
+              Flexible(
+                child: Text(
+                  'Max Redeemable',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: ResponsiveUtils.body2(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              Text(
-                '₹${workshopInfo.maxRedeemablePoints.toStringAsFixed(0)}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: ResponsiveUtils.body1(context),
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  '₹${workshopInfo.maxRedeemablePoints.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: ResponsiveUtils.body1(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -568,26 +609,41 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '₹0',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: ResponsiveUtils.body2(context),
+              Flexible(
+                child: Text(
+                  '₹0',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: ResponsiveUtils.body2(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              Text(
-                '₹${_selectedRedemption.toStringAsFixed(0)}',
-                style: TextStyle(
-                  color: const Color(0xFF00D4FF),
-                  fontSize: ResponsiveUtils.h2(context),
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                flex: 2,
+                child: Text(
+                  '₹${_selectedRedemption.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: const Color(0xFF00D4FF),
+                    fontSize: ResponsiveUtils.h2(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              Text(
-                '₹${maxRedeemable.toStringAsFixed(0)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: ResponsiveUtils.body2(context),
+              Flexible(
+                child: Text(
+                  '₹${maxRedeemable.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: ResponsiveUtils.body2(context),
+                  ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -715,7 +771,7 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
             ],
           ),
           SizedBox(height: ResponsiveUtils.spacingLarge(context)),
-          _buildSummaryRow('Workshop Amount', '₹${widget.originalAmount.toStringAsFixed(0)}'),
+          _buildSummaryRow('Workshop Amount', widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}'),
           if (_selectedRedemption > 0) ...[
             _buildSummaryRow(
               'Reward Discount',
@@ -753,28 +809,39 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color ?? (isTotal ? Colors.white : Colors.white.withOpacity(0.7)),
-              fontSize: isSubtext 
-                  ? ResponsiveUtils.body2(context)
-                  : isTotal 
-                      ? ResponsiveUtils.h3(context)
-                      : ResponsiveUtils.body1(context),
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+          Flexible(
+            flex: 3,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color ?? (isTotal ? Colors.white : Colors.white.withOpacity(0.7)),
+                fontSize: isSubtext
+                    ? ResponsiveUtils.body2(context)
+                    : isTotal
+                        ? ResponsiveUtils.h3(context)
+                        : ResponsiveUtils.body1(context),
+                fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: color ?? (isTotal ? const Color(0xFF8B5CF6) : Colors.white),
-              fontSize: isSubtext 
-                  ? ResponsiveUtils.body2(context)
-                  : isTotal 
-                      ? ResponsiveUtils.h2(context)
-                      : ResponsiveUtils.body1(context),
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+          Flexible(
+            flex: 2,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color ?? (isTotal ? const Color(0xFF8B5CF6) : Colors.white),
+                fontSize: isSubtext
+                    ? ResponsiveUtils.body2(context)
+                    : isTotal
+                        ? ResponsiveUtils.h2(context)
+                        : ResponsiveUtils.body1(context),
+                fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

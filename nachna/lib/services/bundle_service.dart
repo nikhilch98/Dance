@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/order.dart';
+import '../models/bundle.dart';
 import './auth_service.dart';
 import './http_client_service.dart';
 
@@ -16,7 +17,7 @@ class BundleService {
   http.Client get _httpClient => HttpClientService.instance.client;
 
   /// Get available bundle templates
-  Future<List<Map<String, dynamic>>> getBundleTemplates() async {
+  Future<List<BundleTemplate>> getBundleTemplates() async {
     try {
       final token = await AuthService.getToken();
       if (token == null) {
@@ -32,8 +33,8 @@ class BundleService {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        final bundles = responseData['bundles'] as List<dynamic>? ?? [];
-        return bundles.map((bundle) => bundle as Map<String, dynamic>).toList();
+        final bundleTemplatesResponse = BundleTemplatesResponse.fromJson(responseData);
+        return bundleTemplatesResponse.bundles;
       } else if (response.statusCode == 401) {
         throw Exception('Session expired. Please login again.');
       } else {
@@ -104,7 +105,7 @@ class BundleService {
   }
 
   /// Get user's bundle orders
-  Future<List<Map<String, dynamic>>> getUserBundles() async {
+  Future<List<Order>> getUserBundles() async {
     try {
       final token = await AuthService.getToken();
       if (token == null) {
@@ -120,8 +121,8 @@ class BundleService {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        final orders = responseData['orders'] as List<dynamic>? ?? [];
-        return orders.map((order) => order as Map<String, dynamic>).toList();
+        final userOrdersResponse = UserOrdersResponse.fromJson(responseData);
+        return userOrdersResponse.orders;
       } else if (response.statusCode == 401) {
         throw Exception('Session expired. Please login again.');
       } else {

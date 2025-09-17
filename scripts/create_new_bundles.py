@@ -24,27 +24,27 @@ def create_new_bundles():
 
     # Define bundles based on existing workshop data
     bundles = [
-        {
-            "bundle_id": "TWO_WORKSHOPS_BUNDLE",
-            "name": "Two Workshops Bundle Package",
-            "description": "Vivek & Aakanksha's complete workshop series - Mayya Mayya & Aavan Jaavan bundled together",
-            "studio_id": "theroyaldancespace",
-            "workshop_ids": [
-                "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya",
-                "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan"
-            ],
-            "pricing_info": "Bundle Price: ₹1500/-\nEarly Bird (Till 18th Sept): ₹1500/-\nStandard (19th-20th Sept): ₹1600/-",
-            "individual_workshop_prices": {
-                "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya": 799,
-                "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan": 799
-            },
-            "bundle_price": 1500,
-            "savings_amount": 98,  # (799 * 2) - 1500 = 98
-            "savings_percentage": 6.1,  # 98 / 1598 ≈ 6.1%
-            "is_active": True,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now()
-        }
+        # {
+        #     "bundle_id": "TWO_WORKSHOPS_BUNDLE",
+        #     "name": "Two Workshops Bundle Package",
+        #     "description": "Vivek & Aakanksha's complete workshop series - Mayya Mayya & Aavan Jaavan bundled together",
+        #     "studio_id": "theroyaldancespace",
+        #     "workshop_ids": [
+        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya",
+        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan"
+        #     ],
+        #     "pricing_info": "Bundle Price: ₹1500/-\nEarly Bird (Till 18th Sept): ₹1500/-\nStandard (19th-20th Sept): ₹1600/-",
+        #     "individual_workshop_prices": {
+        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya": 799,
+        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan": 799
+        #     },
+        #     "bundle_price": 1500,
+        #     "savings_amount": 98,  # (799 * 2) - 1500 = 98
+        #     "savings_percentage": 6.1,  # 98 / 1598 ≈ 6.1%
+        #     "is_active": True,
+        #     "created_at": datetime.now(),
+        #     "updated_at": datetime.now()
+        # }
     ]
 
     # Clear existing bundles
@@ -52,8 +52,9 @@ def create_new_bundles():
     print("Cleared existing bundles")
 
     # Insert new bundles
-    result = db["bundles"].insert_many(bundles)
-    print(f"✅ Created {len(result.inserted_ids)} new bundles")
+    if bundles:
+        result = db["bundles"].insert_many(bundles)
+        print(f"✅ Created {len(result.inserted_ids)} new bundles")
 
     # Verify bundles were created
     created_bundles = list(db["bundles"].find())

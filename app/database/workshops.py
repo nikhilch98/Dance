@@ -38,6 +38,11 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
         # Use artist_id_list directly
         artist_id_list = workshop.get("artist_id_list", [])
         date_with_day, time_day_full_string = get_formatted_date_with_day(time_details)
+        # Calculate current price
+        pricing_info = workshop.get("pricing_info", "")
+        from app.api.orders import calculate_current_price
+        current_price = calculate_current_price(pricing_info, workshop["uuid"]) if pricing_info else None
+
         event_details.append(EventDetails(
             mongo_id=str(workshop["_id"]),
             payment_link=workshop["payment_link"],
@@ -48,7 +53,8 @@ def format_workshop_data(workshop: dict) -> List[EventDetails]:
             artist_name=workshop["by"],
             artist_id_list=artist_id_list,
             song=workshop["song"],
-            pricing_info=workshop["pricing_info"],
+            pricing_info=pricing_info,
+            current_price=current_price,
             updated_at=workshop["updated_at"],
             date_without_day=date_without_day,
             date_with_day=date_with_day,
@@ -81,7 +87,7 @@ class DatabaseOperations:
             List of workshops with formatted details
         """
         client = get_mongo_client()
-        filter = {}
+        filter = {"is_archived": {"$ne": True}}
         if studio_id:
             filter["studio_id"] = studio_id
         if event_type_blacklist:
@@ -140,6 +146,7 @@ class DatabaseOperations:
             by=format_artist_name(workshop.artist_id_list, workshop.artist_name),
             song=workshop.song,
             pricing_info=workshop.pricing_info,
+            current_price=workshop.current_price,
             timestamp_epoch=workshop.timestamp_epoch,
             artist_id_list=workshop.artist_id_list,
             artist_instagram_links=[artists_map.get(artist_id,{}).get("instagram_link") for artist_id in workshop.artist_id_list] if workshop.artist_id_list else [],
@@ -181,7 +188,7 @@ class DatabaseOperations:
         client = get_mongo_client()
         # Get artists that appear in artist_id_list arrays
         artists_with_workshops = set()
-        for workshop in client["discovery"]["workshops_v2"].find({}, {"artist_id_list": 1}):
+        for workshop in client["discovery"]["workshops_v2"].find({"is_archived": {"$ne": True}}, {"artist_id_list": 1}):
             artist_list = workshop.get("artist_id_list", [])
             if artist_list:
                 artists_with_workshops.update(artist_list)
@@ -213,7 +220,8 @@ class DatabaseOperations:
         
         # Find workshops where the artist_id is in the artist_id_list
         workshops_cursor = client["discovery"]["workshops_v2"].find({
-            "artist_id_list": artist_id
+            "artist_id_list": artist_id,
+            "is_archived": {"$ne": True}
         })
         
         for workshop in workshops_cursor:
@@ -221,6 +229,11 @@ class DatabaseOperations:
                 if not time_detail:
                     continue
                     
+                # Calculate current price
+                pricing_info = workshop.get("pricing_info", "")
+                from app.api.orders import calculate_current_price
+                current_price = calculate_current_price(pricing_info, workshop.get("uuid")) if pricing_info else None
+
                 workshops.append(
                     WorkshopSession(
                         uuid=workshop.get("uuid"),
@@ -232,7 +245,8 @@ class DatabaseOperations:
                         artist=workshop.get("by"),
                         payment_link=workshop.get("payment_link"),
                         payment_link_type=workshop.get("payment_link_type"),
-                        pricing_info=workshop.get("pricing_info"),
+                        pricing_info=pricing_info,
+                        current_price=current_price,
                         timestamp_epoch=get_timestamp_epoch(time_detail),
                         event_type=workshop.get("event_type"),
                         choreo_insta_link=workshop.get("choreo_insta_link"),
@@ -343,6 +357,7 @@ class DatabaseOperations:
                         by=format_artist_name(x.artist_id_list, x.artist_name),
                         song=x.song,
                         pricing_info=x.pricing_info,
+                        current_price=x.current_price,
                         timestamp_epoch=x.timestamp_epoch,
                         artist_id_list=x.artist_id_list,
                         artist_instagram_links=[artists_map.get(artist_id,{}).get("instagram_link") for artist_id in x.artist_id_list] if x.artist_id_list else [],
@@ -367,6 +382,7 @@ class DatabaseOperations:
                         by=format_artist_name(x.artist_id_list, x.artist_name),
                         song=x.song,
                         pricing_info=x.pricing_info,
+                        current_price=x.current_price,
                         timestamp_epoch=x.timestamp_epoch,
                         artist_id_list=x.artist_id_list,
                         artist_instagram_links=[artists_map.get(artist_id,{}).get("instagram_link") for artist_id in x.artist_id_list] if x.artist_id_list else [],
@@ -390,11 +406,14 @@ class DatabaseOperations:
         
         # Find workshops where song_name is null, empty, or missing
         workshops = client["dance_app"]["workshops"].find({
-            "$or": [
-                {"song_name": {"$exists": False}},
-                {"song_name": None},
-                {"song_name": ""},
-                {"song_name": {"$regex": "^\\s*$"}}  # Only whitespace
+            "$and": [
+                {"is_archived": {"$ne": True}},
+                {"$or": [
+                    {"song_name": {"$exists": False}},
+                    {"song_name": None},
+                    {"song_name": ""},
+                    {"song_name": {"$regex": "^\\s*$"}}  # Only whitespace
+                ]}
             ]
         })
         
@@ -413,7 +432,7 @@ class DatabaseOperations:
         client = get_mongo_client()
 
         # Find the workshop document
-        workshop_doc = client["discovery"]["workshops_v2"].find_one({"uuid": uuid})
+        workshop_doc = client["discovery"]["workshops_v2"].find_one({"uuid": uuid, "is_archived": {"$ne": True}})
         if not workshop_doc:
             return None
 

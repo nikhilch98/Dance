@@ -232,7 +232,7 @@ class NotificationOperations:
         """Get workshop details for comparison to detect changes."""
         client = get_mongo_client()
         
-        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid, "is_archived": {"$ne": True}})
         if not workshop:
             return None
             
@@ -312,7 +312,7 @@ class NotificationOperations:
             return False
         
         # Get workshop details
-        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid})
+        workshop = client["discovery"]["workshops_v2"].find_one({"uuid": workshop_uuid, "is_archived": {"$ne": True}})
         if not workshop:
             return False
         

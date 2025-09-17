@@ -106,7 +106,7 @@ PaymentLinkResponse _$PaymentLinkResponseFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['expires_at'] as String),
       workshopDetails: OrderWorkshopDetails.fromJson(
           json['workshop_details'] as Map<String, dynamic>),
-      bundleSuggestion: json['bundle_suggestion'] as Map<String, dynamic>?,
+      bundleSuggestion: json['bundleSuggestion'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$PaymentLinkResponseToJson(
@@ -122,7 +122,7 @@ Map<String, dynamic> _$PaymentLinkResponseToJson(
       'currency': instance.currency,
       'expires_at': instance.expiresAt?.toIso8601String(),
       'workshop_details': instance.workshopDetails,
-      'bundle_suggestion': instance.bundleSuggestion,
+      'bundleSuggestion': instance.bundleSuggestion,
     };
 
 CreatePaymentLinkResponse _$CreatePaymentLinkResponseFromJson(

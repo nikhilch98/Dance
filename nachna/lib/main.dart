@@ -22,6 +22,7 @@ import './screens/profile_setup_screen.dart';
 import './screens/profile_screen.dart';
 import './screens/admin_screen.dart';
 import './screens/artist_detail_screen.dart';
+import './screens/bundle_screen.dart';
 
 
 void main() async {
@@ -87,6 +88,7 @@ class MyApp extends StatelessWidget {
           '/home': (context) => const HomeScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/admin': (context) => const AdminScreen(),
+          '/bundles': (context) => const BundleScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),
