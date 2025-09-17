@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:developer';
 import '../models/rewards.dart';
 import '../models/workshop.dart';
 import '../services/rewards_service.dart';
@@ -95,6 +96,11 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
         _selectedRedemption = calculation.workshopInfo.recommendedRedemption;
         _isLoading = false;
       });
+
+      // Debug message for calculate-redemption response
+      final fullJson = calculation.toJson();
+      fullJson['workshop_info'] = calculation.workshopInfo.toJson();
+      debugPrint('DEBUG: calculate-redemption response: $fullJson');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();

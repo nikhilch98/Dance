@@ -480,7 +480,7 @@ class RewardOperations:
     def get_redemption_cap() -> float:
         """Get the maximum points redeemable per workshop."""
         # Use configurable setting
-        return getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
+        return getattr(settings, 'reward_redemption_cap_per_workshop', 50.0)
 
     @staticmethod
     def get_exchange_rate() -> float:

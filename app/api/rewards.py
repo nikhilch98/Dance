@@ -156,12 +156,18 @@ async def calculate_redemption(
         redemption_cap_percentage = RewardOperations.get_redemption_cap_percentage()
         
         # Calculate maximum redeemable based on workshop amount (configurable percentage cap)
-        max_discount_amount = request.workshop_amount * (redemption_cap_percentage / 100.0)
-        max_redeemable_points = max_discount_amount / exchange_rate
-        
+        max_discount_amount_percentage = request.workshop_amount * (redemption_cap_percentage / 100.0)
+        max_redeemable_points_percentage = max_discount_amount_percentage / exchange_rate
+
+        # Also consider the fixed redemption cap (maximum points per workshop)
+        max_redeemable_points_fixed = redemption_cap
+
+        # Use the more restrictive cap (whichever is smaller)
+        max_redeemable_points = min(max_redeemable_points_percentage, max_redeemable_points_fixed)
+        max_discount_amount = max_redeemable_points * exchange_rate
+
         # Consider user's available balance
         actual_max_redeemable = min(max_redeemable_points, available_balance)
-        actual_max_discount = actual_max_redeemable * exchange_rate
         
         # Recommend full available amount up to cap
         recommended_redemption = actual_max_redeemable
@@ -180,7 +186,7 @@ async def calculate_redemption(
             workshop_title="Workshop Booking",  # This could be fetched from workshop data
             original_amount=request.workshop_amount,
             max_redeemable_points=actual_max_redeemable,
-            max_discount_amount=actual_max_discount,
+            max_discount_amount=max_discount_amount,
             user_available_balance=available_balance,
             recommended_redemption=recommended_redemption
         )

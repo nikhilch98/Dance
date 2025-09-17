@@ -1144,7 +1144,7 @@ async def create_payment_link(
                 reward_balance = RewardOperations.get_user_balance(user_id)
                 redemption_cap_percentage = getattr(_settings, 'reward_redemption_cap_percentage', 10.0)
                 max_discount_allowed = order_amount_rupees * (redemption_cap_percentage / 100.0)
-                redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 500.0)
+                redemption_cap_per_workshop = getattr(_settings, 'reward_redemption_cap_per_workshop', 50.0)
                 if discount_rupees > reward_balance:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient reward balance")
                 if discount_rupees > max_discount_allowed:
@@ -1331,7 +1331,7 @@ async def create_payment_link(
                         )
                     
                     # Validate against absolute redemption cap
-                    redemption_cap_per_workshop = getattr(settings, 'reward_redemption_cap_per_workshop', 500.0)
+                    redemption_cap_per_workshop = getattr(settings, 'reward_redemption_cap_per_workshop', 50.0)
                     if discount_rupees > redemption_cap_per_workshop:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
