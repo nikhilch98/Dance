@@ -1234,6 +1234,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                                     paymentLink: workshop.paymentLink,
                                     paymentLinkType: workshop.paymentLinkType,
                                     pricingInfo: workshop.pricingInfo,
+                                    currentPrice: workshop.currentPrice,
                                     timestampEpoch: workshop.timestampEpoch,
                                     eventType: workshop.eventType,
                                     choreoInstaLink: workshop.choreoInstaLink,

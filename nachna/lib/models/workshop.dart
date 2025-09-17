@@ -19,6 +19,8 @@ class WorkshopListItem {
   final String? song;
   @JsonKey(name: 'pricing_info')
   final String? pricingInfo;
+  @JsonKey(name: 'current_price')
+  final double? currentPrice;
   @JsonKey(name: 'timestamp_epoch')
   final int timestampEpoch;
   @JsonKey(name: 'artist_id_list')
@@ -44,6 +46,7 @@ class WorkshopListItem {
     this.by,
     this.song,
     this.pricingInfo,
+    this.currentPrice,
     required this.timestampEpoch,
     this.artistIdList,
     this.artistImageUrls,
@@ -79,6 +82,8 @@ class WorkshopSession {
   final String? paymentLinkType;
   @JsonKey(name: 'pricing_info')
   final String? pricingInfo;
+  @JsonKey(name: 'current_price')
+  final double? currentPrice;
   @JsonKey(name: 'timestamp_epoch')
   final int? timestampEpoch;
   @JsonKey(name: 'event_type')
@@ -102,6 +107,7 @@ class WorkshopSession {
     this.paymentLink,
     this.paymentLinkType,
     this.pricingInfo,
+    this.currentPrice,
     this.timestampEpoch,
     this.eventType,
     this.choreoInstaLink,

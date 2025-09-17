@@ -1071,6 +1071,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             paymentLink: workshop.paymentLink,
                             paymentLinkType: workshop.paymentLinkType,
                             pricingInfo: workshop.pricingInfo,
+                            currentPrice: workshop.currentPrice,
                             timestampEpoch: workshop.timestampEpoch,
                             eventType: workshop.eventType,
                             choreoInstaLink: workshop.choreoInstaLink,

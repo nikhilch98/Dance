@@ -17,6 +17,7 @@ WorkshopListItem _$WorkshopListItemFromJson(Map<String, dynamic> json) =>
       by: json['by'] as String?,
       song: json['song'] as String?,
       pricingInfo: json['pricing_info'] as String?,
+      currentPrice: (json['current_price'] as num?)?.toDouble(),
       timestampEpoch: (json['timestamp_epoch'] as num).toInt(),
       artistIdList: (json['artist_id_list'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -44,6 +45,7 @@ Map<String, dynamic> _$WorkshopListItemToJson(WorkshopListItem instance) =>
       'by': instance.by,
       'song': instance.song,
       'pricing_info': instance.pricingInfo,
+      'current_price': instance.currentPrice,
       'timestamp_epoch': instance.timestampEpoch,
       'artist_id_list': instance.artistIdList,
       'artist_image_urls': instance.artistImageUrls,
@@ -74,6 +76,7 @@ WorkshopSession _$WorkshopSessionFromJson(Map<String, dynamic> json) =>
       paymentLink: json['payment_link'] as String?,
       paymentLinkType: json['payment_link_type'] as String?,
       pricingInfo: json['pricing_info'] as String?,
+      currentPrice: (json['current_price'] as num?)?.toDouble(),
       timestampEpoch: (json['timestamp_epoch'] as num?)?.toInt(),
       eventType: json['event_type'] as String?,
       choreoInstaLink: json['choreo_insta_link'] as String?,
@@ -93,6 +96,7 @@ Map<String, dynamic> _$WorkshopSessionToJson(WorkshopSession instance) =>
       'payment_link': instance.paymentLink,
       'payment_link_type': instance.paymentLinkType,
       'pricing_info': instance.pricingInfo,
+      'current_price': instance.currentPrice,
       'timestamp_epoch': instance.timestampEpoch,
       'event_type': instance.eventType,
       'choreo_insta_link': instance.choreoInstaLink,

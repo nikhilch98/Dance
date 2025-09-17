@@ -143,11 +143,14 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
   }
 
   void _proceedWithoutRedemption() {
+    // Use current price for final amount, fallback to original amount
+    final finalAmount = widget.workshop.currentPrice ?? widget.originalAmount;
+
     Navigator.of(context).pop({
       'redemption': null,
       'points_redeemed': 0.0,
       'discount_amount': 0.0,
-      'final_amount': widget.originalAmount,
+      'final_amount': finalAmount,
     });
   }
 
@@ -414,17 +417,19 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
                   ),
                 ),
                 Flexible(
-                  child:                 Text(
-                  widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    color: const Color(0xFF00D4FF),
-                    fontSize: ResponsiveUtils.h3(context),
-                    fontWeight: FontWeight.bold,
+                  child: Text(
+                    widget.workshop.currentPrice != null
+                        ? '₹${widget.workshop.currentPrice!.toStringAsFixed(0)}'
+                        : widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      color: const Color(0xFF00D4FF),
+                      fontSize: ResponsiveUtils.h3(context),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
                 ),
               ],
             ),
@@ -729,8 +734,11 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
   }
 
   Widget _buildPaymentSummary() {
+    // Use current price for calculation, fallback to original amount
+    final workshopAmount = widget.workshop.currentPrice ?? widget.originalAmount;
+
     final calculation = RewardsService.calculateFinalAmount(
-      originalAmount: widget.originalAmount,
+      originalAmount: workshopAmount,
       pointsToRedeem: _selectedRedemption,
       exchangeRate: _redemptionCalculation!.exchangeRate,
     );
@@ -771,7 +779,9 @@ class _RewardsRedemptionScreenState extends State<RewardsRedemptionScreen>
             ],
           ),
           SizedBox(height: ResponsiveUtils.spacingLarge(context)),
-          _buildSummaryRow('Workshop Amount', widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}'),
+          _buildSummaryRow('Workshop Amount', widget.workshop.currentPrice != null
+              ? '₹${widget.workshop.currentPrice!.toStringAsFixed(0)}'
+              : widget.pricingInfo ?? '₹${widget.originalAmount.toStringAsFixed(0)}'),
           if (_selectedRedemption > 0) ...[
             _buildSummaryRow(
               'Reward Discount',
