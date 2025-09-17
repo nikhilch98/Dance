@@ -1,6 +1,7 @@
 """Admin API routes."""
 
 from datetime import datetime
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -564,7 +565,7 @@ async def update_workshop_instagram_link(
             "workshop_id": workshop_id,
             "choreo_insta_link": payload.choreo_insta_link
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -572,6 +573,85 @@ async def update_workshop_instagram_link(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update workshop Instagram link: {str(e)}"
+        )
+
+
+@router.get("/workshop-registrations")
+async def get_workshop_registrations(
+    user_id: str = Depends(verify_admin_user),
+    artist_filter: Optional[str] = None,
+    song_filter: Optional[str] = None,
+    search_term: Optional[str] = None
+):
+    """Get workshop registration details for admin."""
+    try:
+        client = get_mongo_client()
+        db = client["dance_app"]
+        discovery_db = client["discovery"]
+
+        admin_user_details = db["users"].find_one({"_id": ObjectId(user_id)})
+        admin_studios_list = admin_user_details.get("admin_studios_list", [])
+
+        # Execute aggregation
+        orders = list(db["orders"].find({"status":"paid"}))
+
+        # Process the results to get artist names and workshop details
+        registrations = []
+        for order in orders:
+            # Get artist names from artist_id_list
+            workshop_uuid = order["workshop_uuids"][0]
+            workshop = discovery_db["workshops_v2"].find_one({"uuid": workshop_uuid})
+            if not ("all" in admin_studios_list or workshop["studio_id"] in admin_studios_list):
+                continue
+            registration = {
+                "name": order.get("payment_gateway_details", {}).get("customer", {}).get("name", ""),
+                "phone": order.get("payment_gateway_details", {}).get("customer", {}).get("contact", ""),
+                "final_amount": order.get("amount", 0)/100,
+                "artist_name": " X ".join(order.get("workshop_details", {}).get("artist_names", [])),
+                "workshop_song": order.get("workshop_details", {}).get("title", "").replace(" - Workshop",""),
+                "workshop_date": order.get("workshop_details", {}).get("date", ""),
+                "workshop_time": order.get("workshop_details", {}).get("time", ""),
+                "order_id": order.get("order_id", ""),
+                "created_at": order.get("created_at", "")
+            }
+
+            registrations.append(registration)
+
+        # Apply filters
+        filtered_registrations = registrations
+
+        if artist_filter:
+            filtered_registrations = [r for r in filtered_registrations if artist_filter.lower() in r["artist_name"].lower()]
+
+        if song_filter:
+            filtered_registrations = [r for r in filtered_registrations if song_filter.lower() in r["workshop_song"].lower()]
+
+        if search_term:
+            search_lower = search_term.lower()
+            filtered_registrations = [r for r in filtered_registrations if
+                search_lower in r["name"].lower() or
+                search_lower in r["phone"]
+            ]
+
+        # Sort by creation date (newest first)
+        filtered_registrations.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
+        return {
+            "success": True,
+            "registrations": filtered_registrations,
+            "total_count": len(filtered_registrations),
+            "filters_applied": {
+                "artist_filter": artist_filter,
+                "song_filter": song_filter,
+                "search_term": search_term
+            }
+        }
+
+    except Exception as e:
+        logging.exception(f"Error getting workshop registrations: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get workshop registrations: {str(e)}"
         ) 
 
 
