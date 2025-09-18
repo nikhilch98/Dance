@@ -149,8 +149,27 @@ class RazorpayService:
         except Exception as e:
             logger.error(f"Failed to cancel Razorpay payment link {payment_link_id}: {e}")
             return False
+    
+    def get_order_history(self):
+        resp = self.client.order.all()
+        orders = []
+        for order in resp.get("items",[]):
+            order_id = order.get("notes",{}).get("order_id")
+            if not order_id:
+                print(f"Order {order.get('id')} has no order_id in razorpay order history order notes")
+                continue
+            orders.append({
+                "order_id": order_id,
+                "razorpay_order_id": order["id"],
+                "status": order["status"],
+            })
+        return orders
+    
+    def get_order_status(self, razorpay_order_id: str):
+        resp = self.client.order.fetch(razorpay_order_id)
+        return resp
 
 # Global instance with lazy initialization
 def get_razorpay_service() -> RazorpayService:
     """Get Razorpay service instance."""
-    return RazorpayService() 
+    return RazorpayService()
