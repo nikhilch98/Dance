@@ -758,14 +758,14 @@ async def mark_attendance(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Admin user not found"
             )
-
+        print("user found")
         admin_studios_list = user.get('admin_studios_list', [])
         if not admin_studios_list:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No studio access permissions configured"
             )
-
+        print("admin_studios_list found")
         # Find the order document
         order_collection = client["dance_app"]["orders"]
         order = order_collection.find_one({"order_id": request.order_id})
@@ -775,14 +775,14 @@ async def mark_attendance(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
             )
-
+        print("order found")
         # Check if attendance is already marked
         if order.get('attendance_marked', False):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Attendance has already been marked for this registration"
             )
-
+        print("attendance not marked")
         # Get workshop details to check studio permissions
         workshop_collection = client["discovery"]["workshops"]
         workshop_id = order.get('workshop_id')
@@ -791,14 +791,14 @@ async def mark_attendance(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Workshop ID not found in order"
             )
-
+        print("workshop found")
         workshop = workshop_collection.find_one({"_id": ObjectId(workshop_id)})
         if not workshop:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Workshop not found"
             )
-
+        print("workshop studio id found")
         # Check studio permissions
         workshop_studio_id = workshop.get('studio_id')
         if not workshop_studio_id:
@@ -806,7 +806,7 @@ async def mark_attendance(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Studio ID not found in workshop"
             )
-
+        print("studio id found")
         # Check if admin has access to this studio
         has_access = False
         if "all" in admin_studios_list:
@@ -819,7 +819,7 @@ async def mark_attendance(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient studio permissions for this workshop"
             )
-
+        print("has access")
         # Mark attendance
         marked_at = datetime.utcnow()
         result = order_collection.update_one(
@@ -838,7 +838,7 @@ async def mark_attendance(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update attendance status"
             )
-
+        
         # Log the attendance marking
         logging.info(f"Admin {user_id} marked attendance for order {request.order_id}, workshop {workshop_id}, studio {workshop_studio_id}")
 
@@ -849,8 +849,6 @@ async def mark_attendance(
             marked_at=marked_at.isoformat()
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
         logging.exception(f"Error marking attendance: {e}")
         raise HTTPException(
