@@ -8,6 +8,7 @@ import '../models/artist.dart';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:nachna/services/auth_service.dart';
 import '../providers/auth_provider.dart';
 import '../services/first_launch_service.dart';
@@ -25,7 +26,7 @@ class AdminScreen extends StatefulWidget {
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStateMixin {
+class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin {
   List<Map<String, dynamic>> missingArtistSessions = [];
   List<Map<String, dynamic>> missingSongSessions = [];
   List<Artist> allArtists = [];
@@ -130,6 +131,9 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    // Initialize with empty tabs first, will be updated after access control
+    _availableTabs = [];
+    _tabController = TabController(length: 0, vsync: this);
     _initializeAdminAccess();
   }
 
@@ -137,8 +141,18 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     await _loadUserProfile();
     _filterAvailableTabs();
 
-    // Initialize TabController with available tabs
-    _tabController = TabController(length: _availableTabs.length, vsync: this);
+    // Log access control information for debugging
+    debugPrint('🔐 ADMIN ACCESS CONTROL:');
+    debugPrint('  - Raw admin_access_list: $_adminAccessList');
+    debugPrint('  - Has "all" access: ${_adminAccessList.contains('all')}');
+    debugPrint('  - Available tabs: ${_availableTabs.map((tab) => tab['key']).toList()}');
+    debugPrint('  - Tab count: ${_availableTabs.length}');
+
+    // Update TabController with available tabs
+    _tabController.dispose();
+    setState(() {
+      _tabController = TabController(length: _availableTabs.length, vsync: this);
+    });
 
     _loadMissingArtistSessions();
     _loadMissingSongSessions();
@@ -158,9 +172,16 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null) {
         _adminAccessList = authProvider.user!.adminAccessList ?? [];
+        debugPrint('👤 USER PROFILE LOADED:');
+        debugPrint('  - User ID: ${authProvider.user!.userId}');
+        debugPrint('  - Is Admin: ${authProvider.user!.isAdmin}');
+        debugPrint('  - Admin Access List: $_adminAccessList');
+      } else {
+        debugPrint('⚠️ No user profile available');
+        _adminAccessList = [];
       }
     } catch (e) {
-      print('Error loading user profile for admin access: $e');
+      debugPrint('❌ Error loading user profile for admin access: $e');
       _adminAccessList = []; // Default to no access if error
     }
   }
@@ -169,11 +190,19 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     if (_adminAccessList.contains('all')) {
       // Show all tabs if 'all' is in access list
       _availableTabs = List.from(_allTabs);
+      debugPrint('✅ FULL ACCESS: All tabs enabled (${_availableTabs.length} tabs)');
     } else {
       // Filter tabs based on access list
+      final beforeCount = _allTabs.length;
       _availableTabs = _allTabs.where((tab) {
-        return _adminAccessList.contains(tab['key']);
+        final hasAccess = _adminAccessList.contains(tab['key']);
+        if (!hasAccess) {
+          debugPrint('🚫 ACCESS DENIED: ${tab['key']} tab not in access list');
+        }
+        return hasAccess;
       }).toList();
+      debugPrint('🔍 FILTERED ACCESS: $beforeCount → ${_availableTabs.length} tabs enabled');
+      debugPrint('  - Allowed tabs: ${_availableTabs.map((tab) => tab['key']).toList()}');
     }
   }
 
@@ -712,13 +741,33 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                             ),
                           ),
                           SizedBox(width: ResponsiveUtils.spacingLarge(context)),
-                          Text(
-                            'Admin Dashboard',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.h3(context),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Admin Dashboard',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveUtils.h3(context),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                SizedBox(height: ResponsiveUtils.spacingXSmall(context)),
+                                Text(
+                                  _adminAccessList.isEmpty
+                                    ? 'Access: No Admin Permissions'
+                                    : 'Access: ${_adminAccessList.contains('all') ? 'All Permissions' : _adminAccessList.join(', ')}',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveUtils.caption(context),
+                                    color: _adminAccessList.isEmpty
+                                      ? Colors.red.withOpacity(0.8)
+                                      : Colors.white.withOpacity(0.7),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -728,133 +777,184 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 ),
               ),
               
-              // Tab Bar
-              Container(
-                margin: EdgeInsets.symmetric(
-                  horizontal: ResponsiveUtils.spacingLarge(context), 
-                  vertical: ResponsiveUtils.spacingSmall(context)
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.1),
-                      Colors.white.withOpacity(0.05),
-                    ],
+              // Show tabs only if available
+              if (_availableTabs.isNotEmpty) ...[
+                // Tab Bar
+                Container(
+                  margin: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.spacingLarge(context),
+                    vertical: ResponsiveUtils.spacingSmall(context)
                   ),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: ResponsiveUtils.borderWidthMedium(context),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.white.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: ResponsiveUtils.borderWidthMedium(context),
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF4081), Color(0xFFE91E63)],
-                        ),
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white.withOpacity(0.6),
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: ResponsiveUtils.body2(context),
-                      ),
-                      unselectedLabelStyle: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: ResponsiveUtils.body2(context),
-                      ),
-                      tabs: _availableTabs.map((tab) {
-                        final tabKey = tab['key'] as String;
-                        final tabTitle = tab['title'] as String;
-                        final tabIcon = tab['icon'] as IconData;
-
-                        // Special handling for badge counts
-                        int? badgeCount;
-                        if (tabKey == 'songs') {
-                          badgeCount = missingSongSessions.length;
-                        } else if (tabKey == 'artists') {
-                          badgeCount = missingArtistSessions.length;
-                        }
-
-                        return Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(tabIcon, size: 18),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  tabTitle,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (badgeCount != null && badgeCount > 0) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: Colors.white.withOpacity(0.2),
-                                  ),
-                                  child: Text(
-                                    '$badgeCount',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.cardBorderRadius(context)),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        indicator: BoxDecoration(
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF4081), Color(0xFFE91E63)],
                           ),
-                        );
-                      }).toList(),
+                        ),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent,
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white.withOpacity(0.6),
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: ResponsiveUtils.body2(context),
+                        ),
+                        unselectedLabelStyle: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: ResponsiveUtils.body2(context),
+                        ),
+                        tabs: _availableTabs.map((tab) {
+                          final tabKey = tab['key'] as String;
+                          final tabTitle = tab['title'] as String;
+                          final tabIcon = tab['icon'] as IconData;
+
+                          // Special handling for badge counts
+                          int? badgeCount;
+                          if (tabKey == 'songs') {
+                            badgeCount = missingSongSessions.length;
+                          } else if (tabKey == 'artists') {
+                            badgeCount = missingArtistSessions.length;
+                          }
+
+                          return Tab(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(tabIcon, size: 18),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    tabTitle,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (badgeCount != null && badgeCount > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                    child: Text(
+                                      '$badgeCount',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              
-              // Tab Views
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: _availableTabs.map((tab) {
-                    final tabKey = tab['key'] as String;
-                    switch (tabKey) {
-                      case 'songs':
-                        return _buildMissingSongsTab();
-                      case 'artists':
-                        return _buildMissingArtistsTab();
-                      case 'notifications':
-                        return _buildNotificationsTab();
-                      case 'config':
-                        return _buildConfigTab();
-                      case 'instagram_links':
-                        return _buildInstagramLinksTab();
-                      case 'insights':
-                        return _buildInsightsTab();
-                      case 'data_updates':
-                        return _buildDataUpdatesTab();
-                      case 'qr_scanner':
-                        return _buildQRScannerTab();
-                      case 'registrations_list':
-                        return _buildRegistrationsListTab();
-                      default:
-                        return const Center(
-                          child: Text('Tab not implemented'),
-                        );
-                    }
-                  }).toList(),
+
+                // Tab Views
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: _availableTabs.map((tab) {
+                      final tabKey = tab['key'] as String;
+                      switch (tabKey) {
+                        case 'songs':
+                          return _buildMissingSongsTab();
+                        case 'artists':
+                          return _buildMissingArtistsTab();
+                        case 'notifications':
+                          return _buildNotificationsTab();
+                        case 'config':
+                          return _buildConfigTab();
+                        case 'instagram_links':
+                          return _buildInstagramLinksTab();
+                        case 'insights':
+                          return _buildInsightsTab();
+                        case 'data_updates':
+                          return _buildDataUpdatesTab();
+                        case 'qr_scanner':
+                          return _buildQRScannerTab();
+                        case 'registrations_list':
+                          return _buildRegistrationsListTab();
+                        default:
+                          return const Center(
+                            child: Text('Tab not implemented'),
+                          );
+                      }
+                    }).toList(),
+                  ),
                 ),
-              ),
+              ] else ...[
+                // No access message
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.withOpacity(0.1),
+                            Colors.red.withOpacity(0.05),
+                          ],
+                        ),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.lock_outline,
+                            color: Colors.redAccent,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Access Restricted',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'You do not have permission to access any admin features.\n\nPlease contact your administrator to request access.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1656,9 +1756,14 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
+                // Admin Access Permissions
+                _buildAdminAccessCard(),
+
+                const SizedBox(height: 20),
+
                 // Status Summary
                 _buildConfigStatusCard(configProvider),
                 
@@ -4791,6 +4896,184 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
           ),
         ),
       ],
+    );
+  }
+
+  /// Build Admin Access Permissions Card
+  Widget _buildAdminAccessCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Admin Access Permissions',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Access Status
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: _adminAccessList.isEmpty
+                ? Colors.red.withOpacity(0.1)
+                : _adminAccessList.contains('all')
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.blue.withOpacity(0.1),
+              border: Border.all(
+                color: _adminAccessList.isEmpty
+                  ? Colors.red.withOpacity(0.3)
+                  : _adminAccessList.contains('all')
+                    ? Colors.green.withOpacity(0.3)
+                    : Colors.blue.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _adminAccessList.isEmpty
+                    ? Icons.block
+                    : _adminAccessList.contains('all')
+                      ? Icons.check_circle
+                      : Icons.info,
+                  color: _adminAccessList.isEmpty
+                    ? Colors.red
+                    : _adminAccessList.contains('all')
+                      ? Colors.green
+                      : Colors.blue,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _adminAccessList.isEmpty
+                          ? 'No Admin Access'
+                          : _adminAccessList.contains('all')
+                            ? 'Full Admin Access'
+                            : 'Limited Admin Access',
+                        style: TextStyle(
+                          color: _adminAccessList.isEmpty
+                            ? Colors.red
+                            : _adminAccessList.contains('all')
+                              ? Colors.green
+                              : Colors.blue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _adminAccessList.isEmpty
+                          ? 'You do not have any admin permissions.'
+                          : _adminAccessList.contains('all')
+                            ? 'You have access to all admin features.'
+                            : 'You have limited admin access.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (_adminAccessList.isNotEmpty && !_adminAccessList.contains('all')) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Granted Permissions:',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _adminAccessList.map((permission) {
+                final tabInfo = _allTabs.firstWhere(
+                  (tab) => tab['key'] == permission,
+                  orElse: () => {'title': permission, 'icon': Icons.settings},
+                );
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF00D4FF).withOpacity(0.2),
+                        const Color(0xFF9C27B0).withOpacity(0.1),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF00D4FF).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tabInfo['icon'] as IconData? ?? Icons.settings,
+                        color: const Color(0xFF00D4FF),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        tabInfo['title'] as String? ?? permission,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

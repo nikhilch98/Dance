@@ -397,6 +397,8 @@ async def get_config_with_device_token_sync(
     # Initialize response data
     response_data = {
         "is_admin": user.get("is_admin", False),
+        "admin_access_list": user.get("admin_access_list", []),
+        "admin_studios_list": user.get("admin_studios_list", []),
         "device_token": current_server_token,
         "token_sync_status": "no_sync_needed"
     }

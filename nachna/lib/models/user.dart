@@ -25,10 +25,16 @@ class User {
   
   @JsonKey(name: 'is_admin')
   final bool? isAdmin;
-  
+
+  @JsonKey(name: 'admin_access_list')
+  final List<String>? adminAccessList;
+
+  @JsonKey(name: 'admin_studios_list')
+  final List<String>? adminStudiosList;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  
+
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
 
@@ -41,6 +47,8 @@ class User {
     this.profilePictureUrl,
     required this.profileComplete,
     this.isAdmin,
+    this.adminAccessList,
+    this.adminStudiosList,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -57,6 +65,8 @@ class User {
     String? profilePictureUrl,
     bool? profileComplete,
     bool? isAdmin,
+    List<String>? adminAccessList,
+    List<String>? adminStudiosList,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -69,6 +79,8 @@ class User {
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
       profileComplete: profileComplete ?? this.profileComplete,
       isAdmin: isAdmin ?? this.isAdmin,
+      adminAccessList: adminAccessList ?? this.adminAccessList,
+      adminStudiosList: adminStudiosList ?? this.adminStudiosList,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

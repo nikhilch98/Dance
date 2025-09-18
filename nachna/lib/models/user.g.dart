@@ -15,6 +15,12 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       profilePictureUrl: json['profile_picture_url'] as String?,
       profileComplete: json['profile_complete'] as bool,
       isAdmin: json['is_admin'] as bool?,
+      adminAccessList: (json['admin_access_list'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      adminStudiosList: (json['admin_studios_list'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -28,6 +34,8 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'profile_picture_url': instance.profilePictureUrl,
       'profile_complete': instance.profileComplete,
       'is_admin': instance.isAdmin,
+      'admin_access_list': instance.adminAccessList,
+      'admin_studios_list': instance.adminStudiosList,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };
