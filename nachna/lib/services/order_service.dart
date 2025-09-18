@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/order.dart';
@@ -158,6 +159,10 @@ class OrderService {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
+
+        // Debug message for user orders response
+        debugPrint('DEBUG: user orders response: $responseData');
+
         return UserOrdersResponse.fromJson(responseData);
       } else if (response.statusCode == 401) {
         throw Exception('Session expired. Please login again.');

@@ -32,14 +32,16 @@ Map<String, dynamic> _$OrderWorkshopDetailsToJson(
 
 Order _$OrderFromJson(Map<String, dynamic> json) => Order(
       orderId: json['order_id'] as String,
-      workshopUuid: json['workshop_uuid'] as String,
+      workshopUuids: (json['workshop_uuids'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
       workshopDetails: OrderWorkshopDetails.fromJson(
           json['workshop_details'] as Map<String, dynamic>),
       amount: (json['amount'] as num).toInt(),
       currency: json['currency'] as String,
       status: $enumDecode(_$OrderStatusEnumMap, json['status']),
       paymentLinkUrl: json['payment_link_url'] as String?,
-      qrCodeData: json['qr_code_data'] as String?,
+      qrCodeData: json['qr_codes_data'] as String?,
       qrCodeGeneratedAt: json['qr_code_generated_at'] == null
           ? null
           : DateTime.parse(json['qr_code_generated_at'] as String),
@@ -48,23 +50,37 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
       finalAmountPaid: (json['final_amount_paid'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      bundleId: json['bundle_id'] as String?,
+      bundlePaymentId: json['bundle_payment_id'] as String?,
+      isBundleOrder: json['is_bundle_order'] as bool?,
+      bundleTotalWorkshops: (json['bundle_total_workshops'] as num?)?.toInt(),
+      bundleTotalAmount: (json['bundle_total_amount'] as num?)?.toInt(),
+      bundleInfo: json['bundle_info'] as Map<String, dynamic>?,
+      workshopDetailsMap: json['workshop_details_map'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
       'order_id': instance.orderId,
-      'workshop_uuid': instance.workshopUuid,
+      'workshop_uuids': instance.workshopUuids,
       'workshop_details': instance.workshopDetails,
       'amount': instance.amount,
       'currency': instance.currency,
       'status': _$OrderStatusEnumMap[instance.status]!,
       'payment_link_url': instance.paymentLinkUrl,
-      'qr_code_data': instance.qrCodeData,
+      'qr_codes_data': instance.qrCodeData,
       'qr_code_generated_at': instance.qrCodeGeneratedAt?.toIso8601String(),
       'cashback_amount': instance.cashbackAmount,
       'rewards_redeemed': instance.rewardsRedeemed,
       'final_amount_paid': instance.finalAmountPaid,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
+      'bundle_id': instance.bundleId,
+      'bundle_payment_id': instance.bundlePaymentId,
+      'is_bundle_order': instance.isBundleOrder,
+      'bundle_total_workshops': instance.bundleTotalWorkshops,
+      'bundle_total_amount': instance.bundleTotalAmount,
+      'bundle_info': instance.bundleInfo,
+      'workshop_details_map': instance.workshopDetailsMap,
     };
 
 const _$OrderStatusEnumMap = {

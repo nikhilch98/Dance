@@ -1817,8 +1817,8 @@ async def get_user_orders(
                             workshop = WorkshopDB.get_workshop_by_uuid(workshop_uuid)
                             if workshop:
                                 workshop_details_map[workshop_uuid] = {
-                                    'song': workshop.get('song'),
-                                    'title': workshop.get('title') or workshop.get('song'),
+                                    'song': workshop.get['song'],
+                                    'title': workshop.get('title') or workshop.get['song'],
                                     'artist_names': workshop.get('artist_names'),
                                     'by': workshop.get('by'),
                                     'studio_name': workshop.get('studio_name'),
@@ -1834,7 +1834,14 @@ async def get_user_orders(
             order_response = OrderResponse(
                 order_id=order["order_id"],
                 workshop_uuids=workshop_uuids,
-                workshop_details=WorkshopDetails(**order["workshop_details"]),
+                workshop_details=WorkshopDetails(
+                    title=order["workshop_details"]["title"],
+                    artist_names=order["workshop_details"]["artist_names"],
+                    studio_name=order["workshop_details"]["studio_name"],
+                    date=order["workshop_details"]["date"],
+                    time=order["workshop_details"]["time"],
+                    uuid=order["workshop_details"]["uuid"]
+                ),
                 amount=order["amount"],
                 currency=order["currency"],
                 status=OrderStatusEnum(order["status"]),

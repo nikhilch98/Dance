@@ -47,16 +47,19 @@ class OrderWorkshopDetails {
 class Order {
   @JsonKey(name: 'order_id')
   final String orderId;
-  @JsonKey(name: 'workshop_uuid')
-  final String workshopUuid;
+  @JsonKey(name: 'workshop_uuids')
+  final List<String> workshopUuids;
   @JsonKey(name: 'workshop_details')
   final OrderWorkshopDetails workshopDetails;
+
+  // Helper getter to get the first workshop UUID (for backward compatibility)
+  String get workshopUuid => workshopUuids.isNotEmpty ? workshopUuids.first : '';
   final int amount; // Amount in paise
   final String currency;
   final OrderStatus status;
   @JsonKey(name: 'payment_link_url')
   final String? paymentLinkUrl;
-  @JsonKey(name: 'qr_code_data')
+  @JsonKey(name: 'qr_codes_data')
   final String? qrCodeData;
   @JsonKey(name: 'qr_code_generated_at')
   final DateTime? qrCodeGeneratedAt;
@@ -71,10 +74,25 @@ class Order {
   final DateTime createdAt;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
+  // Bundle-related fields
+  @JsonKey(name: 'bundle_id')
+  final String? bundleId;
+  @JsonKey(name: 'bundle_payment_id')
+  final String? bundlePaymentId;
+  @JsonKey(name: 'is_bundle_order')
+  final bool? isBundleOrder;
+  @JsonKey(name: 'bundle_total_workshops')
+  final int? bundleTotalWorkshops;
+  @JsonKey(name: 'bundle_total_amount')
+  final int? bundleTotalAmount;
+  @JsonKey(name: 'bundle_info')
+  final Map<String, dynamic>? bundleInfo;
+  @JsonKey(name: 'workshop_details_map')
+  final Map<String, dynamic>? workshopDetailsMap;
 
   Order({
     required this.orderId,
-    required this.workshopUuid,
+    required this.workshopUuids,
     required this.workshopDetails,
     required this.amount,
     required this.currency,
@@ -87,13 +105,25 @@ class Order {
     this.finalAmountPaid,
     required this.createdAt,
     required this.updatedAt,
+    this.bundleId,
+    this.bundlePaymentId,
+    this.isBundleOrder,
+    this.bundleTotalWorkshops,
+    this.bundleTotalAmount,
+    this.bundleInfo,
+    this.workshopDetailsMap,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) => _$OrderFromJson(json);
   Map<String, dynamic> toJson() => _$OrderToJson(this);
 
-  // Helper getters for UI
-  String get formattedAmount => '₹${(amount / 100).toStringAsFixed(2)}';
+  // Helper getters for UI - Handle both paise and rupees format like HTML template
+  double get amountInRupees {
+    // If amount is small (≤ 10000), treat as rupees; otherwise treat as paise
+    return amount <= 10000 ? amount.toDouble() : (amount / 100);
+  }
+
+  String get formattedAmount => '₹${amountInRupees.toStringAsFixed(amountInRupees == amountInRupees.toInt() ? 0 : 2)}';
   
   // Reward-related helper getters
   String get formattedCashbackAmount => cashbackAmount != null ? '₹${cashbackAmount!.toStringAsFixed(0)}' : '₹0';
