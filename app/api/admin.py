@@ -792,7 +792,7 @@ async def mark_attendance(
                 detail="Workshop ID not found in order"
             )
         print("workshop found")
-        workshop = workshop_collection.find_one({"_id": ObjectId(workshop_id)})
+        workshop = workshop_collection.find_one({"workshop_uuid": workshop_id})
         if not workshop:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -838,7 +838,7 @@ async def mark_attendance(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update attendance status"
             )
-        
+
         # Log the attendance marking
         logging.info(f"Admin {user_id} marked attendance for order {request.order_id}, workshop {workshop_id}, studio {workshop_studio_id}")
 
