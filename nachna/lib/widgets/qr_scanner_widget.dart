@@ -670,6 +670,12 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
       }
     } catch (e) {
       if (!_disposed && mounted) {
+        // Extract the actual error message without "Exception:" prefix
+        String errorMessage = e.toString();
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring('Exception: '.length);
+        }
+
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -679,7 +685,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Failed to mark attendance: ${e.toString()}',
+                    errorMessage,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
                   ),
                 ),
