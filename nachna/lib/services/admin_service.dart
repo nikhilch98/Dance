@@ -243,16 +243,33 @@ class AdminService {
         if (data['success'] == true) {
           return data;
         } else {
+          // Show the exact message from the API response
           throw Exception(data['message'] ?? 'Failed to mark attendance');
         }
-      } else if (response.statusCode == 401) {
-        throw Exception('Authentication failed. Please log in again.');
-      } else if (response.statusCode == 403) {
-        throw Exception('Admin access required or insufficient studio permissions.');
-      } else if (response.statusCode == 409) {
-        throw Exception('Attendance has already been marked for this registration.');
       } else {
-        throw Exception('Failed to mark attendance (Error ${response.statusCode})');
+        // For error status codes, try to parse the error message from the response body
+        try {
+          final data = json.decode(response.body);
+          final errorMessage = data['detail'] ?? data['message'] ?? data['error'];
+          if (errorMessage != null) {
+            throw Exception(errorMessage);
+          }
+        } catch (parseError) {
+          // If we can't parse the response, fall back to generic messages
+        }
+
+        // Fallback generic messages for different status codes
+        if (response.statusCode == 401) {
+          throw Exception('Authentication failed. Please log in again.');
+        } else if (response.statusCode == 403) {
+          throw Exception('Admin access required or insufficient studio permissions.');
+        } else if (response.statusCode == 409) {
+          throw Exception('Attendance has already been marked for this registration.');
+        } else if (response.statusCode == 404) {
+          throw Exception('Order or workshop not found.');
+        } else {
+          throw Exception('Failed to mark attendance (Error ${response.statusCode})');
+        }
       }
     } catch (e) {
       print('[AdminService] Error marking attendance: $e');

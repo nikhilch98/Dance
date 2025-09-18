@@ -434,20 +434,6 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
             ],
           ),
 
-          if (isValid && result.registrationData != null)
-            ..._buildRegistrationDetails(result.registrationData!)
-          else if (!isValid)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                result.error ?? 'Unknown error',
-                style: TextStyle(
-                  color: Colors.red.shade300,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-
           const SizedBox(height: 16),
 
           // Action buttons
@@ -500,6 +486,22 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
                   ),
                 ),
                 child: Text('Scan Another'),
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          if (isValid && result.registrationData != null)
+            ..._buildRegistrationDetails(result.registrationData!)
+          else if (!isValid)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                result.error ?? 'Unknown error',
+                style: TextStyle(
+                  color: Colors.red.shade300,
+                  fontSize: 14,
+                ),
               ),
             ),
         ],

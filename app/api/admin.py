@@ -848,7 +848,8 @@ async def mark_attendance(
             order_id=request.order_id,
             marked_at=marked_at.isoformat()
         )
-
+    except HTTPException:
+        raise
     except Exception as e:
         logging.exception(f"Error marking attendance: {e}")
         raise HTTPException(
