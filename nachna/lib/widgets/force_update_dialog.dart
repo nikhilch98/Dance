@@ -92,7 +92,7 @@ class ForceUpdateDialog extends StatelessWidget {
                     Text(
                       'Update Required',
                       style: TextStyle(
-                        fontSize: ResponsiveUtils.getResponsiveFontSize(context, 24),
+                        fontSize: ResponsiveUtils.h2(context),
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 1.2,
@@ -118,7 +118,7 @@ class ForceUpdateDialog extends StatelessWidget {
                           Text(
                             'Current Version: $currentVersion',
                             style: TextStyle(
-                              fontSize: ResponsiveUtils.getResponsiveFontSize(context, 14),
+                              fontSize: ResponsiveUtils.body2(context),
                               color: Colors.white.withOpacity(0.8),
                             ),
                           ),
@@ -126,7 +126,7 @@ class ForceUpdateDialog extends StatelessWidget {
                           Text(
                             'Required Version: $minimumVersion',
                             style: TextStyle(
-                              fontSize: ResponsiveUtils.getResponsiveFontSize(context, 14),
+                              fontSize: ResponsiveUtils.body2(context),
                               color: const Color(0xFF00D4FF),
                               fontWeight: FontWeight.w500,
                             ),
@@ -141,7 +141,7 @@ class ForceUpdateDialog extends StatelessWidget {
                     Text(
                       message,
                       style: TextStyle(
-                        fontSize: ResponsiveUtils.getResponsiveFontSize(context, 16),
+                        fontSize: ResponsiveUtils.body1(context),
                         color: Colors.white.withOpacity(0.9),
                         height: 1.5,
                       ),
@@ -168,7 +168,7 @@ class ForceUpdateDialog extends StatelessWidget {
                         child: Text(
                           'Update Now',
                           style: TextStyle(
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, 18),
+                            fontSize: ResponsiveUtils.h3(context),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.1,
                           ),
@@ -182,7 +182,7 @@ class ForceUpdateDialog extends StatelessWidget {
                     Text(
                       'You cannot continue using the app until you update.',
                       style: TextStyle(
-                        fontSize: ResponsiveUtils.getResponsiveFontSize(context, 12),
+                        fontSize: ResponsiveUtils.caption(context),
                         color: Colors.white.withOpacity(0.6),
                         fontStyle: FontStyle.italic,
                       ),
