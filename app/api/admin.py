@@ -784,7 +784,7 @@ async def mark_attendance(
             )
         print("attendance not marked")
         # Get workshop details to check studio permissions
-        workshop_collection = client["discovery"]["workshops"]
+        workshop_collection = client["discovery"]["workshops_v2"]
         workshop_id = order.get('workshop_uuids')[0]
         if not workshop_id:
             raise HTTPException(
