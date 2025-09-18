@@ -18,6 +18,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
 import '../widgets/qr_scanner_widget.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -69,10 +72,13 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
   // Filters for Registrations tab
   List<String> availableArtists = [];
   List<String> availableSongs = [];
+  List<String> availableStudios = [];
   String? selectedArtistFilter;
   String? selectedSongFilter;
+  String? selectedStudioFilter;
   String searchQuery = '';
-  
+  bool _isExportingCSV = false;
+
   late TabController _tabController;
 
   // Access control
@@ -4305,9 +4311,10 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
         final data = json.decode(response.body);
         final registrations = List<Map<String, dynamic>>.from(data['registrations'] ?? []);
 
-        // Extract unique artists and songs for filters
+        // Extract unique artists, songs, and studios for filters
         final artists = <String>{};
         final songs = <String>{};
+        final studios = <String>{};
 
         for (final registration in registrations) {
           if (registration['artist_name'] != null && registration['artist_name'].toString().isNotEmpty) {
@@ -4316,6 +4323,9 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
           if (registration['workshop_song'] != null && registration['workshop_song'].toString().isNotEmpty) {
             songs.add(registration['workshop_song']);
           }
+          if (registration['studio_name'] != null && registration['studio_name'].toString().isNotEmpty) {
+            studios.add(registration['studio_name']);
+          }
         }
 
         if (mounted) {
@@ -4323,6 +4333,7 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
             workshopRegistrations = registrations;
             availableArtists = artists.toList()..sort();
             availableSongs = songs.toList()..sort();
+            availableStudios = studios.toList()..sort();
             _applyRegistrationFilters();
           });
         }
@@ -4361,6 +4372,11 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
         return false;
       }
 
+      // Studio filter
+      if (selectedStudioFilter != null && registration['studio_name'] != selectedStudioFilter) {
+        return false;
+      }
+
       // Search filter
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
@@ -4384,124 +4400,220 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Filters Row
-          Row(
+          Column(
             children: [
-              // Artist Filter
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white.withOpacity(0.1),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedArtistFilter,
-                      hint: Text(
-                        'All Artists',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
+              // First Row: Artist and Song Filters
+              Row(
+                children: [
+                  // Artist Filter
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.1),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
                         ),
                       ),
-                      dropdownColor: const Color(0xFF1A1A2E),
-                      style: const TextStyle(color: Colors.white),
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      isExpanded: true,
-                      items: [
-                        DropdownMenuItem<String>(
-                          value: null,
-                          child: Text(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedArtistFilter,
+                          hint: Text(
                             'All Artists',
-                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                          ),
-                        ),
-                        ...availableArtists.map((artist) {
-                          return DropdownMenuItem<String>(
-                            value: artist,
-                            child: Text(
-                              artist,
-                              style: const TextStyle(color: Colors.white),
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
                             ),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          selectedArtistFilter = value;
-                          _applyRegistrationFilters();
-                        });
-                      },
+                          ),
+                          dropdownColor: const Color(0xFF1A1A2E),
+                          style: const TextStyle(color: Colors.white),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                          isExpanded: true,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Artists',
+                                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                              ),
+                            ),
+                            ...availableArtists.map((artist) {
+                              return DropdownMenuItem<String>(
+                                value: artist,
+                                child: Text(
+                                  artist,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedArtistFilter = value;
+                              _applyRegistrationFilters();
+                            });
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
+                  // Song Filter
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.1),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedSongFilter,
+                          hint: Text(
+                            'All Songs',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                          ),
+                          dropdownColor: const Color(0xFF1A1A2E),
+                          style: const TextStyle(color: Colors.white),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                          isExpanded: true,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Songs',
+                                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                              ),
+                            ),
+                            ...availableSongs.map((song) {
+                              return DropdownMenuItem<String>(
+                                value: song,
+                                child: Text(
+                                  song,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedSongFilter = value;
+                              _applyRegistrationFilters();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
-              // Song Filter
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white.withOpacity(0.1),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 1,
+              const SizedBox(height: 12),
+
+              // Second Row: Studio Filter
+              Row(
+                children: [
+                  // Studio Filter
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.1),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedStudioFilter,
+                          hint: Text(
+                            'All Studios',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                          ),
+                          dropdownColor: const Color(0xFF1A1A2E),
+                          style: const TextStyle(color: Colors.white),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                          isExpanded: true,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Studios',
+                                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                              ),
+                            ),
+                            ...availableStudios.map((studio) {
+                              return DropdownMenuItem<String>(
+                                value: studio,
+                                child: Text(
+                                  studio,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedStudioFilter = value;
+                              _applyRegistrationFilters();
+                            });
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedSongFilter,
-                      hint: Text(
-                        'All Songs',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      dropdownColor: const Color(0xFF1A1A2E),
-                      style: const TextStyle(color: Colors.white),
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      isExpanded: true,
-                      items: [
-                        DropdownMenuItem<String>(
-                          value: null,
-                          child: Text(
-                            'All Songs',
-                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                          ),
-                        ),
-                        ...availableSongs.map((song) {
-                          return DropdownMenuItem<String>(
-                            value: song,
-                            child: Text(
-                              song,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
+
+                  // Clear Filters Button
+                  Container(
+                    margin: const EdgeInsets.only(left: 12),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
                         setState(() {
-                          selectedSongFilter = value;
+                          selectedArtistFilter = null;
+                          selectedSongFilter = null;
+                          selectedStudioFilter = null;
+                          searchQuery = '';
                           _applyRegistrationFilters();
                         });
                       },
+                      icon: const Icon(Icons.clear, size: 16),
+                      label: const Text('Clear'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.withOpacity(0.3),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -4551,20 +4663,95 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
 
               const SizedBox(width: 12),
 
-              // Refresh Button
-              ElevatedButton.icon(
-                onPressed: isLoadingRegistrations ? null : _loadWorkshopRegistrations,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Refresh'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Refresh and Export Buttons
+              Row(
+                children: [
+                  // Refresh Button
+                  ElevatedButton.icon(
+                    onPressed: isLoadingRegistrations ? null : _loadWorkshopRegistrations,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 12),
+
+                  // CSV Export Button
+                  ElevatedButton.icon(
+                    onPressed: (filteredRegistrations.isEmpty || _isExportingCSV) ? null : _exportRegistrationsToCSV,
+                    icon: _isExportingCSV
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.download, size: 18),
+                    label: Text(_isExportingCSV ? 'Exporting...' : 'Export CSV'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B5CF6),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Summary Statistics
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Summary Statistics',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (selectedArtistFilter != null || selectedSongFilter != null || selectedStudioFilter != null || searchQuery.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFF00D4FF).withOpacity(0.2),
+                        border: Border.all(
+                          color: const Color(0xFF00D4FF).withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'Filtered',
+                        style: TextStyle(
+                          color: const Color(0xFF00D4FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildRegistrationSummary(),
             ],
           ),
 
@@ -4831,6 +5018,13 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
                   ),
                   const SizedBox(height: 8),
                   _buildRegistrationDetailRow(
+                    Icons.business,
+                    'Studio',
+                    registration['studio_name'] ?? 'N/A',
+                    const Color(0xFF10B981),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRegistrationDetailRow(
                     Icons.calendar_today,
                     'Date',
                     registration['workshop_date'] ?? 'N/A',
@@ -4896,6 +5090,132 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
           ),
         ),
       ],
+    );
+  }
+
+  /// Build Registration Summary
+  Widget _buildRegistrationSummary() {
+    // Show statistics for current filtered results (or all if no filters applied)
+    final hasActiveFilters = selectedArtistFilter != null ||
+                            selectedSongFilter != null ||
+                            selectedStudioFilter != null ||
+                            searchQuery.isNotEmpty;
+
+    final dataToShow = hasActiveFilters ? filteredRegistrations : workshopRegistrations;
+    final totalRegistrations = dataToShow.length;
+    final totalRevenue = dataToShow.fold<int>(0, (sum, reg) => sum + ((reg['final_amount'] as int?) ?? 0));
+    final uniqueUsers = Set.from(dataToShow.map((reg) => reg['phone'])).length;
+    final uniqueWorkshops = Set.from(dataToShow.map((reg) => '${reg['artist_name']}-${reg['workshop_song']}-${reg['workshop_date']}')).length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Total Registrations
+          Expanded(
+            child: _buildSummaryStatCard(
+              value: totalRegistrations.toString(),
+              label: 'Total Registrations',
+              icon: Icons.people,
+              color: const Color(0xFF00D4FF),
+            ),
+          ),
+
+          // Total Revenue
+          Expanded(
+            child: _buildSummaryStatCard(
+              value: '₹${totalRevenue.toLocaleString()}',
+              label: 'Total Revenue',
+              icon: Icons.attach_money,
+              color: const Color(0xFF10B981),
+            ),
+          ),
+
+          // Unique Users
+          Expanded(
+            child: _buildSummaryStatCard(
+              value: uniqueUsers.toString(),
+              label: 'Unique Users',
+              icon: Icons.person_outline,
+              color: const Color(0xFFFF006E),
+            ),
+          ),
+
+          // Workshops
+          Expanded(
+            child: _buildSummaryStatCard(
+              value: uniqueWorkshops.toString(),
+              label: 'Workshops',
+              icon: Icons.event,
+              color: const Color(0xFF8B5CF6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual summary stat card
+  Widget _buildSummaryStatCard({
+    required String value,
+    required String label,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.1),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
@@ -5895,5 +6215,85 @@ class _AssignArtistDialogState extends State<_AssignArtistDialog> {
         ),
       ),
     );
+  }
+
+  /// Export registrations to CSV
+  Future<void> _exportRegistrationsToCSV() async {
+    try {
+      // Show loading indicator
+      setState(() => _isExportingCSV = true);
+
+      // Get data to export (filtered or all)
+      final hasActiveFilters = selectedArtistFilter != null ||
+                              selectedSongFilter != null ||
+                              selectedStudioFilter != null ||
+                              searchQuery.isNotEmpty;
+      final dataToExport = hasActiveFilters ? filteredRegistrations : workshopRegistrations;
+
+      if (dataToExport.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No data to export'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // Create CSV content
+      final headers = ['Name', 'Phone', 'Final Amount', 'Artist Name', 'Workshop Song', 'Workshop Date', 'Workshop Time', 'Studio Name'];
+      final csvRows = dataToExport.map((registration) => [
+        '"${(registration['name'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['phone'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['final_amount'] ?? 0).toString().replaceAll('"', '""')}"',
+        '"${(registration['artist_name'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['workshop_song'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['workshop_date'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['workshop_time'] ?? '').toString().replaceAll('"', '""')}"',
+        '"${(registration['studio_name'] ?? '').toString().replaceAll('"', '""')}"',
+      ]);
+
+      final csvContent = [headers.join(','), ...csvRows.map((row) => row.join(','))].join('\n');
+
+      // Create temporary file
+      final directory = await getTemporaryDirectory();
+      final fileName = 'workshop_registrations_${DateTime.now().toIso8601String().split('T')[0]}.csv';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(csvContent);
+
+      // Share the file
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Workshop Registrations Export',
+        subject: 'Workshop Registrations CSV',
+      );
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ CSV exported successfully (${dataToExport.length} records)'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error exporting CSV: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to export CSV: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingCSV = false);
+      }
+    }
   }
 } 
