@@ -59,22 +59,122 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   // Filters for Instagram Links tab
   List<String> availableByFilters = [];
   List<String> selectedByFilters = [];
+
+  // Registrations List state
+  List<Map<String, dynamic>> workshopRegistrations = [];
+  List<Map<String, dynamic>> filteredRegistrations = [];
+  bool isLoadingRegistrations = false;
+  String? registrationsError;
+  // Filters for Registrations tab
+  List<String> availableArtists = [];
+  List<String> availableSongs = [];
+  String? selectedArtistFilter;
+  String? selectedSongFilter;
+  String searchQuery = '';
   
   late TabController _tabController;
+
+  // Access control
+  List<String> _adminAccessList = [];
+  List<Map<String, dynamic>> _availableTabs = [];
+
+  // Define all available tabs with their access keys
+  final List<Map<String, dynamic>> _allTabs = [
+    {
+      'key': 'songs',
+      'title': 'Songs',
+      'icon': Icons.music_note,
+    },
+    {
+      'key': 'artists',
+      'title': 'Artists',
+      'icon': Icons.person,
+    },
+    {
+      'key': 'notifications',
+      'title': 'Notifications',
+      'icon': Icons.notifications,
+    },
+    {
+      'key': 'config',
+      'title': 'Config',
+      'icon': Icons.settings,
+    },
+    {
+      'key': 'instagram_links',
+      'title': 'Instagram Links',
+      'icon': Icons.link,
+    },
+    {
+      'key': 'insights',
+      'title': 'Insights',
+      'icon': Icons.analytics,
+    },
+    {
+      'key': 'data_updates',
+      'title': 'Data updates',
+      'icon': Icons.data_object,
+    },
+    {
+      'key': 'qr_scanner',
+      'title': 'QR Scanner',
+      'icon': Icons.qr_code_scanner,
+    },
+    {
+      'key': 'registrations_list',
+      'title': 'Registrations List',
+      'icon': Icons.list_alt,
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _initializeAdminAccess();
+  }
+
+  Future<void> _initializeAdminAccess() async {
+    await _loadUserProfile();
+    _filterAvailableTabs();
+
+    // Initialize TabController with available tabs
+    _tabController = TabController(length: _availableTabs.length, vsync: this);
+
     _loadMissingArtistSessions();
     _loadMissingSongSessions();
     _loadAllArtists();
     _loadAppInsights();
     _loadMissingInstagramLinks();
+    _loadWorkshopRegistrations();
+
     // Initialize the global config provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GlobalConfigProvider>().initialize();
     });
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.user != null) {
+        _adminAccessList = authProvider.user!.adminAccessList ?? [];
+      }
+    } catch (e) {
+      print('Error loading user profile for admin access: $e');
+      _adminAccessList = []; // Default to no access if error
+    }
+  }
+
+  void _filterAvailableTabs() {
+    if (_adminAccessList.contains('all')) {
+      // Show all tabs if 'all' is in access list
+      _availableTabs = List.from(_allTabs);
+    } else {
+      // Filter tabs based on access list
+      _availableTabs = _allTabs.where((tab) {
+        return _adminAccessList.contains(tab['key']);
+      }).toList();
+    }
   }
 
   /// Load application insights and statistics
@@ -673,21 +773,33 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         fontWeight: FontWeight.w500,
                         fontSize: ResponsiveUtils.body2(context),
                       ),
-                      tabs: [
-                        Tab(
+                      tabs: _availableTabs.map((tab) {
+                        final tabKey = tab['key'] as String;
+                        final tabTitle = tab['title'] as String;
+                        final tabIcon = tab['icon'] as IconData;
+
+                        // Special handling for badge counts
+                        int? badgeCount;
+                        if (tabKey == 'songs') {
+                          badgeCount = missingSongSessions.length;
+                        } else if (tabKey == 'artists') {
+                          badgeCount = missingArtistSessions.length;
+                        }
+
+                        return Tab(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.music_note, size: 18),
+                              Icon(tabIcon, size: 18),
                               const SizedBox(width: 6),
-                              const Flexible(
+                              Flexible(
                                 child: Text(
-                                  'Songs',
+                                  tabTitle,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (missingSongSessions.isNotEmpty) ...[
+                              if (badgeCount != null && badgeCount > 0) ...[
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -696,141 +808,15 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                                     color: Colors.white.withOpacity(0.2),
                                   ),
                                   child: Text(
-                                    '${missingSongSessions.length}',
+                                    '$badgeCount',
                                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
                             ],
                           ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.person, size: 18),
-                              const SizedBox(width: 6),
-                              const Flexible(
-                                child: Text(
-                                  'Artists',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (missingArtistSessions.isNotEmpty) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: Colors.white.withOpacity(0.2),
-                                  ),
-                                  child: Text(
-                                    '${missingArtistSessions.length}',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.notifications, size: 18),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Notifications',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.settings, size: 18),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Config',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.link, size: 18),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Instagram Links',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.analytics, size: 18),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Insights',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                         const Tab(
-                           child: Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Icon(Icons.data_object, size: 18),
-                               SizedBox(width: 6),
-                               Flexible(
-                                 child: Text(
-                                   'Data updates',
-                                   overflow: TextOverflow.ellipsis,
-                                 ),
-                               ),
-                             ],
-                           ),
-                         ),
-                         const Tab(
-                           child: Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Icon(Icons.qr_code_scanner, size: 18),
-                               SizedBox(width: 6),
-                               Flexible(
-                                 child: Text(
-                                   'QR Scanner',
-                                   overflow: TextOverflow.ellipsis,
-                                 ),
-                               ),
-                             ],
-                           ),
-                         ),
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
@@ -840,16 +826,33 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  children: [
-                    _buildMissingSongsTab(),
-                    _buildMissingArtistsTab(),
-                    _buildNotificationsTab(),
-                    _buildConfigTab(),
-                    _buildInstagramLinksTab(),
-                     _buildInsightsTab(),
-                     _buildDataUpdatesTab(),
-                     _buildQRScannerTab(),
-                  ],
+                  children: _availableTabs.map((tab) {
+                    final tabKey = tab['key'] as String;
+                    switch (tabKey) {
+                      case 'songs':
+                        return _buildMissingSongsTab();
+                      case 'artists':
+                        return _buildMissingArtistsTab();
+                      case 'notifications':
+                        return _buildNotificationsTab();
+                      case 'config':
+                        return _buildConfigTab();
+                      case 'instagram_links':
+                        return _buildInstagramLinksTab();
+                      case 'insights':
+                        return _buildInsightsTab();
+                      case 'data_updates':
+                        return _buildDataUpdatesTab();
+                      case 'qr_scanner':
+                        return _buildQRScannerTab();
+                      case 'registrations_list':
+                        return _buildRegistrationsListTab();
+                      default:
+                        return const Center(
+                          child: Text('Tab not implemented'),
+                        );
+                    }
+                  }).toList(),
                 ),
               ),
             ],
@@ -4170,6 +4173,625 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   /// Build QR Scanner tab
   Widget _buildQRScannerTab() {
     return const QRScannerWidget();
+  }
+
+  /// Load workshop registrations
+  Future<void> _loadWorkshopRegistrations() async {
+    if (mounted) {
+      setState(() {
+        isLoadingRegistrations = true;
+        registrationsError = null;
+      });
+    }
+
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('No authentication token');
+
+      final response = await http.get(
+        Uri.parse('https://nachna.com/admin/api/workshop-registrations'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final registrations = List<Map<String, dynamic>>.from(data['registrations'] ?? []);
+
+        // Extract unique artists and songs for filters
+        final artists = <String>{};
+        final songs = <String>{};
+
+        for (final registration in registrations) {
+          if (registration['artist_name'] != null && registration['artist_name'].toString().isNotEmpty) {
+            artists.add(registration['artist_name']);
+          }
+          if (registration['workshop_song'] != null && registration['workshop_song'].toString().isNotEmpty) {
+            songs.add(registration['workshop_song']);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            workshopRegistrations = registrations;
+            availableArtists = artists.toList()..sort();
+            availableSongs = songs.toList()..sort();
+            _applyRegistrationFilters();
+          });
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please log in again.');
+      } else if (response.statusCode == 403) {
+        throw Exception('Admin access required. Contact support if you believe this is an error.');
+      } else {
+        throw Exception('Failed to load workshop registrations (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          registrationsError = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingRegistrations = false;
+        });
+      }
+    }
+  }
+
+  /// Apply filters to registrations
+  void _applyRegistrationFilters() {
+    filteredRegistrations = workshopRegistrations.where((registration) {
+      // Artist filter
+      if (selectedArtistFilter != null && registration['artist_name'] != selectedArtistFilter) {
+        return false;
+      }
+
+      // Song filter
+      if (selectedSongFilter != null && registration['workshop_song'] != selectedSongFilter) {
+        return false;
+      }
+
+      // Search filter
+      if (searchQuery.isNotEmpty) {
+        final query = searchQuery.toLowerCase();
+        final name = (registration['name'] ?? '').toString().toLowerCase();
+        final phone = (registration['phone'] ?? '').toString();
+
+        if (!name.contains(query) && !phone.contains(query)) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// Build Registrations List tab
+  Widget _buildRegistrationsListTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Filters Row
+          Row(
+            children: [
+              // Artist Filter
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedArtistFilter,
+                      hint: Text(
+                        'All Artists',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      dropdownColor: const Color(0xFF1A1A2E),
+                      style: const TextStyle(color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      isExpanded: true,
+                      items: [
+                        DropdownMenuItem<String>(
+                          value: null,
+                          child: Text(
+                            'All Artists',
+                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          ),
+                        ),
+                        ...availableArtists.map((artist) {
+                          return DropdownMenuItem<String>(
+                            value: artist,
+                            child: Text(
+                              artist,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedArtistFilter = value;
+                          _applyRegistrationFilters();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              // Song Filter
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedSongFilter,
+                      hint: Text(
+                        'All Songs',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      dropdownColor: const Color(0xFF1A1A2E),
+                      style: const TextStyle(color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      isExpanded: true,
+                      items: [
+                        DropdownMenuItem<String>(
+                          value: null,
+                          child: Text(
+                            'All Songs',
+                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          ),
+                        ),
+                        ...availableSongs.map((song) {
+                          return DropdownMenuItem<String>(
+                            value: song,
+                            child: Text(
+                              song,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedSongFilter = value;
+                          _applyRegistrationFilters();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Search and Refresh Row
+          Row(
+            children: [
+              // Search Field
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.white.withOpacity(0.5),
+                        size: 20,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                        _applyRegistrationFilters();
+                      });
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Refresh Button
+              ElevatedButton.icon(
+                onPressed: isLoadingRegistrations ? null : _loadWorkshopRegistrations,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Results Count
+          Text(
+            '${filteredRegistrations.length} registrations found',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Loading State
+          if (isLoadingRegistrations)
+            Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.white.withOpacity(0.05),
+                      ],
+                    ),
+                  ),
+                  child: const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF4081)),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            )
+
+          // Error State
+          else if (registrationsError != null)
+            Expanded(
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.withOpacity(0.1),
+                        Colors.red.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.redAccent,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading registrations',
+                        style: TextStyle(
+                          color: Colors.red.withOpacity(0.9),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        registrationsError!,
+                        style: TextStyle(
+                          color: Colors.red.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadWorkshopRegistrations,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+
+          // Empty State
+          else if (filteredRegistrations.isEmpty)
+            Expanded(
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.orange.withOpacity(0.1),
+                        Colors.orange.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        color: Colors.orange,
+                        size: 48,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No registrations found',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Try adjusting your filters or refresh the data.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+
+          // Registrations List
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredRegistrations.length,
+                itemBuilder: (context, index) {
+                  final registration = filteredRegistrations[index];
+                  return _buildRegistrationCard(registration);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual registration card
+  Widget _buildRegistrationCard(Map<String, dynamic> registration) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with name and phone
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        registration['name'] ?? 'N/A',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        registration['phone'] ?? 'N/A',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF10B981).withOpacity(0.3),
+                        const Color(0xFF10B981).withOpacity(0.1),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '₹${(registration['final_amount'] ?? 0).toString()}',
+                    style: const TextStyle(
+                      color: Color(0xFF10B981),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Workshop Details
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withOpacity(0.1),
+              ),
+              child: Column(
+                children: [
+                  _buildRegistrationDetailRow(
+                    Icons.person,
+                    'Artist',
+                    registration['artist_name'] ?? 'N/A',
+                    const Color(0xFFFF006E),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRegistrationDetailRow(
+                    Icons.music_note,
+                    'Song',
+                    registration['workshop_song'] ?? 'N/A',
+                    const Color(0xFFFF4081),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRegistrationDetailRow(
+                    Icons.calendar_today,
+                    'Date',
+                    registration['workshop_date'] ?? 'N/A',
+                    const Color(0xFF8B5CF6),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRegistrationDetailRow(
+                    Icons.access_time,
+                    'Time',
+                    registration['workshop_time'] ?? 'N/A',
+                    const Color(0xFF00D4FF),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build registration detail row
+  Widget _buildRegistrationDetailRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: color.withOpacity(0.2),
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 16,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

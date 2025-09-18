@@ -48,6 +48,10 @@ dependencies:
   # Share functionality
   share_plus: ^10.1.2
 
+  # Image saving
+  image_gallery_saver: ^2.0.3
+  path_provider: ^2.1.4
+
   # Authentication & Security
   jwt_decoder: ^2.0.1
   flutter_secure_storage: ^9.0.0

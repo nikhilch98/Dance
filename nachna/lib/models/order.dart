@@ -60,7 +60,7 @@ class Order {
   @JsonKey(name: 'payment_link_url')
   final String? paymentLinkUrl;
   @JsonKey(name: 'qr_codes_data')
-  final String? qrCodeData;
+  final Map<String, String>? qrCodesData;
   @JsonKey(name: 'qr_code_generated_at')
   final DateTime? qrCodeGeneratedAt;
   // Reward-related fields
@@ -98,7 +98,7 @@ class Order {
     required this.currency,
     required this.status,
     this.paymentLinkUrl,
-    this.qrCodeData,
+    this.qrCodesData,
     this.qrCodeGeneratedAt,
     this.cashbackAmount,
     this.rewardsRedeemed,
@@ -153,7 +153,7 @@ class Order {
   }
   
   // QR Code availability check
-  bool get hasQRCode => qrCodeData != null && qrCodeData!.isNotEmpty;
+  bool get hasQRCode => qrCodesData != null && qrCodesData!.isNotEmpty;
   
   // QR Code status text
   String get qrCodeStatus {
@@ -166,13 +166,18 @@ class Order {
     }
   }
   
+  // Helper getter to get QR code data for the first workshop
+  String? get qrCodeData => qrCodesData != null && qrCodesData!.isNotEmpty
+      ? qrCodesData!.values.first
+      : null;
+
   // QR Code generated time formatted
   String get qrCodeGeneratedTime {
     if (qrCodeGeneratedAt == null) return 'Not generated';
-    
+
     final now = DateTime.now();
     final diff = now.difference(qrCodeGeneratedAt!);
-    
+
     if (diff.inMinutes < 1) {
       return 'Just now';
     } else if (diff.inHours < 1) {

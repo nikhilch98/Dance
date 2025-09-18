@@ -486,9 +486,9 @@ def main():
             max_depth=1,
         ),
         ManifestStudio(
-            "https://www.yoactiv.com/eventplugin.aspx?Apikey=xwbn1XX+5R9oZfATr4CsLw%3D%3D",
+            "https://manifest.twinmenot.com",
             "manifestbytmn",
-            "https://www.yoactiv.com/Event/",
+            "https://manifest.twinmenot.com/workshops/",
             max_depth=1,
         ),
     ]

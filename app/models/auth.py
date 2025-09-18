@@ -1,7 +1,7 @@
 """Authentication-related data models."""
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -37,6 +37,8 @@ class UserProfile(BaseModel):
     profile_picture_id: Optional[str] = None
     profile_complete: bool
     is_admin: Optional[bool] = False
+    admin_studios_list: Optional[List[str]] = []
+    admin_access_list: Optional[List[str]] = []
     created_at: datetime
     updated_at: datetime
     device_token: Optional[str] = None
