@@ -768,7 +768,7 @@ async def mark_attendance(
 
         # Find the order document
         order_collection = client["dance_app"]["orders"]
-        order = order_collection.find_one({"order_id": ObjectId(request.order_id)})
+        order = order_collection.find_one({"order_id": request.order_id})
 
         if not order:
             raise HTTPException(
@@ -823,7 +823,7 @@ async def mark_attendance(
         # Mark attendance
         marked_at = datetime.utcnow()
         result = order_collection.update_one(
-            {"order_id": ObjectId(request.order_id)},
+            {"order_id": request.order_id},
             {
                 "$set": {
                     "attendance_marked": True,
