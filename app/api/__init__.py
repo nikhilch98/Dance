@@ -11,10 +11,11 @@ from .mcp import router as mcp_router
 from .razorpay import router as razorpay_router
 from .orders import router as orders_router
 from .rewards import router as rewards_router
+from .version import router as version_router
 
 __all__ = [
     "auth_router",
-    "workshops_router", 
+    "workshops_router",
     "reactions_router",
     "notifications_router",
     "admin_router",
@@ -24,4 +25,5 @@ __all__ = [
     "razorpay_router",
     "orders_router",
     "rewards_router",
+    "version_router",
 ] 

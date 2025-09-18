@@ -24,6 +24,7 @@ from app.api import (
     razorpay_router,
     orders_router,
     rewards_router,
+    version_router,
 )
 from app.services.notifications import notification_service
 from app.services.background_qr_service import schedule_qr_generation_task
@@ -132,6 +133,7 @@ def create_app() -> FastAPI:
     app.include_router(orders_router, prefix="/api/orders", tags=["Orders & Payments"])
     app.include_router(rewards_router, prefix="/api/rewards", tags=["Rewards System"])
     app.include_router(razorpay_router, prefix="/api/razorpay", tags=["Razorpay Webhooks"])
+    app.include_router(version_router, prefix="/api/version", tags=["Version Management"])
     app.include_router(mcp_router, prefix="/mcp", tags=["MCP (Model Context Protocol)"])
     app.include_router(admin_router, prefix="/admin/api", tags=["Admin"])
     app.include_router(web_router, tags=["Web"])

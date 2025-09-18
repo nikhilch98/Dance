@@ -14,6 +14,7 @@ import './services/global_config.dart';
 import './services/first_launch_service.dart';
 import './services/deep_link_service.dart';
 import './services/pending_order_service.dart';
+import './services/app_update_service.dart';
 import './widgets/notification_permission_dialog.dart';
 import './screens/home_screen.dart';
 import './screens/login_screen.dart';
@@ -108,6 +109,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _hasLoadedReactions = false;
   bool _hasRefreshedConfigThisSession = false;
   bool _hasShownNotificationDialog = false;
+  bool _hasCheckedForUpdates = false;
   
   @override
   void initState() {
@@ -246,6 +248,25 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
+  Future<void> _checkForAppUpdates() async {
+    if (_hasCheckedForUpdates) return;
+
+    try {
+      print('[AuthWrapper] Checking for app updates...');
+      _hasCheckedForUpdates = true;
+
+      // Add a small delay to ensure the home screen is fully loaded
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      if (mounted) {
+        await AppUpdateService().checkForUpdatesIfAuthenticated(context);
+      }
+    } catch (e) {
+      print('[AuthWrapper] Error checking for app updates: $e');
+      _hasCheckedForUpdates = false; // Reset flag on error to allow retry
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer3<AuthProvider, ConfigProvider, ReactionProvider>(
@@ -293,6 +314,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
               
               // Show notification permission dialog if appropriate
               await _showNotificationPermissionIfNeeded();
+
+              // Check for app updates
+              await _checkForAppUpdates();
             });
             
             return const HomeScreen();
@@ -308,6 +332,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             _hasLoadedReactions = false;
             _hasRefreshedConfigThisSession = false;
             _hasShownNotificationDialog = false; // Reset notification dialog flag
+            _hasCheckedForUpdates = false; // Reset update check flag
             
             // Clear other providers when user becomes unauthenticated
             WidgetsBinding.instance.addPostFrameCallback((_) {
