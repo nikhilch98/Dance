@@ -854,5 +854,5 @@ async def mark_attendance(
         logging.exception(f"Error marking attendance: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to mark attendance: {str(e)}"
+            detail=f"{str(e)}"
         ) 
