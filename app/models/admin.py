@@ -46,3 +46,16 @@ class RegistrationData(BaseModel):
     registration: Dict[str, Any]
     verification: Dict[str, Any]
     payment: Optional[Dict[str, Any]] = None
+
+
+class MarkAttendanceRequest(BaseModel):
+    """Request model for marking attendance."""
+    order_id: str
+
+
+class MarkAttendanceResponse(BaseModel):
+    """Response model for attendance marking."""
+    success: bool
+    message: str
+    order_id: str
+    marked_at: Optional[str] = None

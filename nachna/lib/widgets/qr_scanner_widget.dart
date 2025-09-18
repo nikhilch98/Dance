@@ -389,13 +389,13 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
   Widget _buildVerificationResult() {
     final result = _verificationResult!;
     final isValid = result.valid;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: isValid 
+          colors: isValid
             ? [
                 Colors.green.withOpacity(0.2),
                 Colors.green.withOpacity(0.1),
@@ -406,7 +406,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
               ],
         ),
         border: Border.all(
-          color: isValid 
+          color: isValid
             ? Colors.green.withOpacity(0.3)
             : Colors.red.withOpacity(0.3),
           width: 1,
@@ -433,7 +433,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
               ),
             ],
           ),
-          
+
           if (isValid && result.registrationData != null)
             ..._buildRegistrationDetails(result.registrationData!)
           else if (!isValid)
@@ -447,23 +447,61 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _resetScanner,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D4FF),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+
+          // Action buttons
+          if (isValid && result.registrationData != null)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _markAttendance(result.registrationData!),
+                    icon: const Icon(Icons.check_circle, size: 18),
+                    label: const Text('Mark Attendance'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _resetScanner,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF00D4FF), width: 1),
+                      foregroundColor: const Color(0xFF00D4FF),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Scan Another'),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _resetScanner,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D4FF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Scan Another'),
               ),
-              child: Text('Scan Another'),
             ),
-          ),
         ],
       ),
     );
@@ -593,6 +631,71 @@ class _QRScannerWidgetState extends State<QRScannerWidget>
       _isScanning = true;
     });
     controller?.resumeCamera();
+  }
+
+  void _markAttendance(RegistrationData registrationData) async {
+    if (_disposed) return;
+
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      final result = await AdminService.markAttendance(registrationData.orderId);
+
+      if (!_disposed && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Attendance marked successfully!',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Reset scanner after successful attendance marking
+        _resetScanner();
+      }
+    } catch (e) {
+      if (!_disposed && mounted) {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to mark attendance: ${e.toString()}',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (!_disposed && mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
   }
 
   Future<void> _performAutoFocus() async {

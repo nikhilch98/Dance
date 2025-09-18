@@ -801,27 +801,36 @@
 
         // Update statistics
         function updateStats() {
-            const totalRegistrations = allData.length;
-            const totalRevenue = allData.reduce((sum, reg) => sum + (reg.final_amount || 0), 0);
-            const uniqueUsers = new Set(allData.map(reg => reg.phone)).size;
-            const uniqueWorkshops = new Set(allData.map(reg => `${reg.artist_name}-${reg.workshop_song}-${reg.workshop_date}`)).size;
+            // Check if filters are active
+            const artistFilter = document.getElementById('artist-filter').value;
+            const songFilter = document.getElementById('song-filter').value;
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            const hasActiveFilters = artistFilter || songFilter || searchTerm;
+
+            // Use filtered data if filters are active, otherwise use all data
+            const dataToShow = hasActiveFilters ? filteredData : allData;
+
+            const totalRegistrations = dataToShow.length;
+            const totalRevenue = dataToShow.reduce((sum, reg) => sum + (reg.final_amount || 0), 0);
+            const uniqueUsers = new Set(dataToShow.map(reg => reg.phone)).size;
+            const uniqueWorkshops = new Set(dataToShow.map(reg => `${reg.artist_name}-${reg.workshop_song}-${reg.workshop_date}`)).size;
 
             document.getElementById('stats-container').innerHTML = `
                 <div class="stat-card">
                     <div class="stat-value">${totalRegistrations}</div>
-                    <div class="stat-label">Total Registrations</div>
+                    <div class="stat-label">Total Registrations ${hasActiveFilters ? '<span style="color: #00d4ff; font-size: 10px; font-weight: bold;">FILTERED</span>' : ''}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">₹${totalRevenue.toLocaleString()}</div>
-                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-label">Total Revenue ${hasActiveFilters ? '<span style="color: #00d4ff; font-size: 10px; font-weight: bold;">FILTERED</span>' : ''}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${uniqueUsers}</div>
-                    <div class="stat-label">Unique Users</div>
+                    <div class="stat-label">Unique Users ${hasActiveFilters ? '<span style="color: #00d4ff; font-size: 10px; font-weight: bold;">FILTERED</span>' : ''}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${uniqueWorkshops}</div>
-                    <div class="stat-label">Workshops</div>
+                    <div class="stat-label">Workshops ${hasActiveFilters ? '<span style="color: #00d4ff; font-size: 10px; font-weight: bold;">FILTERED</span>' : ''}</div>
                 </div>
             `;
         }
@@ -843,6 +852,7 @@
             });
 
             renderTable(filteredData);
+            updateStats();
         }
 
         // Clear filters
@@ -852,6 +862,7 @@
             document.getElementById('search-input').value = '';
             filteredData = [...allData];
             renderTable(filteredData);
+            updateStats();
         }
 
         // Render table

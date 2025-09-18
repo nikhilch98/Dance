@@ -187,7 +187,7 @@ class AdminService {
       }
 
       final request = QRVerificationRequest(qrData: qrData);
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/verify-qr'),
         headers: {
@@ -212,6 +212,50 @@ class AdminService {
       }
     } catch (e) {
       print('[AdminService] Error verifying QR code: $e');
+      rethrow;
+    }
+  }
+
+  /// Mark attendance for a registration
+  static Future<Map<String, dynamic>> markAttendance(String orderId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/mark-attendance'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'order_id': orderId,
+        }),
+      );
+
+      print('[AdminService] Mark attendance response: ${response.statusCode}');
+      print('[AdminService] Mark attendance body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return data;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to mark attendance');
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please log in again.');
+      } else if (response.statusCode == 403) {
+        throw Exception('Admin access required or insufficient studio permissions.');
+      } else if (response.statusCode == 409) {
+        throw Exception('Attendance has already been marked for this registration.');
+      } else {
+        throw Exception('Failed to mark attendance (Error ${response.statusCode})');
+      }
+    } catch (e) {
+      print('[AdminService] Error marking attendance: $e');
       rethrow;
     }
   }

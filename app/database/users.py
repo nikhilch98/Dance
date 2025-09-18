@@ -36,6 +36,8 @@ class UserOperations:
             "gender": None,
             "profile_complete": False,
             "is_admin": False,
+            "admin_access_list": [],
+            "admin_studios_list": [],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }

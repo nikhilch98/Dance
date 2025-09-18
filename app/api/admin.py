@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from app.services.auth import verify_admin_user
-from app.models.admin import AssignArtistPayload, AssignSongPayload, CreateArtistPayload, QRVerificationRequest, QRVerificationResponse
+from app.models.admin import AssignArtistPayload, AssignSongPayload, CreateArtistPayload, QRVerificationRequest, QRVerificationResponse, MarkAttendanceRequest, MarkAttendanceResponse
 from utils.utils import get_mongo_client
 from app.database.reactions import ReactionOperations
 from app.database.users import UserOperations
@@ -615,7 +615,8 @@ async def get_workshop_registrations(
                 "workshop_date": order.get("workshop_details", {}).get("date", ""),
                 "workshop_time": order.get("workshop_details", {}).get("time", ""),
                 "order_id": order.get("order_id", ""),
-                "created_at": order.get("created_at", "")
+                "created_at": order.get("created_at", ""),
+                "studio_name": order.get("workshop_details", {}).get("studio_name", "")
             }
 
             registrations.append(registration)
@@ -732,10 +733,127 @@ async def verify_qr_code(
             logging.warning(f"QR Verification Failed - Admin: {user_id}, Error: {error}")
         
         return QRVerificationResponse(**verification_result)
-        
+
     except Exception as e:
         logging.error(f"Error verifying QR code: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to verify QR code: {str(e)}"
+        )
+
+
+@router.post("/mark-attendance", response_model=MarkAttendanceResponse)
+async def mark_attendance(
+    request: MarkAttendanceRequest,
+    user_id: str = Depends(verify_admin_user)
+):
+    """Mark attendance for a workshop registration."""
+    try:
+        client = get_mongo_client()
+
+        # Get admin user details to check studio permissions
+        user = UserOperations.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Admin user not found"
+            )
+
+        admin_studios_list = user.get('admin_studios_list', [])
+        if not admin_studios_list:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No studio access permissions configured"
+            )
+
+        # Find the order document
+        order_collection = client["orders"]["orders"]
+        order = order_collection.find_one({"_id": ObjectId(request.order_id)})
+
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+
+        # Check if attendance is already marked
+        if order.get('attendance_marked', False):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Attendance has already been marked for this registration"
+            )
+
+        # Get workshop details to check studio permissions
+        workshop_collection = client["discovery"]["workshops"]
+        workshop_id = order.get('workshop_id')
+        if not workshop_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Workshop ID not found in order"
+            )
+
+        workshop = workshop_collection.find_one({"_id": ObjectId(workshop_id)})
+        if not workshop:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workshop not found"
+            )
+
+        # Check studio permissions
+        workshop_studio_id = workshop.get('studio_id')
+        if not workshop_studio_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Studio ID not found in workshop"
+            )
+
+        # Check if admin has access to this studio
+        has_access = False
+        if "all" in admin_studios_list:
+            has_access = True
+        elif str(workshop_studio_id) in admin_studios_list:
+            has_access = True
+
+        if not has_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient studio permissions for this workshop"
+            )
+
+        # Mark attendance
+        marked_at = datetime.utcnow()
+        result = order_collection.update_one(
+            {"_id": ObjectId(request.order_id)},
+            {
+                "$set": {
+                    "attendance_marked": True,
+                    "attendance_marked_at": marked_at,
+                    "attendance_marked_by": user_id
+                }
+            }
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update attendance status"
+            )
+
+        # Log the attendance marking
+        logging.info(f"Admin {user_id} marked attendance for order {request.order_id}, workshop {workshop_id}, studio {workshop_studio_id}")
+
+        return MarkAttendanceResponse(
+            success=True,
+            message="Attendance marked successfully",
+            order_id=request.order_id,
+            marked_at=marked_at.isoformat()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error marking attendance: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to mark attendance: {str(e)}"
         ) 
