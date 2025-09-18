@@ -823,7 +823,7 @@ async def mark_attendance(
         # Mark attendance
         marked_at = datetime.utcnow()
         result = order_collection.update_one(
-            {"_id": ObjectId(request.order_id)},
+            {"order_id": ObjectId(request.order_id)},
             {
                 "$set": {
                     "attendance_marked": True,
