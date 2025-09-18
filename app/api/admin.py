@@ -767,8 +767,8 @@ async def mark_attendance(
             )
 
         # Find the order document
-        order_collection = client["orders"]["orders"]
-        order = order_collection.find_one({"_id": ObjectId(request.order_id)})
+        order_collection = client["dance_app"]["orders"]
+        order = order_collection.find_one({"order_id": ObjectId(request.order_id)})
 
         if not order:
             raise HTTPException(
