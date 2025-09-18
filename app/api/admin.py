@@ -792,7 +792,7 @@ async def mark_attendance(
                 detail="Workshop ID not found in order"
             )
         print("workshop found")
-        workshop = workshop_collection.find_one({"workshop_uuid": workshop_id})
+        workshop = workshop_collection.find_one({"uuid": workshop_id})
         if not workshop:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
