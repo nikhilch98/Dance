@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 import logging
 
 from utils.utils import get_mongo_client
+from app.database.rewards import RewardOperations
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,17 @@ class UserOperations:
         
         result = client["dance_app"]["users"].insert_one(user_data)
         user_data["_id"] = result.inserted_id
+
+        # Award welcome bonus to new user
+        try:
+            user_id_str = str(user_data["_id"])
+            RewardOperations.award_welcome_bonus(user_id_str)
+            logger.info(f"Welcome bonus awarded to new user {user_id_str}")
+        except Exception as e:
+            logger.error(f"Failed to award welcome bonus to new user {user_data['_id']}: {e}")
+            # Don't fail the user creation if welcome bonus fails
+            pass
+
         return user_data
     
     @staticmethod

@@ -498,10 +498,25 @@ class RewardOperations:
     def award_welcome_bonus(user_id: str, amount: float = None) -> str:
         """Award welcome bonus to new user."""
         try:
+            # Check if user already has a welcome bonus
+            client = get_mongo_client()
+            collection = client["dance_app"]["reward_transactions"]
+
+            existing_welcome_bonus = collection.find_one({
+                "user_id": user_id,
+                "source": RewardSourceEnum.WELCOME_BONUS.value,
+                "transaction_type": RewardTransactionTypeEnum.CREDIT.value,
+                "status": RewardTransactionStatusEnum.COMPLETED.value
+            })
+
+            if existing_welcome_bonus:
+                logger.info(f"Welcome bonus already exists for user {user_id}, skipping duplicate")
+                return existing_welcome_bonus["transaction_id"]
+
             # Use configurable welcome bonus amount
             if amount is None:
                 amount = getattr(settings, 'reward_welcome_bonus', 100.0)
-                
+
             return RewardOperations.create_transaction(
                 user_id=user_id,
                 transaction_type=RewardTransactionTypeEnum.CREDIT,
