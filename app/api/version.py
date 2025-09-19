@@ -99,7 +99,7 @@ async def get_current_app_version(user_id: str = Depends(verify_token)):
     """Get current app version information."""
     try:
         return {
-            "server_version": "1.4.1",
+            "server_version": "1.5.0",
             "api_version": "2.0.0",
             "supported_platforms": list(VERSION_CONFIG.keys()),
             "version_configs": VERSION_CONFIG

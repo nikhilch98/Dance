@@ -96,7 +96,7 @@ def main():
     manual_populate_workshops("theroyaldancespace", [
         # Amisha's workshop with time-based tiered pricing
         ManualWorkshopEntry(is_archived=False, by="Amisha Jayaram", song="o mama Tetema",
-                            pricing_info="Early Bird (Till 19th Sept): ₹800/-\nStandard (20th-21st Sept): ₹950/-",
+                            pricing_info="Early Bird (Till 19th Sept): ₹950/-\nStandard (20th-21st Sept): ₹950/-",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="03:00 PM",
                             end_time="05:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["amisha_jayaram"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_amisha_jayaram-workshop_21_9_2025_o_mama_tetema"),
 
@@ -137,7 +137,7 @@ def main():
 
     manual_populate_workshops("beinrtribe", [
         ManualWorkshopEntry(is_archived=False, by="Sanket Panchal", song="Shaky Shaky",
-                            pricing_info="Early Bird (Till 19th Sept): ₹950/-\nStandard (20th-21st Sept): ₹950/-",
+                            pricing_info="Early Bird (Till 19th Sept): ₹900/-\nStandard (20th-21st Sept): ₹900/-",
                             event_type=EventType.WORKSHOP, day=21, month=9, year=2025, start_time="04:00 PM",
                             end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["sanket_panchal25"],registration_link_type="nachna", workshop_uuid="beinrtribe_sanket_panchal25_workshop_21_9_2025_shaky_shaky"),
     ], remove_existing_workshops = True)
