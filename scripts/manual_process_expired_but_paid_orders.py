@@ -24,8 +24,8 @@ for razorpay_order_details in service.get_order_history():
     if not internal_order:
         print(f"URGEEEENTTTTTT: Internal order not found for {razorpay_payment_link_reference_id} | Razorpay order id: {razorpay_order_details['razorpay_order_id']}")
         continue
-    if internal_order["status"] != "expired":
-        print(f"We are currently only manually processing internal orders which are expired while this order is {internal_order['status']}")
+    if internal_order["status"] not in  ["expired", "pending", "created"]:
+        print(f"We are currently only manually processing internal orders which are expired or pending or created while this order is {internal_order['status']}")
         continue
     new_status = map_razorpay_status_to_order_status(razorpay_payment_link_status)
     additional_data = {}
