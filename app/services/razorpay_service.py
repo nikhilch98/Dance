@@ -151,7 +151,7 @@ class RazorpayService:
             return False
     
     def get_order_history(self):
-        resp = self.client.order.all()
+        resp = self.client.order.all({"count":100})
         orders = []
         for order in resp.get("items",[]):
             order_id = order.get("notes",{}).get("order_id")
