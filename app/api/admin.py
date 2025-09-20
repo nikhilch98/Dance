@@ -607,7 +607,7 @@ async def get_workshop_registrations(
             if not workshop:
                 print(f"workshop not found for uuid : {workshop_uuid}")
                 continue
-            if not ("all" in admin_studios_list or workshop["studio_id"] in admin_studios_list):
+            if workshop and not ("all" in admin_studios_list or workshop["studio_id"] in admin_studios_list):
                 continue
             registration = {
                 "name": order.get("payment_gateway_details", {}).get("customer", {}).get("name", ""),
