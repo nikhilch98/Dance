@@ -58,6 +58,7 @@ class RewardOperations:
     def update_wallet_balance(user_id: str, amount: float, transaction_type: RewardTransactionTypeEnum) -> bool:
         """Update user's wallet balance."""
         try:
+            RewardOperations.get_or_create_wallet(user_id)
             client = get_mongo_client()
             collection = client["dance_app"]["reward_wallets"]
             
@@ -108,6 +109,7 @@ class RewardOperations:
     ) -> str:
         """Create a new reward transaction with enhanced duplicate prevention."""
         try:
+            RewardOperations.get_or_create_wallet(user_id)
             client = get_mongo_client()
             collection = client["dance_app"]["reward_transactions"]
 
