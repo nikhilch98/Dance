@@ -606,7 +606,6 @@ async def get_workshop_registrations(
             workshop = discovery_db["workshops_v2"].find_one({"uuid": workshop_uuid})
             if not workshop:
                 print(f"workshop not found for uuid : {workshop_uuid}")
-                continue
             if workshop and not ("all" in admin_studios_list or workshop["studio_id"] in admin_studios_list):
                 continue
             registration = {
