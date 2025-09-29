@@ -1,0 +1,761 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# Nachna App - Design Language & Development Rules
+
+## Design Language Guidelines
+
+### Color Palette
+- **Primary Gradient**: `LinearGradient(colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)])`
+- **Background Gradient**: 
+  ```dart
+  LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0A0A0F),
+      Color(0xFF1A1A2E),
+      Color(0xFF16213E),
+      Color(0xFF0F3460),
+    ],
+  )
+  ```
+- **Accent Colors**:
+  - Blue: `Color(0xFF3B82F6)` to `Color(0xFF1D4ED8)`
+  - Green: `Color(0xFF10B981)` to `Color(0xFF059669)`
+  - Purple: `Color(0xFF8B5CF6)`
+  - Pink/Red: `Color(0xFFFF006E)` to `Color(0xFFDC2626)`
+- **Text Colors**:
+  - Primary: `Colors.white`
+  - Secondary: `Colors.white.withOpacity(0.7)`
+  - Tertiary: `Colors.white.withOpacity(0.5)`
+
+### Typography
+- **Headers**: Bold, white text with appropriate sizing
+- **Body Text**: Regular weight, white or white with opacity
+- **Font Sizes**: Use responsive sizing based on screen width/height percentages
+- **Letter Spacing**: Use `letterSpacing: 1.2` for headers
+
+### Overflow Prevention & Text Handling
+- **CRITICAL RULE**: Always account for text overflow and content that may exceed container bounds
+- **Text Widgets**: Always include `maxLines` and `overflow: TextOverflow.ellipsis` for dynamic content
+- **Row/Column Layouts**: Use `Flexible` or `Expanded` widgets to prevent overflow, never assume fixed content sizes
+- **Long Names/Titles**: Design for names that may be 2-3 times longer than expected (e.g., "Charmi Chinoy Bhatian" vs "John")
+- **Multi-language Support**: Account for text expansion in different languages (some languages require 30-40% more space)
+- **Dynamic Content**: Always test with edge cases like very long strings, empty strings, and special characters
+- **Container Sizing**: Use `MainAxisSize.min` when content should only take necessary space
+- **Cross-Axis Alignment**: Use `CrossAxisAlignment.start` when text might wrap to multiple lines
+- **Icon Positioning**: When placing icons next to text, account for text wrapping by using proper padding and alignment
+- **Responsive Text**: Implement text scaling that adapts to different screen sizes and accessibility settings
+
+#### Required Overflow Patterns:
+```dart
+// For dynamic text that might be long
+Text(
+  dynamicContent,
+  maxLines: 2,
+  overflow: TextOverflow.ellipsis,
+  style: // your style
+)
+
+// For rows with text and icons
+Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Flexible(
+      child: Text(
+        longText,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    const SizedBox(width: 6),
+    Icon(Icons.example),
+  ],
+)
+
+// For containers with dynamic content
+Container(
+  constraints: BoxConstraints(
+    maxWidth: MediaQuery.of(context).size.width * 0.8,
+  ),
+  child: // your content
+)
+```
+
+### Component Design Patterns
+
+#### Cards & Containers
+- **Border Radius**: Always use `BorderRadius.circular(20)` or `BorderRadius.circular(24)` for main containers
+- **Glassmorphism Effect**:
+  ```dart
+  Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      gradient: LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.15),
+          Colors.white.withOpacity(0.05),
+        ],
+      ),
+      border: Border.all(
+        color: Colors.white.withOpacity(0.2),
+        width: 1.5,
+      ),
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: // Your content here
+      ),
+    ),
+  )
+  ```
+
+#### Buttons
+- **Primary Buttons**: Use gradient backgrounds with shadow effects
+- **Secondary Buttons**: Use outline style with glassmorphism
+- **Border Radius**: `BorderRadius.circular(16)` for buttons
+- **Padding**: `EdgeInsets.symmetric(vertical: 16)` for standard buttons
+
+#### Form Fields
+- **Background**: `Colors.white.withOpacity(0.1)`
+- **Border**: `BorderSide(color: Colors.white.withOpacity(0.2))`
+- **Focus Border**: `BorderSide(color: Color(0xFF00D4FF), width: 2)`
+- **Border Radius**: `BorderRadius.circular(12)`
+- **Icons**: Use `Color(0xFF00D4FF)` for prefix icons
+
+#### Shadows & Effects
+- **Box Shadows**: Use colored shadows that match the element's color theme
+- **Blur Effects**: Use `ImageFilter.blur(sigmaX: 10, sigmaY: 10)` for glassmorphism
+- **Opacity Layers**: Layer different opacity levels for depth
+
+### Animation Guidelines
+- **Duration**: Use `Duration(milliseconds: 800)` for standard animations
+- **Curves**: Prefer `Curves.easeOut` and `Curves.easeOutCubic`
+- **Fade Animations**: Always include fade transitions for screen changes
+- **Slide Animations**: Use subtle slide effects with `Offset(0, 0.3)`
+
+### Responsive Design
+- **Screen Breakpoints**: Use `MediaQuery.of(context).size` for responsive sizing
+- **Percentage-based Sizing**: Use screen width/height percentages for consistent scaling
+- **Minimum/Maximum Constraints**: Use `.clamp()` for font sizes and dimensions
+- **Safe Areas**: Always wrap content in `SafeArea` widgets
+
+### Navigation & UX
+- **Bottom Sheets**: Use glassmorphism design with rounded top corners
+- **Dialogs**: Follow the same glassmorphism pattern as cards
+- **Snackbars**: Use floating behavior with rounded corners and appropriate colors
+- **Loading States**: Use `CircularProgressIndicator` with white color
+
+## Code Quality Rules
+
+### Flutter/Dart Specific
+1. **State Management**: Use Provider pattern consistently
+2. **Error Handling**: Always wrap async operations in try-catch blocks
+3. **Null Safety**: Use null-aware operators and proper null checks
+4. **Widget Composition**: Break down complex widgets into smaller, reusable components
+5. **Performance**: Use `const` constructors where possible
+
+### API Integration
+1. **Base URLs**: Use consistent base URL configuration
+2. **Error Responses**: Handle HTTP errors gracefully with user-friendly messages
+3. **Loading States**: Show loading indicators during API calls
+4. **Token Management**: Use secure storage for authentication tokens
+
+### File Organization
+1. **Screens**: Place in `lib/screens/` directory
+2. **Models**: Place in `lib/models/` directory with JSON serialization
+3. **Services**: Place in `lib/services/` directory
+4. **Providers**: Place in `lib/providers/` directory
+5. **Widgets**: Place reusable widgets in `lib/widgets/` directory
+6. **Screenshots**: Store app screenshots in `nachna/app_screenshots/` directory for design reference and UI visualization during development
+
+### Naming Conventions
+1. **Files**: Use snake_case for file names
+2. **Classes**: Use PascalCase for class names
+3. **Variables**: Use camelCase for variable names
+4. **Constants**: Use UPPER_SNAKE_CASE for constants
+5. **Private Members**: Prefix with underscore `_`
+
+### Documentation
+1. **Comments**: Add meaningful comments for complex logic
+2. **Method Documentation**: Use dartdoc comments for public methods
+3. **README**: Keep README updated with setup instructions
+4. **Design Reference**: Use screenshots in `nachna/app_screenshots/` to understand UI patterns, spacing, and visual hierarchy when implementing new features or web pages
+
+## UI/UX Consistency Rules
+
+### Design Reference Guidelines
+- **Screenshot Reference**: Before implementing any UI component, check `nachna/app_screenshots/` for visual reference
+- **Exact Matching**: Web implementations must match mobile app screenshots exactly on mobile browsers
+- **Spacing Consistency**: Use screenshots to verify proper margins, padding, and element spacing
+- **Color Accuracy**: Match exact gradients, opacity levels, and color schemes from screenshots
+- **Component Sizing**: Reference screenshots for proper button sizes, avatar dimensions, and card proportions
+- **Typography Matching**: Ensure font sizes, weights, and letter spacing match the app screenshots
+- **Visual Hierarchy**: Follow the same information hierarchy and emphasis patterns shown in screenshots
+
+### Profile & User Management
+- **Profile Pictures**: Always show circular avatars with gradient fallbacks (reference screenshots for exact sizing)
+- **User Info**: Display in card format with glassmorphism (match glassmorphism effects from screenshots)
+- **Edit States**: Use inline editing or modal dialogs consistently (follow modal patterns from screenshots)
+
+### Forms & Input
+- **Validation**: Show validation errors with red color and clear messages
+- **Success States**: Use green color for success messages
+- **Field Spacing**: Maintain consistent spacing between form fields
+- **Keyboard Handling**: Dismiss keyboard appropriately
+
+### Lists & Cards
+- **Workshop Cards**: Use consistent card design with gradient overlays
+- **Artist Cards**: Show circular profile pictures with names
+- **Studio Cards**: Include studio images and information in card format
+
+### Image Handling
+- **Loading States**: Show skeleton or placeholder while loading
+- **Error States**: Show fallback images or gradients on error
+- **Optimization**: Resize and compress images appropriately
+- **Caching**: Implement proper image caching strategies
+
+## Performance Guidelines
+
+### Memory Management
+1. **Dispose Controllers**: Always dispose of controllers in dispose() method
+2. **Cancel Timers**: Cancel any timers or subscriptions
+3. **Image Memory**: Use appropriate image sizes and caching
+
+### Network Optimization
+1. **Request Debouncing**: Implement debouncing for search and frequent requests
+2. **Caching**: Cache API responses where appropriate
+3. **Compression**: Compress images before upload
+
+### Build Optimization
+1. **Widget Rebuilds**: Minimize unnecessary widget rebuilds
+2. **Const Constructors**: Use const constructors for static widgets
+3. **Builder Patterns**: Use builder patterns for conditional rendering
+
+## Security Guidelines
+
+### Data Protection
+1. **Secure Storage**: Use flutter_secure_storage for sensitive data
+2. **Token Expiry**: Handle token expiration gracefully
+3. **Input Validation**: Validate all user inputs on both client and server
+4. **Image Upload**: Validate image types and sizes before upload
+
+### API Security
+1. **HTTPS**: Always use HTTPS for API calls
+2. **Authentication**: Include proper authentication headers
+3. **Error Messages**: Don't expose sensitive information in error messages
+
+## Testing Guidelines
+
+### Test User Credentials
+For all testing and development purposes, use the following test user:
+
+- **Mobile Number:** `9999999999`
+- **Password:** `test123`
+- **User ID:** `683cdbb39caf05c68764cde4`
+- **Profile Status:** Incomplete (for testing profile setup flow)
+
+### Testing Workflows
+1. **Authentication Testing:** Use the test user for login/logout flows
+2. **Profile Picture Testing:** Test upload, removal, and display functionality
+3. **Profile Setup Testing:** Test the onboarding profile completion flow
+4. **Admin Testing:** Create separate admin users as needed
+
+### API Testing
+- **Base URL:** `https://nachna.com/api/auth`
+- **Test Scripts:** Use `create_test_user.py` and `test_profile_picture_api.py`
+- **Profile Picture API:** Verified working with MongoDB storage
+
+### Development Notes
+- Test user is created via API registration endpoint
+- Profile pictures are stored in MongoDB `profile_pictures` collection
+- All authentication uses JWT tokens with 30-day expiration
+- Use this test user consistently across all development and testing scenarios
+
+## Accessibility Guidelines
+
+### Screen Reader Support
+1. **Semantic Labels**: Add semantic labels to interactive elements
+2. **Focus Management**: Ensure proper focus management
+3. **Contrast**: Maintain sufficient color contrast
+
+### Touch Targets
+1. **Minimum Size**: Ensure touch targets are at least 44x44 points
+2. **Spacing**: Provide adequate spacing between interactive elements
+
+## Deployment Guidelines
+
+### Build Configuration
+1. **Environment Variables**: Use proper environment configuration
+2. **Build Variants**: Configure debug/release builds appropriately
+3. **App Icons**: Ensure proper app icons for all platforms
+
+### Platform Specific
+1. **iOS**: Configure proper Info.plist settings
+2. **Android**: Configure proper AndroidManifest.xml settings
+3. **Permissions**: Request only necessary permissions
+
+Remember: Consistency is key. When implementing new features or making changes, always refer back to these guidelines to ensure the app maintains its cohesive design language and user experience. 
+
+# Nachna App - Cursor Development Rules
+
+## 🚨 CRITICAL: NO BREAKING CHANGES POLICY
+
+### RULE #1: PRESERVE ALL EXISTING FUNCTIONALITY
+- **NEVER modify existing API endpoints** without explicit user request
+- **NEVER change existing database operations** that are working
+- **NEVER modify existing models/schemas** that break backward compatibility
+- **NEVER alter existing authentication/authorization flows**
+- **NEVER change existing middleware behavior**
+- **NEVER modify existing service implementations** unless specifically requested
+
+### RULE #2: ADDITIVE-ONLY DEVELOPMENT
+- **ALWAYS add new features as separate modules/functions**
+- **ALWAYS extend existing classes/interfaces, never modify them**
+- **ALWAYS create new API routes instead of modifying existing ones**
+- **ALWAYS add new database operations instead of changing existing ones**
+- **ALWAYS add new models alongside existing ones**
+
+### RULE #3: BACKWARD COMPATIBILITY GUARANTEE
+- **ALWAYS maintain existing API response formats**
+- **ALWAYS keep existing database schema compatible**
+- **ALWAYS preserve existing function signatures**
+- **ALWAYS maintain existing import paths**
+- **ALWAYS keep existing configuration options working**
+
+### RULE #4: TESTING BEFORE CHANGES
+- **ALWAYS verify existing functionality works before making changes**
+- **ALWAYS test all existing API endpoints after modifications**
+- **ALWAYS check database operations still function**
+- **ALWAYS verify authentication flows remain intact**
+- **ALWAYS test the server starts and responds correctly**
+
+### RULE #5: PROJECT STRUCTURE ENFORCEMENT
+- **ALWAYS follow the established project structure:**
+  ```
+  Project Root/
+  ├── app/                    # FastAPI SERVER CODE ONLY
+  │   ├── config/             # Settings and constants
+  │   ├── models/             # Pydantic models
+  │   ├── database/           # Database operations
+  │   ├── services/           # Business logic
+  │   ├── middleware/         # Request processing
+  │   ├── api/                # Route handlers
+  │   └── main.py             # Application factory
+  ├── server/                 # GOLANG SERVER CODE ONLY
+  │   ├── config/             # Configuration management
+  │   ├── models/             # Go struct models and data types
+  │   ├── database/           # Database operations and connections
+  │   ├── handlers/           # HTTP request handlers
+  │   ├── utils/              # Utility functions
+  │   ├── templates/          # HTML templates
+  │   ├── static/             # Static assets for server
+  │   ├── go.mod              # Go module dependencies
+  │   ├── go.sum              # Dependency checksums
+  │   └── main.go             # Main application entry point
+  ├── nachna/                 # FLUTTER CLIENT CODE ONLY
+  │   ├── lib/                # Flutter Dart code
+  │   ├── android/            # Android platform code
+  │   ├── ios/                # iOS platform code
+  │   ├── web/                # Web platform code
+  │   ├── app_screenshots/    # App screenshots for design reference and UI visualization
+  │   ├── pubspec.yaml        # Flutter dependencies
+  │   └── ...                 # Other Flutter files
+  ├── utils/                  # Shared utilities (cross-platform)
+  ├── static/                 # Static web assets (global)
+  └── ...                     # Other project files
+  ```
+- **CRITICAL**: FastAPI server code goes in `app/` folder ONLY
+- **CRITICAL**: Golang server code goes in `server/` folder ONLY
+- **CRITICAL**: Flutter code goes in `nachna/` folder ONLY
+- **NEVER mix server and client code in the same directory**
+- **ALWAYS add new FastAPI server features in appropriate `app/` modules**
+- **ALWAYS add new Golang server features in appropriate `server/` modules**
+- **ALWAYS add new Flutter features in appropriate `nachna/` directories**
+- **NEVER create monolithic files**
+- **ALWAYS maintain separation of concerns**
+
+### RULE #6: EXISTING CODE PRESERVATION
+- **NEVER delete existing functions/classes without explicit permission**
+- **NEVER modify existing imports that other modules depend on**
+- **NEVER change existing environment variables or configuration**
+- **NEVER alter existing error handling patterns**
+- **NEVER modify existing logging/monitoring behavior**
+
+### RULE #7: DATABASE INTEGRITY
+- **NEVER modify existing MongoDB collections directly**
+- **NEVER change existing database operation signatures**
+- **NEVER alter existing data models that affect storage**
+- **ALWAYS preserve existing indexes and constraints**
+- **ALWAYS maintain existing data relationships**
+
+### RULE #8: API CONTRACT PRESERVATION
+- **NEVER change existing endpoint URLs**
+- **NEVER modify existing request/response formats**
+- **NEVER alter existing HTTP status codes**
+- **NEVER change existing authentication requirements**
+- **NEVER modify existing rate limiting behavior**
+
+### RULE #9: DEPLOYMENT SAFETY
+- **ALWAYS ensure the server can start after changes**
+- **ALWAYS verify all existing routes are accessible**
+- **ALWAYS check that existing integrations work (APNs, MongoDB, etc.)**
+- **ALWAYS maintain existing performance characteristics**
+- **ALWAYS preserve existing security measures**
+
+### RULE #10: DEPENDENCY MANAGEMENT
+- **NEVER update dependencies without explicit approval**
+- **NEVER add conflicting dependencies**
+- **NEVER remove existing dependencies that are in use**
+- **ALWAYS use existing utility functions when possible**
+- **ALWAYS follow existing patterns for new dependencies**
+
+### RULE #11: CLIENT-SERVER SEPARATION
+- **CRITICAL**: `app/` folder contains FastAPI server code ONLY
+- **CRITICAL**: `server/` folder contains Golang server code ONLY
+- **CRITICAL**: `nachna/` folder contains Flutter client code ONLY
+- **NEVER add Flutter code to the `app/` or `server/` folders**
+- **NEVER add FastAPI server code to the `server/` or `nachna/` folders**
+- **NEVER add Golang server code to the `app/` or `nachna/` folders**
+- **ALWAYS respect the client-server boundary**
+- **FastAPI dependencies**: Add to `requirements.txt` (Python packages only)
+- **Golang dependencies**: Add to `server/go.mod` (Go modules only)
+- **Client dependencies**: Add to `nachna/pubspec.yaml` (Dart packages only)
+- **Shared utilities**: Use `utils/` folder for code used by both client and server
+- **Static assets**: Use `static/` folder for global web assets served by any server
+
+## 🔧 DEVELOPMENT GUIDELINES
+
+### When Adding New Features:
+1. **FIRST**: Analyze existing codebase to understand patterns
+2. **SECOND**: Design new feature to complement, not replace existing functionality
+3. **THIRD**: Create new modules/functions following existing architecture
+4. **FOURTH**: Add new routes/endpoints with different paths
+5. **FIFTH**: Test that ALL existing functionality still works
+6. **SIXTH**: Document the new feature without changing existing docs
+
+### When Fixing Bugs:
+1. **FIRST**: Identify the minimal change needed
+2. **SECOND**: Ensure the fix doesn't break other functionality
+3. **THIRD**: Test the specific bug fix
+4. **FOURTH**: Test all related functionality
+5. **FIFTH**: Verify no side effects on other features
+
+### When Refactoring:
+1. **FIRST**: Get explicit approval for refactoring scope
+2. **SECOND**: Ensure all existing functionality is preserved
+3. **THIRD**: Maintain all existing interfaces and contracts
+4. **FOURTH**: Test extensively before and after refactoring
+5. **FIFTH**: Verify performance hasn't degraded
+
+## 🛡️ PROTECTION MECHANISMS
+
+### Code Review Checklist:
+- [ ] All existing API endpoints still work
+- [ ] Database operations maintain same behavior
+- [ ] Authentication/authorization unchanged
+- [ ] No breaking changes to models/schemas
+- [ ] Server starts successfully
+- [ ] All existing integrations functional
+- [ ] Performance metrics maintained
+- [ ] Security measures preserved
+
+### Testing Requirements:
+- [ ] Run server and verify startup
+- [ ] Test all existing API endpoints
+- [ ] Verify database connections
+- [ ] Check authentication flows
+- [ ] Test notification systems
+- [ ] Verify admin functionality
+- [ ] Check caching behavior
+- [ ] Test error handling
+
+### Rollback Plan:
+- **ALWAYS have a rollback strategy**
+- **ALWAYS keep working versions available**
+- **ALWAYS document what was changed**
+- **ALWAYS be able to revert quickly**
+
+## 🚀 IMPLEMENTATION STRATEGY
+
+### For New Features:
+1. **Determine if it's server or client feature**:
+   - FastAPI server features: API endpoints, database operations, business logic → `app/` folder
+   - Golang server features: Workshop management, caching, admin APIs → `server/` folder
+   - Client features: UI, user interactions, mobile functionality → `nachna/` folder
+2. **Extend** existing architecture in the appropriate folder
+3. **Add** new modules/endpoints in correct location
+4. **Supplement** existing functionality
+5. **Enhance** user experience
+6. **Maintain** backward compatibility
+
+### For Bug Fixes:
+1. **Minimal** impact changes
+2. **Targeted** fixes only
+3. **Preserve** existing behavior
+4. **Test** thoroughly
+5. **Document** changes
+
+### For Improvements:
+1. **Additive** enhancements
+2. **Optional** features
+3. **Configurable** behavior
+4. **Backward** compatible
+5. **Performance** conscious
+
+## 🧪 API TESTING REQUIREMENTS
+
+### MANDATORY: When Adding New API Endpoints
+**CRITICAL RULE**: Every new API call in the Flutter app MUST have corresponding tests in `nachna/test/api_integration_test.py`
+
+#### Required Steps:
+1. **Identify the new API endpoint** (method + path)
+2. **Add test case** following the existing pattern in the test file
+3. **Include both success and error scenarios**
+4. **Update API documentation** in the test file header
+5. **Add any new test constants** to `ApiTestConfig` class
+
+#### Test Case Template:
+```python
+try:
+    response = self.make_request('POST', '/api/new/endpoint', {
+        'param1': 'value1',
+        'param2': 'value2'
+    }, auth_required=True)  # Set auth_required if needed
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert 'expected_field' in data
+    
+    self.log_test_result("POST /api/new/endpoint", True, "Description of success")
+except Exception as e:
+    self.log_test_result("POST /api/new/endpoint", False, str(e))
+```
+
+#### Groups for Test Organization:
+- **Authentication APIs**: Login, register, profile, password, etc.
+- **Data Fetching APIs**: Artists, studios, workshops, config
+- **Reaction APIs**: Like, follow, notification preferences
+- **Notification APIs**: Device token management
+- **Admin APIs**: Workshop management, test notifications
+- **Error Handling Tests**: Invalid auth, 404s, validation errors
+- **Performance Tests**: Response time validation
+
+#### Running Tests:
+```bash
+# Run all tests
+python scripts/run_api_tests.py
+
+# Run specific test group
+python scripts/run_api_tests.py --group auth
+
+# Run with verbose output and generate report
+python scripts/run_api_tests.py --verbose --report
+```
+
+## ⚠️ EMERGENCY PROTOCOLS
+
+### If Something Breaks:
+1. **IMMEDIATELY** stop and assess impact
+2. **QUICKLY** identify what changed
+3. **RAPIDLY** revert problematic changes
+4. **THOROUGHLY** test the revert
+5. **CAREFULLY** re-implement with safer approach
+
+### If Unsure:
+1. **ASK** the user for clarification
+2. **RESEARCH** existing implementations
+3. **PROPOSE** multiple safe approaches
+4. **GET** approval before proceeding
+5. **IMPLEMENT** with maximum caution
+
+## 📋 MANDATORY CHECKS
+
+Before ANY code change:
+- [ ] Will this break existing API endpoints?
+- [ ] Will this affect database operations?
+- [ ] Will this change authentication behavior?
+- [ ] Will this modify existing models?
+- [ ] Will this impact performance?
+- [ ] Will this affect other developers?
+- [ ] Will this require migration scripts?
+- [ ] Will this break existing integrations?
+- [ ] Am I putting FastAPI server code in the `app/` folder?
+- [ ] Am I putting Golang server code in the `server/` folder?
+- [ ] Am I putting Flutter code in the `nachna/` folder?
+- [ ] Am I respecting the client-server separation?
+- [ ] Am I using the correct dependency management for each technology?
+
+## 🎯 SUCCESS CRITERIA
+
+A change is successful ONLY if:
+- [ ] ALL existing functionality works
+- [ ] Server starts without errors
+- [ ] API endpoints respond correctly
+- [ ] Database operations function
+- [ ] Authentication flows work
+- [ ] No performance degradation
+- [ ] No security vulnerabilities introduced
+- [ ] All integrations remain functional
+
+## 📚 REFERENCE IMPLEMENTATION
+
+### Current Working Architecture:
+- **FastAPI (app/ folder)**: Modular route structure, authentication, notifications
+- **Golang (server/ folder)**: Workshop management, caching, admin APIs, fasthttp-based
+- **MongoDB**: Database operations via utils (shared across servers)
+- **Authentication**: JWT-based with decorators
+- **Notifications**: APNs integration with watchers
+- **Caching**: Redis-like caching system
+- **Admin**: Separate admin endpoints (both FastAPI and Golang)
+- **Middleware**: Logging, CORS, version validation
+
+### DO NOT MODIFY:
+- Core authentication system
+- Database connection management
+- Existing API response formats
+- Middleware pipeline
+- APNs notification system
+- Caching mechanisms
+- Admin functionality
+- Error handling patterns
+
+### SAFE TO EXTEND:
+- New API endpoints with different routes
+- New database operations with new names
+- New models for new features
+- New services for new functionality
+- New middleware for new requirements
+- New utilities for new needs
+
+## 🌐 WEB BOOKING INTEGRATION
+
+### Web Platform Features (Version 1.4.0+)
+The Nachna platform now includes comprehensive web booking functionality that mirrors the mobile app experience:
+
+#### Web Studio Pages
+- **URL Pattern**: `nachna.com/web/{studio_id}`
+- **Template Location**: `templates/studio_web_booking.html`
+- **API Integration**: Uses existing workshop and studio APIs
+- **Responsive Design**: Mobile-first with desktop scaling
+
+#### Key Web Features Implemented:
+1. **Studio Detail Pages**:
+   - Studio information with image and Instagram link
+   - Share functionality (WhatsApp, Instagram, generic)
+   - App-identical design language with glassmorphism effects
+
+2. **Workshop Display**:
+   - "This Week" workshops organized by day
+   - "Upcoming" workshops in responsive grid
+   - Artist avatars (single and multiple overlapping)
+   - Workshop cards with song, timing, and pricing info
+
+3. **Interactive Elements**:
+   - Artist Instagram buttons (single or multi-select modal)
+   - Choreography video buttons for Instagram content
+   - Direct booking links (Nachna payment and external)
+   - Native-style modals and touch feedback
+
+4. **Mobile Experience**:
+   - App-identical layout and spacing on mobile browsers
+   - Touch-optimized interactions with proper feedback
+   - iOS safe area support for notched devices
+   - Smooth scrolling and native-feeling navigation
+
+#### Web API Endpoints:
+- `GET /web/{studio_id}` - Serve studio web booking page
+- `GET /api/studio/{studio_id}` - Get specific studio details
+- Uses existing: `/api/studios`, `/api/workshops_by_studio/{studio_id}`, `/api/proxy-image/`
+
+#### Web Design Language:
+- **Matches Flutter app exactly** with same colors, gradients, and effects
+- **Responsive breakpoints**: 768px mobile, 375px small mobile, landscape support
+- **Touch targets**: 44px minimum for mobile accessibility
+- **Typography**: 14px base on mobile, proper font weights and spacing
+- **Animations**: Scale feedback, smooth transitions, reduced motion support
+
+#### Development Guidelines for Web:
+1. **Template Location**: All HTML templates in `templates/` directory
+2. **Static Assets**: Global web assets in `static/` directory  
+3. **Responsive First**: Design mobile-first, then scale to desktop
+4. **API Consistency**: Use existing APIs, don't create web-specific endpoints
+5. **Design Matching**: Web must look identical to mobile app on small screens
+6. **Performance**: Optimize for mobile networks and touch interactions
+
+#### Web Testing Requirements:
+- Test on mobile browsers (iOS Safari, Android Chrome)
+- Verify responsive design at different screen sizes
+- Ensure touch interactions work properly
+- Test all booking and sharing functionality
+- Validate API integration and error handling
+
+#### Browser Support:
+- **Primary**: iOS Safari, Android Chrome, Desktop Chrome/Firefox
+- **Features**: Modern CSS Grid, Flexbox, CSS Custom Properties
+- **Fallbacks**: Graceful degradation for older browsers
+- **Accessibility**: Proper focus states, semantic HTML, ARIA labels
+
+## 🐹 GOLANG SERVER SPECIFICATIONS
+
+### Server Architecture (server/ folder):
+- **Technology Stack**: Go 1.21+, fasthttp, MongoDB integration
+- **Purpose**: Workshop management, artist/studio APIs, caching, admin functionality
+- **Entry Point**: `server/main.go`
+- **Dependencies**: Managed via `server/go.mod` and `server/go.sum`
+
+### Key Golang Server Features:
+- **Workshop Management**: Complete CRUD operations for workshops
+- **Artist & Studio APIs**: Profile management and data serving
+- **Cache System**: Optimized performance with caching layer
+- **Admin Panel**: Content management and administrative functions
+- **Image Proxy**: External image serving and optimization
+- **Fast HTTP**: High-performance HTTP server using valyala/fasthttp
+
+### Golang Server Endpoints:
+- **Public API**: Workshop discovery, artist profiles, studio schedules
+- **Admin API**: Content management, data manipulation
+- **Proxy Services**: Image proxy, external resource handling
+
+### Development Guidelines for Golang Server:
+1. **Go Module Management**: Always use `go mod tidy` after adding dependencies
+2. **Error Handling**: Use Go's standard error handling patterns
+3. **Structure Patterns**: Follow Go project layout standards
+4. **Database Integration**: Use existing MongoDB connection patterns
+5. **HTTP Handlers**: Implement fasthttp.RequestHandler interface
+6. **Configuration**: Use environment-based configuration management
+7. **Logging**: Implement consistent logging across all handlers
+8. **Testing**: Write unit tests for all new handlers and functions
+
+### Golang Server File Structure:
+```
+server/
+├── config/           # Configuration and environment management
+├── database/         # MongoDB operations and connection handling
+├── handlers/         # HTTP request handlers (fasthttp-based)
+├── models/           # Go structs for data modeling
+├── templates/        # HTML templates for admin interface
+├── static/          # Static assets served by Golang server
+├── utils/           # Utility functions and helpers
+├── go.mod           # Go module definition
+├── go.sum           # Dependency checksums
+└── main.go          # Application entry point
+```
+
+### Running the Golang Server:
+```bash
+# Development mode
+./dance_server --dev
+
+# Production mode  
+./dance_server --prod
+
+# Build the server
+go build -o dance_server
+```
+
+Remember: **WORKING CODE IS SACRED** - Preserve it at all costs! 

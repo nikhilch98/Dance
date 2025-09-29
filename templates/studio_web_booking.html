@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="description" content="Book dance workshops at {{ studio_name }}. Discover and book classes from top choreographers in your area.">
@@ -2787,11 +2788,11 @@
             }
 
             .auth-button {
-                width: 32px;
-                height: 32px;
-                padding: 8px;
-                font-size: 0.75rem;
-                min-width: 32px;
+                height: 44px;
+                padding: 8px 16px;
+                font-size: 0.875rem;
+                min-width: auto;
+                width: auto;
             }
 
             .auth-icon {
@@ -6850,6 +6851,7 @@
 
         // Authentication Functions
         function handleAuth() {
+            console.log('handleAuth called, currentUser:', currentUser);
             if (currentUser) {
                 // Show profile modal
                 openProfileModal();
@@ -6860,6 +6862,11 @@
         }
 
         function openLoginModal() {
+            console.log('openLoginModal called', loginModal);
+            if (!loginModal) {
+                console.error('loginModal element not found');
+                return;
+            }
             loginModal.classList.add('show');
             mobileInput.focus();
             hideAuthErrors();
@@ -8302,6 +8309,11 @@
 
         // UI Updates
         function updateAuthUI() {
+            console.log('updateAuthUI called, authButton:', authButton);
+            if (!authButton) {
+                console.error('authButton not found');
+                return;
+            }
             const authText = authButton.querySelector('.auth-text');
 
             if (currentUser) {
@@ -8346,8 +8358,10 @@
 
                 // Add click handler for login
                 authButton.onclick = function() {
+                    console.log('Login button clicked!');
                     handleAuth();
                 };
+                console.log('Click handler attached to login button');
             }
         }
 
@@ -8360,6 +8374,7 @@
 
         // Initialization
         function initializeAuth() {
+            console.log('initializeAuth called');
             // Check for existing session
             const savedToken = localStorage.getItem('authToken');
             const savedUser = localStorage.getItem('currentUser');
@@ -8373,10 +8388,14 @@
                     console.error('Error restoring auth session:', error);
                     logout();
                 }
+            } else {
+                console.log('No saved session, calling updateAuthUI for login button');
+                updateAuthUI();
             }
 
             // Set up event listeners
             setupAuthEventListeners();
+            console.log('Auth initialization complete');
         }
 
         function setupAuthEventListeners() {
@@ -8466,6 +8485,7 @@
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
+            initializeAuth();
         });
         
         // Close modal when clicking outside
@@ -8906,6 +8926,5 @@
             });
         }
     </script>
-    <script src="/static/js/auth_components.js?v=20240916"></script>
 </body>
 </html>
