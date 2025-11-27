@@ -157,6 +157,11 @@ def main():
                             event_type=EventType.WORKSHOP, day=29, month=11, year=2025, start_time="07:30 PM",
                             end_time="09:30 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["chirag_guptaaaa"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_chirag_gupta_workshop_29_11_2025_shut_up_and_bounce"),
         
+        ManualWorkshopEntry(is_archived=False, by="Aditya Tripathi", song="shake body",
+                            pricing_info="Pre-registration: ₹950/-\nOn The Spot: ₹1200",
+                            event_type=EventType.WORKSHOP, day=30, month=11, year=2025, start_time="02:00 PM",
+                            end_time="04:00 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["adityatripathiii__"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_aditya_tripathi_workshop_30_11_2025_shake_body"),
+
         ManualWorkshopEntry(is_archived=False, by="Dharmik Samani", song="chhan ke mohalla",
                             pricing_info="Single Class: 1100/-\nTwo Classes: 2000/-\nThree Classes: 2700/-",
                             event_type=EventType.WORKSHOP, day=7, month=12, year=2025, start_time="01:00 PM",
