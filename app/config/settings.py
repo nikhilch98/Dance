@@ -8,18 +8,18 @@ from pydantic.v1 import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # Security
-    secret_key: str = "your-secret-key-here-change-in-production"
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30 * 24 * 60  # 30 days
-    
+    secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
+    algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))  # 30 days
+
     # APNs Configuration
-    apns_auth_key_id: str = "W5H5A6ZUS2"
-    apns_team_id: str = "TJ9YTH589R"
-    apns_bundle_id: str = "com.nachna.nachna"
-    apns_key_path: str = "./AuthKey_W5H5A6ZUS2.p8"
-    apns_use_sandbox: bool = False
+    apns_auth_key_id: str = os.getenv("APNS_AUTH_KEY_ID", "W5H5A6ZUS2")
+    apns_team_id: str = os.getenv("APNS_TEAM_ID", "TJ9YTH589R")
+    apns_bundle_id: str = os.getenv("APNS_BUNDLE_ID", "com.nachna.nachna")
+    apns_key_path: str = os.getenv("APNS_KEY_PATH", "./AuthKey_W5H5A6ZUS2.p8")
+    apns_use_sandbox: bool = os.getenv("APNS_USE_SANDBOX", "false").lower() == "true"
     
     # Twilio Configuration
     twilio_account_sid: str = os.getenv("TWILIO_ACCOUNT_SID", "")

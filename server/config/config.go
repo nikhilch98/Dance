@@ -45,5 +45,39 @@ func LoadConfig() Configuration {
 	if err != nil {
 		log.Fatal("Error in unmarshalling config file", err)
 	}
+
+	// Override with environment variables if they exist
+	if mongoUri := os.Getenv("MONGODB_URI"); mongoUri != "" {
+		config.MongoDB.Uri = mongoUri
+	}
+
+	if newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME"); newRelicAppName != "" {
+		config.NewRelic.AppName = newRelicAppName
+	}
+
+	if newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY"); newRelicLicenseKey != "" {
+		config.NewRelic.LicenseKey = newRelicLicenseKey
+	}
+
+	if newRelicEnabled := os.Getenv("NEW_RELIC_ENABLED"); newRelicEnabled != "" {
+		config.NewRelic.IsEnabled = newRelicEnabled == "true"
+	}
+
+	// Override API keys in web-based studios if environment variables exist
+	for i := range config.WebBasedStudios {
+		studio := &config.WebBasedStudios[i]
+		if studio.Name == "dance_n_addiction" {
+			if apiKey := os.Getenv("YOACTIV_API_KEY_DANCE_N_ADDICTION"); apiKey != "" {
+				// Extract the API key parameter from the URL and replace it
+				studio.Url = "https://www.yoactiv.com/eventplugin.aspx?Apikey=" + apiKey
+			}
+		} else if studio.Name == "manifestbytmn" {
+			if apiKey := os.Getenv("YOACTIV_API_KEY_MANIFEST_BY_TMN"); apiKey != "" {
+				// Extract the API key parameter from the URL and replace it
+				studio.Url = "https://www.yoactiv.com/eventplugin.aspx?Apikey=" + apiKey
+			}
+		}
+	}
+
 	return config
 }
