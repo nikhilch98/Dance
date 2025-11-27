@@ -131,7 +131,7 @@ class EventProcessor:
     def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[EventSummary]:
         """Analyze workshop screenshot using the selected AI model."""
         if self.cfg.ai_model == "openai":
-            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-4o-2024-11-20")
+            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-5-mini")
         elif self.cfg.ai_model == "gemini":
             return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gemini-2.5-flash")
         else:
@@ -399,9 +399,7 @@ class StudioProcessor:
 
 def get_artists_data(cfg: config.Config) -> List[Dict]:
     """Get artist data from database."""
-    client = DatabaseManager.get_mongo_client(
-        "prod" if cfg.mongodb_uri == config.PROD_MONGODB_URI else "dev"
-    )
+    client = DatabaseManager.get_mongo_client(cfg.env)
     return list(
         client["discovery"]["artists_v2"].find({}, {"artist_id": 1, "artist_name": 1})
     )
@@ -469,7 +467,7 @@ def main():
     version = 1
     all_studios = [
         DnaStudio(
-            "https://www.yoactiv.com/eventplugin.aspx?Apikey=ZL0C5CwgOJzo38yELwSW%2Fg%3D%3D",
+            "https://www.yoactiv.com/eventplugin.aspx?Apikey=ZL0C5CwgOJzo38yELwSW/g==&utm_source=ig&utm_medium=social&utm_content=link_in_bio",
             "dance_n_addiction",
             "https://www.yoactiv.com/Event/",
             max_depth=1,
@@ -486,9 +484,9 @@ def main():
             max_depth=1,
         ),
         ManifestStudio(
-            "https://manifest.twinmenot.com",
+            "https://manifest.twinmenot.com/",
             "manifestbytmn",
-            "https://manifest.twinmenot.com/workshops/",
+            "https://www.yoactiv.com/Event/",
             max_depth=1,
         ),
     ]

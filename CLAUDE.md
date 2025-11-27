@@ -758,4 +758,4 @@ server/
 go build -o dance_server
 ```
 
-Remember: **WORKING CODE IS SACRED** - Preserve it at all costs! 
+Remember: **WORKING CODE IS SACRED** - Preserve it at all costs!  This is screenshot for movile view , fix the login button sizing issue

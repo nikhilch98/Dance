@@ -194,7 +194,7 @@ if __name__ == "__main__":
     print(hash_password("Vishal2002"))
     pass
     # client = utils.get_mongo_client()
-    # openai_client = OpenAI(api_key="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")
+    # openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     # process_link_debug(
     #     link="https://rzp.io/rzp/mar-junaid",

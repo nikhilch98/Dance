@@ -7,13 +7,18 @@ import requests
 import json
 import time
 import sys
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def test_admin_endpoints():
     """Test the new admin workshop refresh endpoints"""
     
     # Configuration
-    BASE_URL = "http://localhost:8002"  # Update for your environment
-    ADMIN_TOKEN = "YOUR_ADMIN_TOKEN_HERE"  # You'll need a valid admin token
+    BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
+    # You'll need a valid admin token, or use --get-token to fetch one automatically
+    ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "YOUR_ADMIN_TOKEN_HERE")
     
     headers = {
         "Authorization": f"Bearer {ADMIN_TOKEN}",

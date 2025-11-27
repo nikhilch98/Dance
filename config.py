@@ -1,6 +1,10 @@
 import os
 import argparse
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 DEFAULT_ENV = "prod"
 DEFAULT_AI_MODEL = "openai"
@@ -11,6 +15,7 @@ class Config:
 
     def __init__(self, env=DEFAULT_ENV, ai_model=DEFAULT_AI_MODEL):
         """Initialize configuration based on environment."""
+        self.env = env
         # Get MongoDB URI from environment variables
         if env == "dev":
             self.mongodb_uri = os.environ.get("MONGODB_DEV_URI", "mongodb://admin:admin@localhost:27017/")
