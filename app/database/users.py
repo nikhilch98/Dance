@@ -39,6 +39,7 @@ class UserOperations:
             "is_admin": False,
             "admin_access_list": [],
             "admin_studios_list": [],
+            "admin_artist_access_denied_list": [],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }

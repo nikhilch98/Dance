@@ -39,6 +39,7 @@ class UserProfile(BaseModel):
     is_admin: Optional[bool] = False
     admin_studios_list: Optional[List[str]] = []
     admin_access_list: Optional[List[str]] = []
+    admin_artist_access_denied_list: Optional[List[str]] = []
     created_at: datetime
     updated_at: datetime
     device_token: Optional[str] = None

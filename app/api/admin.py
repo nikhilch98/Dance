@@ -594,6 +594,7 @@ async def get_workshop_registrations(
 
         admin_user_details = db["users"].find_one({"_id": ObjectId(user_id)})
         admin_studios_list = admin_user_details.get("admin_studios_list", [])
+        admin_artist_access_denied_list = admin_user_details.get("admin_artist_access_denied_list", [])
 
         # Execute aggregation
         orders = list(db["orders"].find({"status":"paid"}))
@@ -608,6 +609,15 @@ async def get_workshop_registrations(
                 print(f"workshop not found for uuid : {workshop_uuid}")
             if workshop and not ("all" in admin_studios_list or workshop["studio_id"] in admin_studios_list):
                 continue
+            
+            # Check if any artist in the workshop is in the denied list
+            if admin_artist_access_denied_list:
+                workshop_artist_ids = workshop.get("artist_id_list", [])
+                # Filter out None, empty strings, and placeholder values
+                valid_artist_ids = [aid for aid in workshop_artist_ids if aid and aid not in [None, "", "TBA", "tba", "N/A", "n/a"]]
+                # Check if any workshop artist is in the denied list
+                if any(artist_id in admin_artist_access_denied_list for artist_id in valid_artist_ids):
+                    continue
             registration = {
                 "name": order.get("payment_gateway_details", {}).get("customer", {}).get("name", ""),
                 "phone": order.get("payment_gateway_details", {}).get("customer", {}).get("contact", ""),
@@ -762,6 +772,7 @@ async def mark_attendance(
             )
         print("user found")
         admin_studios_list = user.get('admin_studios_list', [])
+        admin_artist_access_denied_list = user.get('admin_artist_access_denied_list', [])
         if not admin_studios_list:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -821,6 +832,18 @@ async def mark_attendance(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient studio permissions for this workshop"
             )
+        
+        # Check if any artist in the workshop is in the denied list
+        if admin_artist_access_denied_list:
+            workshop_artist_ids = workshop.get("artist_id_list", [])
+            # Filter out None, empty strings, and placeholder values
+            valid_artist_ids = [aid for aid in workshop_artist_ids if aid and aid not in [None, "", "TBA", "tba", "N/A", "n/a"]]
+            # Check if any workshop artist is in the denied list
+            if any(artist_id in admin_artist_access_denied_list for artist_id in valid_artist_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied: You do not have permission to manage registrations for this artist"
+                )
         print("has access")
         # Mark attendance
         marked_at = datetime.utcnow()

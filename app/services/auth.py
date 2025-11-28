@@ -79,6 +79,7 @@ def format_user_profile(user_data: dict) -> UserProfile:
         is_admin=user_data.get("is_admin", False),
         admin_studios_list=user_data.get("admin_studios_list", []),
         admin_access_list=user_data.get("admin_access_list", []),
+        admin_artist_access_denied_list=user_data.get("admin_artist_access_denied_list", []),
         created_at=user_data["created_at"],
         updated_at=user_data["updated_at"],
         device_token=PushNotificationOperations.get_device_token_given_user_id(user_id)

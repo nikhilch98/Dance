@@ -32,6 +32,9 @@ class User {
   @JsonKey(name: 'admin_studios_list')
   final List<String>? adminStudiosList;
 
+  @JsonKey(name: 'admin_artist_access_denied_list')
+  final List<String>? adminArtistAccessDeniedList;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -49,6 +52,7 @@ class User {
     this.isAdmin,
     this.adminAccessList,
     this.adminStudiosList,
+    this.adminArtistAccessDeniedList,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -67,6 +71,7 @@ class User {
     bool? isAdmin,
     List<String>? adminAccessList,
     List<String>? adminStudiosList,
+    List<String>? adminArtistAccessDeniedList,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -81,6 +86,7 @@ class User {
       isAdmin: isAdmin ?? this.isAdmin,
       adminAccessList: adminAccessList ?? this.adminAccessList,
       adminStudiosList: adminStudiosList ?? this.adminStudiosList,
+      adminArtistAccessDeniedList: adminArtistAccessDeniedList ?? this.adminArtistAccessDeniedList,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

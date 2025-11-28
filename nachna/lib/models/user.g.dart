@@ -21,6 +21,10 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       adminStudiosList: (json['admin_studios_list'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      adminArtistAccessDeniedList:
+          (json['admin_artist_access_denied_list'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -36,6 +40,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'is_admin': instance.isAdmin,
       'admin_access_list': instance.adminAccessList,
       'admin_studios_list': instance.adminStudiosList,
+      'admin_artist_access_denied_list': instance.adminArtistAccessDeniedList,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };

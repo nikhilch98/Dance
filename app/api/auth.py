@@ -399,6 +399,7 @@ async def get_config_with_device_token_sync(
         "is_admin": user.get("is_admin", False),
         "admin_access_list": user.get("admin_access_list", []),
         "admin_studios_list": user.get("admin_studios_list", []),
+        "admin_artist_access_denied_list": user.get("admin_artist_access_denied_list", []),
         "device_token": current_server_token,
         "token_sync_status": "no_sync_needed"
     }
