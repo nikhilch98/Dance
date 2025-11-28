@@ -679,8 +679,9 @@
             font-size: 0.95rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            /* Display full song name in single line without wrapping or truncation */
+            white-space: nowrap;
+            overflow: visible;
         }
         
         .workshop-info-row {
@@ -760,7 +761,7 @@
         }
         
         .register-button {
-            padding: 0.75rem 1.25rem;
+            padding: 0.6rem 1rem;
             border-radius: 12px;
             border: none;
             color: white;
@@ -772,8 +773,8 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            font-size: 0.9rem;
-            min-width: 100px;
+            font-size: 0.8rem;
+            min-width: 90px;
             flex-shrink: 0;
         }
         
@@ -1938,9 +1939,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(16, 185, 129, 0.1);
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .pricing-option.bundle-option {
@@ -3313,9 +3314,9 @@
                 font-weight: 600;
                 margin-bottom: 0.5rem;
                 line-height: 1.2;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                /* Display full song name in single line without wrapping or truncation */
                 white-space: nowrap;
+                overflow: visible;
             }
             
             /* Workshop content - matches app's main content Row */
@@ -3333,6 +3334,8 @@
                 display: flex;
                 flex-direction: column;
                 gap: 0.25rem;
+                /* Allow song name to overflow if needed */
+                overflow: visible;
             }
             
             /* Workshop detail rows with icons */
@@ -3363,14 +3366,14 @@
             /* Register button styling */
             .register-button {
                 flex: 0 0 auto;
-                padding: 0.75rem 1.25rem;
-                font-size: 0.875rem;
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
                 font-weight: 600;
                 border-radius: 8px;
                 border: none;
                 color: white;
                 cursor: pointer;
-                min-width: 85px;
+                min-width: 80px;
                 text-align: center;
                 text-decoration: none;
                 display: flex;
@@ -3494,9 +3497,9 @@
                 color: #00D4FF;
                 line-height: 1.2;
                 margin-bottom: 0.125rem;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                /* Display full song name in single line without wrapping or truncation */
                 white-space: nowrap;
+                overflow: visible;
             }
             
             /* Info rows - matches app's icon + text rows */
@@ -3673,8 +3676,8 @@
             }
             
             .register-button {
-                font-size: 0.75rem;
-                padding: 0.625rem 0.75rem;
+                font-size: 0.7rem;
+                padding: 0.55rem 0.7rem;
             }
         }
         
@@ -3954,8 +3957,12 @@
         }
 
         .individual-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(156, 39, 176, 0.1));
+        }
+
+        .individual-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
         }
 
         .price-tag {
