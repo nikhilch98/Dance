@@ -6449,6 +6449,77 @@
         let currentBundleSuggestion = null;
         let currentWorkshopUuid = null;
 
+        // Extract individual price from workshop pricing_info
+        function extractIndividualPrice(workshop) {
+            if (!workshop || !workshop.pricing_info) {
+                console.log('extractIndividualPrice: No workshop or pricing_info', workshop);
+                return null;
+            }
+
+            const pricingInfo = workshop.pricing_info.trim();
+            if (!pricingInfo || pricingInfo === 'TBA') {
+                console.log('extractIndividualPrice: Empty or TBA pricing_info', pricingInfo);
+                return null;
+            }
+
+            console.log('extractIndividualPrice: Parsing pricing_info:', pricingInfo);
+
+            // Split by newlines to handle multiple pricing options
+            const lines = pricingInfo.split('\n').map(line => line.trim()).filter(line => line);
+            console.log('extractIndividualPrice: Split into lines:', lines);
+
+            // First, try to find "Single Class" pricing (individual workshop price)
+            for (const line of lines) {
+                const lowerLine = line.toLowerCase();
+                if (lowerLine.includes('single class') || lowerLine.includes('single workshop')) {
+                    console.log('extractIndividualPrice: Found Single Class line:', line);
+                    // Extract price from format like "Single Class: 1100/-" or "Single Class: ₹1100/-"
+                    // Handle formats: "Single Class: 1100/-", "Single Class: ₹1100/-", "Single Class: 1100"
+                    // Try pattern that handles "/-" suffix explicitly
+                    let match = line.match(/:\s*(?:₹|Rs\.?|INR\s*)?(\d+)(?:\s*\/-)?/);
+                    if (match && match[1]) {
+                        const price = parseInt(match[1]);
+                        console.log('extractIndividualPrice: Extracted price from Single Class:', price);
+                        return price;
+                    }
+                    // Also try pattern without colon requirement
+                    match = line.match(/(?:₹|Rs\.?|INR\s*)?(\d+)(?:\s*\/-)?/);
+                    if (match && match[1]) {
+                        const price = parseInt(match[1]);
+                        console.log('extractIndividualPrice: Extracted price (no colon):', price);
+                        return price;
+                    }
+                }
+            }
+
+            // If no "Single Class" found, try to extract first price found
+            for (const line of lines) {
+                // Skip bundle lines
+                if (line.toLowerCase().includes('bundle:')) {
+                    continue;
+                }
+
+                // Try to extract price after colon (most common format) - handle "/-" suffix
+                let match = line.match(/:\s*(?:₹|Rs\.?|INR\s*)?(\d+)(?:\s*\/-)?/);
+                if (match && match[1]) {
+                    const price = parseInt(match[1]);
+                    console.log('extractIndividualPrice: Extracted price from first line:', price, 'from line:', line);
+                    return price;
+                }
+
+                // Try to extract any price in the line (fallback) - handle "/-" suffix
+                match = line.match(/(?:₹|Rs\.?|INR\s*)?(\d+)(?:\s*\/-)?/);
+                if (match && match[1]) {
+                    const price = parseInt(match[1]);
+                    console.log('extractIndividualPrice: Extracted price (any match):', price, 'from line:', line);
+                    return price;
+                }
+            }
+
+            console.log('extractIndividualPrice: Could not extract price from:', pricingInfo);
+            return null;
+        }
+
         function showBundleSelectionModal(workshop, bundles, button) {
             // Reset button state
             button.textContent = button.getAttribute('data-original-text') || 'Register with nachna';
@@ -6497,49 +6568,105 @@
                 document.body.appendChild(modal);
             }
 
-            // Populate current workshop info
-            document.getElementById('current-workshop-title').textContent =
-                workshop.song || workshop.title || 'Workshop';
-            document.getElementById('current-workshop-details').textContent =
-                `${workshop.by || workshop.instructor || 'Instructor'} • ${workshop.date || ''} ${workshop.time || ''}`;
+            // Populate current workshop info - query within modal to avoid conflicts
+            const currentWorkshopTitle = modal.querySelector('#current-workshop-title');
+            const currentWorkshopDetails = modal.querySelector('#current-workshop-details');
+            if (currentWorkshopTitle) {
+                currentWorkshopTitle.textContent = workshop.song || workshop.title || 'Workshop';
+            }
+            if (currentWorkshopDetails) {
+                currentWorkshopDetails.textContent = `${workshop.by || workshop.instructor || 'Instructor'} • ${workshop.date || ''} ${workshop.time || ''}`;
+            }
 
-            // Populate bundle options
-            const bundleOptions = document.getElementById('bundle-options');
-            bundleOptions.innerHTML = '';
+            // Populate bundle options - query within modal to avoid conflicts
+            const bundleOptions = modal.querySelector('#bundle-options');
+            if (bundleOptions) {
+                bundleOptions.innerHTML = '';
+            }
 
-            bundles.forEach((bundle, index) => {
-                const bundleCard = document.createElement('div');
-                bundleCard.className = 'option-card bundle-card';
-                bundleCard.innerHTML = `
-                    <div class="option-header">
-                        <h4>${bundle.name}</h4>
-                        <div class="bundle-badge">Bundle Deal</div>
-                    </div>
-                    <div class="bundle-description">${bundle.description}</div>
-                    <div class="pricing-comparison">
-                        <div class="price-row">
-                            <span class="price-label">Individual Total:</span>
-                            <span class="price-value strikethrough">₹${bundle.individual_total_price}</span>
+            if (bundleOptions) {
+                bundles.forEach((bundle, index) => {
+                    const bundleCard = document.createElement('div');
+                    bundleCard.className = 'option-card bundle-card';
+                    bundleCard.innerHTML = `
+                        <div class="option-header">
+                            <h4>${bundle.name}</h4>
+                            <div class="bundle-badge">Bundle Deal</div>
                         </div>
-                        <div class="price-row bundle-price">
-                            <span class="price-label">Bundle Price:</span>
-                            <span class="price-value highlight">₹${bundle.bundle_price}</span>
+                        <div class="bundle-description">${bundle.description}</div>
+                        <div class="pricing-comparison">
+                            <div class="price-row">
+                                <span class="price-label">Individual Total:</span>
+                                <span class="price-value strikethrough">₹${bundle.individual_total_price}</span>
+                            </div>
+                            <div class="price-row bundle-price">
+                                <span class="price-label">Bundle Price:</span>
+                                <span class="price-value highlight">₹${bundle.bundle_price}</span>
+                            </div>
+                            <div class="savings-badge">
+                                Save ₹${bundle.savings_amount} (${bundle.savings_percentage}%)
+                            </div>
                         </div>
-                        <div class="savings-badge">
-                            Save ₹${bundle.savings_amount} (${bundle.savings_percentage}%)
-                        </div>
-                    </div>
-                    <div class="workshop-count">${bundle.workshop_count} workshops included</div>
-                    <button class="option-button primary" onclick="selectBundlePurchase('${bundle.bundle_id}')">
-                        Get Bundle & Save ₹${bundle.savings_amount}
-                    </button>
-                `;
-                bundleOptions.appendChild(bundleCard);
-            });
+                        <div class="workshop-count">${bundle.workshop_count} workshops included</div>
+                        <button class="option-button primary" onclick="selectBundlePurchase('${bundle.bundle_id}')">
+                            Get Bundle & Save ₹${bundle.savings_amount}
+                        </button>
+                    `;
+                    bundleOptions.appendChild(bundleCard);
+                });
+            }
 
-            // Set individual price
-            const individualPrice = bundles[0]?.individual_total_price / bundles[0]?.workshop_count || 799;
-            document.getElementById('individual-price').textContent = `₹${individualPrice}`;
+            // Set individual price - try multiple sources
+            let individualPrice = null;
+            
+            console.log('Setting individual price for workshop:', workshop);
+            console.log('Workshop pricing_info:', workshop.pricing_info);
+            
+            // 1. First, try to extract from workshop's pricing_info
+            individualPrice = extractIndividualPrice(workshop);
+            console.log('Extracted price from pricing_info:', individualPrice);
+            
+            // 2. If not found, try to get from bundle's individual_workshop_prices
+            if (!individualPrice && bundles && bundles.length > 0) {
+                const bundle = bundles[0];
+                console.log('Trying bundle data:', bundle);
+                // Check if bundle has individual_workshop_prices mapping for this specific workshop
+                if (bundle.individual_workshop_prices && workshop.uuid && bundle.individual_workshop_prices[workshop.uuid]) {
+                    individualPrice = bundle.individual_workshop_prices[workshop.uuid];
+                    console.log('Got price from bundle individual_workshop_prices:', individualPrice);
+                } else if (bundle.individual_total_price && bundle.workshop_count) {
+                    // Calculate average price per workshop as fallback
+                    individualPrice = Math.round(bundle.individual_total_price / bundle.workshop_count);
+                    console.log('Calculated average from bundle:', individualPrice);
+                }
+            }
+            
+            // 3. Final fallback (should rarely be needed)
+            if (!individualPrice || individualPrice <= 0) {
+                individualPrice = 799; // Default fallback
+                console.log('Using default fallback price:', individualPrice);
+            }
+            
+            console.log('Final individual price:', individualPrice);
+            
+            // Update the individual price in the modal - query within modal to avoid conflicts
+            // Use a more specific selector: find the price-tag element within the individual-option section
+            const individualOption = modal.querySelector('.individual-option');
+            const individualPriceElement = individualOption ? individualOption.querySelector('.price-tag#individual-price') : null;
+            
+            if (!individualPriceElement) {
+                // Fallback: try direct query
+                const fallbackElement = modal.querySelector('#individual-price');
+                if (fallbackElement && fallbackElement.classList.contains('price-tag')) {
+                    fallbackElement.textContent = `₹${individualPrice}`;
+                    console.log('Updated individual price element (fallback):', fallbackElement.textContent);
+                } else {
+                    console.error('Could not find individual-price element in modal. Modal:', modal, 'Found element:', fallbackElement);
+                }
+            } else {
+                individualPriceElement.textContent = `₹${individualPrice}`;
+                console.log('Updated individual price element:', individualPriceElement.textContent, 'Element:', individualPriceElement);
+            }
 
             modal.style.display = 'flex';
         }
