@@ -165,15 +165,15 @@ def main():
         ManualWorkshopEntry(is_archived=False, by="Dharmik Samani", song="chhan ke mohalla",
                             pricing_info="Single Class: 1100/-\nTwo Classes: 2000/-\nThree Classes: 2700/-",
                             event_type=EventType.WORKSHOP, day=7, month=12, year=2025, start_time="01:00 PM",
-                            end_time="03:00 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["dharmiksamani"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla"),
+                            end_time="03:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["dharmiksamani"],registration_link_type="nachna", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla"),
         ManualWorkshopEntry(is_archived=False, by="Dharmik Samani", song="dhoonde akhiyaan",
                             pricing_info="Single Class: 1100/-\nTwo Classes: 2000/-\nThree Classes: 2700/-",
                             event_type=EventType.WORKSHOP, day=7, month=12, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["dharmiksamani"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan"),
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["dharmiksamani"],registration_link_type="nachna", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan"),
         ManualWorkshopEntry(is_archived=False, by="Dharmik Samani", song="kukkad",
                             pricing_info="Single Class: 1100/-\nTwo Classes: 2000/-\nThree Classes: 2700/-",
                             event_type=EventType.WORKSHOP, day=7, month=12, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["dharmiksamani"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"),
+                            end_time="09:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["dharmiksamani"],registration_link_type="nachna", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"),
     ], remove_existing_workshops = True)
 
 

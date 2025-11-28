@@ -121,24 +121,52 @@ def parse_tiered_pricing(pricing_info: str, workshop_uuid: str, user_id: str = N
                 }
                 pricing_options.append(pricing_option)
 
+            # Parse simple format: "Single Class: 1100/-" or "Two Classes: 2000/-" (without ₹ symbol)
+            elif '/' in line and ':' in line:
+                # Extract price from format like "Single Class: 1100/-" or "Standard: ₹999/-"
+                # Split by colon and get the part after it
+                parts = line.split(':')
+                if len(parts) >= 2:
+                    price_part = parts[-1].strip()  # Get the last part after colon
+                    # Remove currency symbols, commas, and "/-" suffix
+                    price_str = price_part.replace('₹', '').replace(',', '').replace('/-', '').strip()
+                    if price_str.isdigit():
+                        price = int(price_str)
+                        
+                        # Determine tier info based on line content
+                        tier_name = parts[0].strip() if len(parts) > 1 else "Standard"
+                        
+                        pricing_option = {
+                            'price_paise': price * 100,
+                            'is_early_bird': False,  # These are standard pricing tiers
+                            'tier_info': tier_name,
+                            'line': line
+                        }
+                        pricing_options.append(pricing_option)
+
         except (ValueError, IndexError) as e:
             logger.warning(f"Error parsing pricing line '{line}': {e}")
             continue
 
     # Select the best pricing option
     if pricing_options:
-        # Prioritize: Early Bird > Standard > Any available
+        # Prioritize: Early Bird > Single Class > Standard > Any available
         early_bird_options = [opt for opt in pricing_options if opt['is_early_bird']]
         if early_bird_options:
             selected_option = early_bird_options[0]  # Take first early bird option
         else:
-            # No early bird available, take the first standard option
-            standard_options = [opt for opt in pricing_options if not opt['is_early_bird']]
-            if standard_options:
-                selected_option = standard_options[0]
+            # No early bird available, prioritize "Single Class" for individual purchases
+            single_class_options = [opt for opt in pricing_options if 'Single Class' in opt.get('tier_info', '')]
+            if single_class_options:
+                selected_option = single_class_options[0]
             else:
-                # Fallback to any available option
-                selected_option = pricing_options[0]
+                # No single class option, take the first standard option
+                standard_options = [opt for opt in pricing_options if not opt['is_early_bird']]
+                if standard_options:
+                    selected_option = standard_options[0]
+                else:
+                    # Fallback to any available option
+                    selected_option = pricing_options[0]
 
         return {
             'amount_paise': selected_option['price_paise'],

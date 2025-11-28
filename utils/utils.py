@@ -564,6 +564,63 @@ class URLManager:
             return url, None
 
     @staticmethod
+    def fetch_url_with_selenium(url: str, timeout: int = 10) -> Tuple[str, Optional[str]]:
+        """Fetch content from a JavaScript-rendered URL using Selenium.
+
+        Args:
+            url: URL to fetch
+            timeout: Page load timeout in seconds
+
+        Returns:
+            Tuple of (URL, HTML content) where content may be None if fetch fails
+        """
+        service = Service(ChromeDriverManager().install())
+        chrome_options = webdriver.ChromeOptions()
+
+        # Add basic Chrome options
+        for option in BrowserConfig.CHROME_OPTIONS:
+            chrome_options.add_argument(option)
+
+        # Force desktop user agent
+        chrome_options.add_argument(f"--user-agent={BrowserConfig.DESKTOP_USER_AGENT}")
+
+        # Set initial window size to desktop dimensions
+        chrome_options.add_argument(f"--window-size={BrowserConfig.WINDOW_WIDTH},{BrowserConfig.WINDOW_HEIGHT}")
+
+        # Additional options to ensure desktop view
+        chrome_options.add_argument("--force-device-scale-factor=1")
+        chrome_options.add_argument("--disable-mobile-emulation")
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        html_content = None
+
+        try:
+            # Set desktop window size before loading page
+            driver.set_window_size(BrowserConfig.WINDOW_WIDTH, BrowserConfig.WINDOW_HEIGHT)
+
+            # Load the page
+            driver.get(url)
+
+            # Wait for page to load and JavaScript to execute
+            WebDriverWait(driver, timeout).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
+
+            # Additional wait for dynamic content (adjust as needed)
+            time.sleep(2)
+
+            # Get the rendered HTML content
+            html_content = driver.page_source
+
+            return url, html_content
+
+        except Exception as e:
+            print(f"Selenium URL fetch failed for {url}: {str(e)}")
+            return url, None
+        finally:
+            driver.quit()
+
+    @staticmethod
     def extract_links(html: str, base_url: str, domain: str) -> Set[str]:
         """Extract valid URLs from HTML content."""
         if not html or not base_url or not domain:
@@ -660,6 +717,7 @@ get_formatted_time = DateTimeFormatter.get_formatted_time
 get_timestamp_epoch = DateTimeFormatter.get_timestamp_epoch
 get_current_timestamp = DateTimeFormatter.get_current_timestamp
 fetch_url = URLManager.fetch_url
+fetch_url_with_selenium = URLManager.fetch_url_with_selenium
 extract_links = URLManager.extract_links
 capture_screenshot = ScreenshotManager.capture_screenshot
 upload_screenshot = ScreenshotManager.upload_screenshot

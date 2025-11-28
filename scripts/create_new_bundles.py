@@ -24,27 +24,93 @@ def create_new_bundles():
 
     # Define bundles based on existing workshop data
     bundles = [
-        # {
-        #     "bundle_id": "TWO_WORKSHOPS_BUNDLE",
-        #     "name": "Two Workshops Bundle Package",
-        #     "description": "Vivek & Aakanksha's complete workshop series - Mayya Mayya & Aavan Jaavan bundled together",
-        #     "studio_id": "theroyaldancespace",
-        #     "workshop_ids": [
-        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya",
-        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan"
-        #     ],
-        #     "pricing_info": "Bundle Price: ₹1500/-\nEarly Bird (Till 18th Sept): ₹1500/-\nStandard (19th-20th Sept): ₹1600/-",
-        #     "individual_workshop_prices": {
-        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_mayya": 799,
-        #         "theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan": 799
-        #     },
-        #     "bundle_price": 1500,
-        #     "savings_amount": 98,  # (799 * 2) - 1500 = 98
-        #     "savings_percentage": 6.1,  # 98 / 1598 ≈ 6.1%
-        #     "is_active": True,
-        #     "created_at": datetime.now(),
-        #     "updated_at": datetime.now()
-        # }
+        # Dharmik Samani bundles - Three workshops with various combinations
+        {
+            "bundle_id": "DHARMIK_TWO_CLASSES_CHHAN_DHOONDE",
+            "name": "Dharmik Samani - Two Classes Bundle (Chhan ke Mohalla + Dhoonde Akhiyaan)",
+            "description": "Get both Chhan ke Mohalla and Dhoonde Akhiyaan workshops together at a discounted price",
+            "studio_id": "beinrtribe",
+            "workshop_ids": [
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla",
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan"
+            ],
+            "pricing_info": "Bundle Price: ₹2000/-\nIndividual Price: ₹1100/- per class\nSave ₹200 on this bundle!",
+            "individual_workshop_prices": {
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla": 1100,
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan": 1100
+            },
+            "bundle_price": 2000,
+            "savings_amount": 200,  # (1100 * 2) - 2000 = 200
+            "savings_percentage": 9.1,  # 200 / 2200 ≈ 9.1%
+            "is_active": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        },
+        {
+            "bundle_id": "DHARMIK_TWO_CLASSES_CHHAN_KUKKAD",
+            "name": "Dharmik Samani - Two Classes Bundle (Chhan ke Mohalla + Kukkad)",
+            "description": "Get both Chhan ke Mohalla and Kukkad workshops together at a discounted price",
+            "studio_id": "beinrtribe",
+            "workshop_ids": [
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla",
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"
+            ],
+            "pricing_info": "Bundle Price: ₹2000/-\nIndividual Price: ₹1100/- per class\nSave ₹200 on this bundle!",
+            "individual_workshop_prices": {
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla": 1100,
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad": 1100
+            },
+            "bundle_price": 2000,
+            "savings_amount": 200,  # (1100 * 2) - 2000 = 200
+            "savings_percentage": 9.1,  # 200 / 2200 ≈ 9.1%
+            "is_active": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        },
+        {
+            "bundle_id": "DHARMIK_TWO_CLASSES_DHOONDE_KUKKAD",
+            "name": "Dharmik Samani - Two Classes Bundle (Dhoonde Akhiyaan + Kukkad)",
+            "description": "Get both Dhoonde Akhiyaan and Kukkad workshops together at a discounted price",
+            "studio_id": "beinrtribe",
+            "workshop_ids": [
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan",
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"
+            ],
+            "pricing_info": "Bundle Price: ₹2000/-\nIndividual Price: ₹1100/- per class\nSave ₹200 on this bundle!",
+            "individual_workshop_prices": {
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan": 1100,
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad": 1100
+            },
+            "bundle_price": 2000,
+            "savings_amount": 200,  # (1100 * 2) - 2000 = 200
+            "savings_percentage": 9.1,  # 200 / 2200 ≈ 9.1%
+            "is_active": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        },
+        {
+            "bundle_id": "DHARMIK_THREE_CLASSES_ALL",
+            "name": "Dharmik Samani - Three Classes Bundle (Complete Package)",
+            "description": "Get all three workshops - Chhan ke Mohalla, Dhoonde Akhiyaan, and Kukkad - together at the best discounted price",
+            "studio_id": "beinrtribe",
+            "workshop_ids": [
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla",
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan",
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"
+            ],
+            "pricing_info": "Bundle Price: ₹2700/-\nIndividual Price: ₹1100/- per class\nSave ₹600 on this complete bundle!",
+            "individual_workshop_prices": {
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_chhan_ke_mohalla": 1100,
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_dhoonde_akhiyaan": 1100,
+                "beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad": 1100
+            },
+            "bundle_price": 2700,
+            "savings_amount": 600,  # (1100 * 3) - 2700 = 600
+            "savings_percentage": 18.2,  # 600 / 3300 ≈ 18.2%
+            "is_active": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
     ]
 
     # Clear existing bundles
