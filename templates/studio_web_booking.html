@@ -160,6 +160,19 @@
             transform: translateY(-1px);
         }
 
+        .auth-button.profile-mode {
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            padding: 0;
+            min-width: auto;
+        }
+
+        .auth-button.profile-mode:hover {
+            background: transparent;
+            transform: none;
+        }
+
         .auth-icon {
             width: 18px;
             height: 18px;
@@ -171,7 +184,7 @@
             height: 44px;
             border-radius: 12px;
             object-fit: cover;
-            border: 2px solid var(--primary-gradient);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             transition: transform 0.2s ease;
             padding: 0;
         }
@@ -1108,6 +1121,11 @@
             color: var(--text-primary);
             font-size: 1rem;
             outline: none;
+        }
+
+        /* Edit profile modal inputs - highlighted by default */
+        #edit-profile-modal .form-input {
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .form-input:focus {
@@ -5071,6 +5089,7 @@
         let studioData = null;
         let workshopsData = null;
         const studioId = "{{ studio_id }}";
+        const filterArtistId = {% if artist_id %}"{{ artist_id }}"{% else %}null{% endif %};  // Optional artist filter from query parameter
 
         // Authentication variables
         let currentUser = null;
@@ -5681,6 +5700,17 @@
             return card;
         }
         
+        // Filter workshop by artist_id if filter is applied
+        function filterWorkshopByArtist(workshop) {
+            if (!filterArtistId) {
+                return true;  // No filter applied, show all workshops
+            }
+            
+            // Check if the artist_id is in the workshop's artist_id_list
+            const artistIdList = workshop.artist_id_list || [];
+            return artistIdList.includes(filterArtistId);
+        }
+        
         // Display workshops
         function displayWorkshops() {
             if (!workshopsData) return;
@@ -5689,9 +5719,31 @@
             window.currentWorkshops = [];
             window.futureWorkshops = [];
 
-            // Flatten current workshops (this week)
-            if (workshopsData.this_week) {
-                workshopsData.this_week.forEach(daySchedule => {
+            // Apply artist filter if specified
+            let filteredThisWeek = workshopsData.this_week;
+            let filteredPostThisWeek = workshopsData.post_this_week;
+            
+            if (filterArtistId) {
+                // Filter this_week workshops
+                if (filteredThisWeek) {
+                    filteredThisWeek = filteredThisWeek.map(daySchedule => {
+                        const filteredWorkshops = (daySchedule.workshops || []).filter(filterWorkshopByArtist);
+                        return {
+                            ...daySchedule,
+                            workshops: filteredWorkshops
+                        };
+                    }).filter(daySchedule => daySchedule.workshops && daySchedule.workshops.length > 0);
+                }
+                
+                // Filter post_this_week workshops
+                if (filteredPostThisWeek) {
+                    filteredPostThisWeek = filteredPostThisWeek.filter(filterWorkshopByArtist);
+                }
+            }
+
+            // Flatten current workshops (this week) for global storage
+            if (filteredThisWeek) {
+                filteredThisWeek.forEach(daySchedule => {
                     if (daySchedule.workshops) {
                         window.currentWorkshops.push(...daySchedule.workshops);
                     }
@@ -5699,17 +5751,18 @@
             }
 
             // Store future workshops
-            if (workshopsData.post_this_week) {
-                window.futureWorkshops = workshopsData.post_this_week;
+            if (filteredPostThisWeek) {
+                window.futureWorkshops = filteredPostThisWeek;
             }
 
             console.log('Stored workshops globally:', {
                 current: window.currentWorkshops.length,
-                future: window.futureWorkshops.length
+                future: window.futureWorkshops.length,
+                artistFilter: filterArtistId || 'none'
             });
 
-            const hasThisWeek = workshopsData.this_week && workshopsData.this_week.length > 0;
-            const hasUpcoming = workshopsData.post_this_week && workshopsData.post_this_week.length > 0;
+            const hasThisWeek = filteredThisWeek && filteredThisWeek.length > 0;
+            const hasUpcoming = filteredPostThisWeek && filteredPostThisWeek.length > 0;
             
             if (!hasThisWeek && !hasUpcoming) {
                 showEmpty();
@@ -5725,7 +5778,7 @@
                 thisWeekSection.style.display = 'block';
                 thisWeekContent.innerHTML = '';
                 
-                workshopsData.this_week.forEach(daySchedule => {
+                filteredThisWeek.forEach(daySchedule => {
                     const daySection = document.createElement('div');
                     daySection.className = 'day-section';
                     
@@ -5752,7 +5805,7 @@
                 upcomingSection.style.display = 'block';
                 upcomingContent.innerHTML = '';
                 
-                workshopsData.post_this_week.forEach(workshop => {
+                filteredPostThisWeek.forEach(workshop => {
                     const workshopCard = createWorkshopCard(workshop);
                     upcomingContent.appendChild(workshopCard);
                 });
@@ -8319,6 +8372,7 @@
             if (currentUser) {
                 // Show profile avatar
                 authButton.innerHTML = '';
+                authButton.classList.add('profile-mode');
 
                 if (currentUser.profile_picture_url) {
                     const avatar = document.createElement('img');
@@ -8332,10 +8386,16 @@
                         entityId: currentUser.user_id,
                         altText: currentUser.name || 'Profile',
                         onSuccess: function(img) {
-                            authButton.appendChild(img);
+                            // Only append if button is still empty (prevent duplicates)
+                            if (authButton.children.length === 0) {
+                                authButton.appendChild(img);
+                            }
                         },
                         onError: function(img) {
-                            showProfileFallback();
+                            // Only show fallback if button is still empty
+                            if (authButton.children.length === 0) {
+                                showProfileFallback();
+                            }
                         }
                     });
                 } else {
@@ -8349,6 +8409,7 @@
 
             } else {
                 // Show login button
+                authButton.classList.remove('profile-mode');
                 authButton.innerHTML = `
                     <span class="auth-text">Login</span>
                     <svg class="auth-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -8366,10 +8427,13 @@
         }
 
         function showProfileFallback() {
-            const fallback = document.createElement('div');
-            fallback.className = 'profile-fallback';
-            fallback.textContent = getInitials(currentUser.name || currentUser.mobile_number);
-            authButton.appendChild(fallback);
+            // Only show fallback if button is still empty (prevent duplicates)
+            if (authButton.children.length === 0) {
+                const fallback = document.createElement('div');
+                fallback.className = 'profile-fallback';
+                fallback.textContent = getInitials(currentUser.name || currentUser.mobile_number);
+                authButton.appendChild(fallback);
+            }
         }
 
         // Initialization
@@ -8540,7 +8604,7 @@
         localStorage.setItem('lastStudioLoad', new Date().getTime().toString());
 
         // Edit Profile Modal Functions
-        function openEditProfileModal() {
+        async function openEditProfileModal() {
             if (!currentUser) {
                 alert('Please login to edit your profile.');
                 if (window.showLoginModal) {
@@ -8551,6 +8615,14 @@
 
             closeProfileModal();
             closeProfileCompletionModal();
+
+            // Refresh profile data before populating form
+            try {
+                await loadProfileData();
+            } catch (error) {
+                console.error('Failed to refresh profile data:', error);
+                // Continue with existing data if refresh fails
+            }
 
             // Populate form with current user data
             populateEditProfileForm();

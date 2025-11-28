@@ -1692,6 +1692,11 @@
             outline: none;
         }
 
+        /* Edit profile modal inputs - highlighted by default */
+        #edit-profile-modal .form-input {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .form-input::placeholder {
             color: var(--text-secondary);
         }
@@ -4772,7 +4777,7 @@
         localStorage.setItem('lastArtistLoad', new Date().getTime().toString());
         
         // Edit Profile Modal Functions
-        function openEditProfileModal() {
+        async function openEditProfileModal() {
             if (!window.currentUser) {
                 alert('Please login to edit your profile.');
                 if (window.showLoginModal) {
@@ -4783,6 +4788,14 @@
 
             closeProfileModal();
             closeProfileCompletionModal();
+
+            // Refresh profile data before populating form
+            try {
+                await loadProfileData();
+            } catch (error) {
+                console.error('Failed to refresh profile data:', error);
+                // Continue with existing data if refresh fails
+            }
 
             // Populate form with current user data
             populateEditProfileForm();

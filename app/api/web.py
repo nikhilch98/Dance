@@ -350,8 +350,13 @@ async def payment_success(request: Request, order_id: str = None):
 
 
 @router.get("/web/{studio_id}", response_class=HTMLResponse)
-async def studio_web_booking(request: Request, studio_id: str):
-    """Serve the studio web booking page."""
+async def studio_web_booking(request: Request, studio_id: str, artist_id: Optional[str] = None):
+    """Serve the studio web booking page.
+    
+    Args:
+        studio_id: The studio ID
+        artist_id: Optional query parameter to filter workshops by artist
+    """
     try:
         # Get studio data from database
         studios = DatabaseOperations.get_studios()
@@ -379,7 +384,8 @@ async def studio_web_booking(request: Request, studio_id: str):
             "studio_name": studio_name,
             "studio_id": studio_id,
             "studio": studio,
-            "current_url": current_url
+            "current_url": current_url,
+            "artist_id": artist_id  # Pass artist_id to template for filtering
         })
         
     except Exception as e:
