@@ -102,7 +102,7 @@ def parse_tiered_pricing(pricing_info: str, workshop_uuid: str, user_id: str = N
                 }
                 pricing_options.append(pricing_option)
 
-            # Parse quantity-based format: "First 15 spots: ₹999/-"
+            # Parse quantity-based format: "First 15 spots: ₹999/-" or "After 10 spots: ₹950/-"
             elif 'spots:' in line and '₹' in line:
                 price_match = line.split('₹')[1].split('/')[0].strip()
                 price = int(price_match)
@@ -110,16 +110,46 @@ def parse_tiered_pricing(pricing_info: str, workshop_uuid: str, user_id: str = N
                 # Get completed orders count
                 completed_count = get_completed_orders_count(workshop_uuid)
 
-                # Store quantity-based pricing option
-                pricing_option = {
-                    'price_paise': price * 100,
-                    'is_early_bird': 'First 15' in line and completed_count < 15,
-                    'tier_info': "Early Bird (First 15 spots)" if ('First 15' in line and completed_count < 15) else
-                                "Standard (16-20 spots)" if ('16-20' in line and completed_count < 20) else
-                                "OTS Pricing",
-                    'line': line
-                }
-                pricing_options.append(pricing_option)
+                # Extract the number from "First X spots" or "After X spots"
+                is_valid = False
+                is_early = False
+                tier_name = line.split(':')[0].strip()
+                
+                if 'First' in line and 'spots' in line:
+                    # Extract number: "First 10 spots" -> 10
+                    try:
+                        limit = int(''.join(filter(str.isdigit, line.split('spots')[0])))
+                        is_valid = completed_count < limit
+                        is_early = is_valid
+                        tier_name = f"Early Bird (First {limit} spots)"
+                    except ValueError:
+                        is_valid = True  # Fallback if we can't parse the number
+                        tier_name = "Early Bird"
+                
+                elif 'After' in line and 'spots' in line:
+                    # Extract number: "After 10 spots" -> 10
+                    try:
+                        limit = int(''.join(filter(str.isdigit, line.split('spots')[0])))
+                        is_valid = completed_count >= limit
+                        tier_name = f"Standard (After {limit} spots)"
+                    except ValueError:
+                        is_valid = True  # Fallback if we can't parse the number
+                        tier_name = "Standard"
+                
+                else:
+                    # Fallback for other spot-based pricing
+                    is_valid = True
+                    tier_name = line.split(':')[0].strip()
+
+                # Only add this pricing option if it's currently valid
+                if is_valid:
+                    pricing_option = {
+                        'price_paise': price * 100,
+                        'is_early_bird': is_early,
+                        'tier_info': tier_name,
+                        'line': line
+                    }
+                    pricing_options.append(pricing_option)
 
             # Parse simple format: "Single Class: 1100/-" or "Two Classes: 2000/-" (without ₹ symbol)
             elif '/' in line and ':' in line:

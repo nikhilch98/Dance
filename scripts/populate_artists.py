@@ -198,7 +198,7 @@ def get_artists_list() -> List[Artist]:
         Artist("Aditya Tripathi", "adityatripathiii__"),
         Artist("Ajay Lama", "aka.lamaboi"),
         Artist("Ashish Dubey", "ashish.dubeyyyy"),
-        Artist("Chiraj Gupta", "chirag_guptaaaa"),
+        Artist("Chirag Gupta", "chirag_guptaaaa"),
         Artist("Deepak Tulsyan", "deepaktulsyan"),
         Artist("Jay Sharma", "jaysharma_ruh"),
         Artist("Jeevitha", "jeevitha_dna"),

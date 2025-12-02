@@ -37,7 +37,7 @@ def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorks
     mongo_client = DatabaseManager.get_mongo_client("prod")
     workshop_updates = []
     for workshop in workshop_details:
-        artist_id_list = sorted(workshop.artist_id_list)
+        artist_id_list = workshop.artist_id_list
         song = workshop.song.lower() if workshop.song else None
         if song and artist_id_list and not workshop.choreo_insta_link:
             choreo_insta_link_entry = mongo_client["discovery"]["choreo_links"].find_one({"song": song, "artist_id_list": artist_id_list})
@@ -110,34 +110,11 @@ def main():
                             end_time="08:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["vicky__pedia","aakanksha5678"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_vicky__pedia_aakanksha5678_workshop_20_9_2025_aavan"),
         ############################
         
-        ManualWorkshopEntry(is_archived=False, by="Gaurav & Yana", song="Hai Rama",
-                            pricing_info="Early Bird : 799/-\nCouple: 1799/-",
-                            event_type=EventType.WORKSHOP, day=3, month=10, year=2025, start_time="07:00 PM",
-                            end_time="09:00 PM", choreo_insta_link=None, registration_link="https://www.gauravandyana.com/event-details/4th-october-bangalore-hai-rama-choreography-workshop-by-g-y", artist_id_list=["gauravandyana"],registration_link_type="url", workshop_uuid="theroyaldancespace_gaurav_yana_workshop_3_10_2025_hai_rama"),
-
         ManualWorkshopEntry(is_archived=False, by="Ashish Dubey", song="Ucha Lamba Kad",
                             pricing_info="Early Bird (Till 26th Sept): ₹799/-\nStandard (27th-27th Sept): ₹999/-",
                             event_type=EventType.WORKSHOP, day=27, month=9, year=2025, start_time="06:00 PM",
                             end_time="08:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["ashish.dubeyyyy"],registration_link_type="nachna", workshop_uuid="theroyaldancespace_aashish_dubeyy_workshop_27_9_2025_ucha_lamba_kad"),
 
-        ManualWorkshopEntry(is_archived=False, by="Sanaa", song="Toxic - Britney Spears",
-                            pricing_info="1699/-",
-                            event_type=EventType.WORKSHOP, day=28, month=9, year=2025, start_time="04:00 PM",
-                            end_time="06:00 PM", choreo_insta_link=None, registration_link="rzp.io/l/soulworkshop25", artist_id_list=["sanaabanana_"],registration_link_type="url", workshop_uuid="theroyaldancespace_sanaa_banana_workshop_28_9_2025_toxic_britney_spears"),
-
-        ManualWorkshopEntry(is_archived=False, by="Team Naach", song="Mere khayalon ki mallika",
-                            pricing_info="1000/-",
-                            event_type=EventType.WORKSHOP, day=28, month=9, year=2025, start_time="12:00 PM",
-                            end_time="03:00 PM", choreo_insta_link=None, registration_link="teamnaach.in", artist_id_list=["teamnaach"],registration_link_type="url", workshop_uuid="theroyaldancespace_teamnaach_workshop_28_9_2025_mere_khayalon_ki_mallika"),
-
-        ManualWorkshopEntry(is_archived=False, by="Team Naach", song="Tu",
-                            pricing_info="1000/-",
-                            event_type=EventType.WORKSHOP, day=28, month=9, year=2025, start_time="06:30 PM",
-                            end_time="09:30 PM", choreo_insta_link=None, registration_link="teamnaach.in", artist_id_list=["teamnaach"],registration_link_type="url", workshop_uuid="theroyaldancespace_teamnaach_workshop_28_9_2025_tu"),
-        ManualWorkshopEntry(is_archived=False, by="Sonali Bhadauria", song="To be decided",
-                            pricing_info="1000/-",
-                            event_type=EventType.WORKSHOP, day=12, month=10, year=2025, start_time="06:00 PM",
-                            end_time="08:00 PM", choreo_insta_link=None, registration_link=ROYAL_DANCE_STUDIO_NUMBER, artist_id_list=["sonali.bhadauria"],registration_link_type="whatsapp", workshop_uuid="theroyal_dance_space_sonali_bhadauria_workshop_12_10_2025_to_be_decided"),
     ], remove_existing_workshops = True)
 
     manual_populate_workshops("beinrtribe", [
@@ -148,15 +125,6 @@ def main():
                             end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["sanket_panchal25"],registration_link_type="nachna", workshop_uuid="beinrtribe_sanket_panchal25_workshop_21_9_2025_shaky_shaky"),
         #################### Dont delete workshops in between these lines ####################
 
-        ManualWorkshopEntry(is_archived=False, by="Chirag Gupta", song="oh mama tetema",
-                            pricing_info="Pre-registration: ₹950/-\nOn The Spot: ₹1200",
-                            event_type=EventType.WORKSHOP, day=29, month=11, year=2025, start_time="05:00 PM",
-                            end_time="07:00 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["chirag_guptaaaa"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_chirag_gupta_workshop_29_11_2025_oh_mama_tetema"),
-        ManualWorkshopEntry(is_archived=False, by="Chirag Gupta", song="shut up and bounce",
-                            pricing_info="Pre-registration: ₹950/-\nOn The Spot: ₹1200",
-                            event_type=EventType.WORKSHOP, day=29, month=11, year=2025, start_time="07:30 PM",
-                            end_time="09:30 PM", choreo_insta_link=None, registration_link=RTRIBE_NUMBER, artist_id_list=["chirag_guptaaaa"],registration_link_type="whatsapp", workshop_uuid="beinrtribe_chirag_gupta_workshop_29_11_2025_shut_up_and_bounce"),
-        
         ManualWorkshopEntry(is_archived=False, by="Aditya Tripathi", song="shake body",
                             pricing_info="Pre-registration: ₹950/-\nOn The Spot: ₹1200",
                             event_type=EventType.WORKSHOP, day=30, month=11, year=2025, start_time="02:00 PM",
@@ -174,6 +142,10 @@ def main():
                             pricing_info="Single Class: 1100/-\nTwo Classes: 2000/-\nThree Classes: 2700/-",
                             event_type=EventType.WORKSHOP, day=7, month=12, year=2025, start_time="07:00 PM",
                             end_time="09:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["dharmiksamani"],registration_link_type="nachna", workshop_uuid="beinrtribe_dharmik_samani_workshop_7_12_2025_kukkad"),
+        ManualWorkshopEntry(is_archived=False, by="Chirag Gupta x Akshay Sharma", song="kufar",
+                            pricing_info="First 10 spots: ₹850/-\nAfter 10 spots: ₹950/-",
+                            event_type=EventType.WORKSHOP, day=6, month=12, year=2025, start_time="04:00 PM",
+                            end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["chirag_guptaaaa","akshay_sharmaa11"],registration_link_type="nachna", workshop_uuid="beinrtribe_chirag_gupta_workshop_6_12_2025_kufar"),
     ], remove_existing_workshops = True)
 
 

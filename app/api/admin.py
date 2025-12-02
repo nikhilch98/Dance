@@ -843,7 +843,7 @@ async def mark_attendance(
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied: You do not have permission to manage registrations for this artist"
-                )
+            )
         print("has access")
         # Mark attendance
         marked_at = datetime.utcnow()
