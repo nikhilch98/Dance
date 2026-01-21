@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
 
-from app.services.auth import verify_admin_user, get_optional_user
+from app.services.auth import verify_admin_user
 from app.services.gridfs_service import GridFSService
 from app.services.video_downloader import VideoDownloaderService
 from app.database.choreo_links import ChoreoLinksOperations
