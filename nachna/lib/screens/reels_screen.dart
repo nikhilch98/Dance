@@ -51,11 +51,12 @@ class _ReelsScreenState extends State<ReelsScreen> {
   Future<List<Reel>> _loadReels() async {
     final apiService = ApiService();
     
-    // Fetch reels from the API - only completed videos from database
+    // Fetch reels from the API
+    // Uses same filtering as "All Workshops" - only workshops from current week onwards
+    // with completed video processing
     final reelsResponse = await apiService.fetchReels(
       limit: 100,
-      videoOnly: true,  // Only include reels with completed videos
-      includePending: false,
+      videoOnly: true,
     );
     
     _usingReelsApi = true;

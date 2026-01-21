@@ -188,7 +188,7 @@ class Reel {
     final hasVideo = json['has_video'] as bool? ?? false;
     
     return Reel(
-      workshopUuid: json['id'] as String? ?? '',
+      workshopUuid: json['workshop_uuid'] as String? ?? '',
       instagramUrl: instagramUrl,
       reelId: reelId,
       songName: json['song'] as String?,
@@ -196,17 +196,19 @@ class Reel {
       artistIdList: (json['artist_id_list'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      artistImageUrls: null, // Not provided by API
+      artistImageUrls: (json['artist_image_urls'] as List<dynamic>?)
+          ?.map((e) => e as String?)
+          .toList(),
       artistInstagramLinks: null, // Not provided by API
       studioName: json['studio_name'] as String? ?? '',
       studioId: json['studio_id'] as String? ?? '',
-      date: null, // Not provided by API
-      time: null, // Not provided by API
-      paymentLink: null, // Not provided by API
-      paymentLinkType: null, // Not provided by API
-      pricingInfo: null, // Not provided by API
-      currentPrice: null, // Not provided by API
-      timestampEpoch: 0, // Not provided by API
+      date: json['date'] as String?,
+      time: json['time'] as String?,
+      paymentLink: json['payment_link'] as String?,
+      paymentLinkType: json['payment_link_type'] as String?,
+      pricingInfo: json['pricing_info'] as String?,
+      currentPrice: (json['current_price'] as num?)?.toDouble(),
+      timestampEpoch: json['timestamp_epoch'] as int? ?? 0,
       choreoLinkId: json['id'] as String?,
       videoUrl: json['video_url'] as String?,
       videoStatus: json['video_status'] as String?,

@@ -166,18 +166,24 @@ class ApiService {
   /// [offset] - Number of reels to skip for pagination (default: 0)
   /// [videoOnly] - If true, only return reels with processed videos (default: true)
   /// [includePending] - If true, include videos being processed (default: false)
+  /// Fetches reels from the API.
+  /// 
+  /// The API returns reels using the same filtering as "All Workshops":
+  /// - Only non-archived workshops
+  /// - Only workshops from current week onwards
+  /// - Only workshops with choreo_insta_link
+  /// 
+  /// By default, only returns reels with completed video processing.
   Future<ReelsApiResponse> fetchReels({
     int limit = 50,
     int offset = 0,
     bool videoOnly = true,
-    bool includePending = false,
   }) async {
     try {
       final queryParams = {
         'limit': limit.toString(),
         'offset': offset.toString(),
         'video_only': videoOnly.toString(),
-        'include_pending': includePending.toString(),
       };
       
       final uri = Uri.parse('$baseUrl/api/reels/videos').replace(queryParameters: queryParams);
