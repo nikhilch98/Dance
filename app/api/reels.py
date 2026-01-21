@@ -292,19 +292,14 @@ async def stream_video(
     if doc.get("video_status") != "completed" or not doc.get("gridfs_file_id"):
         raise HTTPException(status_code=404, detail="Video not yet available")
     
-    # Get the video from GridFS
-    gridfs_service = GridFSService()
-    try:
-        file_id = ObjectId(doc["gridfs_file_id"])
-        grid_out = gridfs_service.get_file(file_id)
-        if not grid_out:
-            raise HTTPException(status_code=404, detail="Video file not found")
-    except Exception as e:
-        print(f"GridFS error: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving video")
+    # Get file metadata from GridFS
+    file_id = str(doc["gridfs_file_id"])
+    metadata = GridFSService.get_video_metadata(file_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Video file not found")
     
-    file_size = grid_out.length
-    content_type = grid_out.content_type or "video/mp4"
+    file_size = metadata["length"]
+    content_type = metadata.get("content_type") or "video/mp4"
     
     # Handle range requests for seeking
     if range:
@@ -320,20 +315,8 @@ async def stream_video(
             end = min(end, file_size - 1)
             content_length = end - start + 1
             
-            grid_out.seek(start)
-            
-            def generate_range():
-                remaining = content_length
-                while remaining > 0:
-                    chunk_size = min(64 * 1024, remaining)
-                    chunk = grid_out.read(chunk_size)
-                    if not chunk:
-                        break
-                    remaining -= len(chunk)
-                    yield chunk
-            
             return StreamingResponse(
-                generate_range(),
+                GridFSService.stream_video(file_id, start, end),
                 status_code=206,
                 media_type=content_type,
                 headers={
@@ -346,15 +329,8 @@ async def stream_video(
             pass  # Fall through to full file
     
     # Full file response
-    def generate_full():
-        while True:
-            chunk = grid_out.read(64 * 1024)
-            if not chunk:
-                break
-            yield chunk
-    
     return StreamingResponse(
-        generate_full(),
+        GridFSService.stream_video(file_id),
         media_type=content_type,
         headers={
             "Accept-Ranges": "bytes",
