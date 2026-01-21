@@ -25,3 +25,5 @@ colorama
 httpx[http2]
 razorpay
 qrcode[pil]
+yt-dlp
+# instaloader  # kept as fallback, yt-dlp is preferred (no login required)

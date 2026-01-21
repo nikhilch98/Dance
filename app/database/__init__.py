@@ -8,6 +8,7 @@ from .notifications import (
 )
 from .workshops import DatabaseOperations
 from .images import ImageDatabase, ImageMigration
+from .choreo_links import ChoreoLinksOperations
 
 __all__ = [
     "UserOperations",
@@ -17,4 +18,5 @@ __all__ = [
     "DatabaseOperations",
     "ImageDatabase",
     "ImageMigration",
+    "ChoreoLinksOperations",
 ] 

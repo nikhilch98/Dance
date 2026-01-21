@@ -12,6 +12,7 @@ from .razorpay import router as razorpay_router
 from .orders import router as orders_router
 from .rewards import router as rewards_router
 from .version import router as version_router
+from .reels import router as reels_router
 
 __all__ = [
     "auth_router",
@@ -26,4 +27,5 @@ __all__ = [
     "orders_router",
     "rewards_router",
     "version_router",
+    "reels_router",
 ] 

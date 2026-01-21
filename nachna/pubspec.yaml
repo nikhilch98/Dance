@@ -84,6 +84,10 @@ dependencies:
   # QR Code scanning
   qr_code_scanner: ^1.0.1
 
+  # Native video player for Reels tab
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

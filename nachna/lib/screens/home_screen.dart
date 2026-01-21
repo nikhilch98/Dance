@@ -6,6 +6,7 @@ import '../services/pending_order_service.dart';
 import './studios_screen.dart';
 import './artists_screen.dart';
 import './workshops_screen.dart';
+import './reels_screen.dart';
 import './profile_screen.dart';
 import './admin_screen.dart';
 import './search_screen.dart';
@@ -81,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_isAdminCached != isAdmin) {
           // Rebuild the page controller if the number of tabs changes
           _isAdminCached = isAdmin;
-          final maxIndex = isAdmin ? 5 : 4;
+          final maxIndex = isAdmin ? 6 : 5;
           if (_selectedIndex > maxIndex) {
             _selectedIndex = maxIndex;
           }
@@ -90,10 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         
         // Define screens based on admin status
+        // Order: Studios(0), Artists(1), Workshops(2), Reels(3), Search(4), [Admin(5)], Profile(5/6)
         final screens = <Widget>[
           const StudiosScreen(key: PageStorageKey('studios')),
           const ArtistsScreen(key: PageStorageKey('artists')),
           const WorkshopsScreen(key: PageStorageKey('workshops')),
+          const ReelsScreen(key: PageStorageKey('reels')),
           const SearchScreen(key: PageStorageKey('search')),
           if (isAdmin) const AdminScreen(key: PageStorageKey('admin')),
           const ProfileScreen(key: PageStorageKey('profile')),
@@ -168,22 +171,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         gradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
                       ),
                       _buildNavItem(
+                        icon: Icons.slow_motion_video_rounded,
+                        label: 'Reels',
+                        index: 3,
+                        gradient: const [Color(0xFFE1306C), Color(0xFFC13584)],
+                      ),
+                      _buildNavItem(
                         icon: Icons.search_rounded,
                         label: 'Search',
-                        index: 3,
+                        index: 4,
                         gradient: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                       ),
                       if (isAdmin)
                         _buildNavItem(
                           icon: Icons.admin_panel_settings_rounded,
                           label: 'Admin',
-                          index: 4,
+                          index: 5,
                           gradient: const [Color(0xFFFF4081), Color(0xFFE91E63)],
                         ),
                       _buildNavItem(
                         icon: Icons.person_rounded,
                         label: 'Profile',
-                        index: isAdmin ? 5 : 4,
+                        index: isAdmin ? 6 : 5,
                         gradient: const [Color(0xFF10B981), Color(0xFF059669)],
                       ),
                     ],
