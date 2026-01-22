@@ -13,7 +13,6 @@ import requests
 from bs4 import BeautifulSoup
 from PIL import Image
 from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,8 +21,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 import functools
 import config
 import time
-import functools
 import sys
+import logging
 from fastapi import FastAPI, Request
 import threading
 import queue
@@ -344,7 +343,14 @@ class DateTimeFormatter:
         if start_time is None or start_time == "":
             return "TBA"
 
-        start_time, start_format = start_time.split(" ")
+        # Validate format before splitting
+        if " " not in start_time:
+            return "TBA"
+
+        start_time, start_format = start_time.split(" ", 1)
+        if ":" not in start_time:
+            return "TBA"
+        
         start_time_hour = start_time.split(":")[0].lstrip("0")
         start_time_minute = start_time.split(":")[1].lstrip("0")
         start_time_str = (
@@ -356,7 +362,14 @@ class DateTimeFormatter:
         if end_time is None or end_time == "":
             return f"{start_time_str} {start_format}"
 
-        end_time, end_format = end_time.split(" ")
+        # Validate end_time format before splitting
+        if " " not in end_time:
+            return f"{start_time_str} {start_format}"
+
+        end_time, end_format = end_time.split(" ", 1)
+        if ":" not in end_time:
+            return f"{start_time_str} {start_format}"
+        
         end_time_hour = end_time.split(":")[0].lstrip("0")
         end_time_minute = end_time.split(":")[1].lstrip("0")
         end_time_str = (

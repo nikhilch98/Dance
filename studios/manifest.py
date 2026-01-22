@@ -53,7 +53,8 @@ class ManifestStudio(BaseStudio):
         """
         try:
             # Use Selenium to fetch the initial page (JavaScript-rendered)
-            url, html = fetch_url_with_selenium(self.config.start_url)
+            # Timeout of 30 seconds for page load
+            url, html = fetch_url_with_selenium(self.config.start_url, timeout=30)
             
             if not html:
                 print(f"Failed to fetch {self.config.start_url} with Selenium")

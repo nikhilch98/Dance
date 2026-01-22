@@ -1,19 +1,21 @@
 """Vins Dance Co studio implementation for workshop link scraping.
 
 This module provides the Vins Dance Co specific implementation of the base studio
-crawler. It inherits from BaseStudio and uses the default scraping behavior.
+crawler. It inherits from BaseStudio and uses Selenium for JavaScript-rendered content.
 """
 
+import re
 from typing import List
 
+from utils.utils import fetch_url_with_selenium
 from .base_studio import BaseStudio, StudioConfig
 
 
 class VinsStudio(BaseStudio):
     """Vins Dance Co studio crawler implementation.
 
-    This class uses the default scraping behavior from BaseStudio as the
-    standard crawling approach works well for the Vins Dance Co website structure.
+    This class uses Selenium to handle the JavaScript-rendered website content,
+    as the Vins Dance Co website dynamically loads workshop links.
     """
 
     def __init__(
@@ -43,9 +45,32 @@ class VinsStudio(BaseStudio):
         super().__init__(config)
 
     def scrape_links(self) -> List[str]:
-        """Scrape workshop links from the Vins Dance Co website.
+        """Scrape workshop links from the Vins Dance Co website using Selenium.
+
+        This method overrides the base implementation to use Selenium for
+        JavaScript-rendered content.
 
         Returns:
             List of workshop registration links
         """
-        return super().scrape_links()
+        try:
+            # Use Selenium to fetch the page (JavaScript-rendered)
+            # Timeout of 30 seconds for page load
+            url, html = fetch_url_with_selenium(self.config.start_url, timeout=30)
+            
+            if not html:
+                print(f"No HTML content fetched for {self.config.studio_id}")
+                return []
+            
+            # Extract event links matching the pattern
+            pattern = re.escape(self.config.regex_match_link) + r'[^"\'\s>]+'
+            event_links = re.findall(pattern, html)
+            
+            # Deduplicate and return
+            unique_links = list(set(event_links))
+            print(f"Found {len(unique_links)} workshop links for {self.config.studio_id}")
+            return unique_links
+            
+        except Exception as e:
+            print(f"Error scraping links for {self.config.studio_id}: {str(e)}")
+            return []

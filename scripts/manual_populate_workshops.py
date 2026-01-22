@@ -4,9 +4,13 @@ from enum import Enum
 import time
 import sys
 import os
+import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.utils import DatabaseManager
+
+# Valid studio IDs for manual workshop population
+VALID_MANUAL_STUDIOS = ["theroyaldancespace", "manifestbytmn", "beinrtribe", "goodmove_studios"]
 
 
 class EventType(Enum):
@@ -32,7 +36,8 @@ class ManualWorkshopEntry(BaseModel):
     is_archived: bool = False
 
 def manual_populate_workshops(studio_id: str, workshop_details: List[ManualWorkshopEntry], remove_existing_workshops: bool):
-    if studio_id not in ["theroyaldancespace", "manifestbytmn", "beinrtribe","goodmove_studios"]:
+    if studio_id not in VALID_MANUAL_STUDIOS:
+        logging.warning(f"Invalid studio_id: {studio_id}. Valid options: {VALID_MANUAL_STUDIOS}")
         return
     mongo_client = DatabaseManager.get_mongo_client("prod")
     workshop_updates = []

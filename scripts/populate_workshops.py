@@ -31,6 +31,17 @@ from studios.vins import VinsStudio
 from studios.manifest import ManifestStudio
 
 
+# AI Model Configuration
+AI_MODEL_VERSIONS = {
+    "openai": "gpt-5-mini",
+    "gemini": "gemini-2.5-flash"
+}
+AI_REQUEST_DELAY = {
+    "openai": 2,  # seconds between requests for OpenAI
+    "gemini": 0.5  # seconds between requests for Gemini
+}
+
+
 class EventType(Enum):
     WORKSHOP = "workshop"
     INTENSIVE = "intensive"
@@ -117,25 +128,27 @@ class EventProcessor:
             return event_data # Return event_data
 
         except Exception as e:
-            print(f"Error processing link {link}: {str(e)}")
+            logging.error(f"Error processing link {link}: {str(e)}")
             return None
         finally:
-            #Cleanup screenshot
+            # Cleanup screenshot
             if os.path.exists(screenshot_path):
                 try:
                     os.remove(screenshot_path)
                 except Exception as e:
-                    print(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
-            pass
+                    logging.warning(f"Error cleaning up screenshot {screenshot_path}: {str(e)}")
 
+    @retry(max_attempts=3, backoff_factor=2, exceptions=(Exception,))
     def analyze_with_ai(self, screenshot_path: str, artists_data: list = []) -> Optional[EventSummary]:
-        """Analyze workshop screenshot using the selected AI model."""
-        if self.cfg.ai_model == "openai":
-            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gpt-5-mini")
-        elif self.cfg.ai_model == "gemini":
-            return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version="gemini-2.5-flash")
-        else:
-            raise ValueError(f"Unknown ai_model: {self.ai_model}")
+        """Analyze workshop screenshot using the selected AI model.
+        
+        Includes automatic retry with exponential backoff for transient failures.
+        """
+        if self.cfg.ai_model not in AI_MODEL_VERSIONS:
+            raise ValueError(f"Unknown ai_model: {self.cfg.ai_model}. Valid options: {list(AI_MODEL_VERSIONS.keys())}")
+        
+        model_version = AI_MODEL_VERSIONS[self.cfg.ai_model]
+        return self._analyze_with_ai(screenshot_path, artists_data=artists_data, model_version=model_version)
 
     def _generate_prompt(self, artists, current_date):
         """Generates the prompt for the AI model."""
@@ -253,8 +266,13 @@ class EventProcessor:
 
             # Parse GPT response
             analyzed_data = json.loads(response.choices[0].message.content)
-            if "gpt" in model_version:
-                time.sleep(2)
+            
+            # Apply rate limiting delay based on model type
+            for model_key, delay in AI_REQUEST_DELAY.items():
+                if model_key in model_version.lower():
+                    time.sleep(delay)
+                    break
+            
             # Convert to EventSummary using correct keys and models
             event_details_list = []
             for detail_data in analyzed_data.get("event_details", []):
@@ -278,7 +296,7 @@ class EventProcessor:
             )
 
         except Exception as e:
-            print(f"GPT analysis error: {str(e)}")
+            logging.error(f"AI analysis error: {str(e)}")
             return None
 
 
@@ -303,11 +321,21 @@ class StudioProcessor:
     def process_studio(self, studio: Any, artists_data: list) -> None:
         """Process all workshops for a studio with bulk update."""
         try:
-            links = set(x.lower() for x in studio.scrape_links())
+            links = {x.lower() for x in studio.scrape_links()}
             workshop_updates = []
             ignored_links = set()
             missing_artists = set()
             old_links = set()
+            
+            # Pre-fetch all choreo_links to avoid database queries in loop
+            all_choreo_links = {
+                (cl["song"], tuple(sorted(cl.get("artist_id_list", [])))): cl["choreo_insta_link"]
+                for cl in self.mongo_client["discovery"]["choreo_links"].find(
+                    {"choreo_insta_link": {"$exists": True, "$ne": None}}
+                )
+                if cl.get("song")
+            }
+            
             with tqdm(
                 total=len(links),
                 desc=f"Processing {studio.config.studio_id}",
@@ -340,9 +368,10 @@ class StudioProcessor:
                                 "is_archived": False,
                             }
                             if event_detail["song"] and event_detail["artist_id_list"]:
-                                choreo_link = self.mongo_client["discovery"]["choreo_links"].find_one({"song": event_detail["song"].lower(), "artist_id_list": event_detail["artist_id_list"]})
-                                if choreo_link:
-                                    inserted_data["choreo_insta_link"] = choreo_link["choreo_insta_link"]
+                                # Use pre-fetched choreo_links dictionary for efficiency
+                                choreo_key = (event_detail["song"].lower(), tuple(sorted(event_detail["artist_id_list"])))
+                                if choreo_key in all_choreo_links:
+                                    inserted_data["choreo_insta_link"] = all_choreo_links[choreo_key]
 
                             # Check if the event is in the past using the first time_details entry
                             is_past_event = False

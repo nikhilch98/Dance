@@ -15,7 +15,6 @@ from urllib.parse import urlparse
 from tqdm import tqdm
 
 from utils.utils import fetch_url, extract_links
-from utils.utils import retry
 
 
 @dataclass

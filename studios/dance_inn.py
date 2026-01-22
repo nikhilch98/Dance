@@ -1,23 +1,21 @@
 """Dance Inn studio implementation for workshop link scraping.
 
 This module provides the Dance Inn specific implementation of the base studio
-crawler. It inherits from BaseStudio and uses the default scraping behavior.
+crawler. It inherits from BaseStudio and uses Selenium for JavaScript-rendered content.
 """
 
+import re
 from typing import List
 
-from utils import utils
-
+from utils.utils import fetch_url_with_selenium
 from .base_studio import BaseStudio, StudioConfig
-
-from bs4 import BeautifulSoup
 
 
 class DanceInnStudio(BaseStudio):
     """Dance Inn studio crawler implementation.
 
-    This class uses the default scraping behavior from BaseStudio as the
-    standard crawling approach works well for the Dance Inn website structure.
+    This class uses Selenium to handle the JavaScript-rendered website content,
+    as the Dance Inn website dynamically loads workshop links.
     """
 
     def __init__(
@@ -47,16 +45,31 @@ class DanceInnStudio(BaseStudio):
         super().__init__(config)
 
     def scrape_links(self) -> List[str]:
-        """Scrape workshop links from the Dance Inn website.
+        """Scrape workshop links from the Dance Inn website using Selenium.
+
+        This method uses Selenium for JavaScript-rendered content.
 
         Returns:
             List of workshop registration links
         """
-        _, response = utils.fetch_url(self.config.start_url)
-        if not response:
-            print(f"No links found for studio {self.config.studio_id}")
+        try:
+            # Use Selenium to fetch the page (JavaScript-rendered)
+            # Timeout of 30 seconds for page load
+            url, html = fetch_url_with_selenium(self.config.start_url, timeout=30)
+            
+            if not html:
+                print(f"No HTML content fetched for {self.config.studio_id}")
+                return []
+            
+            # Extract workshop links matching the pattern
+            pattern = re.escape(self.config.regex_match_link) + r'[^"\'\s>]+'
+            workshop_links = re.findall(pattern, html)
+            
+            # Deduplicate and return
+            unique_links = list(set(workshop_links))
+            print(f"Found {len(unique_links)} workshop links for {self.config.studio_id}")
+            return unique_links
+            
+        except Exception as e:
+            print(f"Error scraping links for {self.config.studio_id}: {str(e)}")
             return []
-
-        soup = BeautifulSoup(response, "html.parser")
-        links = [a_tag["href"] for a_tag in soup.find_all("a", href=True)]
-        return self._filter_workshop_links(links)
