@@ -2474,7 +2474,8 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
                     child: ElevatedButton(
                       onPressed: () async {
                         // Ensure workshop UUID is available before proceeding
-                        final workshopUuid = (session['uuid'] ?? '').toString();
+                        // API returns 'workshop_uuid', fallback to 'uuid' for compatibility
+                        final workshopUuid = (session['workshop_uuid'] ?? session['uuid'] ?? '').toString();
                         if (workshopUuid.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

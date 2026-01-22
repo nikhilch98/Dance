@@ -153,7 +153,7 @@ def main():
                             end_time="06:00 PM", choreo_insta_link=None, registration_link="a", artist_id_list=["chirag_guptaaaa","akshay_sharmaa11"],registration_link_type="nachna", workshop_uuid="beinrtribe_chirag_gupta_workshop_6_12_2025_kufar"),
     ], remove_existing_workshops = True)
 
-
+    manual_populate_workshops("goodmove_studios", [], remove_existing_workshops = True)
 
 
 
