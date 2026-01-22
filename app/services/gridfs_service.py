@@ -182,8 +182,8 @@ class GridFSService:
             else:
                 bytes_to_read = grid_out.length - start
             
-            # Read in chunks
-            chunk_size = 8192  # 8KB chunks for streaming
+            # Read in chunks - 256KB for efficient video streaming
+            chunk_size = 262144  # 256KB chunks for better video performance
             bytes_read = 0
             
             while bytes_read < bytes_to_read:

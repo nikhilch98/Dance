@@ -5,12 +5,14 @@ This module provides functionality to download Instagram reels
 and store them in MongoDB GridFS.
 
 Uses yt-dlp for downloading (no login required for public content).
+Includes ffmpeg optimization for smaller file sizes.
 """
 import subprocess
 import tempfile
 import os
 import re
 import time
+import shutil
 from datetime import datetime
 from typing import Optional, Dict, Any, Tuple
 from bson import ObjectId
@@ -27,9 +29,75 @@ class VideoDownloaderService:
     # Maximum video size (50MB)
     MAX_VIDEO_SIZE = 50 * 1024 * 1024
     
-    def __init__(self):
-        """Initialize the downloader."""
-        pass
+    # Optimization settings
+    OPTIMIZE_VIDEOS = True  # Enable video optimization by default
+    FFMPEG_CRF = 30  # Quality level (18-28, lower = better quality, larger file)
+    FFMPEG_PRESET = 'medium'  # Speed/compression tradeoff: ultrafast, fast, medium, slow
+    FFMPEG_AUDIO_BITRATE = '96k'  # Audio bitrate (96k is fine for dance videos)
+    
+    def __init__(self, optimize: bool = True):
+        """Initialize the downloader.
+        
+        Args:
+            optimize: Whether to optimize downloaded videos (default: True)
+        """
+        self.optimize = optimize
+    
+    @staticmethod
+    def is_ffmpeg_available() -> bool:
+        """Check if ffmpeg is installed."""
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-version'],
+                capture_output=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+    
+    @staticmethod
+    def optimize_video(input_path: str, output_path: str, crf: int = 26, preset: str = 'medium', audio_bitrate: str = '96k') -> Tuple[bool, Optional[str]]:
+        """
+        Optimize video for smaller file size with minimal quality loss.
+        
+        Uses H.264 encoding with CRF (Constant Rate Factor) for quality-based encoding.
+        
+        Args:
+            input_path: Path to input video
+            output_path: Path for optimized output
+            crf: Quality level (18-28, lower = better quality)
+            preset: Encoding speed preset (ultrafast, fast, medium, slow)
+            audio_bitrate: Audio bitrate (e.g., '96k', '128k')
+            
+        Returns:
+            Tuple of (success, error_message)
+        """
+        try:
+            result = subprocess.run([
+                'ffmpeg',
+                '-i', input_path,
+                '-c:v', 'libx264',      # H.264 codec (most compatible)
+                '-crf', str(crf),        # Quality-based encoding
+                '-preset', preset,       # Encoding speed
+                '-c:a', 'aac',           # AAC audio codec
+                '-b:a', audio_bitrate,   # Audio bitrate
+                '-movflags', '+faststart',  # Web optimization (metadata at start)
+                '-y',                    # Overwrite output
+                output_path
+            ], capture_output=True, text=True, timeout=300)  # 5 minute timeout
+            
+            if result.returncode == 0:
+                return True, None
+            else:
+                return False, result.stderr
+                
+        except subprocess.TimeoutExpired:
+            return False, "FFmpeg optimization timed out"
+        except FileNotFoundError:
+            return False, "FFmpeg not installed"
+        except Exception as e:
+            return False, str(e)
     
     @staticmethod
     def extract_reel_shortcode(instagram_url: str) -> Optional[str]:
@@ -64,16 +132,21 @@ class VideoDownloaderService:
             clean_url += '/'
         return clean_url
     
-    def download_reel(self, instagram_url: str) -> Optional[Tuple[str, bytes]]:
+    def download_reel(self, instagram_url: str, optimize: bool = None) -> Optional[Tuple[str, bytes, Dict[str, Any]]]:
         """
-        Download a reel from Instagram using yt-dlp.
+        Download a reel from Instagram using yt-dlp, optionally optimizing for size.
         
         Args:
             instagram_url: Instagram reel URL
+            optimize: Whether to optimize the video (defaults to self.optimize)
             
         Returns:
-            Tuple of (filename, video_bytes) or None if download fails
+            Tuple of (filename, video_bytes, stats) or None if download fails
+            stats includes: original_size, final_size, compression_ratio, optimized
         """
+        if optimize is None:
+            optimize = self.optimize
+            
         shortcode = self.extract_reel_shortcode(instagram_url)
         if not shortcode:
             print(f"Could not extract shortcode from URL: {instagram_url}")
@@ -117,21 +190,65 @@ class VideoDownloaderService:
                     print(f"No video file found for {shortcode}")
                     return None
                 
-                # Check file size
-                file_size = os.path.getsize(video_file)
-                if file_size > self.MAX_VIDEO_SIZE:
-                    print(f"Video {shortcode} exceeds maximum size: {file_size} bytes")
+                # Get original file size
+                original_size = os.path.getsize(video_file)
+                
+                if original_size > self.MAX_VIDEO_SIZE:
+                    print(f"Video {shortcode} exceeds maximum size: {original_size} bytes")
                     return None
                 
-                # Read video data
-                with open(video_file, 'rb') as f:
+                # Stats dictionary
+                stats = {
+                    "original_size": original_size,
+                    "final_size": original_size,
+                    "compression_ratio": 1.0,
+                    "optimized": False,
+                    "optimization_error": None
+                }
+                
+                final_video_file = video_file
+                
+                # Optimize video if enabled and ffmpeg is available
+                if optimize and self.is_ffmpeg_available():
+                    optimized_path = os.path.join(tmpdir, f"reel_{shortcode}_optimized.mp4")
+                    
+                    print(f"Optimizing video (CRF={self.FFMPEG_CRF}, preset={self.FFMPEG_PRESET})...")
+                    success, error = self.optimize_video(
+                        video_file,
+                        optimized_path,
+                        crf=self.FFMPEG_CRF,
+                        preset=self.FFMPEG_PRESET,
+                        audio_bitrate=self.FFMPEG_AUDIO_BITRATE
+                    )
+                    
+                    if success and os.path.exists(optimized_path):
+                        optimized_size = os.path.getsize(optimized_path)
+                        
+                        # Only use optimized version if it's actually smaller
+                        if optimized_size < original_size:
+                            final_video_file = optimized_path
+                            stats["final_size"] = optimized_size
+                            stats["compression_ratio"] = original_size / optimized_size
+                            stats["optimized"] = True
+                            print(f"Optimization successful: {original_size / 1024 / 1024:.2f}MB -> {optimized_size / 1024 / 1024:.2f}MB ({stats['compression_ratio']:.2f}x)")
+                        else:
+                            print(f"Optimized file not smaller, using original")
+                            stats["optimization_error"] = "Optimized file not smaller than original"
+                    else:
+                        print(f"Optimization failed: {error}")
+                        stats["optimization_error"] = error
+                elif optimize and not self.is_ffmpeg_available():
+                    stats["optimization_error"] = "FFmpeg not available"
+                
+                # Read final video data
+                with open(final_video_file, 'rb') as f:
                     video_data = f.read()
                 
-                # Determine extension from actual file
-                _, ext = os.path.splitext(video_file)
+                # Determine extension from final file
+                _, ext = os.path.splitext(final_video_file)
                 output_filename = f"reel_{shortcode}{ext}"
                 
-                return (output_filename, video_data)
+                return (output_filename, video_data, stats)
                 
         except subprocess.TimeoutExpired:
             print(f"Download timeout for {instagram_url}")
@@ -155,6 +272,9 @@ class VideoDownloaderService:
             - success: bool
             - gridfs_file_id: str (if successful)
             - file_size: int (if successful)
+            - original_size: int (before optimization)
+            - compression_ratio: float (if optimized)
+            - optimized: bool
             - error: str (if failed)
         """
         choreo_link_id = str(choreo_link_doc.get("_id"))
@@ -166,7 +286,7 @@ class VideoDownloaderService:
                 "error": "No Instagram URL in document"
             }
         
-        # Download the reel
+        # Download the reel (with optimization)
         result = self.download_reel(instagram_url)
         if not result:
             return {
@@ -174,7 +294,7 @@ class VideoDownloaderService:
                 "error": "Failed to download reel"
             }
         
-        filename, video_data = result
+        filename, video_data, stats = result
         
         try:
             # Store in GridFS
@@ -189,7 +309,10 @@ class VideoDownloaderService:
                 "success": True,
                 "gridfs_file_id": gridfs_file_id,
                 "file_size": len(video_data),
-                "filename": filename
+                "filename": filename,
+                "original_size": stats["original_size"],
+                "compression_ratio": stats["compression_ratio"],
+                "optimized": stats["optimized"]
             }
             
         except Exception as e:

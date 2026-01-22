@@ -127,6 +127,7 @@ def get_artists_list() -> List[Artist]:
         List of Artist objects with name and Instagram ID
     """
     return [
+        Artist("Rajaram", "rajaram_bfab"),
         Artist("Richa Tiwari","beats_and_taal"),
         Artist("Raj Shaw", "bboytrue1"),
         Artist("Nikunj Luharuka", "nikunjluharuka"),

@@ -282,6 +282,7 @@ async def stream_video(
     Stream video from GridFS with HTTP Range request support.
     
     Supports partial content requests for seeking in video players.
+    Includes caching headers for improved performance.
     """
     # Get the choreo_link document
     doc = ChoreoLinksOperations.get_by_id(choreo_link_id)
@@ -300,6 +301,16 @@ async def stream_video(
     
     file_size = metadata["length"]
     content_type = metadata.get("content_type") or "video/mp4"
+    
+    # Generate ETag from file_id (videos are immutable once stored)
+    etag = f'"{file_id}"'
+    
+    # Common caching headers (videos are immutable - cache for 1 year)
+    cache_headers = {
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "ETag": etag,
+    }
     
     # Handle range requests for seeking
     if range:
@@ -320,8 +331,8 @@ async def stream_video(
                 status_code=206,
                 media_type=content_type,
                 headers={
+                    **cache_headers,
                     "Content-Range": f"bytes {start}-{end}/{file_size}",
-                    "Accept-Ranges": "bytes",
                     "Content-Length": str(content_length),
                 }
             )
@@ -333,7 +344,7 @@ async def stream_video(
         GridFSService.stream_video(file_id),
         media_type=content_type,
         headers={
-            "Accept-Ranges": "bytes",
+            **cache_headers,
             "Content-Length": str(file_size),
         }
     )

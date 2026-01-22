@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 """
-Simple test script to download a single Instagram reel.
+Test script to download and optimize a single Instagram reel.
 
-Uses yt-dlp (recommended) or falls back to direct scraping.
+Uses yt-dlp for downloading and ffmpeg for optimization.
+Shows compression statistics.
 
 Usage:
     python scripts/test_download_reel.py <instagram_url>
+    python scripts/test_download_reel.py <instagram_url> --no-optimize
     
 Example:
     python scripts/test_download_reel.py "https://www.instagram.com/reel/ABC123/"
 
 Prerequisites:
-    pip install yt-dlp requests
+    pip install yt-dlp
+    brew install ffmpeg  (or apt install ffmpeg on Linux)
 """
 import sys
 import os
 import re
 import subprocess
-import json
-import requests
+import shutil
+import tempfile
+from typing import Optional, Tuple, Dict, Any
 
-def extract_shortcode(url: str) -> str:
+
+def extract_shortcode(url: str) -> Optional[str]:
     """Extract reel shortcode from URL."""
     patterns = [
         r'instagram\.com/reel/([A-Za-z0-9_-]+)',
@@ -34,124 +39,193 @@ def extract_shortcode(url: str) -> str:
     return None
 
 
-def download_with_ytdlp(url: str, output_path: str) -> bool:
-    """Download using yt-dlp (most reliable)."""
+def check_ffmpeg() -> bool:
+    """Check if ffmpeg is installed."""
     try:
-        # Check if yt-dlp is installed
+        result = subprocess.run(
+            ['ffmpeg', '-version'],
+            capture_output=True,
+            timeout=5
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def check_ytdlp() -> bool:
+    """Check if yt-dlp is installed."""
+    try:
         result = subprocess.run(
             ['yt-dlp', '--version'],
             capture_output=True,
             text=True
         )
-        if result.returncode != 0:
-            print("yt-dlp not found")
-            return False
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+def download_reel(url: str, output_path: str) -> bool:
+    """Download reel using yt-dlp."""
+    print("Downloading with yt-dlp (using Chrome cookies)...")
+    
+    result = subprocess.run(
+        [
+            'yt-dlp',
+            '-o', output_path,
+            '--no-playlist',
+            '--cookies-from-browser', 'chrome',
+            url
+        ],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode == 0:
+        return True
+    else:
+        print(f"yt-dlp error: {result.stderr}")
+        return False
+
+
+def optimize_video(input_path: str, output_path: str, crf: int = 26, preset: str = 'medium') -> Tuple[bool, Optional[str]]:
+    """
+    Optimize video using ffmpeg.
+    
+    Args:
+        input_path: Path to input video
+        output_path: Path for optimized output
+        crf: Quality level (18-28, lower = better quality, larger file)
+        preset: Encoding speed (ultrafast, fast, medium, slow, veryslow)
         
-        print("Using yt-dlp to download (with Chrome cookies)...")
-        
-        # Download the video with Chrome cookies for authentication
-        result = subprocess.run(
-            [
-                'yt-dlp',
-                '-o', output_path,
-                '--no-playlist',
-                '--cookies-from-browser', 'chrome',
-                url
-            ],
-            capture_output=True,
-            text=True
-        )
+    Returns:
+        Tuple of (success, error_message)
+    """
+    try:
+        result = subprocess.run([
+            'ffmpeg',
+            '-i', input_path,
+            '-c:v', 'libx264',      # H.264 codec
+            '-crf', str(crf),        # Quality-based encoding
+            '-preset', preset,       # Encoding speed
+            '-c:a', 'aac',           # AAC audio
+            '-b:a', '96k',           # Audio bitrate
+            '-movflags', '+faststart',  # Web optimization
+            '-y',                    # Overwrite output
+            output_path
+        ], capture_output=True, text=True, timeout=300)
         
         if result.returncode == 0:
-            return True
+            return True, None
         else:
-            print(f"yt-dlp error: {result.stderr}")
-            return False
+            return False, result.stderr
             
+    except subprocess.TimeoutExpired:
+        return False, "FFmpeg timed out"
     except FileNotFoundError:
-        print("yt-dlp not installed")
-        return False
+        return False, "FFmpeg not found"
     except Exception as e:
-        print(f"yt-dlp error: {e}")
-        return False
+        return False, str(e)
 
 
-def download_with_scraping(url: str, output_path: str) -> bool:
-    """Download by scraping the page for video URL."""
-    try:
-        print("Trying direct scraping method...")
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-        }
-        
-        response = requests.get(url, headers=headers, timeout=30)
-        
-        if response.status_code != 200:
-            print(f"Failed to fetch page: {response.status_code}")
-            return False
-        
-        html = response.text
-        
-        # Try to find video URL in the page
-        # Method 1: Look for video_url in JSON
-        video_url_match = re.search(r'"video_url":"([^"]+)"', html)
-        if video_url_match:
-            video_url = video_url_match.group(1)
-            video_url = video_url.replace('\\u0026', '&').replace('\\/', '/')
-            print(f"Found video URL via JSON")
-        else:
-            # Method 2: Look for og:video meta tag
-            og_video_match = re.search(r'<meta property="og:video" content="([^"]+)"', html)
-            if og_video_match:
-                video_url = og_video_match.group(1)
-                print(f"Found video URL via og:video")
+def format_size(size_bytes: int) -> str:
+    """Format bytes as human-readable size."""
+    if size_bytes >= 1024 * 1024:
+        return f"{size_bytes / 1024 / 1024:.2f} MB"
+    elif size_bytes >= 1024:
+        return f"{size_bytes / 1024:.2f} KB"
+    else:
+        return f"{size_bytes} bytes"
+
+
+def test_optimization_levels(input_path: str, shortcode: str) -> Dict[str, Any]:
+    """Test different optimization levels and compare results."""
+    original_size = os.path.getsize(input_path)
+    
+    print(f"\n{'='*60}")
+    print("Testing different CRF levels (quality vs compression)")
+    print(f"{'='*60}")
+    print(f"Original size: {format_size(original_size)}")
+    print(f"\nCRF values: lower = better quality, larger file")
+    print(f"           higher = lower quality, smaller file")
+    print(f"{'='*60}\n")
+    
+    results = {}
+    test_crf_values = [22, 24, 26, 28, 30]
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for crf in test_crf_values:
+            output_path = os.path.join(tmpdir, f"test_crf{crf}.mp4")
+            
+            print(f"Testing CRF {crf}...", end=" ", flush=True)
+            success, error = optimize_video(input_path, output_path, crf=crf, preset='medium')
+            
+            if success and os.path.exists(output_path):
+                optimized_size = os.path.getsize(output_path)
+                compression_ratio = original_size / optimized_size if optimized_size > 0 else 0
+                savings = (1 - optimized_size / original_size) * 100
+                
+                results[crf] = {
+                    "size": optimized_size,
+                    "ratio": compression_ratio,
+                    "savings": savings
+                }
+                
+                print(f"{format_size(optimized_size):>10} | {compression_ratio:.2f}x | {savings:.1f}% smaller")
             else:
-                # Method 3: Look for video src in HTML
-                video_src_match = re.search(r'<video[^>]+src="([^"]+)"', html)
-                if video_src_match:
-                    video_url = video_src_match.group(1)
-                    print(f"Found video URL via video tag")
-                else:
-                    print("Could not find video URL in page")
-                    return False
-        
-        # Download the video
-        print(f"Downloading video...")
-        video_response = requests.get(video_url, headers=headers, stream=True, timeout=60)
-        
-        if video_response.status_code != 200:
-            print(f"Failed to download video: {video_response.status_code}")
-            return False
-        
-        with open(output_path, 'wb') as f:
-            for chunk in video_response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        
-        return True
-        
-    except Exception as e:
-        print(f"Scraping error: {e}")
-        return False
+                print(f"Failed: {error}")
+    
+    return results
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/test_download_reel.py <instagram_url>")
+    # Parse arguments
+    optimize = True
+    test_levels = False
+    url = None
+    
+    for arg in sys.argv[1:]:
+        if arg == '--no-optimize':
+            optimize = False
+        elif arg == '--test-levels':
+            test_levels = True
+        elif not arg.startswith('--'):
+            url = arg
+    
+    if not url:
+        print("Usage: python scripts/test_download_reel.py <instagram_url> [options]")
+        print("")
+        print("Options:")
+        print("  --no-optimize   Skip video optimization")
+        print("  --test-levels   Test different CRF compression levels")
+        print("")
         print('Example: python scripts/test_download_reel.py "https://www.instagram.com/reel/ABC123/"')
         sys.exit(1)
     
-    instagram_url = sys.argv[1]
+    # Check dependencies
+    print("\nChecking dependencies...")
     
-    # Clean URL (remove tracking params)
-    clean_url = instagram_url.split('?')[0]
+    if not check_ytdlp():
+        print("❌ yt-dlp not installed. Install with: pip install yt-dlp")
+        sys.exit(1)
+    print("✓ yt-dlp installed")
+    
+    ffmpeg_available = check_ffmpeg()
+    if ffmpeg_available:
+        print("✓ ffmpeg installed")
+    else:
+        print("⚠ ffmpeg not installed (optimization disabled)")
+        print("  Install with: brew install ffmpeg")
+        optimize = False
+    
+    # Clean URL
+    clean_url = url.split('?')[0]
     if not clean_url.endswith('/'):
         clean_url += '/'
     
-    print(f"\nDownloading reel from: {clean_url}")
-    print("-" * 50)
+    print(f"\n{'='*60}")
+    print(f"Downloading reel from: {clean_url}")
+    print(f"{'='*60}")
     
     # Extract shortcode
     shortcode = extract_shortcode(clean_url)
@@ -159,31 +233,82 @@ def main():
         print("Error: Could not extract reel shortcode from URL")
         sys.exit(1)
     
-    print(f"Extracted shortcode: {shortcode}")
+    print(f"Shortcode: {shortcode}")
     
-    # Output filename
-    filename = f"reel_{shortcode}.mp4"
-    output_path = os.path.join(os.getcwd(), filename)
+    # Create output directory
+    output_dir = os.getcwd()
+    original_filename = f"reel_{shortcode}_original.mp4"
+    original_path = os.path.join(output_dir, original_filename)
     
-    # Try yt-dlp first (most reliable)
-    success = download_with_ytdlp(clean_url, output_path)
+    # Download
+    print(f"\n[1/3] Downloading video...")
+    success = download_reel(clean_url, original_path)
     
-    # Fall back to scraping
-    if not success:
-        success = download_with_scraping(clean_url, output_path)
-    
-    if success and os.path.exists(output_path):
-        file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
-        print(f"\nSuccess!")
-        print(f"  Filename: {filename}")
-        print(f"  Size: {file_size_mb:.2f} MB")
-        print(f"  Saved to: {output_path}")
-    else:
-        print("\nError: Failed to download reel")
-        print("\nTip: Install yt-dlp for better results:")
-        print("  pip install yt-dlp")
-        print("  or: brew install yt-dlp")
+    if not success or not os.path.exists(original_path):
+        print("\n❌ Download failed")
         sys.exit(1)
+    
+    original_size = os.path.getsize(original_path)
+    print(f"✓ Downloaded: {format_size(original_size)}")
+    
+    # Test different compression levels if requested
+    if test_levels and ffmpeg_available:
+        test_optimization_levels(original_path, shortcode)
+    
+    # Optimize if enabled
+    final_path = original_path
+    final_filename = original_filename
+    
+    if optimize and ffmpeg_available:
+        print(f"\n[2/3] Optimizing video (CRF=30, preset=medium)...")
+        
+        optimized_filename = f"reel_{shortcode}.mp4"
+        optimized_path = os.path.join(output_dir, optimized_filename)
+        
+        success, error = optimize_video(original_path, optimized_path, crf=30, preset='medium')
+        
+        if success and os.path.exists(optimized_path):
+            optimized_size = os.path.getsize(optimized_path)
+            
+            if optimized_size < original_size:
+                compression_ratio = original_size / optimized_size
+                savings_percent = (1 - optimized_size / original_size) * 100
+                savings_bytes = original_size - optimized_size
+                
+                print(f"✓ Optimization successful!")
+                print(f"\n{'='*60}")
+                print("📊 COMPRESSION RESULTS")
+                print(f"{'='*60}")
+                print(f"  Original size:    {format_size(original_size)}")
+                print(f"  Optimized size:   {format_size(optimized_size)}")
+                print(f"  Size reduction:   {format_size(savings_bytes)} ({savings_percent:.1f}%)")
+                print(f"  Compression ratio: {compression_ratio:.2f}x")
+                print(f"{'='*60}")
+                
+                # Use optimized version
+                final_path = optimized_path
+                final_filename = optimized_filename
+                
+                # Remove original
+                os.remove(original_path)
+            else:
+                print("⚠ Optimized file not smaller, keeping original")
+                os.remove(optimized_path)
+        else:
+            print(f"⚠ Optimization failed: {error}")
+            print("  Keeping original file")
+    else:
+        print(f"\n[2/3] Skipping optimization")
+    
+    # Final summary
+    print(f"\n[3/3] Complete!")
+    print(f"\n{'='*60}")
+    print("📁 OUTPUT FILE")
+    print(f"{'='*60}")
+    print(f"  Filename: {final_filename}")
+    print(f"  Size:     {format_size(os.path.getsize(final_path))}")
+    print(f"  Path:     {final_path}")
+    print(f"{'='*60}\n")
 
 
 if __name__ == "__main__":

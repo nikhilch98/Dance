@@ -38,8 +38,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
   
-  // Track if using new API
-  bool _usingReelsApi = true;
 
   @override
   void initState() {
@@ -59,7 +57,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
       videoOnly: true,
     );
     
-    _usingReelsApi = true;
     allReels = reelsResponse.reels;
     
     // Initialize filters from API reels
@@ -309,174 +306,264 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
   Widget _buildReelPage(Reel reel, int index) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final navBarHeight = 96.0; // Bottom nav bar height + margin
+    final navBarHeight = 56.0; // Bottom nav bar height
     
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Instagram Reel Preview (tap to open)
+        // Video player - full screen
         ReelPlayerWidget(reel: reel),
 
-        // Bottom info card overlay
+        // Bottom gradient for text readability
         Positioned(
-          bottom: bottomPadding + navBarHeight,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 180,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(0.85),
+                  Colors.black.withOpacity(0.5),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Bottom info card
+        Positioned(
+          bottom: bottomPadding + navBarHeight + 4,
           left: ResponsiveUtils.spacingMedium(context),
           right: ResponsiveUtils.spacingMedium(context),
           child: Container(
             padding: EdgeInsets.all(ResponsiveUtils.spacingMedium(context)),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.black.withOpacity(0.7),
-                  Colors.black.withOpacity(0.5),
+                  Colors.white.withOpacity(0.15),
+                  Colors.white.withOpacity(0.05),
                 ],
               ),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withOpacity(0.2),
                 width: 1,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Artist info row with book button
-                Row(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Artist avatar
-                    _buildArtistAvatars(reel),
-                    SizedBox(width: ResponsiveUtils.spacingMedium(context)),
-                    
-                    // Artist name and studio
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            reel.artistName ?? 'Unknown Artist',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.body1(context),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
+                    // Header Row: Artist Name + Instagram icons + Date Badge
+                    Row(
+                      children: [
+                        // Artist Name (tappable) + Instagram icons
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.business_rounded,
-                                color: Colors.white.withOpacity(0.7),
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
                               Flexible(
-                                child: Text(
-                                  reel.studioName,
+                                fit: FlexFit.loose,
+                                child: GestureDetector(
+                                  onTap: () => _navigateToArtist(reel),
+                                  child: Text(
+                                    _toTitleCase(reel.artistName ?? 'Unknown Artist'),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: ResponsiveUtils.body2(context),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+                              _buildArtistInstagramIcons(reel),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        // Date Badge
+                        if (reel.date != null && reel.date!.isNotEmpty && reel.date != 'TBA')
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveUtils.spacingSmall(context),
+                              vertical: ResponsiveUtils.spacingXSmall(context),
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                              ),
+                            ),
+                            child: Text(
+                              reel.date!,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: ResponsiveUtils.micro(context) * 0.9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    SizedBox(height: ResponsiveUtils.spacingSmall(context)),
+                    
+                    // Main Content Row: Avatar + Details + Register Button
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Artist Avatar (tappable)
+                        GestureDetector(
+                          onTap: () => _navigateToArtist(reel),
+                          child: _buildArtistAvatars(reel),
+                        ),
+                        
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        
+                        // Workshop Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Song Name
+                              if (reel.songName != null && reel.songName!.isNotEmpty && reel.songName != 'TBA')
+                                Text(
+                                  _toTitleCase(reel.songName!),
                                   style: TextStyle(
+                                    color: const Color(0xFF00D4FF),
                                     fontSize: ResponsiveUtils.caption(context),
-                                    color: Colors.white.withOpacity(0.7),
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                              
+                              SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
+                              
+                              // Studio
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.business_rounded,
+                                    color: Colors.white.withOpacity(0.7),
+                                    size: ResponsiveUtils.iconXSmall(context),
+                                  ),
+                                  SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
+                                  Expanded(
+                                    child: Text(
+                                      _toTitleCase(reel.studioName),
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: ResponsiveUtils.micro(context),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              
+                              SizedBox(height: ResponsiveUtils.spacingXSmall(context) * 0.5),
+                              
+                              // Time & Price Row
+                              Row(
+                                children: [
+                                  // Time
+                                  if (reel.time != null && reel.time!.isNotEmpty && reel.time != 'TBA') ...[
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      color: Colors.white.withOpacity(0.7),
+                                      size: ResponsiveUtils.iconXSmall(context),
+                                    ),
+                                    SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
+                                    Text(
+                                      reel.time!,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontSize: ResponsiveUtils.micro(context),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                  // Price
+                                  if (reel.pricingInfo != null && reel.pricingInfo!.isNotEmpty) ...[
+                                    if (reel.time != null && reel.time!.isNotEmpty && reel.time != 'TBA')
+                                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                    Text(
+                                      '₹${reel.pricingInfo}',
+                                      style: TextStyle(
+                                        color: const Color(0xFF10B981),
+                                        fontSize: ResponsiveUtils.micro(context),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ] else if (reel.currentPrice != null) ...[
+                                    if (reel.time != null && reel.time!.isNotEmpty && reel.time != 'TBA')
+                                      SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                                    Text(
+                                      '₹${reel.currentPrice!.toInt()}',
+                                      style: TextStyle(
+                                        color: const Color(0xFF10B981),
+                                        fontSize: ResponsiveUtils.micro(context),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                        
+                        SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                        
+                        // Register Button
+                        _buildRegisterButton(reel),
+                      ],
                     ),
-                    
-                    // Book button
-                    _buildBookButton(reel),
                   ],
                 ),
-
-                // Date and time row
-                if (reel.date != null && reel.date!.isNotEmpty && reel.date != 'TBA') ...[
-                  SizedBox(height: ResponsiveUtils.spacingSmall(context)),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        color: const Color(0xFF00D4FF),
-                        size: 12,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        reel.date!,
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.caption(context),
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                      if (reel.time != null && reel.time!.isNotEmpty && reel.time != 'TBA') ...[
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.access_time_rounded,
-                          color: const Color(0xFF00D4FF),
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          reel.time!,
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.caption(context),
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-
-        // Side action buttons - positioned above the info card
-        Positioned(
-          right: ResponsiveUtils.spacingMedium(context),
-          bottom: bottomPadding + navBarHeight + 140,
-          child: Column(
-            children: [
-              // Artist profile button (if artist ID available)
-              if (reel.artistIdList != null && reel.artistIdList!.isNotEmpty) ...[
-                _buildActionButton(
-                  icon: Icons.person_rounded,
-                  gradient: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                  onTap: () => _navigateToArtist(reel),
-                  label: 'Artist',
-                ),
-                SizedBox(height: ResponsiveUtils.spacingMedium(context)),
-              ],
-              
-              // Instagram button
-              _buildActionButton(
-                icon: Icons.camera_alt_rounded,
-                gradient: const [Color(0xFFE1306C), Color(0xFFC13584)],
-                onTap: () => _openInstagramReel(reel),
-                label: 'Instagram',
               ),
-            ],
+            ),
           ),
         ),
       ],
     );
   }
-
+  
+  String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+  
   Widget _buildArtistAvatars(Reel reel) {
     final avatarUrls = reel.artistImageUrls ?? [];
     final displayCount = avatarUrls.length.clamp(0, 3);
     
     if (displayCount == 0) {
       return Container(
-        width: 44,
-        height: 44,
+        width: ResponsiveUtils.iconLarge(context),
+        height: ResponsiveUtils.iconLarge(context),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
@@ -484,18 +571,18 @@ class _ReelsScreenState extends State<ReelsScreen> {
           ),
           border: Border.all(color: Colors.white, width: 2),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.person_rounded,
           color: Colors.white,
-          size: 24,
+          size: ResponsiveUtils.iconSmall(context),
         ),
       );
     }
 
     if (displayCount == 1) {
       return Container(
-        width: 44,
-        height: 44,
+        width: ResponsiveUtils.iconLarge(context),
+        height: ResponsiveUtils.iconLarge(context),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 2),
@@ -506,46 +593,40 @@ class _ReelsScreenState extends State<ReelsScreen> {
                 )
               : null,
           gradient: avatarUrls[0] == null
-              ? const LinearGradient(
-                  colors: [Color(0xFFE1306C), Color(0xFFC13584)],
-                )
+              ? const LinearGradient(colors: [Color(0xFFE1306C), Color(0xFFC13584)])
               : null,
         ),
         child: avatarUrls[0] == null
-            ? const Icon(Icons.person_rounded, color: Colors.white, size: 24)
+            ? Icon(Icons.person_rounded, color: Colors.white, size: ResponsiveUtils.iconSmall(context))
             : null,
       );
     }
 
     // Multiple avatars - overlapping
+    final avatarSize = ResponsiveUtils.iconLarge(context) * 0.8;
     return SizedBox(
-      width: 44 + (displayCount - 1) * 16.0,
-      height: 44,
+      width: avatarSize + (displayCount - 1) * 12.0,
+      height: avatarSize,
       child: Stack(
         children: List.generate(displayCount, (index) {
           final url = avatarUrls[index];
           return Positioned(
-            left: index * 16.0,
+            left: index * 12.0,
             child: Container(
-              width: 36,
-              height: 36,
+              width: avatarSize,
+              height: avatarSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 image: url != null
-                    ? DecorationImage(
-                        image: NetworkImage(url),
-                        fit: BoxFit.cover,
-                      )
+                    ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
                     : null,
                 gradient: url == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFFE1306C), Color(0xFFC13584)],
-                      )
+                    ? const LinearGradient(colors: [Color(0xFFE1306C), Color(0xFFC13584)])
                     : null,
               ),
               child: url == null
-                  ? const Icon(Icons.person_rounded, color: Colors.white, size: 18)
+                  ? Icon(Icons.person_rounded, color: Colors.white, size: avatarSize * 0.5)
                   : null,
             ),
           );
@@ -553,90 +634,138 @@ class _ReelsScreenState extends State<ReelsScreen> {
       ),
     );
   }
+  
+  Widget _buildArtistInstagramIcons(Reel reel) {
+    final links = (reel.artistInstagramLinks ?? [])
+        .where((e) => (e ?? '').isNotEmpty)
+        .cast<String>()
+        .toList();
 
-  Widget _buildBookButton(Reel reel) {
-    return GestureDetector(
-      onTap: () => _handleBooking(reel),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: ResponsiveUtils.spacingMedium(context),
-          vertical: ResponsiveUtils.spacingSmall(context),
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B82F6).withOpacity(0.4),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              color: Colors.white,
-              size: ResponsiveUtils.iconSmall(context),
-            ),
-            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
-            Text(
-              'Book',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: ResponsiveUtils.body2(context),
-                fontWeight: FontWeight.bold,
+    if (links.isEmpty) return const SizedBox.shrink();
+
+    final maxIcons = 3;
+    final showCount = links.length > maxIcons ? maxIcons : links.length;
+
+    List<Widget> icons = List.generate(showCount, (i) {
+      return Padding(
+        padding: EdgeInsets.only(left: i == 0 ? 0 : ResponsiveUtils.spacingXSmall(context)),
+        child: GestureDetector(
+          onTap: () => _launchInstagramProfile(links[i]),
+          child: SizedBox(
+            width: ResponsiveUtils.iconSmall(context),
+            height: ResponsiveUtils.iconSmall(context),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                gradient: const LinearGradient(colors: [Color(0xFFE4405F), Color(0xFFFCAF45)]),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.camera_alt_rounded,
+                  color: Colors.white,
+                  size: ResponsiveUtils.iconXSmall(context) * 0.9,
+                ),
               ),
             ),
-          ],
+          ),
+        ),
+      );
+    });
+
+    if (links.length > maxIcons) {
+      icons.add(
+        Padding(
+          padding: EdgeInsets.only(left: ResponsiveUtils.spacingXSmall(context)),
+          child: Text(
+            '+${links.length - maxIcons}',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: ResponsiveUtils.micro(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+  }
+  
+  Future<void> _launchInstagramProfile(String instagramUrl) async {
+    try {
+      String? username;
+      if (instagramUrl.contains('instagram.com/')) {
+        final parts = instagramUrl.split('instagram.com/');
+        if (parts.length > 1) {
+          username = parts[1].split('/')[0].split('?')[0];
+        }
+      }
+
+      if (username != null && username.isNotEmpty) {
+        final appUrl = 'instagram://user?username=$username';
+        final webUrl = 'https://instagram.com/$username';
+        if (await canLaunchUrl(Uri.parse(appUrl))) {
+          await launchUrl(Uri.parse(appUrl));
+        } else {
+          await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        }
+      } else {
+        final uri = Uri.parse(instagramUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (_) {}
+  }
+  
+  Widget _buildRegisterButton(Reel reel) {
+    final isNachna = reel.paymentLinkType?.toLowerCase() == 'nachna';
+    final hasPaymentLink = (reel.paymentLink?.isNotEmpty ?? false) || isNachna;
+    
+    if (!hasPaymentLink) {
+      return const SizedBox.shrink();
+    }
+    
+    return SizedBox(
+      width: isNachna
+          ? (ResponsiveUtils.isSmallScreen(context) ? 85 : 95)
+          : (ResponsiveUtils.isSmallScreen(context) ? 60 : 65),
+      height: ResponsiveUtils.iconLarge(context),
+      child: GestureDetector(
+        onTap: () => _handleBooking(reel),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+            gradient: isNachna
+                ? const LinearGradient(colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)])
+                : const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)]),
+            boxShadow: [
+              BoxShadow(
+                color: isNachna
+                    ? const Color(0xFF00D4FF).withOpacity(0.3)
+                    : const Color(0xFF3B82F6).withOpacity(0.3),
+                offset: const Offset(0, 2),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              isNachna ? 'Register with nachna' : 'Register',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: ResponsiveUtils.micro(context) * 0.85,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required List<Color> gradient,
-    required VoidCallback onTap,
-    required String label,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(colors: gradient),
-              boxShadow: [
-                BoxShadow(
-                  color: gradient[0].withOpacity(0.4),
-                  offset: const Offset(0, 4),
-                  blurRadius: 12,
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showFilterSheet() {
     showModalBottomSheet(
@@ -668,15 +797,15 @@ class _ReelsScreenState extends State<ReelsScreen> {
             ),
           ),
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(ResponsiveUtils.spacingLarge(context))),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Column(
                 children: [
                   // Handle bar
                   Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
+                    margin: EdgeInsets.only(top: ResponsiveUtils.spacingSmall(context)),
+                    width: ResponsiveUtils.spacingLarge(context) * 2,
                     height: 4,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.3),
@@ -693,20 +822,20 @@ class _ReelsScreenState extends State<ReelsScreen> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: EdgeInsets.all(ResponsiveUtils.spacingSmall(context)),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                                 gradient: const LinearGradient(
                                   colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                                 ),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.filter_list_rounded,
                                 color: Colors.white,
-                                size: 20,
+                                size: ResponsiveUtils.iconSmall(context),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                             Text(
                               'Filter Reels',
                               style: TextStyle(
@@ -803,9 +932,9 @@ class _ReelsScreenState extends State<ReelsScreen> {
                       },
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.spacingMedium(context)),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                           gradient: const LinearGradient(
                             colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                           ),
@@ -813,16 +942,16 @@ class _ReelsScreenState extends State<ReelsScreen> {
                             BoxShadow(
                               color: const Color(0xFFE1306C).withOpacity(0.4),
                               offset: const Offset(0, 4),
-                              blurRadius: 16,
+                              blurRadius: ResponsiveUtils.spacingMedium(context),
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'Apply Filters',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: ResponsiveUtils.body1(context),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -852,8 +981,8 @@ class _ReelsScreenState extends State<ReelsScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: accentColor, size: 18),
-            const SizedBox(width: 8),
+            Icon(icon, color: accentColor, size: ResponsiveUtils.iconSmall(context)),
+            SizedBox(width: ResponsiveUtils.spacingSmall(context)),
             Text(
               title,
               style: TextStyle(
@@ -863,17 +992,20 @@ class _ReelsScreenState extends State<ReelsScreen> {
               ),
             ),
             if (selected.isNotEmpty) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: ResponsiveUtils.spacingSmall(context)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingSmall(context),
+                  vertical: ResponsiveUtils.spacingXSmall(context) * 0.5,
+                ),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                 ),
                 child: Text(
                   '${selected.length}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: ResponsiveUtils.micro(context),
                     fontWeight: FontWeight.bold,
                     color: accentColor,
                   ),
@@ -882,10 +1014,10 @@ class _ReelsScreenState extends State<ReelsScreen> {
             ],
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: ResponsiveUtils.spacingSmall(context)),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: ResponsiveUtils.spacingSmall(context),
+          runSpacing: ResponsiveUtils.spacingSmall(context),
           children: options.map((option) {
             final isSelected = selected.contains(option);
             return GestureDetector(
@@ -899,9 +1031,12 @@ class _ReelsScreenState extends State<ReelsScreen> {
                 onChanged(newSelected);
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.spacingSmall(context),
+                  vertical: ResponsiveUtils.spacingSmall(context),
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
                   gradient: isSelected
                       ? LinearGradient(colors: [accentColor, accentColor.withOpacity(0.8)])
                       : null,
@@ -946,8 +1081,8 @@ class _ReelsScreenState extends State<ReelsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: ResponsiveUtils.iconLarge(context) * 2,
+              height: ResponsiveUtils.iconLarge(context) * 2,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -964,12 +1099,12 @@ class _ReelsScreenState extends State<ReelsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: ResponsiveUtils.spacingLarge(context)),
             Text(
               'Loading Reels...',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
-                fontSize: 16,
+                fontSize: ResponsiveUtils.body1(context),
               ),
             ),
           ],
@@ -994,13 +1129,13 @@ class _ReelsScreenState extends State<ReelsScreen> {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: ResponsiveUtils.paddingXLarge(context),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: ResponsiveUtils.iconLarge(context) * 2,
+                height: ResponsiveUtils.iconLarge(context) * 2,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -1010,31 +1145,31 @@ class _ReelsScreenState extends State<ReelsScreen> {
                     ],
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.error_outline_rounded,
                   color: Colors.white,
-                  size: 40,
+                  size: ResponsiveUtils.iconLarge(context),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
               Text(
                 'Unable to load reels',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: ResponsiveUtils.h3(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: ResponsiveUtils.spacingSmall(context)),
               Text(
                 error,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.6),
-                  fontSize: 14,
+                  fontSize: ResponsiveUtils.body2(context),
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveUtils.spacingLarge(context)),
               GestureDetector(
                 onTap: () {
                   setState(() {
@@ -1042,17 +1177,21 @@ class _ReelsScreenState extends State<ReelsScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.spacingLarge(context),
+                    vertical: ResponsiveUtils.spacingSmall(context),
+                  ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                     gradient: const LinearGradient(
                       colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Try Again',
                     style: TextStyle(
                       color: Colors.white,
+                      fontSize: ResponsiveUtils.body2(context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1119,13 +1258,13 @@ class _ReelsScreenState extends State<ReelsScreen> {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: ResponsiveUtils.paddingXLarge(context),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 100,
-                        height: 100,
+                        width: ResponsiveUtils.iconLarge(context) * 2.5,
+                        height: ResponsiveUtils.iconLarge(context) * 2.5,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -1138,45 +1277,49 @@ class _ReelsScreenState extends State<ReelsScreen> {
                         child: Icon(
                           hasFilters ? Icons.filter_list_off_rounded : Icons.slow_motion_video_rounded,
                           color: Colors.white.withOpacity(0.5),
-                          size: 50,
+                          size: ResponsiveUtils.iconLarge(context) * 1.3,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                       Text(
                         hasFilters ? 'No matching reels' : 'No choreography videos yet',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: ResponsiveUtils.h3(context),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: ResponsiveUtils.spacingSmall(context)),
                       Text(
                         hasFilters
                             ? 'Try adjusting your filters to see more reels'
                             : 'Check back soon for new dance choreography videos!',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.6),
-                          fontSize: 14,
+                          fontSize: ResponsiveUtils.body2(context),
                         ),
                         textAlign: TextAlign.center,
                       ),
                       if (hasFilters) ...[
-                        const SizedBox(height: 24),
+                        SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                         GestureDetector(
                           onTap: _resetFilters,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveUtils.spacingLarge(context),
+                              vertical: ResponsiveUtils.spacingSmall(context),
+                            ),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Clear Filters',
                               style: TextStyle(
                                 color: Colors.white,
+                                fontSize: ResponsiveUtils.body2(context),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1192,33 +1335,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _openInstagramReel(Reel reel) async {
-    try {
-      final uri = Uri.parse(reel.instagramUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Could not open Instagram'),
-              backgroundColor: Colors.red.withOpacity(0.8),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Could not open Instagram'),
-            backgroundColor: Colors.red.withOpacity(0.8),
-          ),
-        );
-      }
-    }
   }
 
   void _navigateToArtist(Reel reel) {

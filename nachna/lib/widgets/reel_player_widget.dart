@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 import '../models/reel.dart';
+import '../utils/responsive_utils.dart';
 
 /// Widget that displays a Reel video using native video playback.
-/// Videos are loaded from the GridFS-backed API.
+/// Clean, full-screen display without controls - tap to play/pause.
 class ReelPlayerWidget extends StatefulWidget {
   final Reel reel;
   final VoidCallback? onLoadComplete;
@@ -26,11 +26,10 @@ class ReelPlayerWidget extends StatefulWidget {
 
 class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
   VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-  
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
+  bool _showPlayIcon = false;
 
   @override
   void initState() {
@@ -40,20 +39,15 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
 
   @override
   void dispose() {
-    _disposeControllers();
-    super.dispose();
-  }
-
-  void _disposeControllers() {
-    _chewieController?.dispose();
     _videoController?.dispose();
+    super.dispose();
   }
 
   Future<void> _initializePlayer() async {
     if (!widget.reel.hasVideo || widget.reel.videoUrl == null) {
       setState(() {
         _hasError = true;
-        _errorMessage = 'Video not available yet';
+        _errorMessage = 'Video not available';
         _isLoading = false;
       });
       widget.onLoadError?.call();
@@ -70,31 +64,18 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
       
       _videoController = VideoPlayerController.networkUrl(
         Uri.parse(videoUrl),
-        httpHeaders: {
-          'Accept': 'video/mp4',
-        },
+        httpHeaders: {'Accept': 'video/mp4'},
       );
 
       await _videoController!.initialize();
-
+      
       if (!mounted) return;
 
-      _chewieController = ChewieController(
-        videoPlayerController: _videoController!,
-        autoPlay: widget.autoPlay,
-        looping: true,
-        showControls: true,
-        showControlsOnInitialize: false,
-        aspectRatio: _videoController!.value.aspectRatio,
-        placeholder: _buildLoadingState(),
-        errorBuilder: (context, errorMessage) {
-          return _buildErrorStateWidget('Video playback error');
-        },
-        customControls: const CupertinoControls(
-          backgroundColor: Color(0x99000000),
-          iconColor: Colors.white,
-        ),
-      );
+      // Set looping and auto-play
+      _videoController!.setLooping(true);
+      if (widget.autoPlay) {
+        _videoController!.play();
+      }
 
       setState(() {
         _isLoading = false;
@@ -112,6 +93,29 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
     }
   }
 
+  void _togglePlayPause() {
+    if (_videoController == null) return;
+    
+    setState(() {
+      if (_videoController!.value.isPlaying) {
+        _videoController!.pause();
+        _showPlayIcon = true;
+      } else {
+        _videoController!.play();
+        _showPlayIcon = false;
+      }
+    });
+    
+    // Auto-hide play icon after delay
+    if (!_videoController!.value.isPlaying) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted && !_videoController!.value.isPlaying) {
+          setState(() => _showPlayIcon = false);
+        }
+      });
+    }
+  }
+
   Future<void> _openInInstagram() async {
     try {
       final uri = Uri.parse(widget.reel.instagramUrl);
@@ -124,7 +128,8 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
   }
 
   void _retry() {
-    _disposeControllers();
+    _videoController?.dispose();
+    _videoController = null;
     setState(() {
       _hasError = false;
       _isLoading = true;
@@ -139,75 +144,82 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
       return _buildErrorState();
     }
 
-    if (_isLoading || _chewieController == null) {
+    if (_isLoading || _videoController == null || !_videoController!.value.isInitialized) {
       return _buildLoadingState();
     }
 
-    return _buildNativePlayer();
+    return _buildVideoPlayer();
   }
 
-  Widget _buildNativePlayer() {
-    return Stack(
-      children: [
-        // Native video player - full screen
-        Container(
-          color: const Color(0xFF0A0A0F),
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: _videoController?.value.aspectRatio ?? 9 / 16,
-              child: Chewie(controller: _chewieController!),
+  Widget _buildVideoPlayer() {
+    final videoAspect = _videoController!.value.aspectRatio;
+    
+    return GestureDetector(
+      onTap: _togglePlayPause,
+      child: Container(
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video - centered and fitted
+            Center(
+              child: AspectRatio(
+                aspectRatio: videoAspect,
+                child: VideoPlayer(_videoController!),
+              ),
             ),
-          ),
+            
+            // Play/Pause indicator (shown on tap)
+            if (_showPlayIcon || !_videoController!.value.isPlaying)
+              Center(
+                child: AnimatedOpacity(
+                  opacity: _showPlayIcon ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    width: ResponsiveUtils.iconLarge(context) * 1.8,
+                    height: ResponsiveUtils.iconLarge(context) * 1.8,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _videoController!.value.isPlaying 
+                          ? Icons.pause_rounded 
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: ResponsiveUtils.iconLarge(context),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
-        
-        // Loading overlay
-        if (_isLoading)
-          _buildLoadingState(),
-      ],
+      ),
     );
   }
 
   Widget _buildLoadingState() {
     return Container(
-      color: const Color(0xFF0A0A0F),
+      color: Colors.black,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Loading indicator with gradient
             Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
+              width: ResponsiveUtils.iconLarge(context) * 1.3,
+              height: ResponsiveUtils.iconLarge(context) * 1.3,
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+                gradient: LinearGradient(
+                  colors: [Color(0xFFE1306C), Color(0xFFC13584)],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00D4FF).withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(15),
-                child: CircularProgressIndicator(
+              child: Padding(
+                padding: EdgeInsets.all(ResponsiveUtils.spacingSmall(context)),
+                child: const CircularProgressIndicator(
                   color: Colors.white,
-                  strokeWidth: 2.5,
+                  strokeWidth: 2,
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Loading video...',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -217,74 +229,83 @@ class _ReelPlayerWidgetState extends State<ReelPlayerWidget> {
   }
 
   Widget _buildErrorState() {
-    return _buildErrorStateWidget(_errorMessage ?? 'Unable to load video');
-  }
-
-  Widget _buildErrorStateWidget(String message) {
     return Container(
-      color: const Color(0xFF0A0A0F),
+      color: Colors.black,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.red.withOpacity(0.15),
-                border: Border.all(
-                  color: Colors.red.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                color: Colors.red,
-                size: 36,
-              ),
+            Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white.withOpacity(0.5),
+              size: ResponsiveUtils.iconLarge(context) * 1.2,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: ResponsiveUtils.spacingMedium(context)),
             Text(
-              message,
+              _errorMessage ?? 'Unable to load video',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _retry,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                  ),
-                ),
-                child: const Text(
-                  'Retry',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
+                color: Colors.white.withOpacity(0.7),
+                fontSize: ResponsiveUtils.body2(context),
               ),
             ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _openInInstagram,
-              child: const Text(
-                'View on Instagram',
-                style: TextStyle(
-                  color: Color(0xFF00D4FF),
-                  fontSize: 13,
-                  decoration: TextDecoration.underline,
-                  decorationColor: Color(0xFF00D4FF),
+            SizedBox(height: ResponsiveUtils.spacingLarge(context)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildActionChip(
+                  icon: Icons.refresh_rounded,
+                  label: 'Retry',
+                  onTap: _retry,
                 ),
+                SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                _buildActionChip(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Instagram',
+                  onTap: _openInInstagram,
+                  isPrimary: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveUtils.spacingMedium(context),
+          vertical: ResponsiveUtils.spacingSmall(context),
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
+          gradient: isPrimary 
+              ? const LinearGradient(colors: [Color(0xFFE1306C), Color(0xFFC13584)])
+              : null,
+          color: isPrimary ? null : Colors.white.withOpacity(0.15),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: ResponsiveUtils.iconSmall(context)),
+            SizedBox(width: ResponsiveUtils.spacingXSmall(context)),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: ResponsiveUtils.caption(context),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

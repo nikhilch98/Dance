@@ -37,24 +37,28 @@ def print_status():
     """Print current video processing status for active workshops only."""
     counts = ChoreoLinksOperations.count_by_status(active_only=True)
     
-    print("\n=== Video Processing Status (Active Workshops Only) ===")
-    print(f"Active workshops with Instagram links: {counts.get('active_workshops_with_links', 'N/A')}")
+    print("\n" + "=" * 60)
+    print("     VIDEO PROCESSING STATUS (Active Workshops Only)")
+    print("=" * 60)
+    print(f"\nActive workshops with Instagram links: {counts.get('active_workshops_with_links', 'N/A')}")
     print(f"Choreo links to process: {counts['total']}")
     print(f"  Unprocessed: {counts['unprocessed']}")
     print(f"  Pending:     {counts['pending']}")
     print(f"  Processing:  {counts['processing']}")
     print(f"  Completed:   {counts['completed']}")
     print(f"  Failed:      {counts['failed']}")
-    print("=" * 54)
     
     # Calculate completion percentage
     if counts['total'] > 0:
         completion = (counts['completed'] / counts['total']) * 100
-        print(f"Completion: {completion:.1f}%")
+        print(f"\n  Completion: {completion:.1f}%")
     
-    # Note about archived workshops
-    print("\nNote: Only active (non-archived) workshops are included.")
-    print()
+    print("\n" + "-" * 60)
+    print("  Active Workshop Criteria (matches 'All Workshops' API):")
+    print("    1. is_archived != True")
+    print("    2. event_type NOT in ['regulars']")
+    print("    3. Workshop date >= start of current week (Monday)")
+    print("-" * 60 + "\n")
 
 
 def process_videos(batch_size: int, include_retries: bool, dry_run: bool = False):

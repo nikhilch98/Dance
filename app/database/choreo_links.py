@@ -4,10 +4,15 @@ Database operations for choreo_links collection with video support.
 This module provides CRUD operations for the choreo_links collection,
 including video status tracking and GridFS file references.
 
-IMPORTANT: All processing/status operations filter by active workshops only
-(workshops where is_archived != true).
+IMPORTANT: All processing/status operations filter by active workshops only.
+Active workshops are defined as:
+1. is_archived != True
+2. event_type not in ["regulars"] 
+3. Workshop date >= start of current week (Monday)
+
+This matches the "All Workshops" API filtering logic.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List, Set
 from bson import ObjectId
 from utils.utils import get_mongo_client
@@ -31,23 +36,57 @@ class ChoreoLinksOperations:
     @staticmethod
     def get_active_workshop_instagram_links() -> Set[str]:
         """
-        Get all Instagram links from active (non-archived) workshops.
+        Get all Instagram links from active workshops.
+        
+        Active workshops are defined as (matching "All Workshops" API logic):
+        1. is_archived != True
+        2. event_type not in ["regulars"]
+        3. Workshop has at least one time_detail date >= start of current week
         
         Returns:
             Set of Instagram URLs from active workshops
         """
         workshops = ChoreoLinksOperations.get_workshops_collection()
         
-        # Find all active workshops with choreo_insta_link
-        active_workshops = workshops.find(
+        # Calculate start of current week (Monday)
+        today = datetime.now().date()
+        start_of_week = today - timedelta(days=today.weekday())
+        
+        # Find all non-archived, non-regular workshops with choreo_insta_link
+        active_workshops_cursor = workshops.find(
             {
                 "is_archived": {"$ne": True},
+                "event_type": {"$nin": ["regulars"]},
                 "choreo_insta_link": {"$exists": True, "$ne": "", "$ne": None}
             },
-            {"choreo_insta_link": 1}  # Only fetch the link field
+            {"choreo_insta_link": 1, "time_details": 1}  # Fetch link and time_details
         )
         
-        return {w["choreo_insta_link"] for w in active_workshops if w.get("choreo_insta_link")}
+        active_links = set()
+        
+        for workshop in active_workshops_cursor:
+            choreo_link = workshop.get("choreo_insta_link")
+            if not choreo_link:
+                continue
+            
+            # Check if any time_detail is from start of current week onwards
+            time_details = workshop.get("time_details", [])
+            for td in time_details:
+                try:
+                    workshop_date = datetime(
+                        year=td.get("year"),
+                        month=td.get("month"),
+                        day=td.get("day"),
+                    ).date()
+                    
+                    # Include if workshop date is >= start of current week
+                    if workshop_date >= start_of_week:
+                        active_links.add(choreo_link)
+                        break  # No need to check other time_details
+                except (TypeError, ValueError, KeyError):
+                    continue
+        
+        return active_links
     
     @staticmethod
     def get_by_id(choreo_link_id: str) -> Optional[Dict[str, Any]]:
