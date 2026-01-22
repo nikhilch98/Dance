@@ -140,6 +140,7 @@ class AdminService {
   static Future<bool> addArtist({
     required String artistId,
     required String artistName,
+    List<String>? artistAliases,
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -156,6 +157,7 @@ class AdminService {
         body: json.encode({
           'artist_id': artistId,
           'artist_name': artistName,
+          'artist_aliases': artistAliases ?? [],
         }),
       );
 

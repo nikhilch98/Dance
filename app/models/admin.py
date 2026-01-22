@@ -24,6 +24,7 @@ class CreateArtistPayload(BaseModel):
     """Payload for creating a new artist."""
     artist_id: str
     artist_name: str
+    artist_aliases: Optional[List[str]] = []
 
 
 class QRVerificationRequest(BaseModel):

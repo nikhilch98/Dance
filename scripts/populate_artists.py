@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
 import requests
@@ -27,6 +27,7 @@ class Artist:
     name: str
     instagram_id: str
     image_url: Optional[str] = None
+    aliases: List[str] = field(default_factory=list)
 
     @property
     def instagram_link(self) -> str:
@@ -98,8 +99,18 @@ class ArtistManager:
         if artist.image_url:
             data["image_url"] = artist.image_url
 
+        # Set artist_aliases (defaults to empty list if not set)
+        # Use $setOnInsert to only set on new documents, preserving existing aliases
+        update_ops = {"$set": data}
+
+        # Only set artist_aliases on insert (new documents), don't overwrite existing aliases
         self.collection.update_one(
-            {"artist_id": artist.instagram_id}, {"$set": data}, upsert=True
+            {"artist_id": artist.instagram_id},
+            {
+                "$set": data,
+                "$setOnInsert": {"artist_aliases": artist.aliases if artist.aliases else []}
+            },
+            upsert=True
         )
 
     def get_existing_image(self, artist_id: str) -> Optional[str]:
@@ -116,8 +127,15 @@ class ArtistManager:
     
     def get_artists_list_from_db(self) -> List[Artist]:
         """Get list of artists from database."""
-        result = self.collection.find({}, {"artist_id": 1, "artist_name": 1})
-        return [Artist(artist["artist_name"], artist["artist_id"]) for artist in result]
+        result = self.collection.find({}, {"artist_id": 1, "artist_name": 1, "artist_aliases": 1})
+        return [
+            Artist(
+                name=artist["artist_name"],
+                instagram_id=artist["artist_id"],
+                aliases=artist.get("artist_aliases", [])
+            )
+            for artist in result
+        ]
 
 
 def get_artists_list() -> List[Artist]:

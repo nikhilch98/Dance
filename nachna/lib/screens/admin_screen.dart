@@ -2871,6 +2871,7 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
   void _showAddArtistDialog() {
     final TextEditingController idController = TextEditingController();
     final TextEditingController nameController = TextEditingController();
+    final TextEditingController aliasesController = TextEditingController();
 
     showDialog(
       context: context,
@@ -2986,6 +2987,34 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
                         style: const TextStyle(color: Colors.white),
                         maxLines: 1,
                       ),
+                      const SizedBox(height: 12),
+
+                      // Artist Aliases field
+                      TextField(
+                        controller: aliasesController,
+                        decoration: InputDecoration(
+                          labelText: 'Artist aliases (comma separated)',
+                          hintText: 'e.g., aadil, ak, khan',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                          labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF00D4FF), width: 2),
+                          ),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 1,
+                      ),
 
                       const SizedBox(height: 20),
 
@@ -3011,6 +3040,16 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
                               onPressed: () async {
                                 final id = idController.text.trim();
                                 final name = nameController.text.trim();
+                                final aliasesText = aliasesController.text.trim();
+
+                                // Parse aliases from comma-separated string
+                                final List<String> aliases = aliasesText.isEmpty
+                                    ? []
+                                    : aliasesText
+                                        .split(',')
+                                        .map((s) => s.trim().toLowerCase())
+                                        .where((s) => s.isNotEmpty)
+                                        .toList();
 
                                 if (id.isEmpty || name.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -3024,7 +3063,11 @@ class _AdminScreenState extends State<AdminScreen> with TickerProviderStateMixin
                                 }
 
                                 try {
-                                  final ok = await AdminService.addArtist(artistId: id, artistName: name);
+                                  final ok = await AdminService.addArtist(
+                                    artistId: id,
+                                    artistName: name,
+                                    artistAliases: aliases,
+                                  );
                                   if (!mounted) return;
 
                                   if (ok) {

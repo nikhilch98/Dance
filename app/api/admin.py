@@ -59,7 +59,8 @@ def admin_add_artist(
 
         UserOperations.add_artist(
             artist_id=payload.artist_id,
-            artist_name=payload.artist_name
+            artist_name=payload.artist_name,
+            artist_aliases=payload.artist_aliases if payload.artist_aliases else []
         )
         return {
             "success": True,

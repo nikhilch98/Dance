@@ -117,6 +117,7 @@ class BrowserConfig:
     WINDOW_WIDTH = 1920
     WINDOW_HEIGHT = 1080
     PAGE_LOAD_TIMEOUT = 10
+    SPA_CONTENT_TIMEOUT = 15  # Extra time for SPAs to render dynamic content
     DESKTOP_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     CHROME_OPTIONS = [
         "--headless",
@@ -449,6 +450,76 @@ class ScreenshotManager:
     """Screenshot capture and management utilities."""
 
     @staticmethod
+    def _wait_for_spa_content(driver, timeout: int = 15) -> None:
+        """Wait for SPA (Single Page Application) content to fully render.
+
+        This handles JavaScript frameworks (React, Vue, Angular) that render
+        content dynamically after the initial page load.
+
+        Args:
+            driver: Selenium WebDriver instance
+            timeout: Maximum time to wait in seconds
+        """
+        # JavaScript to check for common loading indicators
+        loading_check_script = """
+        return (function() {
+            // Check for common loading indicator patterns
+            var loadingIndicators = [
+                // Common loading text patterns (case insensitive)
+                document.body.innerText.toLowerCase().includes('loading...'),
+                document.body.innerText.toLowerCase().includes('please wait'),
+
+                // Common loading spinner classes/elements
+                document.querySelector('.loading'),
+                document.querySelector('.spinner'),
+                document.querySelector('.loader'),
+                document.querySelector('[class*="loading"]'),
+                document.querySelector('[class*="spinner"]'),
+                document.querySelector('[class*="skeleton"]'),
+
+                // Common loading attributes
+                document.querySelector('[aria-busy="true"]'),
+                document.querySelector('[data-loading="true"]'),
+
+                // Check for very short body content (likely still loading)
+                document.body.innerText.trim().length < 100
+            ];
+
+            // Return true if ANY loading indicator is found
+            for (var i = 0; i < loadingIndicators.length; i++) {
+                if (loadingIndicators[i]) return true;
+            }
+            return false;
+        })();
+        """
+
+        # Wait for loading indicators to disappear
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                is_loading = driver.execute_script(loading_check_script)
+                if not is_loading:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        # Additional wait for page height to stabilize (content finished rendering)
+        last_height = 0
+        stable_count = 0
+        while time.time() - start_time < timeout and stable_count < 3:
+            try:
+                current_height = driver.execute_script("return document.body.scrollHeight")
+                if current_height == last_height:
+                    stable_count += 1
+                else:
+                    stable_count = 0
+                last_height = current_height
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+    @staticmethod
     @retry(max_attempts=5, backoff_factor=1)
     def capture_screenshot(url: str, output_file: str) -> bool:
         """Capture full page screenshot of a URL in desktop view.
@@ -483,25 +554,29 @@ class ScreenshotManager:
         try:
             # Set desktop window size before loading page
             driver.set_window_size(BrowserConfig.WINDOW_WIDTH, BrowserConfig.WINDOW_HEIGHT)
-            
+
             # Load the page
             driver.get(url)
             WebDriverWait(driver, BrowserConfig.PAGE_LOAD_TIMEOUT).until(
                 lambda d: d.execute_script("return document.readyState") == "complete"
             )
 
+            # Wait for SPA content to load (dynamic JavaScript rendering)
+            # This handles React/Vue/Angular apps that load content after initial page load
+            ScreenshotManager._wait_for_spa_content(driver, BrowserConfig.SPA_CONTENT_TIMEOUT)
+
             # Get page dimensions after loading
             total_width = driver.execute_script("return document.body.scrollWidth")
             total_height = driver.execute_script("return document.body.scrollHeight")
-            
+
             # Ensure minimum desktop width for responsive sites
             final_width = max(total_width, BrowserConfig.WINDOW_WIDTH)
             final_height = max(total_height, BrowserConfig.WINDOW_HEIGHT)
-            
+
             # Set final dimensions for full page capture
             driver.set_window_size(final_width, final_height)
-            
-            # Wait a moment for any responsive layout changes
+
+            # Wait a moment for any responsive layout changes after resize
             time.sleep(1)
 
             driver.save_screenshot(output_file)

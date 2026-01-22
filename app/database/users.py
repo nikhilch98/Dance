@@ -193,20 +193,27 @@ class UserOperations:
             return 0 
 
     @staticmethod
-    def add_artist(artist_id: str, artist_name: str) -> dict:
-        """Adds a new artist to the database."""
+    def add_artist(artist_id: str, artist_name: str, artist_aliases: list = None) -> dict:
+        """Adds a new artist to the database.
+
+        Args:
+            artist_id: The artist's Instagram ID (used as unique identifier)
+            artist_name: The artist's display name
+            artist_aliases: Optional list of alternative names/nicknames for the artist
+        """
         client = get_mongo_client()
         db = client["discovery"]
-        
+
         instagram_link = f"https://www.instagram.com/{artist_id}/"
-        
+
         artist_data = {
             "artist_id": artist_id,
             "artist_name": artist_name,
             "instagram_link": instagram_link,
             "image_url": None,
+            "artist_aliases": artist_aliases if artist_aliases else [],
         }
-        
+
         result = db["artists_v2"].update_one(
             {"artist_id": artist_id},
             {"$set": artist_data},
