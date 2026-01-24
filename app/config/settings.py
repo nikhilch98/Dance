@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     port: int = 8002
     workers: int = 4
     reload: bool = False
-    log_level: str = "info"
+    log_level: str = os.getenv("LOG_LEVEL", "info").lower()  # uvicorn requires lowercase
     
     class Config:
         env_file = ".env"
