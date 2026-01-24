@@ -73,15 +73,25 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
 
   @override
   void dispose() {
+    // Cancel timer first to prevent any callbacks during disposal
+    _cancelResendTimer();
+    // Dispose animation controller
     _animationController.dispose();
-    _resendTimer?.cancel();
+    // Dispose all text editing controllers
     for (var controller in _otpControllers) {
       controller.dispose();
     }
+    // Dispose all focus nodes
     for (var node in _focusNodes) {
       node.dispose();
     }
     super.dispose();
+  }
+
+  /// Safely cancel the resend timer
+  void _cancelResendTimer() {
+    _resendTimer?.cancel();
+    _resendTimer = null;
   }
 
   @override
@@ -658,30 +668,34 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen>
   }
 
   void _startResendTimer() {
-    // Cancel any existing timer
-    _resendTimer?.cancel();
-    
+    // Cancel any existing timer using the safe helper
+    _cancelResendTimer();
+
     // Reset countdown and disable resend
-    setState(() {
-      _resendCountdown = 30;
-      _canResend = false;
-    });
-    
+    if (mounted) {
+      setState(() {
+        _resendCountdown = 30;
+        _canResend = false;
+      });
+    }
+
     // Start new timer
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _resendCountdown--;
         });
-        
+
         if (_resendCountdown <= 0) {
           setState(() {
             _canResend = true;
           });
           timer.cancel();
+          _resendTimer = null;
         }
       } else {
         timer.cancel();
+        _resendTimer = null;
       }
     });
   }

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
@@ -765,37 +764,25 @@ class QRCodeDisplay extends StatelessWidget {
   // Helper method to get QR code bytes
   Uint8List? _getQRCodeBytes(String qrCodeData) {
     try {
-      debugPrint('DEBUG: Processing QR code data, length: ${qrCodeData.length}');
-      debugPrint('DEBUG: Starts with: ${qrCodeData.substring(0, min(50, qrCodeData.length))}');
-
       String base64String;
 
       if (qrCodeData.startsWith('data:image/png;base64,')) {
         base64String = qrCodeData.substring('data:image/png;base64,'.length);
-        debugPrint('DEBUG: Found data URL format, extracted base64');
       } else if (qrCodeData.startsWith('data:image/')) {
         // Handle other image formats
         final commaIndex = qrCodeData.indexOf(',');
         if (commaIndex != -1) {
           base64String = qrCodeData.substring(commaIndex + 1);
-          debugPrint('DEBUG: Found generic data URL format');
         } else {
           base64String = qrCodeData;
-          debugPrint('DEBUG: Using data as-is (no data URL prefix)');
         }
       } else {
         base64String = qrCodeData;
-        debugPrint('DEBUG: Using data as-is');
       }
 
-      debugPrint('DEBUG: Base64 string length: ${base64String.length}');
-
       final bytes = base64Decode(base64String);
-      debugPrint('DEBUG: Successfully decoded ${bytes.length} bytes');
-
       return bytes;
     } catch (e) {
-      debugPrint('DEBUG: Error decoding QR code: $e');
       return null;
     }
   }
@@ -803,58 +790,40 @@ class QRCodeDisplay extends StatelessWidget {
   // Save QR code to gallery
   Future<void> _saveQRCode(BuildContext context, String qrCodeData, String workshopTitle) async {
     try {
-      debugPrint('DEBUG: Starting save QR code for $workshopTitle');
-      debugPrint('DEBUG: QR code data is null: ${qrCodeData == null}');
-      debugPrint('DEBUG: QR code data length: ${qrCodeData.length}');
       final bytes = _getQRCodeBytes(qrCodeData);
       if (bytes == null) {
-        debugPrint('DEBUG: Failed to get QR code bytes');
         _showSnackBar(context, 'Failed to process QR code', isError: true);
         return;
       }
 
-      debugPrint('DEBUG: QR code bytes length: ${bytes.length}');
       final fileName = 'qr_code_${workshopTitle.replaceAll(' ', '_')}.png';
-      debugPrint('DEBUG: Saving with filename: $fileName');
-
       final result = await ImageGallerySaver.saveImage(bytes, name: fileName);
-      debugPrint('DEBUG: ImageGallerySaver result: $result');
 
       if (result['isSuccess'] == true) {
         _showSnackBar(context, 'QR code saved to gallery!');
       } else {
         final errorMsg = result['errorMessage'] ?? 'Unknown error';
-        debugPrint('DEBUG: Save failed: $errorMsg');
         _showSnackBar(context, 'Failed to save QR code: $errorMsg', isError: true);
       }
     } catch (e) {
-      debugPrint('DEBUG: Save QR code error: $e');
-      _showSnackBar(context, 'Failed to save QR code: $e', isError: true);
+      _showSnackBar(context, 'Failed to save QR code', isError: true);
     }
   }
 
   // Share QR code
   Future<void> _shareQRCode(BuildContext context, String qrCodeData, String workshopTitle) async {
     try {
-      debugPrint('DEBUG: Starting share QR code for $workshopTitle');
-      debugPrint('DEBUG: QR code data is null: ${qrCodeData == null}');
-      debugPrint('DEBUG: QR code data length: ${qrCodeData.length}');
       final bytes = _getQRCodeBytes(qrCodeData);
       if (bytes == null) {
-        debugPrint('DEBUG: Failed to get QR code bytes for sharing');
         _showSnackBar(context, 'Failed to process QR code', isError: true);
         return;
       }
 
-      debugPrint('DEBUG: Creating temporary file for sharing');
       // Create temporary file
       final tempDir = await getTemporaryDirectory();
       final fileName = 'qr_code_${workshopTitle.replaceAll(' ', '_')}.png';
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
-
-      debugPrint('DEBUG: Temporary file created: ${file.path}');
-      debugPrint('DEBUG: File exists: ${await file.exists()}');
 
       await Share.shareXFiles(
         [XFile(file.path)],
@@ -866,11 +835,8 @@ class QRCodeDisplay extends StatelessWidget {
           height: 100,
         ),
       );
-
-      debugPrint('DEBUG: Share completed successfully');
     } catch (e) {
-      debugPrint('DEBUG: Share QR code error: $e');
-      _showSnackBar(context, 'Failed to share QR code: $e', isError: true);
+      _showSnackBar(context, 'Failed to share QR code', isError: true);
     }
   }
 

@@ -8,6 +8,7 @@ import gzip
 import io
 from datetime import datetime, timedelta
 
+from app.config.logging_config import get_logger
 from app.database.workshops import DatabaseOperations
 from app.database.images import ImageDatabase
 from app.models.workshops import (
@@ -19,6 +20,8 @@ from app.models.workshops import (
 )
 from app.middleware.version import validate_version
 from utils.utils import cache_response
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -33,10 +36,8 @@ async def get_workshops():
             return CategorizedWorkshopResponse(this_week=[], post_this_week=[])
         return workshops_data
     except Exception as e:
-        print(f"Error fetching all workshops: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception(f"Error fetching all workshops: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch workshops")
 
 
 
@@ -49,7 +50,7 @@ async def get_studios():
     try:
         return DatabaseOperations.get_studios()
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        logger.exception(f"Error fetching studios: {e}")
         return []
 
 
@@ -66,8 +67,8 @@ async def get_studio_by_id(studio_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Database error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception(f"Error fetching studio {studio_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch studio")
 
 
 @router.get("/artists", response_model=List[Artist])
@@ -77,7 +78,7 @@ async def get_artists(has_workshops: Optional[bool] = None):
     try:
         return DatabaseOperations.get_artists(has_workshops=has_workshops)
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        logger.exception(f"Error fetching artists: {e}")
         return []
 
 
@@ -90,7 +91,7 @@ async def get_workshops_by_artist(
     try:
         return DatabaseOperations.get_workshops_by_artist(artist_id)
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        logger.exception(f"Error fetching workshops for artist {artist_id}: {e}")
         return []
 
 
@@ -106,10 +107,8 @@ async def get_workshops_by_studio(
             return CategorizedWorkshopResponse(this_week=[], post_this_week=[])
         return workshops_data
     except Exception as e:
-        print(f"Error fetching workshops for studio {studio_id}: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception(f"Error fetching workshops for studio {studio_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch workshops for studio")
 
 
 # Image cache for proxy
@@ -178,7 +177,7 @@ async def proxy_image(url: str, request: Request):
                         
                 except Exception as e:
                     # If compression fails, use original data
-                    print(f"Gzip compression failed for proxy image {url}: {str(e)}")
+                    logger.warning(f"Gzip compression failed for proxy image: {e}")
             
             # Cache the processed data
             image_cache[cache_key] = {
@@ -271,7 +270,7 @@ async def get_centralized_image(image_type: str, entity_id: str, request: Reques
                 
         except Exception as e:
             # If compression fails, use original data
-            print(f"Gzip compression failed for {cache_key}: {str(e)}")
+            logger.warning(f"Gzip compression failed for {cache_key}: {e}")
     
     # Cache the processed data with expiration
     centralized_image_cache[cache_key_with_compression] = {
@@ -334,9 +333,9 @@ async def get_profile_picture(user_id: str):
                 entity_id=user_id,
                 content_type=picture_doc.get("content_type", "image/jpeg")
             )
-            print(f"Auto-migrated profile picture for user {user_id}")
+            logger.debug(f"Auto-migrated profile picture for user {user_id}")
         except Exception as e:
-            print(f"Auto-migration failed for user {user_id}: {str(e)}")
+            logger.debug(f"Auto-migration skipped for user {user_id}: {e}")
         
         # Return image data from old collection
         return Response(
@@ -350,5 +349,5 @@ async def get_profile_picture(user_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error retrieving profile picture: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error") 
+        logger.exception(f"Error retrieving profile picture for user {user_id}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve profile picture") 

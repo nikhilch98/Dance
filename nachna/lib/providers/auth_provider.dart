@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import '../services/notification_service.dart';
 import '../services/global_config.dart';
-import '../main.dart';
+import '../utils/logger.dart';
 import 'dart:async';
 
 enum AuthState {
@@ -16,6 +15,15 @@ enum AuthState {
   authenticatedError,
 }
 
+/// Provider that manages authentication state throughout the application.
+///
+/// This provider handles:
+/// - User authentication (OTP-based login flow)
+/// - Profile management (updates and profile completion)
+/// - Session management (logout, account deletion)
+/// - Global config synchronization on auth state changes
+///
+/// Uses debounced notifications to prevent excessive UI rebuilds.
 class AuthProvider with ChangeNotifier {
   AuthState _state = AuthState.initial;
   User? _user;
@@ -25,26 +33,49 @@ class AuthProvider with ChangeNotifier {
   Timer? _debounceTimer;
   bool _isDisposed = false;
 
-  // Getters
+  /// Current authentication state of the user.
   AuthState get state => _state;
+
+  /// Currently authenticated user, or null if not authenticated.
   User? get user => _user;
+
+  /// Error message from the last failed operation, if any.
   String? get errorMessage => _errorMessage;
+
+  /// Whether a top-level loading operation is in progress.
   bool get isLoading => _state == AuthState.loading;
+
+  /// Whether an internal (background) loading operation is in progress.
   bool get isInternalLoading => _internalLoading;
+
+  /// Whether the user is currently authenticated.
   bool get isAuthenticated => _state == AuthState.authenticated;
+
+  /// Whether the authenticated user has completed their profile.
   bool get isProfileComplete => _user?.profileComplete ?? false;
 
   @override
   void dispose() {
     _isDisposed = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     super.dispose();
   }
 
+  /// Safely cancel the debounce timer
+  void _cancelDebounceTimer() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+  }
+
+  /// Initializes authentication state by checking stored credentials.
+  ///
+  /// Checks if user is authenticated from stored data, loads user profile,
+  /// and syncs global configuration. Sets appropriate [AuthState] based on
+  /// whether user exists and profile is complete.
   Future<void> initializeAuth() async {
     _state = AuthState.loading;
     _internalLoading = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
 
     try {
@@ -69,16 +100,20 @@ class AuthProvider with ChangeNotifier {
       return;
     }
     _internalLoading = false;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
   }
 
+  /// Sends an OTP to the specified mobile number for authentication.
+  ///
+  /// Returns `true` if OTP was sent successfully, `false` otherwise.
+  /// Sets [errorMessage] if the request fails.
   Future<bool> sendOTP({
     required String mobileNumber,
   }) async {
     _state = AuthState.loading;
     _internalLoading = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
 
     try {
@@ -86,7 +121,7 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = null;
       _internalLoading = false;
       _state = AuthState.unauthenticated;
-      _debounceTimer?.cancel();
+      _cancelDebounceTimer();
       notifyListeners();
       return true;
     } catch (e) {
@@ -95,14 +130,18 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Verifies the OTP and logs in the user.
+  ///
+  /// Returns `true` if verification and login succeed, `false` otherwise.
+  /// On success, sets [user] and updates [state] to authenticated or profileIncomplete.
   Future<bool> verifyOTPAndLogin({
     required String mobileNumber,
     required String otp,
   }) async {
-    print('[AuthProvider] Starting OTP verification with mobile: $mobileNumber');
+    AppLogger.debug('Starting OTP verification', tag: 'AuthProvider');
     _state = AuthState.loading;
     _internalLoading = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
 
     try {
@@ -110,26 +149,29 @@ class AuthProvider with ChangeNotifier {
         mobileNumber: mobileNumber,
         otp: otp,
       );
-      print('[AuthProvider] OTP verification successful');
+      AppLogger.info('OTP verification successful', tag: 'AuthProvider');
       _user = authResponse.user;
       _state = authResponse.user.profileComplete ? AuthState.authenticated : AuthState.profileIncomplete;
       _errorMessage = null;
       _internalLoading = false;
-      _debounceTimer?.cancel();
-      
+      _cancelDebounceTimer();
+
       // Sync global config after successful login
       await _syncGlobalConfigOnAuth();
-      
+
       notifyListeners();
       return true;
     } catch (e) {
-      print('[AuthProvider] OTP verification failed with error: $e');
+      AppLogger.error('OTP verification failed', tag: 'AuthProvider', error: e);
       _setError(e.toString());
-      print('[AuthProvider] After _setError - state: $_state, errorMessage: $_errorMessage');
       return false;
     }
   }
 
+  /// Updates the user's profile information.
+  ///
+  /// All parameters are optional. Returns `true` if update succeeds.
+  /// Updates [user] with new profile data on success.
   Future<bool> updateProfile({
     String? name,
     String? dateOfBirth,
@@ -155,6 +197,9 @@ class AuthProvider with ChangeNotifier {
 
 
 
+  /// Refreshes the user profile from the server.
+  ///
+  /// Updates [user] with latest data. Sets error state if refresh fails.
   Future<void> refreshProfile() async {
     try {
       final currentUser = await AuthService.getCurrentUser();
@@ -169,79 +214,86 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Logs out the current user and clears all authentication data.
+  ///
+  /// Clears local storage, global config, and resets state to unauthenticated.
+  /// Continues with logout even if individual cleanup steps fail.
   Future<void> logout() async {
-    print('[AuthProvider] Starting logout process...');
+    AppLogger.startOperation('Logout process', tag: 'AuthProvider');
     _state = AuthState.loading;
     _internalLoading = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
 
     try {
-      print('[AuthProvider] Step 1: Clearing auth data from storage...');
+      AppLogger.debug('Step 1: Clearing auth data from storage', tag: 'AuthProvider');
       // Clear auth data first (local storage) with very short timeout
       // If this fails, we'll still continue with logout to ensure user gets logged out
       try {
         await AuthService.logout().timeout(
           const Duration(seconds: 2),
           onTimeout: () {
-            print('[AuthProvider] WARNING: AuthService.logout() timed out - continuing with logout anyway');
+            AppLogger.warning('AuthService.logout() timed out', tag: 'AuthProvider');
           },
         );
-        print('[AuthProvider] Step 1 completed: Auth service logout completed');
+        AppLogger.debug('Auth service logout completed', tag: 'AuthProvider');
       } catch (storageError) {
-        print('[AuthProvider] WARNING: Storage clearing failed: $storageError - continuing with logout anyway');
+        AppLogger.warning('Storage clearing failed - continuing', tag: 'AuthProvider');
         // Don't let storage errors block logout
       }
-      
-      print('[AuthProvider] Step 2: Clearing global config...');
+
+      AppLogger.debug('Step 2: Clearing global config', tag: 'AuthProvider');
       // Clear global config on logout with timeout and error handling
       try {
         await _clearGlobalConfigOnLogout().timeout(
           const Duration(seconds: 3),
           onTimeout: () {
-            print('[AuthProvider] WARNING: GlobalConfig.clearConfig() timed out - continuing with logout anyway');
+            AppLogger.warning('GlobalConfig.clearConfig() timed out', tag: 'AuthProvider');
           },
         );
-        print('[AuthProvider] Step 2 completed: Global config cleared');
+        AppLogger.debug('Global config cleared', tag: 'AuthProvider');
       } catch (configError) {
-        print('[AuthProvider] WARNING: Global config clearing failed: $configError - continuing with logout anyway');
+        AppLogger.warning('Global config clearing failed - continuing', tag: 'AuthProvider');
         // Don't let global config errors block logout
       }
-      
-      print('[AuthProvider] Step 3: Clearing local state...');
+
+      AppLogger.debug('Step 3: Clearing local state', tag: 'AuthProvider');
       // Clear all local state - this always succeeds
       _user = null;
       _errorMessage = null;
       _internalLoading = false;
       _state = AuthState.unauthenticated;
-      
-      print('[AuthProvider] Logout completed successfully');
+
+      AppLogger.endOperation('Logout process', tag: 'AuthProvider', success: true);
     } catch (e) {
-      print('[AuthProvider] Logout error: $e');
+      AppLogger.error('Logout error', tag: 'AuthProvider', error: e);
       // Even if there's an error, clear local state to ensure logout
       _user = null;
       _errorMessage = null;
       _internalLoading = false;
       _state = AuthState.unauthenticated;
     }
-    
+
     // Always notify listeners at the end
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
-    print('[AuthProvider] Logout process completed, state: $_state');
   }
 
+  /// Permanently deletes the user's account and all associated data.
+  ///
+  /// Returns `true` if deletion succeeds, `false` otherwise.
+  /// On success, clears all local data and sets state to unauthenticated.
   Future<bool> deleteAccount() async {
-    print('[AuthProvider] Starting account deletion');
-    
+    AppLogger.startOperation('Account deletion', tag: 'AuthProvider');
+
     // Set loading state
     _state = AuthState.loading;
     _internalLoading = true;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
 
     try {
-      print('[AuthProvider] Step 1: Calling delete account API...');
+      AppLogger.debug('Step 1: Calling delete account API', tag: 'AuthProvider');
       // Call the deletion API first with timeout
       await AuthService.deleteAccount().timeout(
         const Duration(seconds: 10),
@@ -249,45 +301,44 @@ class AuthProvider with ChangeNotifier {
           throw Exception('Account deletion API timed out');
         },
       );
-      print('[AuthProvider] Step 1 completed: Account deletion API call successful');
-      
-      print('[AuthProvider] Step 2: Clearing global config after deletion...');
+      AppLogger.debug('Account deletion API call successful', tag: 'AuthProvider');
+
+      AppLogger.debug('Step 2: Clearing global config after deletion', tag: 'AuthProvider');
       // Clear global config after successful deletion with timeout and error handling
       try {
         await _clearGlobalConfigOnLogout().timeout(
           const Duration(seconds: 5),
           onTimeout: () {
-            print('[AuthProvider] WARNING: GlobalConfig.clearConfig() timed out during account deletion');
+            AppLogger.warning('GlobalConfig.clearConfig() timed out during account deletion', tag: 'AuthProvider');
           },
         );
-        print('[AuthProvider] Step 2 completed: Global config cleared after account deletion');
+        AppLogger.debug('Global config cleared after account deletion', tag: 'AuthProvider');
       } catch (configError) {
-        print('[AuthProvider] WARNING: Global config clearing failed during account deletion: $configError');
+        AppLogger.warning('Global config clearing failed during account deletion', tag: 'AuthProvider');
         // Don't let global config errors block account deletion
       }
-      
-      print('[AuthProvider] Step 3: Clearing local state after deletion...');
+
+      AppLogger.debug('Step 3: Clearing local state after deletion', tag: 'AuthProvider');
       // Clear all local data
       _user = null;
       _errorMessage = null;
       _internalLoading = false;
-      
+
       // Set to unauthenticated state to trigger navigation to login screen
       _state = AuthState.unauthenticated;
-      print('[AuthProvider] AuthProvider state set to unauthenticated');
-      
+
       // Notify listeners to trigger navigation
-      _debounceTimer?.cancel();
+      _cancelDebounceTimer();
       notifyListeners();
-      print('[AuthProvider] Listeners notified of state change');
-      
+      AppLogger.endOperation('Account deletion', tag: 'AuthProvider', success: true);
+
       return true;
     } catch (e) {
-      print('[AuthProvider] Account deletion failed: $e');
+      AppLogger.error('Account deletion failed', tag: 'AuthProvider', error: e);
       _errorMessage = 'Account deletion failed: $e';
       _state = AuthState.authenticatedError;
       _internalLoading = false;
-      _debounceTimer?.cancel();
+      _cancelDebounceTimer();
       notifyListeners();
       return false;
     }
@@ -314,7 +365,7 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = error;
     _state = AuthState.error;
     _internalLoading = false;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
   }
 
@@ -322,18 +373,19 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = error;
     _state = AuthState.authenticatedError;
     _internalLoading = false;
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     notifyListeners();
   }
 
   void _notifyListenersDebounced() {
-    _debounceTimer?.cancel();
+    _cancelDebounceTimer();
     _debounceTimer = Timer(_debounceDelay, () {
       if (_isDisposed) return;
       notifyListeners();
     });
   }
 
+  /// Clears the current error message and restores appropriate state.
   void clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
@@ -347,10 +399,12 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Returns `true` if the user needs to complete their profile.
   bool shouldUpdateProfile() {
     return _state == AuthState.profileIncomplete && _user != null;
   }
 
+  /// Returns a list of profile fields that are missing or empty.
   List<String> getMissingProfileFields() {
     if (_user == null) return [];
     final missing = <String>[];
@@ -360,8 +414,9 @@ class AuthProvider with ChangeNotifier {
     return missing;
   }
 
+  /// Clears all authentication state without making any API calls.
   void clearAuthState() {
-    print('[AuthProvider] Clearing auth state');
+    AppLogger.debug('Clearing auth state', tag: 'AuthProvider');
     _user = null;
     _errorMessage = null;
     _internalLoading = false;
@@ -372,11 +427,11 @@ class AuthProvider with ChangeNotifier {
   /// Helper method to sync global config after authentication
   Future<void> _syncGlobalConfigOnAuth() async {
     try {
-      print('[AuthProvider] Syncing global config after authentication...');
+      AppLogger.debug('Syncing global config after authentication', tag: 'AuthProvider');
       await GlobalConfig().fullSync();
-      print('[AuthProvider] Global config sync completed');
+      AppLogger.debug('Global config sync completed', tag: 'AuthProvider');
     } catch (e) {
-      print('[AuthProvider] Error syncing global config: $e');
+      AppLogger.error('Error syncing global config', tag: 'AuthProvider', error: e);
       // Don't throw error - continue with app initialization
     }
   }
@@ -384,46 +439,46 @@ class AuthProvider with ChangeNotifier {
   /// Helper method to clear global config on logout
   Future<void> _clearGlobalConfigOnLogout() async {
     try {
-      print('[AuthProvider] Clearing global config on logout...');
+      AppLogger.debug('Clearing global config on logout', tag: 'AuthProvider');
       await GlobalConfig().clearConfig();
-      print('[AuthProvider] Global config cleared successfully');
+      AppLogger.debug('Global config cleared successfully', tag: 'AuthProvider');
     } catch (e) {
-      print('[AuthProvider] Error clearing global config: $e');
+      AppLogger.error('Error clearing global config', tag: 'AuthProvider', error: e);
       // Don't throw error - continue with logout
     }
   }
 
-  // Force logout (immediate, bypasses all async operations)
+  /// Force logout that immediately clears state, bypassing async operations.
+  ///
+  /// Use when immediate logout is required without waiting for cleanup.
+  /// Cleanup operations run in background after state is cleared.
   void forceLogout() {
-    print('[AuthProvider] Force logout - immediate state clear');
-    _debounceTimer?.cancel();
-    
+    AppLogger.info('Force logout - immediate state clear', tag: 'AuthProvider');
+    _cancelDebounceTimer();
+
     // Immediately clear all state
     _user = null;
     _errorMessage = null;
     _internalLoading = false;
     _state = AuthState.unauthenticated;
-    
+
     // Notify listeners immediately
     notifyListeners();
-    print('[AuthProvider] Force logout completed, state: $_state');
-    
+
     // Try to clear storage in background (fire and forget)
     Future.microtask(() async {
       try {
-        print('[AuthProvider] Background: Attempting to clear auth storage...');
         await AuthService.logout().timeout(const Duration(seconds: 1));
-        print('[AuthProvider] Background: Auth storage cleared');
+        AppLogger.debug('Background: Auth storage cleared', tag: 'AuthProvider');
       } catch (e) {
-        print('[AuthProvider] Background: Failed to clear auth storage: $e');
+        AppLogger.warning('Background: Failed to clear auth storage', tag: 'AuthProvider');
       }
-      
+
       try {
-        print('[AuthProvider] Background: Attempting to clear global config...');
         await _clearGlobalConfigOnLogout().timeout(const Duration(seconds: 1));
-        print('[AuthProvider] Background: Global config cleared');
+        AppLogger.debug('Background: Global config cleared', tag: 'AuthProvider');
       } catch (e) {
-        print('[AuthProvider] Background: Failed to clear global config: $e');
+        AppLogger.warning('Background: Failed to clear global config', tag: 'AuthProvider');
       }
     });
   }

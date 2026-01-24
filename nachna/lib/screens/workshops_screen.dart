@@ -6,7 +6,10 @@ import '../models/workshop.dart';
 import '../services/api_service.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../utils/string_extensions.dart';
+import '../utils/url_launcher_utils.dart';
 import '../models/artist.dart';
+import '../widgets/cached_image.dart';
 import 'artist_detail_screen.dart';
 
 class WorkshopsScreen extends StatefulWidget {
@@ -34,15 +37,6 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
   // State variables for sorting
   String currentSortColumn = 'date'; // Default sort column
   bool isSortAscending = true; // Default sort direction
-
-  // Helper method to convert text to title case
-  String toTitleCase(String text) {
-    if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-  }
 
   @override
   void initState() {
@@ -344,48 +338,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
   // Open Instagram app if possible, else fallback to web
   Future<void> _launchInstagramProfile(String instagramUrl) async {
-    try {
-      String? username;
-      if (instagramUrl.contains('instagram.com/')) {
-        final parts = instagramUrl.split('instagram.com/');
-        if (parts.length > 1) {
-          username = parts[1].split('/')[0].split('?')[0];
-        }
-      }
-
-      if (username != null && username.isNotEmpty) {
-        final appUrl = 'instagram://user?username=$username';
-        final webUrl = 'https://instagram.com/$username';
-        if (await canLaunchUrl(Uri.parse(appUrl))) {
-          await launchUrl(Uri.parse(appUrl));
-        } else {
-          await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
-        }
-      } else {
-        final uri = Uri.parse(instagramUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Could not launch $instagramUrl'),
-                backgroundColor: Colors.red.withOpacity(0.8),
-              ),
-            );
-          }
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Could not open Instagram link'),
-            backgroundColor: Colors.red.withOpacity(0.8),
-          ),
-        );
-      }
-    }
+    await UrlLauncherUtils.launchInstagramProfile(instagramUrl, context: context);
   }
 
   Widget _buildArtistInstagramIcons(WorkshopListItem workshop) {
@@ -396,7 +349,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
     if (links.isEmpty) return const SizedBox.shrink();
 
-    final maxIcons = 3;
+    const maxIcons = 3;
     final showCount = links.length > maxIcons ? maxIcons : links.length;
 
     List<Widget> icons = List.generate(showCount, (i) {
@@ -1004,7 +957,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                             fit: FlexFit.loose,
                             child: Text(
                               workshop.by?.isNotEmpty == true && workshop.by != 'TBA'
-                                  ? toTitleCase(workshop.by!)
+                                  ? workshop.by!.toTitleCase()
                                   : 'Dance Workshop',
                               style: TextStyle(
                                 color: Colors.white,
@@ -1070,7 +1023,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                           // Song Name
                           if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                             Text(
-                              toTitleCase(workshop.song!),
+                              workshop.song!.toTitleCase(),
                               style: TextStyle(
                                 color: const Color(0xFF00D4FF),
                                 fontSize: ResponsiveUtils.caption(context),
@@ -1093,7 +1046,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                               SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
                               Expanded(
                                 child: Text(
-                                  toTitleCase(workshop.studioName),
+                                  workshop.studioName.toTitleCase(),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: ResponsiveUtils.micro(context),
@@ -1343,19 +1296,13 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
             ],
           ),
           child: validImageUrls.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildDefaultAvatar(workshop.by);
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildDefaultAvatar(workshop.by);
-                    },
-                  ),
+              ? CachedImage.rectangular(
+                  imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  fallbackText: workshop.by,
+                  fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                 )
               : _buildDefaultAvatar(workshop.by),
         ),
@@ -1364,8 +1311,8 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     
     // Multiple artists - show overlapping avatars
     final maxAvatars = validImageUrls.length > 3 ? 3 : validImageUrls.length;
-    final avatarSize = 36.0;
-    final overlapOffset = 24.0;
+    const avatarSize = 36.0;
+    const overlapOffset = 24.0;
     
     return SizedBox(
       width: avatarSize + (maxAvatars - 1) * overlapOffset,
@@ -1401,20 +1348,14 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
                       ),
                     ],
                   ),
-                                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.network(
-                        'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildSmallDefaultAvatar(workshop.by, i);
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return _buildSmallDefaultAvatar(workshop.by, i);
-                        },
-                      ),
-                    ),
+                  child: CachedImage.rectangular(
+                    imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                    width: avatarSize,
+                    height: avatarSize,
+                    borderRadius: 6,
+                    fallbackText: workshop.by,
+                    fallbackGradientColors: _getAvatarGradientColors(i),
+                  ),
                 ),
               ),
             ),
@@ -1450,18 +1391,23 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
     );
   }
 
-  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+  List<Color> _getAvatarGradientColors(int index) {
     final colors = [
       [const Color(0xFF00D4FF), const Color(0xFF9C27B0)],
       [const Color(0xFFFF006E), const Color(0xFF8338EC)],
       [const Color(0xFF06FFA5), const Color(0xFF00D4FF)],
     ];
-    
+    return colors[index % colors.length];
+  }
+
+  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+    final colors = _getAvatarGradientColors(index);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         gradient: LinearGradient(
-          colors: colors[index % colors.length],
+          colors: colors,
         ),
       ),
       child: Center(

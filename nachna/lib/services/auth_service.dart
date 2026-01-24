@@ -5,6 +5,8 @@ import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/user.dart';
+import '../utils/validators.dart';
+import '../utils/logger.dart';
 import './http_client_service.dart';
 
 class AuthService {
@@ -141,8 +143,8 @@ class AuthService {
         throw AuthException('No authentication token found');
       }
 
-      print('[AuthService] Syncing device token with server...');
-      print('[AuthService] Local device token: ${localDeviceToken.substring(0, 20)}...');
+      AppLogger.debug('Syncing device token with server', tag: 'AuthService');
+      AppLogger.debug('Local device token: ${SecureLogger.maskToken(localDeviceToken)}', tag: 'AuthService');
 
       // Build URL with query parameters for device token sync
       final uri = Uri.parse('$_baseUrl/config').replace(queryParameters: {
@@ -157,14 +159,14 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('[AuthService] Device token sync response: ${responseData['token_sync_status']}');
+        AppLogger.info('Device token sync response: ${responseData['token_sync_status']}', tag: 'AuthService');
         return responseData;
       } else {
         final error = jsonDecode(response.body);
         throw AuthException(error['detail'] ?? 'Failed to sync device token');
       }
     } catch (e) {
-      print('[AuthService] Error syncing device token: $e');
+      AppLogger.error('Error syncing device token', tag: 'AuthService', error: e);
       if (e is AuthException) rethrow;
       throw AuthException('Device token sync failed: ${e.toString()}');
     }
@@ -191,15 +193,15 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        print('[AuthService] Device token registered successfully');
+        AppLogger.info('Device token registered successfully', tag: 'AuthService');
         return true;
       } else {
         final error = jsonDecode(response.body);
-        print('[AuthService] Failed to register device token: ${error['detail']}');
+        AppLogger.warning('Failed to register device token: ${error['detail']}', tag: 'AuthService');
         return false;
       }
     } catch (e) {
-      print('[AuthService] Error registering device token: $e');
+      AppLogger.error('Error registering device token', tag: 'AuthService', error: e);
       return false;
     }
   }
@@ -281,15 +283,12 @@ class AuthService {
         contentType: MediaType.parse(contentType),
       ));
 
-      print('📤 Uploading image: ${imageFile.path}');
-      print('📤 Content type: $contentType');
-      print('📤 File size: ${await imageFile.length()} bytes');
+      AppLogger.debug('Uploading image, content type: $contentType', tag: 'AuthService');
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      print('📥 Upload response: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
+      AppLogger.debug('Upload response: ${response.statusCode}', tag: 'AuthService');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -319,7 +318,7 @@ class AuthService {
         throw AuthException(error['detail'] ?? 'Profile picture upload failed');
       }
     } catch (e) {
-      print('❌ Upload error: $e');
+      AppLogger.error('Upload error', tag: 'AuthService', error: e);
       if (e is AuthException) rethrow;
       throw AuthException('Network error: $e');
     }

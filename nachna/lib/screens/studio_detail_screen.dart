@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../models/studio.dart';
 import '../services/api_service.dart';
 import '../widgets/workshop_detail_modal.dart';
 import '../models/workshop.dart';
 import '../services/deep_link_service.dart';
+import '../services/share_service.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../utils/string_extensions.dart';
+import '../utils/url_launcher_utils.dart';
+import '../widgets/cached_image.dart';
 import 'artist_detail_screen.dart';
 
 class StudioDetailScreen extends StatefulWidget {
   final Studio studio;
 
-  const StudioDetailScreen({Key? key, required this.studio}) : super(key: key);
+  const StudioDetailScreen({super.key, required this.studio});
 
   @override
   _StudioDetailScreenState createState() => _StudioDetailScreenState();
@@ -39,34 +42,22 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
     );
   }
 
-  String toTitleCase(String text) {
-    if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-  }
-
   Future<void> _launchInstagram(String instagramUrl) async {
-    try {
-      final uri = Uri.parse(instagramUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback to web browser
-        final webUri = Uri.parse(instagramUrl);
-        await launchUrl(webUri, mode: LaunchMode.platformDefault);
-      }
-    } catch (e) {
-      print('Error launching Instagram: $e');
-    }
+    await UrlLauncherUtils.launchInstagram(instagramUrl);
   }
 
   Future<void> _shareStudio() async {
     try {
       final shareUrl = DeepLinkService.generateStudioShareUrl(widget.studio.id);
-      final shareText = 'Check out ${toTitleCase(widget.studio.name)} on Nachna! 💃🕺\n\nDiscover amazing dance workshops at this studio.\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
-      await _showShareOptions(shareText);
+      final shareText = 'Check out ${widget.studio.name.toTitleCase()} on Nachna!\n\nDiscover amazing dance workshops at this studio.\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
+
+      await ShareService.showShareOptions(
+        context: context,
+        text: shareText,
+        instagramShareUrl: shareUrl,
+        instagramTopColor: '#9D4EDD',
+        instagramBottomColor: '#00D4FF',
+      );
     } catch (e) {
       print('Error sharing studio: $e');
       if (mounted) {
@@ -78,150 +69,6 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
         );
       }
     }
-  }
-
-  Future<void> _shareViaWhatsApp(String text) async {
-    try {
-      final encoded = Uri.encodeComponent(text);
-      final waBizUri = Uri.parse('whatsapp-business://send?text=$encoded');
-      if (await canLaunchUrl(waBizUri)) {
-        await launchUrl(waBizUri, mode: LaunchMode.externalApplication);
-        return;
-      }
-      final waUri = Uri.parse('whatsapp://send?text=$encoded');
-      if (await canLaunchUrl(waUri)) {
-        await launchUrl(waUri, mode: LaunchMode.externalApplication);
-        return;
-      }
-      final waWeb = Uri.parse('https://wa.me/?text=$encoded');
-      if (await canLaunchUrl(waWeb)) {
-        await launchUrl(waWeb, mode: LaunchMode.externalApplication);
-        return;
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('WhatsApp not available'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Could not open WhatsApp'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showShareOptions(String text) async {
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                Colors.black.withOpacity(0.55),
-                Colors.black.withOpacity(0.45),
-              ],
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.0),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.asset('whatsapp-icon.png', width: 28, height: 28, fit: BoxFit.cover),
-                  ),
-                  title: const Text('Share on WhatsApp', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await _shareViaWhatsApp(text);
-                  },
-                ),
-                const Divider(color: Colors.white24, height: 1),
-                ListTile(
-                  leading: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          offset: const Offset(0, 2),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        'instagram-icon.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  title: const Text('Share to Instagram Story', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    final ok = await DeepLinkService.shareToInstagramStory(
-                      contentUrl: DeepLinkService.generateStudioShareUrl(widget.studio.id),
-                      topColorHex: '#9D4EDD',
-                      bottomColorHex: '#00D4FF',
-                    );
-                    if (!ok && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Instagram not available'),
-                          backgroundColor: Colors.red.withOpacity(0.8),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const Divider(color: Colors.white24, height: 1),
-                ListTile(
-                  leading: const Icon(Icons.ios_share, color: Color(0xFF00D4FF)),
-                  title: const Text('More...', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await Share.share(
-                      text,
-                      sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -297,27 +144,17 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                     width: ResponsiveUtils.borderWidthMedium(context),
                                   ),
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                                  child: widget.studio.id.isNotEmpty
-                                      ? Image.network(
-                                          'https://nachna.com/api/image/studio/${widget.studio.id}',
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            // Fallback to proxy if centralized API fails
-                                            return widget.studio.imageUrl != null
-                                                ? Image.network(
-                                                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(widget.studio.imageUrl!)}',
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return _buildStudioIcon();
-                                                    },
-                                                  )
-                                                : _buildStudioIcon();
-                                          },
-                                        )
-                                      : _buildStudioIcon(),
-                                ),
+                                child: widget.studio.id.isNotEmpty
+                                    ? CachedImage.rectangular(
+                                        imageUrl: 'https://nachna.com/api/image/studio/${widget.studio.id}',
+                                        borderRadius: ResponsiveUtils.spacingLarge(context),
+                                        fallbackText: widget.studio.name,
+                                        fallbackGradientColors: [
+                                          const Color(0xFF00D4FF).withOpacity(0.7),
+                                          const Color(0xFF9D4EDD).withOpacity(0.7),
+                                        ],
+                                      )
+                                    : _buildStudioIcon(),
                               ),
                               SizedBox(width: ResponsiveUtils.spacingXLarge(context)),
                               // Studio Name and Info
@@ -331,7 +168,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                                       children: [
                                         Flexible(
                                           child: Text(
-                                            toTitleCase(widget.studio.name),
+                                            widget.studio.name.toTitleCase(),
                                             style: TextStyle(
                                               fontSize: ResponsiveUtils.h3(context),
                                               fontWeight: FontWeight.bold,
@@ -679,7 +516,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
 
     if (links.isEmpty) return const SizedBox.shrink();
 
-    final maxIcons = 3;
+    const maxIcons = 3;
     final showCount = links.length > maxIcons ? maxIcons : links.length;
 
     List<Widget> icons = List.generate(showCount, (i) {
@@ -757,48 +594,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
   }
 
   Future<void> _launchInstagramProfile(String instagramUrl) async {
-    try {
-      String? username;
-      if (instagramUrl.contains('instagram.com/')) {
-        final parts = instagramUrl.split('instagram.com/');
-        if (parts.length > 1) {
-          username = parts[1].split('/')[0].split('?')[0];
-        }
-      }
-
-      if (username != null && username.isNotEmpty) {
-        final appUrl = 'instagram://user?username=$username';
-        final webUrl = 'https://instagram.com/$username';
-        if (await canLaunchUrl(Uri.parse(appUrl))) {
-          await launchUrl(Uri.parse(appUrl));
-        } else {
-          await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
-        }
-      } else {
-        final uri = Uri.parse(instagramUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Could not launch $instagramUrl'),
-                backgroundColor: Colors.red.withOpacity(0.8),
-              ),
-            );
-          }
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Could not open Instagram link'),
-            backgroundColor: Colors.red.withOpacity(0.8),
-          ),
-        );
-      }
-    }
+    await UrlLauncherUtils.launchInstagramProfile(instagramUrl, context: context);
   }
 
   Future<void> _showInstagramLinksSheet(List<String> links) async {
@@ -932,19 +728,13 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
             ],
           ),
           child: validImageUrls.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildDefaultAvatar(workshop.artist);
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildDefaultAvatar(workshop.artist);
-                    },
-                  ),
+              ? CachedImage.rectangular(
+                  imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  fallbackText: workshop.artist,
+                  fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                 )
               : _buildDefaultAvatar(workshop.artist),
         ),
@@ -953,8 +743,8 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
     
     // Multiple artists - show overlapping avatars
     final maxAvatars = validImageUrls.length > 3 ? 3 : validImageUrls.length;
-    final avatarSize = 36.0;
-    final overlapOffset = 24.0;
+    const avatarSize = 36.0;
+    const overlapOffset = 24.0;
     
     return SizedBox(
       width: avatarSize + (maxAvatars - 1) * overlapOffset,
@@ -990,19 +780,13 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildSmallDefaultAvatar(workshop.artist, i);
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return _buildSmallDefaultAvatar(workshop.artist, i);
-                      },
-                    ),
+                  child: CachedImage.rectangular(
+                    imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                    width: avatarSize,
+                    height: avatarSize,
+                    borderRadius: 6,
+                    fallbackText: workshop.artist,
+                    fallbackGradientColors: _getAvatarGradientColors(i),
                   ),
                 ),
               ),
@@ -1039,18 +823,23 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
     );
   }
 
-  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+  List<Color> _getAvatarGradientColors(int index) {
     final colors = [
       [const Color(0xFF00D4FF), const Color(0xFF9C27B0)],
       [const Color(0xFFFF006E), const Color(0xFF8338EC)],
       [const Color(0xFF06FFA5), const Color(0xFF00D4FF)],
     ];
-    
+    return colors[index % colors.length];
+  }
+
+  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+    final colors = _getAvatarGradientColors(index);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         gradient: LinearGradient(
-          colors: colors[index % colors.length],
+          colors: colors,
         ),
       ),
       child: Center(
@@ -1262,7 +1051,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                             fit: FlexFit.loose,
                             child: Text(
                               workshop.artist?.isNotEmpty == true && workshop.artist != 'TBA'
-                                  ? toTitleCase(workshop.artist!)
+                                  ? workshop.artist!.toTitleCase()
                                   : 'Dance Workshop',
                               style: TextStyle(
                                 color: Colors.white,
@@ -1326,7 +1115,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                           // Song Name
                           if (workshop.song?.isNotEmpty == true && workshop.song != 'TBA')
                             Text(
-                              toTitleCase(workshop.song!),
+                              workshop.song!.toTitleCase(),
                               style: TextStyle(
                                 color: const Color(0xFF00D4FF),
                                 fontSize: ResponsiveUtils.caption(context),
@@ -1349,7 +1138,7 @@ class _StudioDetailScreenState extends State<StudioDetailScreen> {
                               SizedBox(width: ResponsiveUtils.spacingXSmall(context) * 0.7),
                               Expanded(
                                 child: Text(
-                                  toTitleCase(widget.studio.name),
+                                  widget.studio.name.toTitleCase(),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: ResponsiveUtils.micro(context),

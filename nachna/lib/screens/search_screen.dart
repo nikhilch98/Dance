@@ -10,6 +10,8 @@ import '../screens/artist_detail_screen.dart';
 import '../models/workshop.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../utils/error_handler.dart';
+import '../widgets/cached_image.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -93,29 +95,35 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         _recentSearches = searches;
       });
     } catch (e) {
-      // Handle error silently
+      // Log error but don't show to user - recent searches are non-critical
+      ErrorHandler.logError(e, context: 'SearchScreen._loadRecentSearches');
+      // Ensure we have an empty list on error
+      setState(() {
+        _recentSearches = [];
+      });
     }
   }
 
   Future<void> _saveRecentSearch(String query) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Remove if already exists
       _recentSearches.remove(query);
-      
+
       // Add to the beginning
       _recentSearches.insert(0, query);
-      
+
       // Keep only last 10 searches
       if (_recentSearches.length > 10) {
         _recentSearches = _recentSearches.take(10).toList();
       }
-      
+
       await prefs.setStringList('recent_searches', _recentSearches);
       setState(() {});
     } catch (e) {
-      // Handle error silently
+      // Log error but don't show to user - saving recent searches is non-critical
+      ErrorHandler.logError(e, context: 'SearchScreen._saveRecentSearch');
     }
   }
 
@@ -126,7 +134,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       await prefs.setStringList('recent_searches', _recentSearches);
       setState(() {});
     } catch (e) {
-      // Handle error silently
+      // Log error but don't show to user - removing recent search is non-critical
+      ErrorHandler.logError(e, context: 'SearchScreen._removeRecentSearch');
     }
   }
 
@@ -340,7 +349,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             children: [
               const Icon(Icons.people_rounded, size: 18),
               const SizedBox(width: 6),
-              Flexible(
+              const Flexible(
                 child: Text(
                   'Artists',
                   maxLines: 1,
@@ -374,7 +383,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             children: [
               const Icon(Icons.event_rounded, size: 18),
               const SizedBox(width: 6),
-              Flexible(
+              const Flexible(
                 child: Text(
                   'Workshops',
                   maxLines: 1,
@@ -408,7 +417,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             children: [
               const Icon(Icons.person_rounded, size: 18),
               const SizedBox(width: 6),
-              Flexible(
+              const Flexible(
                 child: Text(
                   'Users',
                   maxLines: 1,
@@ -733,26 +742,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             ),
                     ),
                     child: artist.imageUrl != null
-                        ? ClipOval(
-                            child: Image.network(
-                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [Color(0xFF00D4FF), Color(0xFF9C27B0)],
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                    size: ResponsiveUtils.iconMedium(context),
-                                  ),
-                                );
-                              },
-                            ),
+                        ? CachedImage.circular(
+                            imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(artist.imageUrl!)}',
+                            size: ResponsiveUtils.avatarSize(context),
+                            fallbackText: artist.name,
+                            fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                           )
                         : Icon(
                             Icons.person,
@@ -1174,30 +1168,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: Image.network(
-                      'https://nachna.com/api/image/user/${user.userId}',
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return _buildUserAvatar(user.name);
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback to old profile-picture endpoint
-                        return Image.network(
-                          'https://nachna.com/api/profile-picture/${user.userId}',
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return _buildUserAvatar(user.name);
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            // Final fallback to default avatar
-                            return _buildUserAvatar(user.name);
-                          },
-                        );
-                      },
-                    ),
+                  child: CachedImage.circular(
+                    imageUrl: 'https://nachna.com/api/image/user/${user.userId}',
+                    size: ResponsiveUtils.avatarSize(context),
+                    fallbackText: user.name,
+                    fallbackGradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
                   ),
                 ),
                 SizedBox(width: ResponsiveUtils.spacingLarge(context)),
@@ -1380,19 +1355,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ],
         ),
         child: validImageUrls.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildDefaultAvatar(workshop.by);
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return _buildDefaultAvatar(workshop.by);
-                  },
-                ),
+            ? CachedImage.rectangular(
+                imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[0]!)}',
+                width: 42,
+                height: 42,
+                borderRadius: 10,
+                fallbackText: workshop.by,
+                fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
               )
             : _buildDefaultAvatar(workshop.by),
       );
@@ -1400,8 +1369,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     
     // Multiple artists - show overlapping avatars
     final maxAvatars = validImageUrls.length > 3 ? 3 : validImageUrls.length;
-    final avatarSize = 36.0;
-    final overlapOffset = 24.0;
+    const avatarSize = 36.0;
+    const overlapOffset = 24.0;
     
     return SizedBox(
       width: avatarSize + (maxAvatars - 1) * overlapOffset,
@@ -1428,19 +1397,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     ),
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildSmallDefaultAvatar(workshop.by, i);
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildSmallDefaultAvatar(workshop.by, i);
-                    },
-                  ),
+                child: CachedImage.rectangular(
+                  imageUrl: 'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(validImageUrls[i]!)}',
+                  width: avatarSize,
+                  height: avatarSize,
+                  borderRadius: 6,
+                  fallbackText: workshop.by,
+                  fallbackGradientColors: _getAvatarGradientColors(i),
                 ),
               ),
             ),
@@ -1499,18 +1462,23 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+  List<Color> _getAvatarGradientColors(int index) {
     final colors = [
       [const Color(0xFF00D4FF), const Color(0xFF9C27B0)],
       [const Color(0xFFFF006E), const Color(0xFF8338EC)],
       [const Color(0xFF06FFA5), const Color(0xFF00D4FF)],
     ];
-    
+    return colors[index % colors.length];
+  }
+
+  Widget _buildSmallDefaultAvatar(String? instructorName, int index) {
+    final colors = _getAvatarGradientColors(index);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         gradient: LinearGradient(
-          colors: colors[index % colors.length],
+          colors: colors,
         ),
       ),
       child: Center(

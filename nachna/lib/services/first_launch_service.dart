@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/logger.dart';
 
 class FirstLaunchService {
   static final FirstLaunchService _instance = FirstLaunchService._internal();
@@ -16,7 +17,7 @@ class FirstLaunchService {
       final hasLaunchedBefore = prefs.getBool(_firstLaunchKey) ?? false;
       return !hasLaunchedBefore;
     } catch (e) {
-      print('[FirstLaunchService] Error checking first launch: $e');
+      AppLogger.error('Error checking first launch', tag: 'FirstLaunch', error: e);
       return false;
     }
   }
@@ -27,9 +28,9 @@ class FirstLaunchService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_firstLaunchKey, true);
       await prefs.setString(_appVersionKey, '1.0.0'); // Update as needed
-      print('[FirstLaunchService] First launch marked as completed');
+      AppLogger.info('First launch marked as completed', tag: 'FirstLaunch');
     } catch (e) {
-      print('[FirstLaunchService] Error marking first launch completed: $e');
+      AppLogger.error('Error marking first launch completed', tag: 'FirstLaunch', error: e);
     }
   }
 
@@ -46,7 +47,7 @@ class FirstLaunchService {
         return prefs.getBool(_notificationPermissionRequestedKey) ?? false;
       }
     } catch (e) {
-      print('[FirstLaunchService] Error checking notification permission request: $e');
+      AppLogger.error('Error checking notification permission request', tag: 'FirstLaunch', error: e);
       return false;
     }
   }
@@ -59,14 +60,14 @@ class FirstLaunchService {
         // Per-user notification permission tracking
         final userKey = '${_notificationPermissionRequestedKey}_$userId';
         await prefs.setBool(userKey, true);
-        print('[FirstLaunchService] Notification permission marked as requested for user: $userId');
+        AppLogger.info('Notification permission marked as requested', tag: 'FirstLaunch');
       } else {
         // Fallback to global key for backward compatibility
         await prefs.setBool(_notificationPermissionRequestedKey, true);
-        print('[FirstLaunchService] Notification permission marked as requested (global)');
+        AppLogger.info('Notification permission marked as requested (global)', tag: 'FirstLaunch');
       }
     } catch (e) {
-      print('[FirstLaunchService] Error marking notification permission requested: $e');
+      AppLogger.error('Error marking notification permission requested', tag: 'FirstLaunch', error: e);
     }
   }
 
@@ -77,7 +78,7 @@ class FirstLaunchService {
       await prefs.remove(_firstLaunchKey);
       await prefs.remove(_notificationPermissionRequestedKey);
       await prefs.remove(_appVersionKey);
-      
+
       // Also remove all user-specific notification permission keys
       final keys = prefs.getKeys();
       for (final key in keys) {
@@ -85,10 +86,10 @@ class FirstLaunchService {
           await prefs.remove(key);
         }
       }
-      
-      print('[FirstLaunchService] First launch status reset');
+
+      AppLogger.info('First launch status reset', tag: 'FirstLaunch');
     } catch (e) {
-      print('[FirstLaunchService] Error resetting first launch status: $e');
+      AppLogger.error('Error resetting first launch status', tag: 'FirstLaunch', error: e);
     }
   }
 
@@ -98,9 +99,9 @@ class FirstLaunchService {
       final prefs = await SharedPreferences.getInstance();
       final userKey = '${_notificationPermissionRequestedKey}_$userId';
       await prefs.remove(userKey);
-      print('[FirstLaunchService] Notification permission reset for user: $userId');
+      AppLogger.info('Notification permission reset for user', tag: 'FirstLaunch');
     } catch (e) {
-      print('[FirstLaunchService] Error resetting notification permission for user: $e');
+      AppLogger.error('Error resetting notification permission for user', tag: 'FirstLaunch', error: e);
     }
   }
 
@@ -110,7 +111,7 @@ class FirstLaunchService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_appVersionKey);
     } catch (e) {
-      print('[FirstLaunchService] Error getting stored app version: $e');
+      AppLogger.error('Error getting stored app version', tag: 'FirstLaunch', error: e);
       return null;
     }
   }

@@ -64,9 +64,11 @@ class ReactionResponse {
       entityId: json['entity_id'],
       entityType: EntityType.values.firstWhere(
         (e) => e.name == json['entity_type'],
+        orElse: () => EntityType.ARTIST, // Default to ARTIST if not found
       ),
       reaction: ReactionType.values.firstWhere(
         (e) => e.name == json['reaction'],
+        orElse: () => ReactionType.LIKE, // Default to LIKE if not found
       ),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

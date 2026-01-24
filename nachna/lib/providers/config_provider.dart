@@ -3,6 +3,8 @@ import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/global_config.dart';
+import '../utils/validators.dart';
+import '../utils/logger.dart';
 
 enum ConfigState {
   initial,
@@ -29,44 +31,44 @@ class ConfigProvider with ChangeNotifier {
   Future<void> loadConfig() async {
     // Prevent multiple concurrent loads
     if (_isLoadingInProgress) {
-      print('[ConfigProvider] Load already in progress, skipping...');
+      AppLogger.debug('Load already in progress, skipping', tag: 'ConfigProvider');
       return;
     }
-    
+
     // Prevent rapid retries after failure (cooldown period)
     if (_lastFailedAttempt != null) {
       final timeSinceLastFailure = DateTime.now().difference(_lastFailedAttempt!);
       if (timeSinceLastFailure.inSeconds < 10) {
-        print('[ConfigProvider] Cooldown period active, skipping load (${timeSinceLastFailure.inSeconds}s since last failure)');
+        AppLogger.debug('Cooldown period active, skipping load', tag: 'ConfigProvider');
         return;
       }
     }
-    
+
     _isLoadingInProgress = true;
     _setState(ConfigState.loading);
-    
+
     try {
-      print('[ConfigProvider] Loading config and syncing device token...');
-      
+      AppLogger.debug('Loading config and syncing device token', tag: 'ConfigProvider');
+
       // First sync device token with server if possible
       try {
         await GlobalConfig().syncWithServerDeviceTokenCheck();
       } catch (e) {
-        print('[ConfigProvider] Device token sync failed, continuing with config load: $e');
+        AppLogger.warning('Device token sync failed, continuing with config load', tag: 'ConfigProvider');
       }
-      
+
       // Load config from auth API (which includes device token info)
       final configData = await AuthService.getAuthConfig();
       _config = AppConfig.fromJson(configData);
-      
-      print('[ConfigProvider] Config loaded successfully');
-      print('[ConfigProvider] - Is Admin: ${_config?.isAdmin}');
-      print('[ConfigProvider] - Device Token: ${configData['device_token']?.toString().substring(0, 20) ?? 'null'}...');
-      
+
+      AppLogger.info('Config loaded successfully', tag: 'ConfigProvider');
+      AppLogger.debug('Is Admin: ${_config?.isAdmin}', tag: 'ConfigProvider');
+      AppLogger.debug('Device Token: ${SecureLogger.maskToken(configData['device_token']?.toString())}', tag: 'ConfigProvider');
+
       _lastFailedAttempt = null; // Clear failure timestamp on success
       _setState(ConfigState.loaded);
     } catch (e) {
-      print('[ConfigProvider] Error loading config: $e');
+      AppLogger.error('Error loading config', tag: 'ConfigProvider', error: e);
       _lastFailedAttempt = DateTime.now(); // Record failure timestamp
       _setError('Failed to load configuration: $e');
     } finally {
@@ -76,17 +78,17 @@ class ConfigProvider with ChangeNotifier {
 
   // Refresh configuration with device token sync
   Future<void> refreshConfig() async {
-    print('[ConfigProvider] Refreshing config...');
-    
+    AppLogger.debug('Refreshing config', tag: 'ConfigProvider');
+
     // Reset cooldown for manual refresh
     _lastFailedAttempt = null;
-    
+
     await loadConfig();
   }
 
   // Clear configuration (on logout)
   void clearConfig() {
-    print('[ConfigProvider] Clearing config');
+    AppLogger.debug('Clearing config', tag: 'ConfigProvider');
     _config = null;
     _lastFailedAttempt = null;
     _isLoadingInProgress = false;

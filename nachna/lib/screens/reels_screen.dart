@@ -306,7 +306,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
   Widget _buildReelPage(Reel reel, int index) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final navBarHeight = 56.0; // Bottom nav bar height
+    const navBarHeight = 56.0; // Bottom nav bar height
     
     return Stack(
       fit: StackFit.expand,
@@ -643,7 +643,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
     if (links.isEmpty) return const SizedBox.shrink();
 
-    final maxIcons = 3;
+    const maxIcons = 3;
     final showCount = links.length > maxIcons ? maxIcons : links.length;
 
     List<Widget> icons = List.generate(showCount, (i) {

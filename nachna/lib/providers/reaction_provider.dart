@@ -146,19 +146,27 @@ class ReactionProvider with ChangeNotifier {
 
   /// Check if user has liked an artist
   bool isArtistLiked(String artistId) {
-    return _userReactions?.likedArtists.contains(artistId) ?? false;
+    if (artistId.isEmpty) return false;
+    final likedArtists = _userReactions?.likedArtists;
+    if (likedArtists == null) return false;
+    return likedArtists.contains(artistId);
   }
 
   /// Check if user has notifications enabled for an artist
   bool isArtistNotified(String artistId) {
-    return _userReactions?.notifiedArtists.contains(artistId) ?? false;
+    if (artistId.isEmpty) return false;
+    final notifiedArtists = _userReactions?.notifiedArtists;
+    if (notifiedArtists == null) return false;
+    return notifiedArtists.contains(artistId);
   }
 
   /// Get the existing reaction ID for an artist and reaction type
   String? _getExistingReactionId(String artistId, ReactionType reactionType) {
+    if (artistId.isEmpty) return null;
     for (final reaction in _activeReactions.values) {
-      if (reaction.entityId == artistId && 
-          reaction.reaction == reactionType && 
+      // ReactionResponse fields are non-nullable (required in constructor)
+      if (reaction.entityId == artistId &&
+          reaction.reaction == reactionType &&
           reaction.entityType == EntityType.ARTIST &&
           !reaction.isDeleted) {
         return reaction.id;

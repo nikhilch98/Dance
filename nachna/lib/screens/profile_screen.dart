@@ -11,6 +11,7 @@ import '../utils/responsive_utils.dart';
 import '../providers/config_provider.dart';
 import '../providers/global_config_provider.dart';
 import '../providers/reaction_provider.dart';
+import '../widgets/cached_image.dart';
 import 'orders_screen.dart';
 import 'rewards_center_screen.dart';
 
@@ -25,14 +26,14 @@ class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   final _nameController = TextEditingController();
 
-  
   String? _selectedGender;
   DateTime? _selectedDate;
   String? _dateOfBirth;
   String? _localProfilePictureUrl;
-  
+  String? _lastSyncedProfilePictureUrl; // Track last synced URL to avoid redundant syncs
+
   bool _isEditingProfile = false;
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -65,13 +66,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _loadUserData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user != null) {
       _nameController.text = user.name ?? '';
       _selectedGender = user.gender;
       _dateOfBirth = user.dateOfBirth;
       _localProfilePictureUrl = user.profilePictureUrl;
-      
+      _lastSyncedProfilePictureUrl = user.profilePictureUrl;
+
       if (user.dateOfBirth != null) {
         try {
           _selectedDate = DateTime.parse(user.dateOfBirth!);
@@ -79,6 +81,26 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Invalid date format, keep null
         }
       }
+    }
+  }
+
+  /// Syncs profile picture URL from provider if changed (called via didChangeDependencies)
+  void _syncProfilePictureIfNeeded(User user) {
+    // Only sync if the provider URL has changed and differs from our last sync
+    if (user.profilePictureUrl != _lastSyncedProfilePictureUrl) {
+      _lastSyncedProfilePictureUrl = user.profilePictureUrl;
+      _localProfilePictureUrl = user.profilePictureUrl;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync profile picture when dependencies change (including provider updates)
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    if (user != null) {
+      _syncProfilePictureIfNeeded(user);
     }
   }
 
@@ -110,18 +132,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           );
         }
 
-        // Sync local state with provider data if they differ
-        if (_localProfilePictureUrl != user.profilePictureUrl) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _localProfilePictureUrl = user.profilePictureUrl;
-              });
-            }
-          });
-        }
-    
-    return Scaffold(
+        // Note: Profile picture sync is now handled in didChangeDependencies()
+        // to avoid setState during build
+
+        return Scaffold(
           backgroundColor: const Color(0xFF0A0A0F),
       body: Container(
         decoration: const BoxDecoration(
@@ -292,32 +306,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                           ),
-                    child: ClipRRect(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.avatarSizeLarge(context) / 2),
-                            child: Image.network(
-                              'https://nachna.com/api/image/user/${user.userId}',
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return _buildDefaultAvatar(user);
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback to old profile-picture endpoint
-                                return Image.network(
-                                  'https://nachna.com/api/profile-picture/${user.userId}',
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return _buildDefaultAvatar(user);
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Final fallback to default avatar
-                                    return _buildDefaultAvatar(user);
-                                  },
-                                );
-                              },
-            ),
-                          ),
+                    child: CachedImage.circular(
+                      imageUrl: 'https://nachna.com/api/image/user/${user.userId}',
+                      size: ResponsiveUtils.avatarSizeLarge(context),
+                      fallbackText: user.name,
+                      fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
+                    ),
                   ),
                   
                   // Upload/Edit Button
@@ -655,10 +649,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     padding: EdgeInsets.all(ResponsiveUtils.spacingMedium(context)),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [
-                          const Color(0xFF00D4FF),
-                          const Color(0xFF9C27B0),
+                          Color(0xFF00D4FF),
+                          Color(0xFF9C27B0),
                         ],
                       ),
                     ),

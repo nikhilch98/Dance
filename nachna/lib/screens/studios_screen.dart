@@ -3,6 +3,7 @@ import '../models/studio.dart';
 import '../services/api_service.dart';
 import 'studio_detail_screen.dart';
 import '../utils/responsive_utils.dart';
+import '../widgets/cached_image.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'dart:ui';
 
@@ -166,8 +167,8 @@ class _StudiosScreenState extends State<StudiosScreen> {
                               ],
                             ),
                           ),
-                          child: const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF)),
+                          child: CircularProgressIndicator(
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF)),
                             strokeWidth: 3,
                           ),
                         ),
@@ -280,13 +281,11 @@ class _StudiosScreenState extends State<StudiosScreen> {
               color: Colors.black.withOpacity(0.3),
               offset: const Offset(0, 8),
               blurRadius: 24,
-              spreadRadius: 0,
             ),
             BoxShadow(
               color: const Color(0xFF00D4FF).withOpacity(0.1),
               offset: const Offset(0, 4),
               blurRadius: 12,
-              spreadRadius: 0,
             ),
           ],
         ),
@@ -315,25 +314,16 @@ class _StudiosScreenState extends State<StudiosScreen> {
                         child: Stack(
                           children: [
                             studio.id.isNotEmpty
-                                ? Image.network(
-                                    'https://nachna.com/api/image/studio/${studio.id}',
-                                    fit: BoxFit.cover,
+                                ? CachedImage.rectangular(
+                                    imageUrl: 'https://nachna.com/api/image/studio/${studio.id}',
                                     width: double.infinity,
                                     height: double.infinity,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      // Fallback to proxy if centralized API fails
-                                      return studio.imageUrl != null
-                                          ? Image.network(
-                                              'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(studio.imageUrl!)}',
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return _buildFallbackIcon(spacingLarge);
-                                              },
-                                            )
-                                          : _buildFallbackIcon(spacingLarge);
-                                    },
+                                    borderRadius: 0,
+                                    fallbackText: studio.name,
+                                    fallbackGradientColors: [
+                                      const Color(0xFF00D4FF).withOpacity(0.7),
+                                      const Color(0xFF9D4EDD).withOpacity(0.7),
+                                    ],
                                   )
                                 : _buildFallbackIcon(spacingLarge),
                             // Instagram Icon (responsive size)

@@ -5,13 +5,14 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 import asyncio
-import logging
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
 from PIL import Image, UnidentifiedImageError
 
+from app.config.logging_config import get_logger, mask_mobile, mask_token
+from app.config.settings import get_settings
 from app.database.users import UserOperations
 from app.database.images import ImageDatabase
 from app.models.auth import (
@@ -29,66 +30,105 @@ from app.services.auth import (
     verify_token,
 )
 from app.services.twilio_service import get_twilio_service
+from app.services.audit import AuditService, AuditAction
+from app.services.rate_limiting import rate_limiter
 from utils.utils import get_mongo_client
+
+logger = get_logger(__name__)
+settings = get_settings()
 
 router = APIRouter()
 
-async def send_otp_background(mobile_number: str):
-    """Send OTP in background."""
+async def send_otp_background(mobile_number: str, ip_address: Optional[str] = None):
+    """Send OTP in background with error tracking."""
+    masked_mobile = mask_mobile(mobile_number)
     try:
-        logging.info(f"Background OTP sending started for: {mobile_number}")
-        
+        logger.info(f"Background OTP sending started for: {masked_mobile}")
+
         # Run the sync Twilio service call in a thread pool
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,  # Use default executor
             lambda: get_twilio_service().send_otp(mobile_number)
         )
-        
+
         if result["success"]:
-            logging.info(f"Background OTP sent successfully to: {mobile_number}")
+            logger.info(f"Background OTP sent successfully to: {masked_mobile}")
+            # Log audit event
+            AuditService.log_otp_sent(mobile_number, ip_address)
         else:
-            logging.error(f"Background OTP sending failed for {mobile_number}: {result['message']}")
-            
+            logger.error(f"Background OTP sending failed for {masked_mobile}: {result['message']}")
+
     except Exception as e:
-        logging.error(f"Background OTP sending error for {mobile_number}: {str(e)}")
+        logger.exception(f"Background OTP sending error for {masked_mobile}: {str(e)}")
 
 @router.post("/send-otp")
-async def send_otp(otp_request: SendOTPRequest):
+async def send_otp(otp_request: SendOTPRequest, request: Request):
     """Send OTP to mobile number asynchronously."""
-    if otp_request.mobile_number == "9999999999":
+    # Get client IP for audit logging and rate limiting
+    ip_address = request.client.host if request.client else None
+
+    # Check rate limits before processing
+    allowed, error_msg = rate_limiter.check_otp_rate_limit(
+        otp_request.mobile_number,
+        ip_address
+    )
+    if not allowed:
+        logger.warning(f"OTP rate limit exceeded for {mask_mobile(otp_request.mobile_number)}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=error_msg
+        )
+
+    # Check if test user mode is enabled (controlled by environment variable)
+    if settings.enable_test_user and otp_request.mobile_number == settings.test_mobile_number:
+        logger.info(f"Test user OTP request - bypassing Twilio")
         return {
             "success": True,
             "message": "OTP is being sent to your mobile number",
             "mobile_number": otp_request.mobile_number
         }
-    
+
     try:
-        # Validate mobile number format (basic validation)
+        # Validate mobile number format
         mobile_number = otp_request.mobile_number.strip()
         if not mobile_number or len(mobile_number) != 10 or not mobile_number.isdigit():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid mobile number format"
+                detail="Invalid mobile number format. Must be 10 digits."
             )
-        
-        # Log the request
-        logging.info(f"OTP request received for: {mobile_number}")
-        
-        # Schedule OTP sending in background (fire and forget)
-        asyncio.create_task(send_otp_background(mobile_number))
-        
+
+        # Validate Indian mobile number prefix (6-9)
+        if mobile_number[0] not in "6789":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid mobile number. Must start with 6, 7, 8, or 9."
+            )
+
+        # Log the request (masked)
+        logger.info(f"OTP request received for: {mask_mobile(mobile_number)}")
+
+        # Schedule OTP sending in background with error callback
+        task = asyncio.create_task(send_otp_background(mobile_number, ip_address))
+
+        # Add callback to log errors
+        def handle_task_exception(t):
+            if t.exception():
+                logger.error(f"OTP background task failed: {t.exception()}")
+
+        task.add_done_callback(handle_task_exception)
+
         # Return immediate success response
         return {
             "success": True,
             "message": "OTP is being sent to your mobile number",
             "mobile_number": mobile_number
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Send OTP endpoint error: {str(e)}")
+        logger.exception(f"Send OTP endpoint error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process OTP request"
@@ -96,45 +136,89 @@ async def send_otp(otp_request: SendOTPRequest):
 
 
 @router.post("/verify-otp", response_model=AuthResponse)
-async def verify_otp_and_login(otp_request: VerifyOTPRequest):
+async def verify_otp_and_login(otp_request: VerifyOTPRequest, request: Request):
     """Verify OTP and login/register user."""
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    is_test_user = False
+
+    # Check verification attempt rate limit (prevent brute force)
+    allowed, attempts_remaining = rate_limiter.check_otp_verification_attempts(
+        otp_request.mobile_number
+    )
+    if not allowed:
+        logger.warning(f"OTP verification locked out for {mask_mobile(otp_request.mobile_number)}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many verification attempts. Please wait 15 minutes before trying again."
+        )
+
     try:
-        # Verify OTP using Twilio
-        if otp_request.mobile_number != "9999999999" and otp_request.otp != "583647":
+        # Check if test user mode is enabled
+        if settings.enable_test_user and otp_request.mobile_number == settings.test_mobile_number:
+            if otp_request.otp == settings.test_otp:
+                logger.info("Test user login - bypassing OTP verification")
+                is_test_user = True
+            else:
+                # Even for test user, require correct test OTP
+                AuditService.log_login_attempt(
+                    otp_request.mobile_number, ip_address, user_agent,
+                    success=False, error_message="Invalid test OTP"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid OTP"
+                )
+        else:
+            # Verify OTP using Twilio for real users
             result = get_twilio_service().verify_otp(otp_request.mobile_number, otp_request.otp)
-            
+
             if not result["success"]:
+                AuditService.log_login_attempt(
+                    otp_request.mobile_number, ip_address, user_agent,
+                    success=False, error_message=result["message"]
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=result["message"]
                 )
-        
+
         # Create or get user
         user = UserOperations.create_or_get_user(otp_request.mobile_number)
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=30 * 24 * 60)  # 30 days
+        user_id = str(user["_id"])
+
+        # Create access token with configured expiration
+        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
-            data={"sub": str(user["_id"])},
+            data={"sub": user_id},
             expires_delta=access_token_expires
         )
-        
+
+        # Reset OTP attempts on successful verification
+        rate_limiter.reset_otp_attempts(otp_request.mobile_number)
+
+        # Log successful login
+        AuditService.log_login_attempt(
+            otp_request.mobile_number, ip_address, user_agent, success=True
+        )
+        logger.info(f"User logged in: {user_id} (test_user={is_test_user})")
+
         # Format user profile
         user_profile = format_user_profile(user)
-        
+
         return AuthResponse(
             access_token=access_token,
             token_type="bearer",
             user=user_profile
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        print(f"OTP verification error: {str(e)}")
+        logger.exception(f"OTP verification error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="OTP verification failed"
+            detail="OTP verification failed. Please try again."
         )
 
 
@@ -285,18 +369,19 @@ async def upload_profile_picture(
         }
         
     except UnidentifiedImageError as e:
-        print(f"Invalid image format: {str(e)}")
+        logger.warning(f"Invalid image format uploaded: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid image format. Please upload a valid image file (JPEG, PNG, etc.)"
         )
     except Exception as e:
-        print(f"Error processing image: {str(e)}")
-        print(f"File content type: {file.content_type}")
-        print(f"File size: {len(file_content) if 'file_content' in locals() else 'unknown'}")
+        logger.exception(
+            f"Error processing image - content_type: {file.content_type}, "
+            f"size: {len(file_content) if 'file_content' in locals() else 'unknown'}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process image: {str(e)}"
+            detail="Failed to process image. Please try again."
         )
 
 
@@ -342,7 +427,7 @@ async def remove_profile_picture(user_id: str = Depends(verify_token)):
         return {"message": "Profile picture removed successfully"}
         
     except Exception as e:
-        print(f"Error removing profile picture: {str(e)}")
+        logger.exception(f"Error removing profile picture for user {user_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove profile picture"
@@ -406,29 +491,28 @@ async def get_config_with_device_token_sync(
     
     # If device token and platform are provided, perform sync
     if device_token and platform:
-        print(f"[Config API] Syncing device token for user {user_id}")
-        print(f"[Config API] Client token: {device_token[:20] if device_token else 'None'}...")
-        print(f"[Config API] Server token: {current_server_token[:20] if current_server_token else 'None'}...")
-        
+        logger.debug(f"Syncing device token for user {user_id}")
+        logger.debug(f"Client token: {mask_token(device_token)}, Server token: {mask_token(current_server_token)}")
+
         if current_server_token != device_token:
             # Tokens don't match, update server token
-            print(f"[Config API] Device tokens mismatch, updating server token")
+            logger.info(f"Device tokens mismatch for user {user_id}, updating")
             success = PushNotificationOperations.register_device_token(
                 user_id=user_id,
                 device_token=device_token,
                 platform=platform
             )
-            
+
             if success:
                 response_data["device_token"] = device_token
                 response_data["token_sync_status"] = "updated"
-                print(f"[Config API] Device token updated successfully")
+                logger.info(f"Device token updated successfully for user {user_id}")
             else:
                 response_data["token_sync_status"] = "update_failed"
-                print(f"[Config API] Failed to update device token")
+                logger.warning(f"Failed to update device token for user {user_id}")
         else:
             # Tokens match, no update needed
             response_data["token_sync_status"] = "matched"
-            print(f"[Config API] Device tokens already match")
-    
+            logger.debug(f"Device tokens already match for user {user_id}")
+
     return response_data 

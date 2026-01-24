@@ -6,6 +6,7 @@ import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart' 
 import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/cached_image.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -247,19 +248,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                   ],
                 ),
                 child: _profilePictureUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.1),
-                        child: Image.network(
-                          'https://nachna.com$_profilePictureUrl',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar(screenWidth);
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return _buildDefaultAvatar(screenWidth);
-                          },
-                        ),
+                    ? CachedImage.circular(
+                        imageUrl: 'https://nachna.com$_profilePictureUrl',
+                        size: screenWidth * 0.2,
+                        fallbackText: _nameController.text,
+                        fallbackGradientColors: const [Color(0xFF00D4FF), Color(0xFF9C27B0)],
                       )
                     : _buildDefaultAvatar(screenWidth),
               ),

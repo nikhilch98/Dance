@@ -5,7 +5,7 @@ import '../services/rewards_service.dart';
 import '../utils/responsive_utils.dart';
 
 class RewardsCenterScreen extends StatefulWidget {
-  const RewardsCenterScreen({Key? key}) : super(key: key);
+  const RewardsCenterScreen({super.key});
 
   @override
   State<RewardsCenterScreen> createState() => _RewardsCenterScreenState();

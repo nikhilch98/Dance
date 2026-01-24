@@ -6,6 +6,8 @@ import '../screens/home_screen.dart';
 import '../screens/order_status_screen.dart';
 import '../models/studio.dart';
 import '../services/api_service.dart';
+import '../utils/validators.dart';
+import '../utils/logger.dart';
 import '../main.dart';
 
 class DeepLinkService {
@@ -35,7 +37,7 @@ class DeepLinkService {
           }
         }
       });
-      
+
       // Check for initial deep link when app is launched
       // Avoid double-processing: iOS sometimes delivers continueUserActivity and initialLink
       // We'll rely on continueUserActivity path; keep this call but guard inside handler
@@ -44,110 +46,153 @@ class DeepLinkService {
         await _handleIncomingLink(initialLink);
       }
     } catch (e) {
-      print('Error initializing deep link service: $e');
+      AppLogger.error('Error initializing deep link service', tag: 'DeepLink', error: e);
     }
   }
   
   /// Handle incoming deep link
   Future<void> _handleIncomingLink(String url) async {
     try {
-      print('🔗 Deep link service: Processing URL: $url');
-      
+      AppLogger.debug('Processing URL', tag: 'DeepLink');
+
+      // Validate URL length first to prevent DoS
+      if (url.isEmpty || url.length > UrlValidator.maxUrlLength) {
+        AppLogger.warning('Deep link rejected: invalid length', tag: 'DeepLink');
+        return;
+      }
+
       // Drop duplicates within a short window
       final now = DateTime.now();
       if (_lastHandledUrl == url && _lastHandledAt != null && now.difference(_lastHandledAt!).inSeconds < 3) {
-        print('Deep link ignored (duplicate within window): $url');
+        AppLogger.debug('Deep link ignored (duplicate within window)', tag: 'DeepLink');
         return;
       }
       if (_isHandling) {
-        print('Deep link ignored (already handling): $url');
+        AppLogger.debug('Deep link ignored (already handling)', tag: 'DeepLink');
         return;
       }
       _isHandling = true;
       _lastHandledUrl = url;
       _lastHandledAt = now;
 
-      final uri = Uri.parse(url);
-      print('🔗 Deep link service: Parsed URI - scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}, query: ${uri.queryParameters}');
-      print('🔗 Deep link service: Full URL breakdown:');
-      print('   Original URL: $url');
-      print('   Scheme: ${uri.scheme}');
-      print('   Host: ${uri.host}');
-      print('   Path: ${uri.path}');
-      print('   Path segments: ${uri.pathSegments}');
-      print('   Query parameters: ${uri.queryParameters}');
-      print('   Authority: ${uri.authority}');
-      
-      // Handle artist deep links: 
+      // Safely parse URL
+      Uri uri;
+      try {
+        uri = Uri.parse(url);
+      } catch (e) {
+        AppLogger.warning('Deep link rejected: malformed URL', tag: 'DeepLink');
+        return;
+      }
+
+      // Validate URL scheme and structure
+      if (!_isValidDeepLinkScheme(uri)) {
+        AppLogger.warning('Deep link rejected: invalid scheme or host', tag: 'DeepLink');
+        return;
+      }
+
+      AppLogger.debug('Parsed URI - scheme: ${uri.scheme}, host: ${uri.host}, path: ${uri.path}', tag: 'DeepLink');
+
+      // Handle artist deep links:
       // Custom scheme: nachna://artist/{artistId}
       // Universal link: https://nachna.com/artist/{artistId}
       if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'artist') {
-        final artistId = uri.pathSegments[1];
-        print('Navigating to artist: $artistId');
-        await _navigateToArtistInternal(artistId);
+        final artistId = PathValidator.sanitizeId(uri.pathSegments[1]);
+        if (artistId != null) {
+          AppLogger.info('Navigating to artist', tag: 'DeepLink');
+          await _navigateToArtistInternal(artistId);
+        } else {
+          AppLogger.warning('Deep link rejected: invalid artist ID', tag: 'DeepLink');
+        }
       } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'studio') {
-        final studioId = uri.pathSegments[1];
-        print('Navigating to studio: $studioId');
-        await _navigateToStudioInternal(studioId);
+        final studioId = PathValidator.sanitizeId(uri.pathSegments[1]);
+        if (studioId != null) {
+          AppLogger.info('Navigating to studio', tag: 'DeepLink');
+          await _navigateToStudioInternal(studioId);
+        } else {
+          AppLogger.warning('Deep link rejected: invalid studio ID', tag: 'DeepLink');
+        }
       } else if (uri.scheme == 'nachna' && uri.host == 'artist') {
         // Handle custom scheme: nachna://artist/{artistId}
-        final artistId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
-        if (artistId.isNotEmpty) {
-          print('Navigating to artist via custom scheme: $artistId');
+        final rawId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
+        final artistId = PathValidator.sanitizeId(rawId);
+        if (artistId != null && artistId.isNotEmpty) {
+          AppLogger.info('Navigating to artist via custom scheme', tag: 'DeepLink');
           await _navigateToArtistInternal(artistId);
+        } else {
+          AppLogger.warning('Deep link rejected: invalid artist ID in custom scheme', tag: 'DeepLink');
         }
       } else if (uri.scheme == 'nachna' && uri.host == 'studio') {
         // Handle custom scheme: nachna://studio/{studioId}
-        final studioId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
-        if (studioId.isNotEmpty) {
-          print('Navigating to studio via custom scheme: $studioId');
+        final rawId = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : uri.path.replaceFirst('/', '');
+        final studioId = PathValidator.sanitizeId(rawId);
+        if (studioId != null && studioId.isNotEmpty) {
+          AppLogger.info('Navigating to studio via custom scheme', tag: 'DeepLink');
           await _navigateToStudioInternal(studioId);
+        } else {
+          AppLogger.warning('Deep link rejected: invalid studio ID in custom scheme', tag: 'DeepLink');
         }
       } else if (uri.scheme == 'nachna' && uri.host == 'order-status') {
         // Handle custom scheme: nachna://order-status/{orderId}
-        // For nachna://order-status/ord_123, pathSegments will be ['', 'ord_123']
-        // We want the second element (index 1) which contains the actual order ID
-        print('🔗 Deep link service: Processing nachna://order-status pattern');
-        print('   Path segments: ${uri.pathSegments}');
-        print('   Path: ${uri.path}');
-        
-        String? orderId;
+        AppLogger.debug('Processing order-status pattern', tag: 'DeepLink');
+
+        String? rawOrderId;
         if (uri.pathSegments.length >= 2) {
-          orderId = uri.pathSegments[1]; // Get the second element (index 1)
-          print('   Using pathSegments[1]: $orderId');
+          rawOrderId = uri.pathSegments[1];
         } else if (uri.pathSegments.length == 1 && uri.pathSegments[0].isNotEmpty) {
-          orderId = uri.pathSegments[0]; // Fallback for single element
-          print('   Using pathSegments[0]: $orderId');
+          rawOrderId = uri.pathSegments[0];
         } else {
-          // Try to extract from path
           final path = uri.path;
           if (path.startsWith('/') && path.length > 1) {
-            orderId = path.substring(1); // Remove leading slash
-            print('   Using path.substring(1): $orderId');
+            rawOrderId = path.substring(1);
           }
         }
-        
-        if (orderId != null && orderId.isNotEmpty) {
-          print('🔗 Deep link service: Navigating to order status via custom scheme: $orderId');
+
+        final orderId = PathValidator.sanitizeId(rawOrderId);
+        if (orderId != null && orderId.isNotEmpty && PathValidator.isValidOrderId(orderId)) {
+          AppLogger.info('Navigating to order status via custom scheme', tag: 'DeepLink');
           await _navigateToOrderStatusInternal(orderId);
         } else {
-          print('🔗 Deep link service: Could not extract order ID from: $url');
+          AppLogger.warning('Deep link rejected: invalid order ID', tag: 'DeepLink');
         }
       } else if (uri.path == '/order/status' && uri.queryParameters.containsKey('order_id')) {
         // Handle universal link: https://nachna.com/order/status?order_id={orderId}
-        final orderId = uri.queryParameters['order_id'];
-        if (orderId != null && orderId.isNotEmpty) {
-          print('🔗 Deep link service: Navigating to order status via universal link: $orderId');
+        final rawOrderId = uri.queryParameters['order_id'];
+        final orderId = PathValidator.sanitizeId(rawOrderId);
+        if (orderId != null && orderId.isNotEmpty && PathValidator.isValidOrderId(orderId)) {
+          AppLogger.info('Navigating to order status via universal link', tag: 'DeepLink');
           await _navigateToOrderStatusInternal(orderId);
+        } else {
+          AppLogger.warning('Deep link rejected: invalid order ID in query', tag: 'DeepLink');
         }
+      } else {
+        AppLogger.warning('Deep link rejected: unrecognized pattern', tag: 'DeepLink');
       }
     } catch (e) {
-      print('Error handling deep link: $e');
+      AppLogger.error('Error handling deep link', tag: 'DeepLink', error: e);
     } finally {
       // Keep a short lock to prevent UIKit re-entrant deliveries from bouncing us
       await Future.delayed(const Duration(milliseconds: 250));
       _isHandling = false;
     }
+  }
+
+  /// Validates that the deep link has an allowed scheme and host
+  bool _isValidDeepLinkScheme(Uri uri) {
+    final scheme = uri.scheme.toLowerCase();
+
+    // Allow custom nachna:// scheme
+    if (scheme == 'nachna') {
+      final validHosts = ['artist', 'studio', 'order-status'];
+      return validHosts.contains(uri.host.toLowerCase());
+    }
+
+    // Allow https:// links to nachna.com
+    if (scheme == 'https' || scheme == 'http') {
+      final validHosts = ['nachna.com', 'www.nachna.com'];
+      return validHosts.contains(uri.host.toLowerCase());
+    }
+
+    return false;
   }
   
   /// Generate shareable URL for an artist.
@@ -186,28 +231,28 @@ class DeepLinkService {
     try {
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('Navigator not available, cannot navigate to artist');
+        AppLogger.warning('Navigator not available, cannot navigate to artist', tag: 'DeepLink');
         return;
       }
-      
-      print('Navigating to artist: $artistId');
-      
+
+      AppLogger.info('Navigating to artist detail', tag: 'DeepLink');
+
       // First navigate to home screen, then to artist detail
       // Reset stack to a single HomeScreen to avoid route info errors
       navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
         (route) => false,
       );
-      
+
       // Add a small delay to ensure the home screen is loaded
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Check if navigator is still available
       if (MyApp.navigatorKey.currentState == null) {
-        print('Navigator no longer available, cannot continue navigation');
+        AppLogger.warning('Navigator no longer available', tag: 'DeepLink');
         return;
       }
-      
+
       // Navigate to artist detail
       MyApp.navigatorKey.currentState!.push(
         MaterialPageRoute(
@@ -218,7 +263,7 @@ class DeepLinkService {
         ),
       );
     } catch (e) {
-      print('Error navigating to artist: $e');
+      AppLogger.error('Error navigating to artist', tag: 'DeepLink', error: e);
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
@@ -235,53 +280,53 @@ class DeepLinkService {
     try {
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('Navigator not available, cannot navigate to studio');
+        AppLogger.warning('Navigator not available, cannot navigate to studio', tag: 'DeepLink');
         return;
       }
-      
-      print('Fetching studio data for ID: $studioId');
-      
+
+      AppLogger.info('Fetching studio data', tag: 'DeepLink');
+
       // Fetch studio data first
       final studios = await ApiService().fetchStudios();
       final studio = studios.firstWhere(
         (s) => s.id == studioId,
-        orElse: () => throw Exception('Studio not found with ID: $studioId'),
+        orElse: () => throw Exception('Studio not found'),
       );
-      
-      print('Found studio: ${studio.name}');
-      
+
+      AppLogger.info('Found studio, navigating', tag: 'DeepLink');
+
       // Check if navigator is still available after API call
       if (MyApp.navigatorKey.currentState == null) {
-        print('Navigator no longer available after API call, cannot continue navigation');
+        AppLogger.warning('Navigator no longer available after API call', tag: 'DeepLink');
         return;
       }
-      
+
       // Navigate to home screen first, then to studio detail
       MyApp.navigatorKey.currentState!.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)), // Studios tab
         (route) => false,
       );
-      
+
       // Add a small delay to ensure the home screen is loaded
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       // Final check before navigation to studio detail
       if (MyApp.navigatorKey.currentState != null) {
-        print('Navigating to studio detail: ${studio.name}');
+        AppLogger.info('Navigating to studio detail', tag: 'DeepLink');
         MyApp.navigatorKey.currentState!.push(
           MaterialPageRoute(
             builder: (context) => StudioDetailScreen(studio: studio),
           ),
         );
       } else {
-        print('Navigator no longer available, cannot navigate to studio detail');
+        AppLogger.warning('Navigator no longer available', tag: 'DeepLink');
       }
     } catch (e) {
-      print('Error navigating to studio: $e');
+      AppLogger.error('Error navigating to studio', tag: 'DeepLink', error: e);
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
-        print('Falling back to studios home screen');
+        AppLogger.debug('Falling back to studios home screen', tag: 'DeepLink');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
           (route) => false,
@@ -292,41 +337,48 @@ class DeepLinkService {
 
   /// Navigate to artist from deep link
   static Future<void> navigateToArtist(BuildContext context, String artistId, {bool fromNotification = false}) async {
+    // Validate and sanitize artist ID
+    final sanitizedId = PathValidator.sanitizeId(artistId);
+    if (sanitizedId == null) {
+      AppLogger.warning('Invalid artist ID provided to navigateToArtist', tag: 'DeepLink');
+      return;
+    }
+
     try {
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('Navigator not available, cannot navigate to artist');
+        AppLogger.warning('Navigator not available, cannot navigate to artist', tag: 'DeepLink');
         return;
       }
-      
-      print('Navigating to artist: $artistId');
-      
+
+      AppLogger.info('Navigating to artist', tag: 'DeepLink');
+
       // First navigate to home screen, then to artist detail
       navigator.popUntil((route) => route.isFirst);
       navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 1)),
       );
-      
+
       // Add a small delay to ensure the home screen is loaded
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Check if navigator is still available
       if (MyApp.navigatorKey.currentState == null) {
-        print('Navigator no longer available, cannot continue navigation');
+        AppLogger.warning('Navigator no longer available', tag: 'DeepLink');
         return;
       }
-      
+
       // Navigate to artist detail
       MyApp.navigatorKey.currentState!.push(
         MaterialPageRoute(
           builder: (context) => ArtistDetailScreen(
-            artistId: artistId,
+            artistId: sanitizedId,
             fromNotification: fromNotification,
           ),
         ),
       );
     } catch (e) {
-      print('Error navigating to artist: $e');
+      AppLogger.error('Error navigating to artist', tag: 'DeepLink', error: e);
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
@@ -340,56 +392,63 @@ class DeepLinkService {
 
   /// Navigate to studio from deep link
   static Future<void> navigateToStudio(BuildContext context, String studioId) async {
+    // Validate and sanitize studio ID
+    final sanitizedId = PathValidator.sanitizeId(studioId);
+    if (sanitizedId == null) {
+      AppLogger.warning('Invalid studio ID provided to navigateToStudio', tag: 'DeepLink');
+      return;
+    }
+
     try {
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('Navigator not available, cannot navigate to studio');
+        AppLogger.warning('Navigator not available, cannot navigate to studio', tag: 'DeepLink');
         return;
       }
-      
-      print('Fetching studio data for ID: $studioId');
-      
+
+      AppLogger.info('Fetching studio data', tag: 'DeepLink');
+
       // Fetch studio data first
       final studios = await ApiService().fetchStudios();
       final studio = studios.firstWhere(
-        (s) => s.id == studioId,
-        orElse: () => throw Exception('Studio not found with ID: $studioId'),
+        (s) => s.id == sanitizedId,
+        orElse: () => throw Exception('Studio not found'),
       );
-      
-      print('Found studio: ${studio.name}');
-      
+
+      AppLogger.info('Found studio, navigating', tag: 'DeepLink');
+
       // Check if navigator is still available after API call
       if (MyApp.navigatorKey.currentState == null) {
-        print('Navigator no longer available after API call, cannot continue navigation');
+        AppLogger.warning('Navigator no longer available after API call', tag: 'DeepLink');
         return;
       }
-      
+
       // Navigate to home screen first, then to studio detail
       MyApp.navigatorKey.currentState!.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)), // Studios tab
         (route) => false,
       );
-      
+
       // Add a small delay to ensure the home screen is loaded
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       // Final check before navigation to studio detail
       if (MyApp.navigatorKey.currentState != null) {
-        print('Navigating to studio detail: ${studio.name}');
+        AppLogger.info('Navigating to studio detail', tag: 'DeepLink');
         MyApp.navigatorKey.currentState!.push(
           MaterialPageRoute(
             builder: (context) => StudioDetailScreen(studio: studio),
           ),
         );
       } else {
-        print('Navigator no longer available, cannot navigate to studio detail');
+        AppLogger.warning('Navigator no longer available', tag: 'DeepLink');
       }
     } catch (e) {
-      print('Error navigating to studio: $e');
+      AppLogger.error('Error navigating to studio', tag: 'DeepLink', error: e);
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
-        print('Falling back to studios home screen');
+        AppLogger.debug('Falling back to studios home screen', tag: 'DeepLink');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
           (route) => false,
@@ -401,30 +460,30 @@ class DeepLinkService {
   /// Internal method to navigate to order status (used by deep link handler)
   Future<void> _navigateToOrderStatusInternal(String orderId) async {
     try {
-      print('🔗 Deep link service: Attempting to navigate to order status for order: $orderId');
-      
+      AppLogger.info('Attempting to navigate to order status', tag: 'DeepLink');
+
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator == null) {
-        print('❌ Navigator not available, cannot navigate to order status');
+        AppLogger.warning('Navigator not available, cannot navigate to order status', tag: 'DeepLink');
         return;
       }
-      
-      print('✅ Navigator available, navigating to order status: $orderId');
-      
+
+      AppLogger.info('Navigating to order status screen', tag: 'DeepLink');
+
       // Navigate directly to order status screen
       navigator.push(
         MaterialPageRoute(
           builder: (context) => OrderStatusScreen(orderId: orderId),
         ),
       );
-      
-      print('✅ Successfully navigated to order status screen');
+
+      AppLogger.info('Successfully navigated to order status screen', tag: 'DeepLink');
     } catch (e) {
-      print('❌ Error navigating to order status: $e');
+      AppLogger.error('Error navigating to order status', tag: 'DeepLink', error: e);
       // Fallback to home screen if available
       final navigator = MyApp.navigatorKey.currentState;
       if (navigator != null) {
-        print('🔄 Falling back to home screen');
+        AppLogger.debug('Falling back to home screen', tag: 'DeepLink');
         navigator.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen(initialTabIndex: 0)),
           (route) => false,

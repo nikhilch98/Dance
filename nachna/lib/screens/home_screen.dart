@@ -116,39 +116,50 @@ class _HomeScreenState extends State<HomeScreen> {
             children: screens,
           ),
 
-          bottomNavigationBar: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.15),
-                  Colors.white.withOpacity(0.05),
-                ],
-              ),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  offset: const Offset(0, 8),
-                  blurRadius: 24,
-                  spreadRadius: 0,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent, // Ensure transparent background
+          bottomNavigationBar: Builder(
+            builder: (context) {
+              // Pre-calculate responsive values to avoid multiple MediaQuery calls
+              final screenWidth = MediaQuery.of(context).size.width;
+              final screenHeight = MediaQuery.of(context).size.height;
+              final navBarMargin = (screenWidth * 0.04).clamp(12.0, 20.0);
+              final navBarHeight = (screenHeight * 0.095).clamp(70.0, 90.0);
+              final navBarBorderRadius = (screenWidth * 0.06).clamp(20.0, 28.0);
+              final horizontalPadding = (screenWidth * 0.05).clamp(16.0, 24.0);
+              final verticalPadding = (screenHeight * 0.015).clamp(10.0, 16.0);
+
+              return Container(
+                margin: EdgeInsets.all(navBarMargin),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(navBarBorderRadius),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.15),
+                      Colors.white.withOpacity(0.05),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      offset: const Offset(0, 8),
+                      blurRadius: 24,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(navBarBorderRadius),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      height: navBarHeight,
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent, // Ensure transparent background
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -200,6 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          );
+            },
           ),
         );
       },
@@ -213,17 +226,24 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<Color> gradient,
   }) {
     final isSelected = _selectedIndex == index;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = (screenWidth * 0.055).clamp(18.0, 26.0);
+    final selectedIconSize = (screenWidth * 0.06).clamp(20.0, 28.0);
+    final fontSize = (screenWidth * 0.025).clamp(9.0, 12.0);
+    final horizontalPadding = (screenWidth * 0.025).clamp(8.0, 14.0);
+    final verticalPadding = (screenWidth * 0.02).clamp(6.0, 10.0);
+    final borderRadius = (screenWidth * 0.04).clamp(12.0, 18.0);
+
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 12 : 8,
-          vertical: 8,
+          horizontal: isSelected ? horizontalPadding : horizontalPadding * 0.7,
+          vertical: verticalPadding,
         ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(borderRadius),
           gradient: isSelected
               ? LinearGradient(colors: gradient)
               : LinearGradient(
@@ -248,16 +268,20 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               icon,
               color: isSelected ? Colors.white : Colors.white70,
-              size: isSelected ? 24 : 20,
+              size: isSelected ? selectedIconSize : iconSize,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+              SizedBox(width: screenWidth * 0.015),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

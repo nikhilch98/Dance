@@ -3,14 +3,25 @@
 from datetime import datetime
 from typing import Optional
 from bson import ObjectId
+from bson.errors import InvalidId
 from fastapi import HTTPException, status
 
-import logging
-
+from app.config.logging_config import get_logger
 from utils.utils import get_mongo_client
 from app.database.rewards import RewardOperations
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+
+def is_valid_object_id(value: str) -> bool:
+    """Check if a string is a valid MongoDB ObjectId."""
+    if not value or not isinstance(value, str):
+        return False
+    try:
+        ObjectId(value)
+        return True
+    except (InvalidId, TypeError):
+        return False
 
 
 
@@ -68,10 +79,18 @@ class UserOperations:
     @staticmethod
     def get_user_by_id(user_id: str) -> Optional[dict]:
         """Get user by ID."""
+        if not is_valid_object_id(user_id):
+            logger.warning(f"Invalid user_id format: {user_id[:20] if user_id else 'None'}...")
+            return None
+
         client = get_mongo_client()
         try:
             return client["dance_app"]["users"].find_one({"_id": ObjectId(user_id)})
-        except Exception:
+        except InvalidId:
+            logger.warning(f"Invalid ObjectId format for user_id: {user_id[:20]}...")
+            return None
+        except Exception as e:
+            logger.exception(f"Error fetching user by id: {e}")
             return None
     
     @staticmethod
@@ -175,7 +194,7 @@ class UserOperations:
             return user_result.deleted_count > 0
             
         except Exception as e:
-            print(f"Error deleting user: {e}")
+            logger.exception(f"Error deleting user {user_id}: {e}")
             return False
 
     @staticmethod
@@ -189,7 +208,7 @@ class UserOperations:
             return total_count
             
         except Exception as e:
-            print(f"Error getting total user count: {e}")
+            logger.exception(f"Error getting total user count: {e}")
             return 0 
 
     @staticmethod

@@ -5,7 +5,7 @@ import '../models/qr_verification.dart';
 import '../services/admin_service.dart';
 
 class QRScannerWidget extends StatefulWidget {
-  const QRScannerWidget({Key? key}) : super(key: key);
+  const QRScannerWidget({super.key});
 
   @override
   State<QRScannerWidget> createState() => _QRScannerWidgetState();

@@ -4,12 +4,22 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reaction.dart';
+import '../utils/logger.dart';
+import '../utils/validators.dart';
 import './reaction_service.dart';
 import './auth_service.dart';
 
+/// Service for handling push notifications and device token management.
+///
+/// This singleton service manages:
+/// - Native iOS/Android push notification registration
+/// - Device token retrieval and server synchronization
+/// - Local notification display when app is in foreground
+/// - Deep linking from notification taps
+///
+/// Uses method channels to communicate with native platform code.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -18,82 +28,93 @@ class NotificationService {
   // Method channel for native iOS/Android communication
   static const MethodChannel _channel = MethodChannel('nachna/notifications');
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  
+
   String? _deviceToken;
   bool _isInitialized = false;
   bool _permissionsGranted = false;
   String? _lastRegisteredToken;
-  
+  bool _isDisposed = false;
+
   // Navigation callback for deep linking
   Function(String)? _onNotificationTap;
-  
-  // Stream controllers for handling notification events
-  final StreamController<Map<String, dynamic>> _messageStreamController = StreamController<Map<String, dynamic>>.broadcast();
-  final StreamController<String> _tokenStreamController = StreamController<String>.broadcast();
-  
-  // Getters
+
+  // Stream controllers for handling notification events - lazily initialized
+  StreamController<Map<String, dynamic>>? _messageStreamController;
+  StreamController<String>? _tokenStreamController;
+
+  /// Get or create message stream controller (safe for reuse after dispose)
+  StreamController<Map<String, dynamic>> get _safeMessageStreamController {
+    if (_messageStreamController == null || _messageStreamController!.isClosed) {
+      _messageStreamController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    return _messageStreamController!;
+  }
+
+  /// Get or create token stream controller (safe for reuse after dispose)
+  StreamController<String> get _safeTokenStreamController {
+    if (_tokenStreamController == null || _tokenStreamController!.isClosed) {
+      _tokenStreamController = StreamController<String>.broadcast();
+    }
+    return _tokenStreamController!;
+  }
+
+  /// Current device token for push notifications, or null if not available.
   String? get deviceToken => _deviceToken;
+
+  /// Whether the notification service has been initialized.
   bool get isInitialized => _isInitialized;
+
+  /// Whether notification permissions have been granted.
   bool get permissionsGranted => _permissionsGranted;
-  Stream<Map<String, dynamic>> get messageStream => _messageStreamController.stream;
-  Stream<String> get tokenStream => _tokenStreamController.stream;
+
+  /// Stream of incoming notification messages.
+  Stream<Map<String, dynamic>> get messageStream => _safeMessageStreamController.stream;
+
+  /// Stream of device token updates.
+  Stream<String> get tokenStream => _safeTokenStreamController.stream;
 
   /// Initialize the notification service
   Future<String?> initialize({
     Function(String)? onNotificationTap,
   }) async {
-    print('[NotificationService] ===== INITIALIZING NOTIFICATION SERVICE =====');
-    print('[NotificationService] 🔍 Platform: ${Platform.isIOS ? 'iOS' : Platform.isAndroid ? 'Android' : 'Other'}');
-    print('[NotificationService] 🔍 Running on physical device: ${!Platform.environment.containsKey('FLUTTER_TEST')}');
-    
+    AppLogger.startOperation('Notification service initialization', tag: 'Notifications');
+    AppLogger.debug('Platform: ${Platform.isIOS ? 'iOS' : Platform.isAndroid ? 'Android' : 'Other'}', tag: 'Notifications');
+
     _onNotificationTap = onNotificationTap;
-    
+
     try {
-      print('[NotificationService] Setting up method call handler...');
+      AppLogger.debug('Setting up method call handler', tag: 'Notifications');
       // Set up method call handler for notifications from native side
       _channel.setMethodCallHandler(_handleMethodCall);
-      
-      print('[NotificationService] Requesting native initialization...');
+
+      AppLogger.debug('Requesting native initialization', tag: 'Notifications');
       // Request permission and get device token
       final result = await _channel.invokeMethod('initialize');
-      
-      print('[NotificationService] 🔍 Raw native result: $result');
-      print('[NotificationService] 🔍 Result type: ${result.runtimeType}');
-      
+
       if (result != null && result is Map) {
         final deviceToken = result['deviceToken'] as String?;
         final isAuthorized = result['isAuthorized'] as bool?;
         final authStatus = result['authorizationStatus'] as String?;
-        
-        print('[NotificationService] Native initialization result keys: ${result.keys.toList()}');
-        print('[NotificationService] 🔍 Authorization status: $authStatus');
-        print('[NotificationService] 🔍 Is authorized: $isAuthorized');
-        print('[NotificationService] 🔍 Device token received: ${deviceToken != null ? '${deviceToken.substring(0, 20)}... (${deviceToken.length} chars)' : 'null'}');
-        
+
+        AppLogger.debug('Authorization status: $authStatus, isAuthorized: $isAuthorized', tag: 'Notifications');
+
         if (deviceToken != null && deviceToken.isNotEmpty) {
           await _handleTokenReceived(deviceToken);
           _isInitialized = true;
-          print('[NotificationService] ✅ Notification service initialized successfully with token');
+          AppLogger.endOperation('Notification service initialization', tag: 'Notifications', success: true);
           return _deviceToken;
         } else {
-          print('[NotificationService] ❌ No device token in initialization result');
-          print('[NotificationService] 🔍 This could mean:');
-          print('[NotificationService] 🔍   1. Running in iOS Simulator (tokens only work on physical devices)');
-          print('[NotificationService] 🔍   2. Permissions not granted');
-          print('[NotificationService] 🔍   3. App not properly signed for push notifications');
-          print('[NotificationService] 🔍   4. No internet connection');
-          
+          AppLogger.warning('No device token received - may be simulator or permissions not granted', tag: 'Notifications');
           // Try to get more info about the current state
           await _debugCurrentState();
         }
       } else {
-        print('[NotificationService] ❌ Invalid initialization result: $result');
+        AppLogger.warning('Invalid initialization result', tag: 'Notifications');
       }
-      
+
       return null;
     } catch (e) {
-      print('[NotificationService] ❌ Error initializing notification service: $e');
-      print('[NotificationService] ❌ Stack trace: ${StackTrace.current}');
+      AppLogger.error('Error initializing notification service', tag: 'Notifications', error: e);
       return null;
     }
   }
@@ -101,32 +122,22 @@ class NotificationService {
   /// Debug current notification state
   Future<void> _debugCurrentState() async {
     try {
-      print('[NotificationService] 🔍 === DEBUGGING CURRENT STATE ===');
-      
       final result = await _channel.invokeMethod('checkPermissionStatus');
-      print('[NotificationService] 🔍 Permission check result: $result');
-      
+
       if (result != null && result is Map) {
         final status = result['status'] as String?;
-        final token = result['token'] as String?;
         final isRegistered = result['isRegistered'] as bool?;
-        final canRequest = result['canRequest'] as bool?;
-        
-        print('[NotificationService] 🔍 Permission status: $status');
-        print('[NotificationService] 🔍 Is registered for notifications: $isRegistered');
-        print('[NotificationService] 🔍 Can request permissions: $canRequest');
-        print('[NotificationService] 🔍 Stored token: ${token != null ? '${token.substring(0, 20)}...' : 'null'}');
-        
+
+        AppLogger.debug('Permission status: $status, isRegistered: $isRegistered', tag: 'Notifications');
+
         if (status == 'notDetermined') {
-          print('[NotificationService] 💡 Permissions not yet requested - need to call requestPermissionsAndGetToken()');
+          AppLogger.debug('Permissions not yet requested', tag: 'Notifications');
         } else if (status == 'denied') {
-          print('[NotificationService] 💡 Permissions denied - user needs to enable in Settings');
-        } else if (status == 'authorized' && token == null) {
-          print('[NotificationService] 💡 Permissions granted but no token - possible simulator or signing issue');
+          AppLogger.debug('Permissions denied - user needs to enable in Settings', tag: 'Notifications');
         }
       }
     } catch (e) {
-      print('[NotificationService] ❌ Error debugging state: $e');
+      AppLogger.error('Error debugging notification state', tag: 'Notifications', error: e);
     }
   }
 
@@ -179,7 +190,13 @@ class NotificationService {
     }
   }
 
-  /// Request permissions and get device token
+  /// Requests notification permissions and retrieves the device token.
+  ///
+  /// Returns a map containing:
+  /// - `success`: Whether permission was granted and token received
+  /// - `token`: The device token (if successful)
+  /// - `shouldOpenSettings`: Whether user should be directed to settings
+  /// - `error`: Error message (if failed)
   Future<Map<String, dynamic>> requestPermissionsAndGetToken() async {
     try {
       // Requesting permissions and device token
@@ -227,7 +244,9 @@ class NotificationService {
     }
   }
 
-  /// Open device notification settings
+  /// Opens the device's notification settings page.
+  ///
+  /// Returns `true` if settings were opened successfully.
   Future<bool> openNotificationSettings() async {
     try {
       await _channel.invokeMethod('openNotificationSettings');
@@ -276,36 +295,32 @@ class NotificationService {
 
   /// Handle token received and register with server
   Future<void> _handleTokenReceived(String token) async {
-    print('[NotificationService] === HANDLING TOKEN RECEIVED ===');
-    print('[NotificationService] New token: ${token.substring(0, 20)}...');
-    
+    AppLogger.debug('Handling token received', tag: 'Notifications');
+
     final previousToken = _deviceToken;
-    print('[NotificationService] Previous token: ${previousToken?.substring(0, 20) ?? 'null'}...');
-    
     _deviceToken = token;
-    print('[NotificationService] Device token stored in memory');
-    
+
     // Store token locally
     await _storeTokenLocally(token);
-    print('[NotificationService] Device token stored locally');
-    
+
     // Only register with server if we have auth token and token changed
     if (previousToken != token) {
-      print('[NotificationService] Token changed, attempting server registration...');
+      AppLogger.debug('Token changed, attempting server registration', tag: 'Notifications');
       await _registerTokenWithServer(token);
-    } else {
-      print('[NotificationService] Token unchanged, skipping server registration');
     }
-    
-    // Notify listeners
-    _tokenStreamController.add(token);
-    print('[NotificationService] Token listeners notified');
+
+    // Notify listeners safely
+    if (!_isDisposed && _tokenStreamController != null && !_tokenStreamController!.isClosed) {
+      _safeTokenStreamController.add(token);
+    }
   }
 
   /// Handle notification received
   Future<void> _handleNotificationReceived(Map<String, dynamic> arguments) async {
-    // Notification received
-    _messageStreamController.add(arguments);
+    // Notification received - safely add to stream
+    if (!_isDisposed && _messageStreamController != null && !_messageStreamController!.isClosed) {
+      _safeMessageStreamController.add(arguments);
+    }
     // Show local notification if app is in foreground
     await _showLocalNotification(arguments);
   }
@@ -491,42 +506,36 @@ class NotificationService {
   /// Register device token with server
   Future<void> _registerTokenWithServer(String token) async {
     try {
-      print('[NotificationService] === REGISTERING TOKEN WITH SERVER ===');
-      print('[NotificationService] Token: ${token.substring(0, 20)}...');
-      print('[NotificationService] Last registered: ${_lastRegisteredToken?.substring(0, 20) ?? 'null'}...');
-      
       // Skip if we've already registered this exact token
       if (_lastRegisteredToken == token) {
-        print('[NotificationService] Device token already registered, skipping duplicate registration');
+        AppLogger.debug('Device token already registered, skipping', tag: 'Notifications');
         return;
       }
-      
+
       // Get auth token first
       final authToken = await AuthService.getToken();
-      print('[NotificationService] Auth token available: ${authToken != null}');
       if (authToken == null) {
-        print('[NotificationService] No auth token available, skipping device token registration');
+        AppLogger.debug('No auth token available, skipping device token registration', tag: 'Notifications');
         return;
       }
-      
+
       final reactionService = ReactionService();
       reactionService.setAuthToken(authToken);
-      
+
       final platform = Platform.isIOS ? 'ios' : 'android';
-      print('[NotificationService] Platform: $platform');
-      
+
       await reactionService.registerDeviceToken(
         DeviceTokenRequest(
           deviceToken: token,
           platform: platform,
         ),
       );
-      
+
       // Mark this token as successfully registered
       _lastRegisteredToken = token;
-      print('[NotificationService] ✅ Device token registered with server successfully');
+      AppLogger.info('Device token registered with server', tag: 'Notifications');
     } catch (e) {
-      print('[NotificationService] ❌ Error registering token with server: $e');
+      AppLogger.error('Error registering token with server', tag: 'Notifications', error: e);
     }
   }
 
@@ -546,80 +555,72 @@ class NotificationService {
     }
   }
 
-  /// Unregister device token from server (call on logout/account deletion)
+  /// Unregisters device token from server.
+  ///
+  /// Should be called on logout or account deletion to stop receiving
+  /// push notifications. Returns `true` if successful.
   Future<bool> unregisterDeviceToken() async {
     if (_deviceToken == null) {
-      print('[NotificationService] No device token to unregister');
+      AppLogger.debug('No device token to unregister', tag: 'Notifications');
       return true; // Consider it successful if no token exists
     }
-    
+
     try {
       // Get auth token first
       final authToken = await AuthService.getToken();
       if (authToken == null) {
-        print('[NotificationService] No auth token available for device token unregistration');
+        AppLogger.debug('No auth token available for device token unregistration', tag: 'Notifications');
         return false;
       }
-      
+
       final reactionService = ReactionService();
       reactionService.setAuthToken(authToken);
-      
+
       await reactionService.unregisterDeviceToken(_deviceToken!);
-      
+
       // Clear the last registered token since it's now unregistered
       _lastRegisteredToken = null;
-      print('[NotificationService] Device token unregistered successfully');
+      AppLogger.info('Device token unregistered successfully', tag: 'Notifications');
       return true;
     } catch (e) {
-      print('[NotificationService] Error unregistering device token: $e');
+      AppLogger.error('Error unregistering device token', tag: 'Notifications', error: e);
       return false;
     }
   }
 
   /// Synchronize device token with server via config API during app startup
   Future<bool> syncDeviceTokenViaConfig() async {
-    print('[NotificationService] ===== STARTING DEVICE TOKEN SYNC VIA CONFIG =====');
-    print('[NotificationService] Local device token available: ${_deviceToken != null}');
-    
+    AppLogger.startOperation('Device token sync via config', tag: 'Notifications');
+
     if (_deviceToken == null) {
-      print('[NotificationService] No local device token to sync - waiting for device token...');
+      AppLogger.debug('No local device token to sync', tag: 'Notifications');
       return false;
     }
-    
+
     try {
       // Get platform
       final platform = Platform.isIOS ? 'ios' : 'android';
-      print('[NotificationService] Platform: $platform');
-      print('[NotificationService] Local device token: ${_deviceToken?.substring(0, 20)}...');
-      
+
       // Call config API with device token
       final configResponse = await AuthService.syncDeviceTokenWithServer(
         localDeviceToken: _deviceToken!,
         platform: platform,
       );
-      
-      print('[NotificationService] Config API response: $configResponse');
-      
+
       // Check if the response indicates the token was updated
-      final isAdmin = configResponse['is_admin'] ?? false;
-      final serverDeviceToken = configResponse['device_token'];
       final syncStatus = configResponse['token_sync_status'];
-      
-      print('[NotificationService] Server device token: ${serverDeviceToken?.substring(0, 20) ?? 'null'}...');
-      print('[NotificationService] Sync status: $syncStatus');
-      
+
       if (syncStatus == 'matched' || syncStatus == 'updated') {
-        print('[NotificationService] ✅ Device token synchronized via config API');
+        AppLogger.endOperation('Device token sync via config', tag: 'Notifications', success: true);
         _lastRegisteredToken = _deviceToken;
         return true;
       } else {
-        print('[NotificationService] ⚠️ Config API sync failed or incomplete, falling back to direct registration');
+        AppLogger.warning('Config API sync incomplete, falling back to direct registration', tag: 'Notifications');
         return await _fallbackDeviceTokenSync();
       }
-      
+
     } catch (e) {
-      print('[NotificationService] ❌ Error syncing device token via config: $e');
-      print('[NotificationService] Falling back to direct device token sync...');
+      AppLogger.error('Error syncing device token via config', tag: 'Notifications', error: e);
       return await _fallbackDeviceTokenSync();
     }
   }
@@ -630,31 +631,30 @@ class NotificationService {
       // Get auth token first
       final authToken = await AuthService.getToken();
       if (authToken == null) {
-        print('[NotificationService] No auth token available for fallback sync');
+        AppLogger.debug('No auth token available for fallback sync', tag: 'Notifications');
         return false;
       }
-      
+
       final reactionService = ReactionService();
       reactionService.setAuthToken(authToken);
-      
+
       // Register the current device token directly
       final platform = Platform.isIOS ? 'ios' : 'android';
-      print('[NotificationService] Fallback: Registering device token for platform: $platform');
-      
+
       await reactionService.registerDeviceToken(
         DeviceTokenRequest(
           deviceToken: _deviceToken!,
           platform: platform,
         ),
       );
-      
+
       // Mark this token as successfully registered
       _lastRegisteredToken = _deviceToken;
-      print('[NotificationService] ✅ Device token synchronized via fallback method');
+      AppLogger.info('Device token synchronized via fallback method', tag: 'Notifications');
       return true;
-      
+
     } catch (e) {
-      print('[NotificationService] ❌ Error in fallback device token sync: $e');
+      AppLogger.error('Error in fallback device token sync', tag: 'Notifications', error: e);
       return false;
     }
   }
@@ -664,16 +664,27 @@ class NotificationService {
     return await syncDeviceTokenViaConfig();
   }
 
-  /// Clear device token state (call on logout to reset registration flags)
+  /// Clears device token state.
+  ///
+  /// Call on logout to reset registration flags. This allows
+  /// re-registration on next login with the same or new token.
   void clearDeviceTokenState() {
     _lastRegisteredToken = null;
-    print('[NotificationService] Device token state cleared');
+    AppLogger.debug('Device token state cleared', tag: 'Notifications');
   }
 
-  /// Dispose resources
+  /// Dispose resources safely
   void dispose() {
-    _messageStreamController.close();
-    _tokenStreamController.close();
+    _isDisposed = true;
+    // Safely close stream controllers if they exist and are not already closed
+    if (_messageStreamController != null && !_messageStreamController!.isClosed) {
+      _messageStreamController!.close();
+    }
+    if (_tokenStreamController != null && !_tokenStreamController!.isClosed) {
+      _tokenStreamController!.close();
+    }
+    _messageStreamController = null;
+    _tokenStreamController = null;
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
@@ -706,31 +717,28 @@ class NotificationService {
   Future<bool> isRegisteredForNotifications() async {
     try {
       final result = await _channel.invokeMethod('isRegisteredForNotifications');
-      print('[NotificationService] Is registered for notifications: $result');
+      AppLogger.debug('Is registered for notifications: $result', tag: 'Notifications');
       return result == true;
     } catch (e) {
-      print('[NotificationService] Error checking registration status: $e');
+      AppLogger.error('Error checking registration status', tag: 'Notifications', error: e);
       return false;
     }
   }
 
   /// Debug method to force device token sync
   Future<bool> debugSyncDeviceToken() async {
-    print('[NotificationService] ===== DEBUG: FORCE SYNC DEVICE TOKEN =====');
-    print('[NotificationService] Current device token: ${_deviceToken?.substring(0, 20) ?? 'null'}...');
-    print('[NotificationService] Last registered token: ${_lastRegisteredToken?.substring(0, 20) ?? 'null'}...');
-    
+    AppLogger.debug('Force sync device token requested', tag: 'Notifications');
+
     if (_deviceToken == null) {
-      print('[NotificationService] No device token available - trying to get one...');
+      AppLogger.debug('No device token available - trying to get one', tag: 'Notifications');
       final result = await retryTokenRegistration();
-      print('[NotificationService] Retry token registration result: $result');
-      
+
       if (!result['success']) {
-        print('[NotificationService] Failed to get device token');
+        AppLogger.warning('Failed to get device token', tag: 'Notifications');
         return false;
       }
     }
-    
+
     // Force sync via config API
     return await syncDeviceTokenViaConfig();
   }

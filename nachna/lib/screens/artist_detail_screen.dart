@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../models/artist.dart';
 import '../services/api_service.dart';
 import '../models/workshop.dart';
 import '../services/deep_link_service.dart';
+import '../services/share_service.dart';
 import '../providers/reaction_provider.dart';
 import '../models/reaction.dart';
 import '../utils/responsive_utils.dart';
 import '../utils/payment_link_utils.dart';
+import '../utils/string_extensions.dart';
+import '../utils/url_launcher_utils.dart';
+import '../utils/error_handler.dart';
+import '../widgets/cached_image.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final Artist? artist;
@@ -52,260 +56,121 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // Load all artists and find the one with matching ID
       final allArtists = await ApiService().fetchArtists();
       final foundArtist = allArtists.firstWhere(
         (artist) => artist.id == artistId,
-        orElse: () => throw Exception('Artist not found'),
+        orElse: () => throw Exception('Artist with ID "$artistId" not found'),
       );
-      
+
       setState(() {
         _artist = foundArtist;
         _isLoading = false;
       });
-      
+
       futureWorkshops = ApiService().fetchWorkshopsByArtist(artistId);
-      
+
     } catch (e) {
+      ErrorHandler.logError(e, context: 'ArtistDetailScreen._loadArtistById');
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load artist: $e'),
-            backgroundColor: Colors.red.withOpacity(0.8),
-          ),
+        ErrorHandler.showErrorSnackbar(
+          context,
+          e,
+          errorContext: 'Artist',
+          onRetry: ErrorHandler.isRetryable(e) ? () => _loadArtistById(artistId) : null,
         );
-        Navigator.of(context).pop();
+        // Delay pop to allow user to see the error message
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
       }
     }
   }
 
 
-
-  String toTitleCase(String text) {
-    if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-  }
 
   Future<void> _launchInstagram(String instagramUrl) async {
-    try {
-      final uri = Uri.parse(instagramUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback to web browser
-        final webUri = Uri.parse(instagramUrl);
-        await launchUrl(webUri, mode: LaunchMode.platformDefault);
-      }
-    } catch (e) {
-      print('Error launching Instagram: $e');
-    }
+    await UrlLauncherUtils.launchInstagram(instagramUrl);
   }
 
   Future<void> _shareArtist() async {
     if (_artist == null) return;
-    
+
     try {
       final shareUrl = DeepLinkService.generateArtistShareUrl(_artist!.id);
-      final shareText = 'Check out ${toTitleCase(_artist!.name)} on Nachna! 💃🕺\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
-      await _showShareOptions(shareText);
+      final shareText = 'Check out ${_artist!.name.toTitleCase()} on Nachna!\n\nOpen in Nachna app: $shareUrl\n\nDon\'t have Nachna yet? Download it here:\nhttps://apps.apple.com/in/app/nachna/id6746702742';
+
+      await ShareService.showShareOptions(
+        context: context,
+        text: shareText,
+        instagramShareUrl: shareUrl,
+        instagramTopColor: '#FF006E',
+        instagramBottomColor: '#00D4FF',
+      );
     } catch (e) {
-      print('Error sharing artist: $e');
+      ErrorHandler.logError(e, context: 'ArtistDetailScreen._shareArtist');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to share artist'),
-            backgroundColor: Colors.red.withOpacity(0.8),
-          ),
+        ErrorHandler.showErrorSnackbar(
+          context,
+          e,
+          customMessage: 'Failed to share artist',
+          errorContext: 'Sharing',
         );
       }
     }
-  }
-
-  Future<void> _shareViaWhatsApp(String text) async {
-    try {
-      final encoded = Uri.encodeComponent(text);
-      // Try WhatsApp Business first
-      final waBizUri = Uri.parse('whatsapp-business://send?text=$encoded');
-      if (await canLaunchUrl(waBizUri)) {
-        await launchUrl(waBizUri, mode: LaunchMode.externalApplication);
-        return;
-      }
-      // Then standard WhatsApp
-      final waUri = Uri.parse('whatsapp://send?text=$encoded');
-      if (await canLaunchUrl(waUri)) {
-        await launchUrl(waUri, mode: LaunchMode.externalApplication);
-        return;
-      }
-      final waWeb = Uri.parse('https://wa.me/?text=$encoded');
-      if (await canLaunchUrl(waWeb)) {
-        await launchUrl(waWeb, mode: LaunchMode.externalApplication);
-        return;
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('WhatsApp not available'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Could not open WhatsApp'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showShareOptions(String text) async {
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                Colors.black.withOpacity(0.55),
-                Colors.black.withOpacity(0.45),
-              ],
-            ),
-            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.0),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.asset('whatsapp-icon.png', width: 28, height: 28, fit: BoxFit.cover),
-                  ),
-                  title: const Text('Share on WhatsApp', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    // Prefer WhatsApp Business if installed, else WhatsApp
-                    await _shareViaWhatsApp(text);
-                  },
-                ),
-                const Divider(color: Colors.white24, height: 1),
-                ListTile(
-                  leading: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          offset: const Offset(0, 2),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        'instagram-icon.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFFE4405F), Color(0xFFFCAF45)],
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  title: const Text('Share to Instagram Story', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    final ok = await DeepLinkService.shareToInstagramStory(
-                      contentUrl: DeepLinkService.generateArtistShareUrl(_artist!.id),
-                      topColorHex: '#FF006E',
-                      bottomColorHex: '#00D4FF',
-                    );
-                    if (!ok && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Instagram not available'),
-                          backgroundColor: Colors.red.withOpacity(0.8),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const Divider(color: Colors.white24, height: 1),
-                ListTile(
-                  leading: const Icon(Icons.ios_share, color: Color(0xFF00D4FF)),
-                  title: const Text('More...', style: TextStyle(color: Colors.white)),
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await Share.share(
-                      text,
-                      sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _handleLikeArtist() async {
     if (_artist == null) return;
-    
+
     try {
       final reactionProvider = Provider.of<ReactionProvider>(context, listen: false);
       await reactionProvider.toggleArtistReaction(_artist!.id, ReactionType.LIKE);
-      
+
       if (reactionProvider.error != null) {
         _showErrorMessage('Failed to update like status: ${reactionProvider.error}');
       }
     } catch (e) {
-      print('Error handling like: $e');
-      _showErrorMessage('Failed to like artist');
+      ErrorHandler.logError(e, context: 'ArtistDetailScreen._handleLikeArtist');
+      if (mounted) {
+        ErrorHandler.showErrorSnackbar(
+          context,
+          e,
+          customMessage: 'Failed to like artist',
+          errorContext: 'Like action',
+        );
+      }
     }
   }
 
   Future<void> _handleFollowArtist() async {
     if (_artist == null) return;
-    
+
     try {
       final reactionProvider = Provider.of<ReactionProvider>(context, listen: false);
       await reactionProvider.toggleArtistReaction(_artist!.id, ReactionType.NOTIFY);
-      
+
       if (reactionProvider.error != null) {
         _showErrorMessage('Failed to update follow status: ${reactionProvider.error}');
       }
     } catch (e) {
-      print('Error handling follow: $e');
-      _showErrorMessage('Failed to follow artist');
+      ErrorHandler.logError(e, context: 'ArtistDetailScreen._handleFollowArtist');
+      if (mounted) {
+        ErrorHandler.showErrorSnackbar(
+          context,
+          e,
+          customMessage: 'Failed to follow artist',
+          errorContext: 'Follow action',
+        );
+      }
     }
   }
 
@@ -443,27 +308,17 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                         width: ResponsiveUtils.borderWidthMedium(context),
                                       ),
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingLarge(context)),
-                                      child: _artist?.id != null && _artist!.id.isNotEmpty
-                                          ? Image.network(
-                                              'https://nachna.com/api/image/artist/${_artist!.id}',
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                // Fallback to proxy if centralized API fails
-                                                return _artist?.imageUrl != null
-                                                    ? Image.network(
-                                                        'https://nachna.com/api/proxy-image/?url=${Uri.encodeComponent(_artist!.imageUrl!)}',
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder: (context, error, stackTrace) {
-                                                          return _buildArtistIcon();
-                                                        },
-                                                      )
-                                                    : _buildArtistIcon();
-                                              },
-                                            )
-                                          : _buildArtistIcon(),
-                                    ),
+                                    child: _artist?.id != null && _artist!.id.isNotEmpty
+                                        ? CachedImage.rectangular(
+                                            imageUrl: 'https://nachna.com/api/image/artist/${_artist!.id}',
+                                            borderRadius: ResponsiveUtils.spacingLarge(context),
+                                            fallbackText: _artist?.name,
+                                            fallbackGradientColors: [
+                                              const Color(0xFFFF006E).withOpacity(0.7),
+                                              const Color(0xFF8338EC).withOpacity(0.7),
+                                            ],
+                                          )
+                                        : _buildArtistIcon(),
                                   ),
                                   
                                   SizedBox(width: ResponsiveUtils.spacingXLarge(context)),
@@ -475,7 +330,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       children: [
                                         // Artist Name - Extended
                                         Text(
-                                          toTitleCase(_artist?.name ?? ''),
+                                          (_artist?.name ?? '').toTitleCase(),
                                           style: TextStyle(
                                             fontSize: ResponsiveUtils.body1(context),
                                             fontWeight: FontWeight.bold,
@@ -1082,7 +937,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 Padding(
                                   padding: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
                                   child: Text(
-                                    toTitleCase(workshop.song!),
+                                    workshop.song!.toTitleCase(),
                                     style: TextStyle(
                                       color: const Color(0xFFFF006E),
                                       fontSize: ResponsiveUtils.caption(context),
@@ -1126,7 +981,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       SizedBox(width: ResponsiveUtils.spacingSmall(context)),
                                       Expanded(
                                         child: Text(
-                                          toTitleCase(workshop.studioId!),
+                                          workshop.studioId!.toTitleCase(),
                                           style: TextStyle(
                                             color: Colors.white.withOpacity(0.9),
                                             fontSize: ResponsiveUtils.caption(context),
@@ -1178,7 +1033,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    toTitleCase(workshop.eventType!),
+                                    workshop.eventType!.toTitleCase(),
                                     style: TextStyle(
                                       color: const Color(0xFF8338EC),
                                       fontSize: ResponsiveUtils.micro(context),
