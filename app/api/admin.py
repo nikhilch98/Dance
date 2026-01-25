@@ -683,7 +683,7 @@ async def get_artist_choreo_links(
         
         # Find all choreo links that include this artist
         choreo_links = list(client["discovery"]["choreo_links"].find({
-            "artist_id_list": {"$in": [artist_id]}
+            "artist_id_list": artist_id
         }, {
             "_id": 0,
             "choreo_insta_link": 1,
@@ -699,9 +699,10 @@ async def get_artist_choreo_links(
                 unique_links[url] = {
                     "url": url,
                     "song": link_data.get("song", "").title() if link_data.get("song") else "Unknown Song",
-                    "display_text": f"{link_data.get('song', 'Unknown Song').title() if link_data.get('song') else 'Unknown Song'} - {url}"
+                    "display_text": f"{link_data.get('song', 'Unknown Song').title() if link_data.get('song') else 'Unknown Song'} - {url}",
+                    "artist_id_list": link_data.get("artist_id_list", [])
                 }
-        
+
         result = list(unique_links.values())
         result.sort(key=lambda x: x["song"])
         

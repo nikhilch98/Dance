@@ -5601,7 +5601,8 @@ class _InstagramLinkWorkshopCard extends StatefulWidget {
 
 class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> {
   final TextEditingController linkController = TextEditingController();
-  List<Map<String, dynamic>> choreoLinks = [];
+  Map<String, List<Map<String, dynamic>>> choreoLinksByArtist = {};
+  Map<String, String> artistNames = {};
   bool isLoadingChoreoLinks = false;
   String? selectedChoreoLink;
 
@@ -5628,41 +5629,45 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
       isLoadingChoreoLinks = true;
     });
 
-    List<Map<String, dynamic>> allChoreoLinks = [];
+    Map<String, List<Map<String, dynamic>>> groupedLinks = {};
 
     for (String artistId in artistIdList) {
       if (artistId.isNotEmpty && artistId != 'TBA' && artistId != 'tba') {
         try {
           final links = await AdminService.getArtistChoreoLinks(artistId);
-          allChoreoLinks.addAll(links);
+
+          // Only include links that actually belong to this specific artist
+          final artistSpecificLinks = links.where((link) {
+            final linkArtistIds = link['artist_id_list'] as List<dynamic>?;
+            return linkArtistIds != null && linkArtistIds.contains(artistId);
+          }).toList();
+
+          if (artistSpecificLinks.isNotEmpty) {
+            groupedLinks[artistId] = artistSpecificLinks;
+
+            // Get artist name from workshop 'by' field or artist_id
+            final byField = widget.workshop['by']?.toString() ?? '';
+            artistNames[artistId] = byField.isNotEmpty && byField != 'TBA'
+                ? byField
+                : artistId;
+          }
         } catch (e) {
           print('Error loading choreo links for artist $artistId: $e');
         }
       }
     }
 
-    // Remove duplicates based on URL
-    final uniqueLinks = <String, Map<String, dynamic>>{};
-    for (final link in allChoreoLinks) {
-      final url = link['url'] as String;
-      if (!uniqueLinks.containsKey(url)) {
-        uniqueLinks[url] = link;
-      }
-    }
-
     setState(() {
-      choreoLinks = uniqueLinks.values.toList();
+      choreoLinksByArtist = groupedLinks;
       isLoadingChoreoLinks = false;
     });
   }
 
-  void _selectChoreoLink(String? url) {
-    if (url != null) {
-      setState(() {
-        selectedChoreoLink = url;
-        linkController.text = url;
-      });
-    }
+  void _selectChoreoLink(String url) {
+    setState(() {
+      selectedChoreoLink = url;
+      linkController.text = url;
+    });
   }
 
   @override
@@ -5743,10 +5748,10 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                 
                 SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                 
-                // Existing Choreo Links Dropdown
-                if (choreoLinks.isNotEmpty) ...[
+                // Existing Choreo Links Grouped by Artist
+                if (choreoLinksByArtist.isNotEmpty) ...[
                   Text(
-                    'Existing Choreo Links for this Artist:',
+                    'Existing Choreo Links (tap to select):',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: ResponsiveUtils.caption(context),
@@ -5754,60 +5759,154 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                     ),
                   ),
                   SizedBox(height: ResponsiveUtils.spacingSmall(context)),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: ResponsiveUtils.spacingMedium(context), 
-                      vertical: ResponsiveUtils.spacingXSmall(context)
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
-                      color: Colors.white.withOpacity(0.1),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: ResponsiveUtils.borderWidthThin(context),
+
+                  // Display links grouped by artist
+                  ...choreoLinksByArtist.entries.map((entry) {
+                    final artistId = entry.key;
+                    final links = entry.value;
+                    final artistName = artistNames[artistId] ?? artistId;
+
+                    return Container(
+                      margin: EdgeInsets.only(bottom: ResponsiveUtils.spacingSmall(context)),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                        color: Colors.white.withOpacity(0.05),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                          width: ResponsiveUtils.borderWidthThin(context),
+                        ),
                       ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedChoreoLink,
-                        hint: Text(
-                          isLoadingChoreoLinks 
-                              ? 'Loading choreo links...' 
-                              : 'Select existing choreo link',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: ResponsiveUtils.caption(context),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                          splashColor: Colors.white.withOpacity(0.1),
+                        ),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.spacingMedium(context),
+                            vertical: ResponsiveUtils.spacingXSmall(context),
                           ),
-                        ),
-                        dropdownColor: const Color(0xFF1A1A2E),
-                        style: TextStyle(
-                          color: Colors.white, 
-                          fontSize: ResponsiveUtils.caption(context)
-                        ),
-                        icon: Icon(
-                          Icons.arrow_drop_down,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                        isExpanded: true,
-                        items: choreoLinks.map((Map<String, dynamic> choreoLink) {
-                          return DropdownMenuItem<String>(
-                            value: choreoLink['url'],
-                            child: Text(
-                              choreoLink['display_text'] ?? choreoLink['url'],
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: ResponsiveUtils.micro(context),
+                          title: Row(
+                            children: [
+                              Icon(
+                                Icons.person,
+                                color: const Color(0xFF00D4FF),
+                                size: ResponsiveUtils.iconSmall(context),
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: isLoadingChoreoLinks ? null : _selectChoreoLink,
+                              SizedBox(width: ResponsiveUtils.spacingSmall(context)),
+                              Expanded(
+                                child: Text(
+                                  artistName,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: ResponsiveUtils.caption(context),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: ResponsiveUtils.spacingSmall(context),
+                                  vertical: ResponsiveUtils.spacingXSmall(context) / 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00D4FF).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.spacingSmall(context)),
+                                ),
+                                child: Text(
+                                  '${links.length}',
+                                  style: TextStyle(
+                                    color: const Color(0xFF00D4FF),
+                                    fontSize: ResponsiveUtils.micro(context),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          iconColor: Colors.white.withOpacity(0.7),
+                          collapsedIconColor: Colors.white.withOpacity(0.7),
+                          children: links.map((link) {
+                            final url = link['url'] as String;
+                            final song = link['song'] as String? ?? 'Unknown Song';
+                            final isSelected = selectedChoreoLink == url;
+
+                            return InkWell(
+                              onTap: () => _selectChoreoLink(url),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: ResponsiveUtils.spacingLarge(context),
+                                  vertical: ResponsiveUtils.spacingMedium(context),
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF00D4FF).withOpacity(0.15)
+                                      : Colors.transparent,
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: Colors.white.withOpacity(0.05),
+                                      width: ResponsiveUtils.borderWidthThin(context),
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: const Color(0xFF00D4FF),
+                                        size: ResponsiveUtils.iconSmall(context),
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.link,
+                                        color: Colors.white.withOpacity(0.5),
+                                        size: ResponsiveUtils.iconSmall(context),
+                                      ),
+                                    SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            song,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? const Color(0xFF00D4FF)
+                                                  : Colors.white,
+                                              fontSize: ResponsiveUtils.micro(context),
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          SizedBox(height: ResponsiveUtils.spacingXSmall(context) / 2),
+                                          Text(
+                                            url,
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.5),
+                                              fontSize: ResponsiveUtils.micro(context) * 0.85,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  }).toList(),
+
                   SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                 ],
                 
