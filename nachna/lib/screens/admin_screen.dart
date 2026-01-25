@@ -5857,13 +5857,15 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
-                        color: Colors.white.withOpacity(0.05),
+                        color: const Color(0xFF1A1A2E),
                         border: Border.all(
                           color: const Color(0xFF00D4FF).withOpacity(0.3),
                           width: ResponsiveUtils.borderWidthThin(context),
                         ),
                       ),
-                      child: Column(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
+                        child: Column(
                         children: choreoLinksByArtist.entries.map((entry) {
                           final artistId = entry.key;
                           final links = entry.value;
@@ -5875,6 +5877,8 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                               splashColor: Colors.white.withOpacity(0.1),
                             ),
                             child: ExpansionTile(
+                              backgroundColor: Colors.transparent,
+                              collapsedBackgroundColor: Colors.transparent,
                               tilePadding: EdgeInsets.symmetric(
                                 horizontal: ResponsiveUtils.spacingMedium(context),
                                 vertical: ResponsiveUtils.spacingXSmall(context),
@@ -6003,13 +6007,14 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                             ),
                           );
                         }).toList(),
+                        ),
                       ),
                     ),
                   ],
 
                   SizedBox(height: ResponsiveUtils.spacingLarge(context)),
                 ],
-                
+
                 // Artist Instagram Link Button
                 if (widget.workshop['artist_instagram_links'] != null && 
                     (widget.workshop['artist_instagram_links'] as List).isNotEmpty)
