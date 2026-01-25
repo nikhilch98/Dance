@@ -5626,9 +5626,11 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
     final artistIdList = widget.workshop['artist_id_list'] as List<dynamic>?;
     if (artistIdList == null || artistIdList.isEmpty) return;
 
-    setState(() {
-      isLoadingChoreoLinks = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoadingChoreoLinks = true;
+      });
+    }
 
     Map<String, List<Map<String, dynamic>>> groupedLinks = {};
 
@@ -5658,10 +5660,12 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
       }
     }
 
-    setState(() {
-      choreoLinksByArtist = groupedLinks;
-      isLoadingChoreoLinks = false;
-    });
+    if (mounted) {
+      setState(() {
+        choreoLinksByArtist = groupedLinks;
+        isLoadingChoreoLinks = false;
+      });
+    }
   }
 
   void _selectChoreoLink(String url) {
@@ -5871,19 +5875,31 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                           final links = entry.value;
                           final artistName = artistNames[artistId] ?? artistId;
 
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              dividerColor: Colors.transparent,
-                              splashColor: Colors.white.withOpacity(0.1),
-                            ),
-                            child: ExpansionTile(
-                              backgroundColor: Colors.transparent,
-                              collapsedBackgroundColor: Colors.transparent,
-                              tilePadding: EdgeInsets.symmetric(
-                                horizontal: ResponsiveUtils.spacingMedium(context),
-                                vertical: ResponsiveUtils.spacingXSmall(context),
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.white.withOpacity(0.1),
+                                  width: 0.5,
+                                ),
                               ),
-                              title: Row(
+                            ),
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                dividerColor: Colors.transparent,
+                                splashColor: Colors.white.withOpacity(0.1),
+                                expansionTileTheme: const ExpansionTileThemeData(
+                                  backgroundColor: Colors.transparent,
+                                  collapsedBackgroundColor: Colors.transparent,
+                                ),
+                              ),
+                              child: ExpansionTile(
+                                initiallyExpanded: false,
+                                tilePadding: EdgeInsets.symmetric(
+                                  horizontal: ResponsiveUtils.spacingMedium(context),
+                                  vertical: ResponsiveUtils.spacingXSmall(context),
+                                ),
+                                title: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
@@ -6004,6 +6020,7 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                                   ),
                                 );
                               }).toList(),
+                              ),
                             ),
                           );
                         }).toList(),
