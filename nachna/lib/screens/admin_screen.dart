@@ -5870,36 +5870,28 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(ResponsiveUtils.spacingMedium(context)),
                         child: Column(
-                        children: choreoLinksByArtist.entries.map((entry) {
+                        children: choreoLinksByArtist.entries.expand((entry) {
                           final artistId = entry.key;
                           final links = entry.value;
                           final artistName = artistNames[artistId] ?? artistId;
 
-                          return Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.white.withOpacity(0.1),
-                                  width: 0.5,
+                          return [
+                            // Artist header
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: ResponsiveUtils.spacingMedium(context),
+                                vertical: ResponsiveUtils.spacingMedium(context),
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.white.withOpacity(0.1),
+                                    width: 0.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                            child: Theme(
-                              data: Theme.of(context).copyWith(
-                                dividerColor: Colors.transparent,
-                                splashColor: Colors.white.withOpacity(0.1),
-                                expansionTileTheme: const ExpansionTileThemeData(
-                                  backgroundColor: Colors.transparent,
-                                  collapsedBackgroundColor: Colors.transparent,
-                                ),
-                              ),
-                              child: ExpansionTile(
-                                initiallyExpanded: false,
-                                tilePadding: EdgeInsets.symmetric(
-                                  horizontal: ResponsiveUtils.spacingMedium(context),
-                                  vertical: ResponsiveUtils.spacingXSmall(context),
-                                ),
-                                title: Row(
+                              child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
@@ -5939,90 +5931,88 @@ class _InstagramLinkWorkshopCardState extends State<_InstagramLinkWorkshopCard> 
                                   ),
                                 ],
                               ),
-                              iconColor: Colors.white.withOpacity(0.7),
-                              collapsedIconColor: Colors.white.withOpacity(0.7),
-                              children: links.map((link) {
-                                final url = link['url'] as String;
-                                final song = link['song'] as String? ?? 'Unknown Song';
-                                final isSelected = selectedChoreoLink == url;
+                            ),
+                            // Links for this artist
+                            ...links.map((link) {
+                              final url = link['url'] as String;
+                              final song = link['song'] as String? ?? 'Unknown Song';
+                              final isSelected = selectedChoreoLink == url;
 
-                                return InkWell(
-                                  onTap: () {
-                                    _selectChoreoLink(url);
-                                    setState(() {
-                                      isDropdownExpanded = false;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: ResponsiveUtils.spacingLarge(context),
-                                      vertical: ResponsiveUtils.spacingMedium(context),
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? const Color(0xFF00D4FF).withOpacity(0.15)
-                                          : Colors.transparent,
-                                      border: Border(
-                                        top: BorderSide(
-                                          color: Colors.white.withOpacity(0.05),
-                                          width: ResponsiveUtils.borderWidthThin(context),
-                                        ),
+                              return InkWell(
+                                onTap: () {
+                                  _selectChoreoLink(url);
+                                  setState(() {
+                                    isDropdownExpanded = false;
+                                  });
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.spacingLarge(context),
+                                    vertical: ResponsiveUtils.spacingMedium(context),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF00D4FF).withOpacity(0.15)
+                                        : Colors.transparent,
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Colors.white.withOpacity(0.05),
+                                        width: 0.5,
                                       ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        if (isSelected)
-                                          Icon(
-                                            Icons.check_circle,
-                                            color: const Color(0xFF00D4FF),
-                                            size: ResponsiveUtils.iconSmall(context),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.link,
-                                            color: Colors.white.withOpacity(0.5),
-                                            size: ResponsiveUtils.iconSmall(context),
-                                          ),
-                                        SizedBox(width: ResponsiveUtils.spacingMedium(context)),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                song,
-                                                style: TextStyle(
-                                                  color: isSelected
-                                                      ? const Color(0xFF00D4FF)
-                                                      : Colors.white,
-                                                  fontSize: ResponsiveUtils.micro(context),
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.w600
-                                                      : FontWeight.w500,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              SizedBox(height: ResponsiveUtils.spacingXSmall(context) / 2),
-                                              Text(
-                                                url,
-                                                style: TextStyle(
-                                                  color: Colors.white.withOpacity(0.5),
-                                                  fontSize: ResponsiveUtils.micro(context) * 0.85,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                );
-                              }).toList(),
-                              ),
-                            ),
-                          );
+                                  child: Row(
+                                    children: [
+                                      if (isSelected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: const Color(0xFF00D4FF),
+                                          size: ResponsiveUtils.iconSmall(context),
+                                        )
+                                      else
+                                        Icon(
+                                          Icons.link,
+                                          color: Colors.white.withOpacity(0.5),
+                                          size: ResponsiveUtils.iconSmall(context),
+                                        ),
+                                      SizedBox(width: ResponsiveUtils.spacingMedium(context)),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              song,
+                                              style: TextStyle(
+                                                color: isSelected
+                                                    ? const Color(0xFF00D4FF)
+                                                    : Colors.white,
+                                                fontSize: ResponsiveUtils.micro(context),
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(height: ResponsiveUtils.spacingXSmall(context) / 2),
+                                            Text(
+                                              url,
+                                              style: TextStyle(
+                                                color: Colors.white.withOpacity(0.5),
+                                                fontSize: ResponsiveUtils.micro(context) * 0.85,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ];
                         }).toList(),
                         ),
                       ),
